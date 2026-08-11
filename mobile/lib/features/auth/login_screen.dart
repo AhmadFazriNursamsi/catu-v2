@@ -12,9 +12,9 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
 
@@ -23,14 +23,26 @@ class _LoginScreenState extends State<LoginScreen> {
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
   String? _backendError;
 
+  late AnimationController _animCtrl;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+
   @override
   void initState() {
     super.initState();
     _phoneController.addListener(_onPhoneChanged);
+    _animCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700));
+    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+            begin: const Offset(0, 0.08), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
+    _animCtrl.forward();
   }
 
   @override
   void dispose() {
+    _animCtrl.dispose();
     _phoneController.removeListener(_onPhoneChanged);
     _phoneController.dispose();
     _passwordController.dispose();
@@ -38,16 +50,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _onPhoneChanged() {
-    if (_backendError != null) {
-      setState(() => _backendError = null);
-    }
+    if (_backendError != null) setState(() => _backendError = null);
     String text = _phoneController.text;
     if (text.startsWith('0')) {
-      text = text.substring(1);
-      _updatePhoneText(text);
+      _updatePhoneText(text.substring(1));
     } else if (text.startsWith('62')) {
-      text = text.substring(2);
-      _updatePhoneText(text);
+      _updatePhoneText(text.substring(2));
     }
   }
 
@@ -60,18 +68,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLogin() async {
     if (!_formKey.currentState!.validate()) {
-      setState(() {
-        _autovalidateMode = AutovalidateMode.onUserInteraction;
-      });
+      setState(() => _autovalidateMode = AutovalidateMode.onUserInteraction);
       return;
     }
 
     String phone = _phoneController.text.trim();
     final password = _passwordController.text.trim();
-
     if (phone.startsWith('0')) phone = phone.substring(1);
     if (phone.startsWith('62')) phone = phone.substring(2);
-
     final fullPhone = '62$phone';
 
     setState(() {
@@ -86,9 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => HomeScreen(user: res['user']),
-        ),
+        MaterialPageRoute(builder: (context) => HomeScreen(user: res['user'])),
       );
     } else {
       if (!mounted) return;
@@ -99,258 +101,384 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  InputDecoration _inputDecoration({
-    required String labelText,
-    required Widget prefix,
-    Widget? suffixIcon,
-    String? hintText,
+  InputDecoration _fieldDeco({
+    required String label,
+    Widget? prefix,
+    Widget? suffix,
+    String? hint,
   }) {
     return InputDecoration(
-      labelText: labelText,
-      hintText: hintText,
+      labelText: label,
+      hintText: hint,
+      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+      labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
       prefixIcon: prefix,
-      suffixIcon: suffixIcon,
+      suffixIcon: suffix,
+      filled: true,
+      fillColor: const Color(0xFFF7F9FC),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.grey.shade200),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.grey.shade200),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: AppConstants.primaryBlue, width: 2),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.red.shade600, width: 1.5),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.red.shade800, width: 2),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.red.shade600, width: 2),
       ),
-      errorStyle: TextStyle(
-        color: Colors.red.shade700,
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-      ),
-      filled: true,
-      fillColor: Colors.grey.shade50,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      errorStyle: TextStyle(color: Colors.red.shade600, fontSize: 11.5),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenH = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      backgroundColor: AppConstants.bgCanvas,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Card(
-                elevation: 4,
-                shadowColor: Colors.black12,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(28.0),
-                  child: Form(
-                    key: _formKey,
-                    autovalidateMode: _autovalidateMode,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Image.asset(
-                          'assets/images/logoCatu.png',
-                          height: 90,
-                          fit: BoxFit.contain,
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          'Silakan masuk dengan nomor HP terdaftar',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: AppConstants.textMuted,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
+      backgroundColor: const Color(0xFFF0F4FA),
+      body: Stack(
+        children: [
+          // ── Gradient header background ──
+          Positioned(
+            top: 0, left: 0, right: 0,
+            child: Container(
+              height: screenH * 0.42,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF1A56DB), Color(0xFF3B82F6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
+                ),
+              ),
+            ),
+          ),
 
-                        // Inline Backend Error Container (Bukan Alert SnackBar)
-                        if (_backendError != null) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.red.shade200),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.error_outline_rounded, color: Colors.red.shade700, size: 20),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    _backendError!,
-                                    style: TextStyle(
-                                      color: Colors.red.shade900,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
+          // ── Decorative circle blobs ──
+          Positioned(
+            top: -40, right: -40,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.07),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 60, left: -30,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.06),
+              ),
+            ),
+          ),
 
-                        // Input Nomor HP dengan Bendera & Prefix Readonly +62
-                        TextFormField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          decoration: _inputDecoration(
-                            labelText: 'Nomor WhatsApp / HP',
-                            hintText: '81234567890',
-                            prefix: Padding(
-                              padding: const EdgeInsets.only(left: 14, right: 10),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+          // ── Content ──
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // ── Hero section ──
+                      SizedBox(height: screenH * 0.06),
+                      Image.asset(
+                        'assets/images/logoCatu.png',
+                        height: 72,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Selamat Datang',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Masuk untuk melanjutkan',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.75),
+                        ),
+                      ),
+                      SizedBox(height: screenH * 0.05),
+
+                      // ── Form Card ──
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 30,
+                                spreadRadius: 0,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 30, 24, 24),
+                            child: Form(
+                              key: _formKey,
+                              autovalidateMode: _autovalidateMode,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  const Text('🇮🇩', style: TextStyle(fontSize: 18)),
-                                  const SizedBox(width: 6),
+
+                                  // Error banner
+                                  if (_backendError != null) ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade50,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.red.shade200),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.error_outline_rounded,
+                                              color: Colors.red.shade700, size: 20),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              _backendError!,
+                                              style: TextStyle(
+                                                color: Colors.red.shade800,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 18),
+                                  ],
+
+                                  // Label
                                   const Text(
-                                    '+62',
+                                    'Nomor WhatsApp',
                                     style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppConstants.primaryBlue,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppConstants.textDark,
+                                      letterSpacing: 0.3,
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Container(
-                                    height: 22,
-                                    width: 1,
-                                    color: Colors.grey.shade400,
+                                  const SizedBox(height: 8),
+
+                                  // Nomor HP field
+                                  TextFormField(
+                                    controller: _phoneController,
+                                    keyboardType: TextInputType.phone,
+                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                    style: const TextStyle(fontSize: 14, color: AppConstants.textDark),
+                                    decoration: _fieldDeco(
+                                      label: '',
+                                      hint: '81234567890',
+                                      prefix: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Text('🇮🇩', style: TextStyle(fontSize: 18)),
+                                            const SizedBox(width: 6),
+                                            const Text(
+                                              '+62',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppConstants.primaryBlue,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Container(height: 22, width: 1, color: Colors.grey.shade300),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.trim().isEmpty) {
+                                        return 'Nomor WhatsApp wajib diisi';
+                                      }
+                                      var clean = value.trim();
+                                      if (clean.startsWith('0')) clean = clean.substring(1);
+                                      if (clean.startsWith('62')) clean = clean.substring(2);
+                                      if (!clean.startsWith('8')) return 'Nomor HP harus diawali angka 8';
+                                      if (clean.length < 9) return 'Nomor HP minimal 9 digit';
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 20),
+
+                                  // Label Password
+                                  const Text(
+                                    'Password',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppConstants.textDark,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  // Password field
+                                  TextFormField(
+                                    controller: _passwordController,
+                                    obscureText: _obscurePassword,
+                                    style: const TextStyle(fontSize: 14, color: AppConstants.textDark),
+                                    decoration: _fieldDeco(
+                                      label: '',
+                                      hint: '••••••••',
+                                      prefix: const Icon(Icons.lock_outline_rounded,
+                                          color: AppConstants.primaryBlue, size: 20),
+                                      suffix: IconButton(
+                                        icon: Icon(
+                                          _obscurePassword
+                                              ? Icons.visibility_off_outlined
+                                              : Icons.visibility_outlined,
+                                          color: Colors.grey.shade500,
+                                          size: 20,
+                                        ),
+                                        onPressed: () =>
+                                            setState(() => _obscurePassword = !_obscurePassword),
+                                      ),
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.trim().isEmpty) {
+                                        return 'Password wajib diisi';
+                                      }
+                                      if (value.trim().length < 6) {
+                                        return 'Password minimal 6 karakter';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 28),
+
+                                  // Tombol Masuk
+                                  SizedBox(
+                                    height: 52,
+                                    child: ElevatedButton(
+                                      onPressed: _isLoading ? null : _handleLogin,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppConstants.primaryBlue,
+                                        disabledBackgroundColor:
+                                            AppConstants.primaryBlue.withOpacity(0.6),
+                                        elevation: 4,
+                                        shadowColor:
+                                            AppConstants.primaryBlue.withOpacity(0.4),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(14)),
+                                      ),
+                                      child: _isLoading
+                                          ? const SizedBox(
+                                              height: 22,
+                                              width: 22,
+                                              child: CircularProgressIndicator(
+                                                  color: Colors.white, strokeWidth: 2.5),
+                                            )
+                                          : const Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(Icons.login_rounded,
+                                                    color: Colors.white, size: 20),
+                                                SizedBox(width: 8),
+                                                Text(
+                                                  'MASUK SEKARANG',
+                                                  style: TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                    letterSpacing: 0.8,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+
+                                  // Divider
+                                  Row(
+                                    children: [
+                                      Expanded(child: Divider(color: Colors.grey.shade200)),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                                        child: Text('atau',
+                                            style: TextStyle(
+                                                fontSize: 12, color: Colors.grey.shade400)),
+                                      ),
+                                      Expanded(child: Divider(color: Colors.grey.shade200)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  // Daftar button
+                                  OutlinedButton(
+                                    onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => const RegisterScreen()),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(14)),
+                                    ),
+                                    child: const Text(
+                                      'Buat Akun Baru',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppConstants.primaryBlue,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Nomor WhatsApp / HP wajib diisi';
-                            }
-                            var clean = value.trim();
-                            if (clean.startsWith('0')) clean = clean.substring(1);
-                            if (clean.startsWith('62')) clean = clean.substring(2);
-
-                            if (!RegExp(r'^\d+$').hasMatch(clean)) {
-                              return 'Nomor HP hanya boleh berisi angka (0-9)';
-                            }
-                            if (!clean.startsWith('8')) {
-                              return 'Nomor HP harus diawali angka 8 (contoh: 81234567890)';
-                            }
-                            if (clean.length < 9) {
-                              return 'Nomor HP minimal 9 digit (contoh: 81234567890)';
-                            }
-                            return null;
-                          },
                         ),
-                        const SizedBox(height: 16),
-
-                        // Password
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          decoration: _inputDecoration(
-                            labelText: 'Password',
-                            prefix: const Icon(Icons.lock_outline_rounded, color: AppConstants.primaryBlue),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                color: Colors.grey.shade600,
-                              ),
-                              onPressed: () {
-                                setState(() => _obscurePassword = !_obscurePassword);
-                              },
-                            ),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Password wajib diisi';
-                            }
-                            if (value.trim().length < 6) {
-                              return 'Password minimal 6 karakter';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Submit Button
-                        ElevatedButton(
-                          onPressed: _isLoading ? null : _handleLogin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppConstants.primaryBlue,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 2,
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                )
-                              : const Text(
-                                  'MASUK SEKARANG',
-                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
-                                ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Register Link
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'Belum punya akun?',
-                              style: TextStyle(fontSize: 13, color: AppConstants.textMuted),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const RegisterScreen()),
-                                );
-                              },
-                              child: const Text(
-                                'Daftar Sekarang',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppConstants.primaryBlue,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
                   ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
