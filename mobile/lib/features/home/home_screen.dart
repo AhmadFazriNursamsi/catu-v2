@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
+import '../../core/utils/fade_slide_route.dart';
 import '../orders/create_order_screen.dart';
 import '../chat/chat_screen.dart';
 import '../auth/login_screen.dart';
+import 'romo_dashboard_view.dart';
 
 class HomeScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -75,6 +77,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final String formattedRole = _formatRoleDisplay(roleCode, pengurusPosition, romoPosition);
     final isApproved = accountStatus == 'APPROVED';
+
+    if (roleCode.startsWith('ROMO')) {
+      return RomoDashboardView(
+        user: u,
+        orders: _orders,
+        onRefresh: _loadOrders,
+        onLogout: () {
+          Navigator.pushReplacement(
+            context,
+            FadeSlideRoute(page: const LoginScreen()),
+          );
+        },
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppConstants.bgCanvas,
