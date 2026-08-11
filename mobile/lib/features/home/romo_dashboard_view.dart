@@ -32,27 +32,9 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── 1. Fixed Floating Top Header Bar (Stays on top when scrolling) ──
-            Container(
-              margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF1E5399).withOpacity(0.14),
-                    blurRadius: 20,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 6),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
+            // ── 1. Seamless Transparent Top Header Bar ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -60,7 +42,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                     child: Text(
                       'Hi, $userName',
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF0F172A),
                         letterSpacing: -0.3,
@@ -75,7 +57,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                         clipBehavior: Clip.none,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1E5399), size: 24),
+                            icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1E5399), size: 26),
                             onPressed: () {},
                           ),
                           Positioned(
@@ -97,13 +79,13 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                           ),
                         ],
                       ),
-                      const SizedBox(width: 2),
+                      const SizedBox(width: 4),
                       // Mail Notification Icon with Badge '2'
                       Stack(
                         clipBehavior: Clip.none,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.mail_outline_rounded, color: Color(0xFF1E5399), size: 24),
+                            icon: const Icon(Icons.mail_outline_rounded, color: Color(0xFF1E5399), size: 26),
                             onPressed: () {},
                           ),
                           Positioned(
@@ -138,20 +120,38 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header Cross Banner
+                    // Header Cross Banner with Shadow Depth
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                  child: AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Image.asset(
-                      'assets/images/cross_banner.jpg',
-                      fit: BoxFit.cover,
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(22),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1E5399).withOpacity(0.18),
+                              blurRadius: 24,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 8),
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(22),
+                          child: AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: Image.asset(
+                              'assets/images/cross_banner.jpg',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ),
 
               // ── 3. Spiritual Quote ──
               Padding(

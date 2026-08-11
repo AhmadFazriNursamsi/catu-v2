@@ -99,34 +99,19 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Floating Top Header Bar ──
-            Container(
-              margin: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppConstants.primaryBlue.withOpacity(0.14),
-                    blurRadius: 20,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 6),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
+            // ── Seamless Transparent Top Header Bar ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4, offset: const Offset(0, 2)),
+                      ],
                     ),
                     child: Image.asset(
                       'assets/images/logoCatu.png',
@@ -138,18 +123,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: Text(
                       formattedRole,
-                      style: const TextStyle(color: AppConstants.textDark, fontSize: 14, fontWeight: FontWeight.bold),
+                      style: const TextStyle(color: AppConstants.textDark, fontSize: 15, fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   IconButton(
                     tooltip: 'Refresh Data',
-                    icon: const Icon(Icons.refresh_rounded, color: AppConstants.primaryBlue, size: 22),
+                    icon: const Icon(Icons.refresh_rounded, color: AppConstants.primaryBlue, size: 24),
                     onPressed: _loadOrders,
                   ),
                   IconButton(
                     tooltip: 'Keluar (Logout)',
-                    icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 22),
+                    icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 24),
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
