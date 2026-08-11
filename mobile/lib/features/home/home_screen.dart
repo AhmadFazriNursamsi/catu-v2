@@ -3,6 +3,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/utils/fade_slide_route.dart';
+import '../../core/widgets/liquid_bottom_nav_bar.dart';
 import '../orders/create_order_screen.dart';
 import '../chat/chat_screen.dart';
 import '../auth/login_screen.dart';
@@ -19,6 +20,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<Order> _orders = [];
   bool _isLoading = true;
+  int _currentNavIndex = 0;
 
   @override
   void initState() {
@@ -378,6 +380,69 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: LiquidBottomNavBar(
+        selectedIndex: _currentNavIndex,
+        onTabSelected: (index) {
+          setState(() => _currentNavIndex = index);
+          if (index == 3) {
+            _showUmatMenuBottomSheet(context);
+          }
+        },
+        items: const [
+          LiquidNavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Beranda'),
+          LiquidNavItem(icon: Icons.history_outlined, activeIcon: Icons.history_rounded, label: 'Histori'),
+          LiquidNavItem(icon: Icons.assignment_outlined, activeIcon: Icons.assignment_rounded, label: 'Pesanan'),
+          LiquidNavItem(icon: Icons.menu_outlined, activeIcon: Icons.menu_rounded, label: 'Menu'),
+        ],
+      ),
+    );
+  }
+
+  void _showUmatMenuBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Pengguna';
+        final phone = widget.user['phoneNumber'] ?? widget.user['phone_number'] ?? '';
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const CircleAvatar(backgroundColor: AppConstants.primaryBlue, child: Icon(Icons.person, color: Colors.white)),
+                title: Text(userName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(phone),
+              ),
+              const Divider(height: 24),
+              ListTile(
+                leading: const Icon(Icons.refresh_rounded, color: AppConstants.primaryBlue),
+                title: const Text('Refresh Data'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _loadOrders();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                title: const Text('Keluar (Logout)', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.pushReplacement(
+                    context,
+                    FadeSlideRoute(page: const LoginScreen()),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

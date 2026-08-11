@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/models/models.dart';
+import '../../core/widgets/liquid_bottom_nav_bar.dart';
 
 class RomoDashboardView extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -368,51 +369,37 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         ),
       ),
 
-      // ── Bottom Navigation Bar matching screenshot ──
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentNavIndex,
-          onTap: (index) {
-            setState(() => _currentNavIndex = index);
-            if (index == 3) {
-              _showMenuBottomSheet();
-            }
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF1E5399),
-          unselectedItemColor: const Color(0xFF94A3B8),
-          selectedFontSize: 11,
-          unselectedFontSize: 11,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded),
-              label: 'Beranda',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.history_rounded),
-              label: 'Histori',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today_rounded),
-              label: 'Jadwal Pelayanan',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.menu_rounded),
-              label: 'Menu',
-            ),
-          ],
-        ),
+      // ── Liquid Floating Bottom Navigation Bar ──
+      bottomNavigationBar: LiquidBottomNavBar(
+        selectedIndex: _currentNavIndex,
+        onTabSelected: (index) {
+          setState(() => _currentNavIndex = index);
+          if (index == 3) {
+            _showMenuBottomSheet();
+          }
+        },
+        items: const [
+          LiquidNavItem(
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home_rounded,
+            label: 'Beranda',
+          ),
+          LiquidNavItem(
+            icon: Icons.history_outlined,
+            activeIcon: Icons.history_rounded,
+            label: 'Histori',
+          ),
+          LiquidNavItem(
+            icon: Icons.calendar_today_outlined,
+            activeIcon: Icons.calendar_today_rounded,
+            label: 'Jadwal',
+          ),
+          LiquidNavItem(
+            icon: Icons.menu_outlined,
+            activeIcon: Icons.menu_rounded,
+            label: 'Menu',
+          ),
+        ],
       ),
     );
   }
