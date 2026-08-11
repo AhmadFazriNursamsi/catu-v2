@@ -249,7 +249,8 @@ class _LoginScreenState extends State<LoginScreen>
                             child: Form(
                               key: _formKey,
                               autovalidateMode: _autovalidateMode,
-                              child: Column(
+                              child: AutofillGroup(
+                                child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
 
@@ -325,6 +326,7 @@ class _LoginScreenState extends State<LoginScreen>
                                         ),
                                       ),
                                     ),
+                                    autofillHints: const [AutofillHints.telephoneNumberNational],
                                     validator: (value) {
                                       if (value == null || value.trim().isEmpty) {
                                         return 'Nomor WhatsApp wajib diisi';
@@ -373,6 +375,7 @@ class _LoginScreenState extends State<LoginScreen>
                                             setState(() => _obscurePassword = !_obscurePassword),
                                       ),
                                     ),
+                                    autofillHints: const [AutofillHints.password],
                                     validator: (value) {
                                       if (value == null || value.trim().isEmpty) {
                                         return 'Password wajib diisi';
@@ -465,8 +468,9 @@ class _LoginScreenState extends State<LoginScreen>
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
+                                 ],
+                                ), // Column
+                              ), // AutofillGroup
                             ),
                           ),
                         ),
