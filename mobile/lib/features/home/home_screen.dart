@@ -96,53 +96,70 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppConstants.bgCanvas,
-      appBar: AppBar(
-        backgroundColor: AppConstants.primaryBlue,
-        elevation: 0,
-        title: Row(
+      body: SafeArea(
+        child: Column(
           children: [
+            // ── Floating Top Header Bar ──
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              margin: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppConstants.primaryBlue.withOpacity(0.14),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 6),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: Image.asset(
-                'assets/images/logoCatu.png',
-                height: 28,
-                fit: BoxFit.contain,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Image.asset(
+                      'assets/images/logoCatu.png',
+                      height: 24,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      formattedRole,
+                      style: const TextStyle(color: AppConstants.textDark, fontSize: 14, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Refresh Data',
+                    icon: const Icon(Icons.refresh_rounded, color: AppConstants.primaryBlue, size: 22),
+                    onPressed: _loadOrders,
+                  ),
+                  IconButton(
+                    tooltip: 'Keluar (Logout)',
+                    icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 22),
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        FadeSlideRoute(page: const LoginScreen()),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                formattedRole,
-                style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh Data',
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-            onPressed: _loadOrders,
-          ),
-          IconButton(
-            tooltip: 'Keluar (Logout)',
-            icon: const Icon(Icons.logout_rounded, color: Colors.white),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
           // User Profile Card Container
           Container(
             padding: const EdgeInsets.all(20),
@@ -380,22 +397,23 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: LiquidBottomNavBar(
-        selectedIndex: _currentNavIndex,
-        onTabSelected: (index) {
-          setState(() => _currentNavIndex = index);
-          if (index == 3) {
-            _showUmatMenuBottomSheet(context);
-          }
-        },
-        items: const [
-          LiquidNavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Beranda'),
-          LiquidNavItem(icon: Icons.history_outlined, activeIcon: Icons.history_rounded, label: 'Histori'),
-          LiquidNavItem(icon: Icons.assignment_outlined, activeIcon: Icons.assignment_rounded, label: 'Pesanan'),
-          LiquidNavItem(icon: Icons.menu_outlined, activeIcon: Icons.menu_rounded, label: 'Menu'),
-        ],
-      ),
-    );
+    ),
+    bottomNavigationBar: LiquidBottomNavBar(
+      selectedIndex: _currentNavIndex,
+      onTabSelected: (index) {
+        setState(() => _currentNavIndex = index);
+        if (index == 3) {
+          _showUmatMenuBottomSheet(context);
+        }
+      },
+      items: const [
+        LiquidNavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Beranda'),
+        LiquidNavItem(icon: Icons.history_outlined, activeIcon: Icons.history_rounded, label: 'Histori'),
+        LiquidNavItem(icon: Icons.assignment_outlined, activeIcon: Icons.assignment_rounded, label: 'Pesanan'),
+        LiquidNavItem(icon: Icons.menu_outlined, activeIcon: Icons.menu_rounded, label: 'Menu'),
+      ],
+    ),
+  );
   }
 
   void _showUmatMenuBottomSheet(BuildContext context) {

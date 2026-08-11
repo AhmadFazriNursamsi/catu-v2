@@ -35,9 +35,27 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── 1. Top Header with Name & Notification Badges ──
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              // ── 1. Floating Top Header Bar ──
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF1E5399).withOpacity(0.14),
+                      blurRadius: 20,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 6),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -45,7 +63,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                       child: Text(
                         'Hi, $userName',
                         style: const TextStyle(
-                          fontSize: 22,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF0F172A),
                           letterSpacing: -0.3,
@@ -60,7 +78,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                           clipBehavior: Clip.none,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1E5399), size: 26),
+                              icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1E5399), size: 24),
                               onPressed: () {},
                             ),
                             Positioned(
@@ -72,23 +90,23 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                                   color: Colors.redAccent,
                                   shape: BoxShape.circle,
                                 ),
-                                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
                                 child: const Text(
                                   '1',
-                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
                                   textAlign: TextAlign.center,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 2),
                         // Mail Notification Icon with Badge '2'
                         Stack(
                           clipBehavior: Clip.none,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.mail_outline_rounded, color: Color(0xFF1E5399), size: 26),
+                              icon: const Icon(Icons.mail_outline_rounded, color: Color(0xFF1E5399), size: 24),
                               onPressed: () {},
                             ),
                             Positioned(
@@ -100,10 +118,10 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                                   color: Colors.redAccent,
                                   shape: BoxShape.circle,
                                 ),
-                                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
                                 child: const Text(
                                   '2',
-                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
                                   textAlign: TextAlign.center,
                                 ),
                               ),
