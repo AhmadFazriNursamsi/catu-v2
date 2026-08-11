@@ -284,28 +284,21 @@ class _LoginScreenState extends State<LoginScreen>
                                     const SizedBox(height: 18),
                                   ],
 
-                                  // Label
-                                  const Text(
-                                    'Nomor WhatsApp',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppConstants.textDark,
-                                      letterSpacing: 0.3,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-
                                   // Nomor HP field
                                   TextFormField(
                                     controller: _phoneController,
                                     keyboardType: TextInputType.phone,
                                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                     style: const TextStyle(fontSize: 14, color: AppConstants.textDark),
-                                    decoration: _fieldDeco(
-                                      label: '',
-                                      hint: '81234567890',
-                                      prefix: Container(
+                                    decoration: InputDecoration(
+                                      labelText: 'Nomor WhatsApp / HP',
+                                      hintText: '81234567890',
+                                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                                      labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                                      filled: true,
+                                      fillColor: const Color(0xFFF7F9FC),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                                      prefixIcon: Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 14),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -325,6 +318,12 @@ class _LoginScreenState extends State<LoginScreen>
                                           ],
                                         ),
                                       ),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade200)),
+                                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade200)),
+                                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppConstants.primaryBlue, width: 2)),
+                                      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.red.shade400, width: 1.5)),
+                                      focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.red.shade600, width: 2)),
+                                      errorStyle: TextStyle(color: Colors.red.shade600, fontSize: 11.5),
                                     ),
                                     autofillHints: const [AutofillHints.telephoneNumberNational],
                                     validator: (value) {
@@ -339,19 +338,7 @@ class _LoginScreenState extends State<LoginScreen>
                                       return null;
                                     },
                                   ),
-                                  const SizedBox(height: 20),
-
-                                  // Label Password
-                                  const Text(
-                                    'Password',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppConstants.textDark,
-                                      letterSpacing: 0.3,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 16),
 
                                   // Password field
                                   TextFormField(
@@ -359,7 +346,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     obscureText: _obscurePassword,
                                     style: const TextStyle(fontSize: 14, color: AppConstants.textDark),
                                     decoration: _fieldDeco(
-                                      label: '',
+                                      label: 'Password',
                                       hint: '••••••••',
                                       prefix: const Icon(Icons.lock_outline_rounded,
                                           color: AppConstants.primaryBlue, size: 20),
