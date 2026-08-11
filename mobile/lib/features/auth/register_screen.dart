@@ -287,7 +287,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
               height: 200,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppConstants.primaryBlue, Color(0xFF2563EB)],
+                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
