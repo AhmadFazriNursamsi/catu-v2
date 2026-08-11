@@ -223,11 +223,12 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         decoration: _fieldDeco(label: 'Jabatan / Peran Umat', icon: Icons.badge_outlined),
         dropdownColor: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        isExpanded: true,
         items: const [
-          DropdownMenuItem<String?>(value: null, child: Text('Anggota Umat', style: TextStyle(fontSize: 14))),
-          DropdownMenuItem<String?>(value: 'KETUA', child: Text('Ketua Lingkungan', style: TextStyle(fontSize: 14))),
-          DropdownMenuItem<String?>(value: 'WAKIL', child: Text('Wakil Ketua Lingkungan', style: TextStyle(fontSize: 14))),
-          DropdownMenuItem<String?>(value: 'SEKRETARIS', child: Text('Sekretaris Lingkungan', style: TextStyle(fontSize: 14))),
+          DropdownMenuItem<String?>(value: null, child: Text('Anggota Umat', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+          DropdownMenuItem<String?>(value: 'KETUA', child: Text('Ketua Lingkungan', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+          DropdownMenuItem<String?>(value: 'WAKIL', child: Text('Wakil Ketua Lingkungan', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+          DropdownMenuItem<String?>(value: 'SEKRETARIS', child: Text('Sekretaris Lingkungan', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
         ],
         onChanged: (val) => setState(() => _selectedUmatPosition = val),
       );
@@ -237,9 +238,16 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         decoration: _fieldDeco(label: 'Jabatan Romo Ordo', icon: Icons.military_tech_outlined),
         dropdownColor: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        isExpanded: true,
         items: const [
-          DropdownMenuItem(value: 'KETUA_ROMO', child: Text('Ketua Ordo', style: TextStyle(fontSize: 14))),
-          DropdownMenuItem(value: 'ROMO_BIASA', child: Text('Romo Ordo Biasa', style: TextStyle(fontSize: 14))),
+          DropdownMenuItem(
+            value: 'KETUA_ROMO',
+            child: Text('Ketua Ordo', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+          ),
+          DropdownMenuItem(
+            value: 'ROMO_BIASA',
+            child: Text('Romo Ordo Biasa', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+          ),
         ],
         onChanged: (val) { if (val != null) setState(() => _selectedRomoOrdoPosition = val); },
       );
@@ -249,9 +257,16 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         decoration: _fieldDeco(label: 'Jabatan Romo Paroki', icon: Icons.church_outlined),
         dropdownColor: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        isExpanded: true,
         items: const [
-          DropdownMenuItem(value: 'KETUA_ROMO', child: Text('Pastor Kepala (Ketua Paroki)', style: TextStyle(fontSize: 14))),
-          DropdownMenuItem(value: 'ROMO_BIASA', child: Text('Romo Paroki Biasa (Pastor Rekan)', style: TextStyle(fontSize: 14))),
+          DropdownMenuItem(
+            value: 'KETUA_ROMO',
+            child: Text('Pastor Kepala (Ketua Paroki)', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+          ),
+          DropdownMenuItem(
+            value: 'ROMO_BIASA',
+            child: Text('Romo Paroki Biasa (Pastor Rekan)', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+          ),
         ],
         onChanged: (val) { if (val != null) setState(() => _selectedRomoParokiPosition = val); },
       );
@@ -295,12 +310,20 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                     constraints: const BoxConstraints(maxWidth: 480),
                     child: Column(
                       children: [
-                        // Logo & Label di atas gradient
-                        Image.asset('assets/images/logoCatu.png', height: 64, fit: BoxFit.contain),
+                        // Title di atas gradient
+                        const Text(
+                          'Buat Akun CATU',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
                         const SizedBox(height: 6),
                         const Text(
-                          'Daftar Akun Baru',
-                          style: TextStyle(fontSize: 12, color: Colors.white70, letterSpacing: 0.8),
+                          'Isi data diri Anda untuk bergabung',
+                          style: TextStyle(fontSize: 13, color: Colors.white70),
                         ),
                         const SizedBox(height: 24),
 
