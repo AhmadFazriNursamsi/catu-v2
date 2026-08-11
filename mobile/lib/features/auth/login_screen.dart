@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
+import '../../core/utils/fade_slide_route.dart';
 import '../home/home_screen.dart';
 import 'register_screen.dart';
 
@@ -90,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen>
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomeScreen(user: res['user'])),
+        FadeSlideRoute(page: HomeScreen(user: res['user'])),
       );
     } else {
       if (!mounted) return;
@@ -437,8 +438,10 @@ class _LoginScreenState extends State<LoginScreen>
                                   OutlinedButton(
                                     onPressed: () => Navigator.push(
                                       context,
-                                      MaterialPageRoute(
-                                          builder: (context) => const RegisterScreen()),
+                                      FadeSlideRoute(
+                                        page: const RegisterScreen(),
+                                        beginOffset: const Offset(0, 0.04),
+                                      ),
                                     ),
                                     style: OutlinedButton.styleFrom(
                                       padding: const EdgeInsets.symmetric(vertical: 14),

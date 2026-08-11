@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
+import '../../core/utils/fade_slide_route.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
