@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../core/models/models.dart';
 import '../../core/widgets/liquid_bottom_nav_bar.dart';
 import '../orders/create_perminyakan_screen.dart';
+import '../orders/create_kedukaan_screen.dart';
 import '../orders/order_detail_screen.dart';
 import '../chat/chat_screen.dart';
 
@@ -327,17 +328,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                             ),
                           ),
                           ElevatedButton(
-                            onPressed: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                        CreatePerminyakanScreen(
-                                            userId: _userId,
-                                            user: widget.user)),
-                              );
-                              widget.onRefresh();
-                            },
+                            onPressed: _showServiceSelectionModal,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1E5399),
                               foregroundColor: Colors.white,
@@ -503,15 +494,9 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                 leading: const Icon(Icons.add_circle_outline_rounded,
                     color: Color(0xFF1E5399)),
                 title: const Text('Buat Permintaan Pelayanan'),
-                onTap: () async {
+                onTap: () {
                   Navigator.pop(ctx);
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => CreatePerminyakanScreen(
-                            userId: _userId, user: widget.user)),
-                  );
-                  widget.onRefresh();
+                  _showServiceSelectionModal();
                 },
               ),
               ListTile(
@@ -535,6 +520,140 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                   widget.onLogout();
                 },
               ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showServiceSelectionModal() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Pilih Jenis Pelayanan',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Silakan pilih jenis sakramen / misa pelayanan yang Anda butuhkan',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Option 1: Perminyakan Suci
+              ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: BorderSide(color: Colors.grey.shade200),
+                ),
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E5399).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.sanitizer_rounded,
+                      color: Color(0xFF1E5399)),
+                ),
+                title: const Text(
+                  'Sakramen Perminyakan',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                subtitle: const Text(
+                  'Pelayanan minyak suci untuk orang sakit / lansia',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CreatePerminyakanScreen(
+                        userId: _userId,
+                        user: widget.user,
+                      ),
+                    ),
+                  );
+                  widget.onRefresh();
+                },
+              ),
+
+              const SizedBox(height: 12),
+
+              // Option 2: Misa Kedukaan
+              ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: BorderSide(color: Colors.grey.shade200),
+                ),
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D9488).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.personal_injury_rounded,
+                      color: Color(0xFF0D9488)),
+                ),
+                title: const Text(
+                  'Misa Pelayanan Kedukaan',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                subtitle: const Text(
+                  'Misa Tutup Peti, Requiem, Pemakaman, 7 Hari, dll',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CreateKedukaanScreen(
+                        userId: _userId,
+                        user: widget.user,
+                      ),
+                    ),
+                  );
+                  widget.onRefresh();
+                },
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         );
