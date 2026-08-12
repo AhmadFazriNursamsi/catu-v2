@@ -29,6 +29,8 @@ export class AuthController implements OnModuleInit {
         ADD COLUMN IF NOT EXISTS jabatan_end_date VARCHAR(20),
         ADD COLUMN IF NOT EXISTS is_jabatan_active BOOLEAN DEFAULT FALSE;
 
+        ALTER TABLE orders ADD COLUMN IF NOT EXISTS attachment_url TEXT;
+
         -- Cleanup existing non-Romo profiles so romo_position is NULL
         UPDATE user_profiles 
         SET romo_position = NULL 
@@ -812,8 +814,8 @@ export class OrdersController {
     }
 
     const orderResult = await this.dataSource.query(
-      `INSERT INTO orders (order_number, user_id, service_category_id, urgency_level_id, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, status, scheduled_date, scheduled_time, location_name, address_detail, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'PENDING', $10, $11, $12, $13, $14) RETURNING id, order_number, status, created_at`,
+      `INSERT INTO orders (order_number, user_id, service_category_id, urgency_level_id, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, status, scheduled_date, scheduled_time, location_name, address_detail, notes, attachment_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'PENDING', $10, $11, $12, $13, $14, $15) RETURNING id, order_number, status, created_at`,
       [
         orderNum,
         userId,
@@ -829,6 +831,7 @@ export class OrdersController {
         dto.locationName,
         dto.addressDetail,
         dto.notes || '',
+        dto.attachmentUrl || null,
       ],
     );
 
@@ -884,6 +887,7 @@ export class OrdersController {
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, 
              o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, 
+             o.attachment_url as "attachmentUrl",
              p.full_name as pemohon_name,
              k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name
       FROM orders o

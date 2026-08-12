@@ -95,6 +95,11 @@ export class CreateOrderDto {
   @IsOptional()
   notes?: string;
 
+  @ApiPropertyOptional({ example: 'https://example.com/foto_duka.jpg', description: 'URL atau path foto duka almarhum / banner kedukaan' })
+  @IsString()
+  @IsOptional()
+  attachmentUrl?: string;
+
   @ApiPropertyOptional({
     type: [CreateOrderItemDto],
     description: 'Daftar item Misa Kedukaan (Wajib diisi jika kategori = Misa Kedukaan)',

@@ -82,6 +82,7 @@ class Order {
   final String parokiName;
   final String lingkunganName;
   final List<OrderItem> items;
+  final String? attachmentUrl;
 
   Order({
     required this.id,
@@ -99,6 +100,7 @@ class Order {
     this.parokiName = '',
     this.lingkunganName = '',
     this.items = const [],
+    this.attachmentUrl,
   });
 
   /// Parse "Jam Mulai" from notes
@@ -250,6 +252,7 @@ class Order {
       parokiName: json['paroki_name'] ?? json['parokiName'] ?? 'Paroki Alam Sutera - St. Laurensius',
       lingkunganName: json['lingkungan_name'] ?? json['lingkunganName'] ?? 'St. Angela Merici',
       items: parsedItems,
+      attachmentUrl: json['attachment_url'] ?? json['attachmentUrl'],
     );
   }
 }
