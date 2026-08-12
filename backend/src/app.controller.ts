@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Query, OnModuleInit } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Query, OnModuleInit, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -505,7 +505,8 @@ export class AuthController implements OnModuleInit {
           `SELECT p.full_name, u.phone_number 
            FROM user_profiles p 
            JOIN auth_users u ON p.user_id = u.id 
-           WHERE p.lingkungan_id = $1 AND u.role_id = 4 AND u.account_status = 'APPROVED' LIMIT 1`,
+           JOIN roles r ON u.role_id = r.id
+           WHERE p.lingkungan_id = $1 AND r.code = 'PENGURUS_LINGKUNGAN' AND u.account_status = 'APPROVED' LIMIT 1`,
           [dto.lingkunganId],
         );
         if (pengurus.length > 0) {
@@ -552,10 +553,10 @@ export class AuthController implements OnModuleInit {
           authUser.id,
           dto.fullName,
           dto.email || null,
-          dto.keuskupanId || 1,
-          dto.parokiId || 10,
-          dto.wilayahId || 101,
-          dto.lingkunganId || 1001,
+          dto.keuskupanId || null,
+          dto.parokiId || null,
+          dto.wilayahId || null,
+          dto.lingkunganId || null,
           dto.kabupatenKotaId || 3175,
           dto.pengurusPosition || null,
           romoPositionVal,
@@ -569,14 +570,38 @@ export class AuthController implements OnModuleInit {
 
       await queryRunner.commitTransaction();
 
-      const isUmat = dto.roleCode === 'UMAT';
-      const approvalMsg = isUmat
-        ? `Registrasi berhasil! Akun Anda sedang menunggu persetujuan dari Pengurus Lingkungan.`
-        : `Registrasi berhasil! Akun Anda sedang menunggu persetujuan dari Admin Aplikasi.`;
+      // Detailed location names for response DTO
+      let keuskupanName = '';
+      let parokiName = '';
+      let wilayahName = '';
+      let lingkunganName = '';
+      let kabupatenKotaName = 'JAKARTA TIMUR';
+
+      if (dto.keuskupanId) {
+        const kRes = await this.dataSource.query('SELECT name FROM keuskupan WHERE id = $1', [dto.keuskupanId]);
+        if (kRes.length > 0) keuskupanName = kRes[0].name;
+      }
+      if (dto.parokiId) {
+        const pRes = await this.dataSource.query('SELECT name FROM paroki WHERE id = $1', [dto.parokiId]);
+        if (pRes.length > 0) parokiName = pRes[0].name;
+      }
+      if (dto.wilayahId) {
+        const wRes = await this.dataSource.query('SELECT name FROM wilayah WHERE id = $1', [dto.wilayahId]);
+        if (wRes.length > 0) wilayahName = wRes[0].name;
+      }
+      if (dto.lingkunganId) {
+        const lRes = await this.dataSource.query('SELECT name FROM lingkungan WHERE id = $1', [dto.lingkunganId]);
+        if (lRes.length > 0) lingkunganName = lRes[0].name;
+      }
+
+      const isPengurusOrLeader = Boolean(dto.pengurusPosition || (isRomo && dto.romoPosition === 'KETUA_ROMO'));
+      const approvalTargetMsg = isPengurusOrLeader
+        ? 'Admin Aplikasi CATU'
+        : (dto.roleCode === 'UMAT' ? 'Pengurus Lingkungan' : 'Admin Aplikasi CATU');
 
       return {
         statusCode: 201,
-        message: approvalMsg,
+        message: `Registrasi berhasil! Akun Anda sedang menunggu persetujuan dari ${approvalTargetMsg}.`,
         user: {
           id: authUser.id,
           uuid: authUser.uuid,
@@ -600,9 +625,13 @@ export class AuthController implements OnModuleInit {
         },
         approvalAssignedTo: approverName,
       };
-    } catch (err) {
+    } catch (err: any) {
       await queryRunner.rollbackTransaction();
-      throw err;
+      const errMessage = err.message || '';
+      if (err.code === '23505' || errMessage.includes('auth_users_phone_number_key') || errMessage.includes('unique constraint') || errMessage.includes('phone_number')) {
+        throw new BadRequestException('Nomor WhatsApp / HP ini sudah terdaftar. Silakan gunakan nomor lain atau login.');
+      }
+      throw new BadRequestException(errMessage || 'Registrasi gagal. Silakan periksa kembali data Anda.');
     } finally {
       await queryRunner.release();
     }
