@@ -170,6 +170,289 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
+  Widget _buildHeroBackground(Order order, bool isKedukaan, Color urgencyColor) {
+    if (isKedukaan) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background ambient dark solemn slate gradient
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF0F172A),
+                  Color(0xFF1E293B),
+                  Color(0xFF0F172A),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+          // Subtle golden halo glow behind portrait
+          Center(
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
+                    blurRadius: 40,
+                    spreadRadius: 10,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Centered Dignified Content
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 50, bottom: 20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Gold Ring Framed Portrait
+                  Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFD4AF37),
+                        width: 2.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: _buildDeceasedAvatarImage(order.attachmentUrl),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Nama Almarhum / Almarhumah
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      order.penerimaName,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  // Badges Row: Category + Urgency
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: const Text(
+                          'MISA KEDUKAAN',
+                          style: TextStyle(
+                            color: Color(0xFFFDE047),
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: urgencyColor,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          order.urgencyName.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Telah Meninggal: ${order.tanggalMeninggalLabel}',
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Default Non-Kedukaan (Perminyakan, etc.)
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          'assets/images/church_1.jpg',
+          fit: BoxFit.cover,
+        ),
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.black.withValues(alpha: 0.2),
+                Colors.black.withValues(alpha: 0.85),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
+        Positioned(
+          left: 20,
+          right: 20,
+          bottom: 24,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: urgencyColor.withValues(alpha: 0.85),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  order.urgencyName.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                order.penerimaName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.person_rounded,
+                      size: 14, color: Colors.white70),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${order.genderLabel.isNotEmpty ? order.genderLabel : 'Pria'} • ${order.usiaLabel.isNotEmpty ? order.usiaLabel : '-'}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeceasedAvatarImage(String? attachmentUrl) {
+    if (attachmentUrl != null && attachmentUrl.isNotEmpty) {
+      if (attachmentUrl.startsWith('data:image')) {
+        try {
+          final base64Content = attachmentUrl.split(',').last;
+          final bytes = base64Decode(base64Content);
+          return Image.memory(
+            bytes,
+            width: 90,
+            height: 90,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildDefaultAvatarIcon(),
+          );
+        } catch (e) {
+          return _buildDefaultAvatarIcon();
+        }
+      } else if (attachmentUrl.startsWith('http://') || attachmentUrl.startsWith('https://')) {
+        return Image.network(
+          attachmentUrl,
+          width: 90,
+          height: 90,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildDefaultAvatarIcon(),
+        );
+      } else if (attachmentUrl.startsWith('assets/')) {
+        return Image.asset(
+          attachmentUrl,
+          width: 90,
+          height: 90,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildDefaultAvatarIcon(),
+        );
+      } else {
+        final file = File(attachmentUrl);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            width: 90,
+            height: 90,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildDefaultAvatarIcon(),
+          );
+        }
+      }
+    }
+    return _buildDefaultAvatarIcon();
+  }
+
+  Widget _buildDefaultAvatarIcon() {
+    return Container(
+      color: const Color(0xFF334155),
+      child: const Center(
+        child: Icon(
+          Icons.person_rounded,
+          size: 48,
+          color: Color(0xFFCBD5E1),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final order = widget.order;
@@ -187,7 +470,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             slivers: [
               // ── 1. Hero Glassmorphism Header Bar ──
               SliverAppBar(
-                expandedHeight: 280.0,
+                expandedHeight: isKedukaan ? 310.0 : 280.0,
                 pinned: true,
                 backgroundColor: const Color(0xFF0F172A),
                 elevation: 0,
@@ -236,81 +519,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.asset(
-                        'assets/images/church_1.jpg',
-                        fit: BoxFit.cover,
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.black.withValues(alpha: 0.2),
-                              Colors.black.withValues(alpha: 0.85),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                        ),
-                      ),
-                      // Floating Glass Title Bar at bottom of Hero
-                      Positioned(
-                        left: 20,
-                        right: 20,
-                        bottom: 24,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: urgencyColor.withValues(alpha: 0.85),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                order.urgencyName.toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              order.penerimaName,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(Icons.person_rounded,
-                                    size: 14, color: Colors.white70),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${order.genderLabel.isNotEmpty ? order.genderLabel : 'Pria'} • ${order.usiaLabel.isNotEmpty ? order.usiaLabel : '-'}',
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                  background: _buildHeroBackground(order, isKedukaan, urgencyColor),
                 ),
               ),
 
