@@ -56,6 +56,7 @@ class Order {
   final String scheduledDate;
   final String locationName;
   final String pemohonName;
+  final String notes;
 
   Order({
     required this.id,
@@ -66,7 +67,51 @@ class Order {
     required this.scheduledDate,
     required this.locationName,
     required this.pemohonName,
+    this.notes = '',
   });
+
+  /// Parse "Nama Penerima" from notes string.
+  /// Notes format: "Nama Penerima: Bapak Antonius | Gender: Laki-laki | Usia: 72 tahun"
+  String get penerimaName {
+    if (notes.isEmpty) return pemohonName;
+    final parts = notes.split('|');
+    for (final part in parts) {
+      final trimmed = part.trim();
+      if (trimmed.toLowerCase().startsWith('nama penerima')) {
+        final split = trimmed.split(':');
+        if (split.length > 1) return split.sublist(1).join(':').trim();
+      }
+    }
+    return pemohonName;
+  }
+
+  /// Parse gender from notes
+  String get genderLabel {
+    if (notes.isEmpty) return '';
+    final parts = notes.split('|');
+    for (final part in parts) {
+      final trimmed = part.trim();
+      if (trimmed.toLowerCase().startsWith('gender')) {
+        final split = trimmed.split(':');
+        if (split.length > 1) return split.sublist(1).join(':').trim();
+      }
+    }
+    return '';
+  }
+
+  /// Parse usia from notes
+  String get usiaLabel {
+    if (notes.isEmpty) return '';
+    final parts = notes.split('|');
+    for (final part in parts) {
+      final trimmed = part.trim();
+      if (trimmed.toLowerCase().startsWith('usia')) {
+        final split = trimmed.split(':');
+        if (split.length > 1) return split.sublist(1).join(':').trim();
+      }
+    }
+    return '';
+  }
 
   factory Order.fromJson(Map<String, dynamic> json) {
     // Backend returns id as String ("2"), parse safely to int
@@ -74,7 +119,6 @@ class Order {
     final parsedId = rawId is int ? rawId : int.tryParse(rawId.toString()) ?? 0;
 
     // Backend returns scheduled_date as ISO datetime "2026-08-20T00:00:00.000Z"
-    // Format to readable "2026-08-20"
     String rawDate = json['scheduled_date'] ?? json['scheduledDate'] ?? '';
     if (rawDate.contains('T')) rawDate = rawDate.split('T').first;
 
@@ -87,6 +131,7 @@ class Order {
       scheduledDate: rawDate,
       locationName: json['location_name'] ?? json['locationName'] ?? '',
       pemohonName: json['pemohon_name'] ?? json['pemohonName'] ?? 'Umat',
+      notes: json['notes'] ?? '',
     );
   }
 }

@@ -46,8 +46,6 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
         widget.user['jabatanStartYear'] ?? widget.user['jabatan_start_year'];
     final int? endYear =
         widget.user['jabatanEndYear'] ?? widget.user['jabatan_end_year'];
-    final bool isJabatanActive =
-        widget.user['isJabatanActive'] ?? widget.user['is_jabatan_active'] ?? false;
     final String accountStatus =
         widget.user['accountStatus'] ?? widget.user['account_status'] ?? 'PENDING';
     final bool isApproved = accountStatus == 'APPROVED';
@@ -67,7 +65,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── 1. Top Header Bar (same as Romo) ──
+            // ── 1. Top Header Bar ──
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
               child: Row(
@@ -171,7 +169,6 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                   ),
                   Row(
                     children: [
-                      // Bell icon with badge
                       Stack(
                         clipBehavior: Clip.none,
                         children: [
@@ -204,7 +201,6 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                         ],
                       ),
                       const SizedBox(width: 4),
-                      // Mail icon with badge
                       Stack(
                         clipBehavior: Clip.none,
                         children: [
@@ -249,7 +245,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Cross Banner (same as Romo)
+                    // Cross Banner
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                       child: Container(
@@ -257,8 +253,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                           borderRadius: BorderRadius.circular(22),
                           boxShadow: [
                             BoxShadow(
-                              color:
-                                  const Color(0xFF1E5399).withOpacity(0.18),
+                              color: const Color(0xFF1E5399).withOpacity(0.18),
                               blurRadius: 24,
                               spreadRadius: 2,
                               offset: const Offset(0, 8),
@@ -283,7 +278,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                       ),
                     ),
 
-                    // ── 3. Spiritual Quote (same as Romo) ──
+                    // ── 3. Spiritual Quote ──
                     Padding(
                       padding: const EdgeInsets.fromLTRB(28, 16, 28, 20),
                       child: Column(
@@ -311,7 +306,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                       ),
                     ),
 
-                    // ── 4. Daftar Permintaan Pelayanan Section ──
+                    // ── 4. Daftar Permintaan Pelayanan ──
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
@@ -330,7 +325,6 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                               ),
                             ),
                           ),
-                          // Umat-only: Buat Permintaan button (instead of Lihat Lainnya)
                           ElevatedButton(
                             onPressed: () async {
                               await Navigator.push(
@@ -371,9 +365,9 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
 
                     const SizedBox(height: 14),
 
-                    // Horizontal Cards (from real API orders)
+                    // Horizontal Cards
                     SizedBox(
-                      height: 230,
+                      height: 250,
                       child: widget.orders.isEmpty
                           ? Padding(
                               padding:
@@ -405,35 +399,21 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                               itemBuilder: (context, index) {
                                 final order = widget.orders[index];
                                 return Padding(
-                                  padding:
-                                      const EdgeInsets.only(right: 14),
-                                  child: _buildServiceCard(
-                                    statusBadge:
-                                        _statusLabel(order.status),
-                                    isConfirmed:
-                                        order.status.toUpperCase() ==
-                                            'ACCEPTED',
-                                    location: order.locationName,
-                                    dateTime: order.scheduledDate,
-                                    category: order.categoryName,
-                                    priorityLabel: order.urgencyName,
-                                    priorityColor:
-                                        _urgencyColor(order.urgencyName),
-                                    priorityIcon:
-                                        _urgencyIcon(order.urgencyName),
-                                    onTapChat: () {
+                                  padding: const EdgeInsets.only(right: 14),
+                                  child: GestureDetector(
+                                    onTap: () {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) => ChatScreen(
                                             groupId: order.id,
-                                            orderNumber:
-                                                order.orderNumber,
+                                            orderNumber: order.orderNumber,
                                             userName: userName,
                                           ),
                                         ),
                                       );
                                     },
+                                    child: _buildServiceCard(order),
                                   ),
                                 );
                               },
@@ -513,8 +493,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                     backgroundColor: Color(0xFF1E5399),
                     child: Icon(Icons.person, color: Colors.white)),
                 title: Text(userName,
-                    style:
-                        const TextStyle(fontWeight: FontWeight.bold)),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text(phone),
               ),
               const Divider(height: 24),
@@ -527,7 +506,8 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => CreatePerminyakanScreen(userId: _userId)),
+                        builder: (_) =>
+                            CreatePerminyakanScreen(userId: _userId)),
                   );
                   widget.onRefresh();
                 },
@@ -565,11 +545,9 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
   String _statusLabel(String status) {
     switch (status.toUpperCase()) {
       case 'ACCEPTED':
-        return 'Kehadiran Dikonfirmasi';
+        return 'Dikonfirmasi';
       case 'PENDING':
-        return 'Menunggu Konfirmasi Kehadiran';
-      case 'UBAH_WAKTU':
-        return 'Ubah Waktu Diajukan';
+        return 'Menunggu';
       case 'REJECTED':
         return 'Ditolak';
       default:
@@ -579,235 +557,261 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
 
   Color _urgencyColor(String urgency) {
     final u = urgency.toLowerCase();
-    if (u.contains('sangat') || u.contains('segera')) return Colors.red.shade700;
-    if (u.contains('penting')) return Colors.amber.shade800;
-    return Colors.blue.shade700;
+    if (u.contains('darurat') || u.contains('kritis')) return Colors.red.shade700;
+    if (u.contains('penting')) return Colors.amber.shade700;
+    return Colors.blue.shade600;
   }
 
-  IconData _urgencyIcon(String urgency) {
-    final u = urgency.toLowerCase();
-    if (u.contains('sangat') || u.contains('segera')) {
-      return Icons.error_outline_rounded;
+  // ── Redesigned Service Card ──
+  Widget _buildServiceCard(Order order) {
+    final isConfirmed = order.status.toUpperCase() == 'ACCEPTED';
+    final urgencyColor = _urgencyColor(order.urgencyName);
+    final statusLabel = _statusLabel(order.status);
+
+    Color accentColor;
+    if (order.status.toUpperCase() == 'ACCEPTED') {
+      accentColor = Colors.teal;
+    } else if (order.status.toUpperCase() == 'REJECTED') {
+      accentColor = Colors.red.shade700;
+    } else {
+      accentColor = const Color(0xFF1E5399);
     }
-    if (u.contains('penting')) return Icons.error_outline_rounded;
-    return Icons.info_outline_rounded;
-  }
 
-  Widget _buildServiceCard({
-    required String statusBadge,
-    required bool isConfirmed,
-    required String location,
-    required String dateTime,
-    required String category,
-    required String priorityLabel,
-    required Color priorityColor,
-    required IconData priorityIcon,
-    required VoidCallback onTapChat,
-  }) {
-    return GestureDetector(
-      onTap: onTapChat,
-      child: Container(
-        width: 230,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.07),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image Stack with Gradient & Badges
-              SizedBox(
-                height: 135,
-                child: Stack(
-                  children: [
-                    // Church Background Image
-                    Positioned.fill(
-                      child: Image.asset(
-                        'assets/images/church_1.jpg',
-                        fit: BoxFit.cover,
-                      ),
+    return Container(
+      width: 230,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(0.13),
+            blurRadius: 18,
+            spreadRadius: 1,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Image Header ──
+            SizedBox(
+              height: 118,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Image.asset(
+                      'assets/images/church_1.jpg',
+                      fit: BoxFit.cover,
                     ),
-                    // Dark Gradient Overlay
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.black.withOpacity(0.0),
-                              Colors.black.withOpacity(0.75),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Top Left Status Badge
-                    Positioned(
-                      top: 10,
-                      left: 10,
-                      right: 44,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                statusBadge,
-                                style: const TextStyle(
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF1E293B),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              isConfirmed
-                                  ? Icons.check_box_rounded
-                                  : Icons.hourglass_bottom_rounded,
-                              size: 14,
-                              color: isConfirmed
-                                  ? Colors.teal
-                                  : Colors.amber.shade800,
-                            ),
+                  ),
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.black.withOpacity(0.0),
+                            Colors.black.withOpacity(0.75),
                           ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
                         ),
                       ),
                     ),
-                    // Top Right User Avatar Badge
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: Container(
-                        width: 26,
-                        height: 26,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          isConfirmed
-                              ? Icons.person_rounded
-                              : Icons.person_outline_rounded,
-                          size: 16,
-                          color: isConfirmed
-                              ? Colors.teal
-                              : Colors.amber.shade800,
-                        ),
+                  ),
+                  // Status pill (top-left)
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: accentColor,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                    ),
-                    // Bottom Text Overlay
-                    Positioned(
-                      bottom: 8,
-                      left: 10,
-                      right: 10,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on_outlined,
-                                  color: Colors.white, size: 12),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  location,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                          Icon(
+                            isConfirmed
+                                ? Icons.check_circle_rounded
+                                : Icons.hourglass_bottom_rounded,
+                            color: Colors.white,
+                            size: 10,
                           ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              const Icon(Icons.calendar_today_outlined,
-                                  color: Colors.white70, size: 11),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  dateTime,
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                          const SizedBox(width: 4),
+                          Text(
+                            statusLabel,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-
-              // Bottom White Area: Category & Priority
-              Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      category,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1E293B),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
+                  ),
+                  // Order number + location (bottom)
+                  Positioned(
+                    bottom: 8,
+                    left: 10,
+                    right: 10,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(priorityIcon, size: 14, color: priorityColor),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            priorityLabel,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: priorityColor,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                        Text(
+                          order.orderNumber,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 9,
+                            letterSpacing: 0.4,
                           ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on_rounded,
+                                color: Colors.white70, size: 11),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                order.locationName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+
+            // ── Urgency accent strip ──
+            Container(height: 3, color: urgencyColor),
+
+            // ── Card body ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Category badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E5399).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      order.categoryName,
+                      style: const TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1E5399),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  // Nama penerima — main title
+                  Text(
+                    order.penerimaName,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 5),
+                  // Gender + Usia
+                  if (order.genderLabel.isNotEmpty || order.usiaLabel.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 5),
+                      child: Row(
+                        children: [
+                          if (order.genderLabel.isNotEmpty) ...[
+                            const Icon(Icons.person_outline_rounded,
+                                size: 12, color: Color(0xFF64748B)),
+                            const SizedBox(width: 3),
+                            Text(
+                              order.genderLabel,
+                              style: const TextStyle(
+                                  fontSize: 10.5, color: Color(0xFF64748B)),
+                            ),
+                          ],
+                          if (order.genderLabel.isNotEmpty &&
+                              order.usiaLabel.isNotEmpty)
+                            const SizedBox(width: 8),
+                          if (order.usiaLabel.isNotEmpty) ...[
+                            const Icon(Icons.cake_outlined,
+                                size: 12, color: Color(0xFF64748B)),
+                            const SizedBox(width: 3),
+                            Text(
+                              order.usiaLabel,
+                              style: const TextStyle(
+                                  fontSize: 10.5, color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  // Date + urgency pill
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today_outlined,
+                          size: 11, color: Color(0xFF94A3B8)),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          order.scheduledDate,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            color: Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: urgencyColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Text(
+                          order.urgencyName,
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: urgencyColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
