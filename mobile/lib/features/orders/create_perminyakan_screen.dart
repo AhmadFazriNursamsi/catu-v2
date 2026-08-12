@@ -30,6 +30,16 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   String? _jamMulai;
   String? _jamSelesai;
 
+  // Hierarchy Toggle & Master Data
+  bool _isSameParish = true;
+  int? _selectedKeuskupanId;
+  int? _selectedParokiId;
+  int? _selectedWilayahId;
+
+  List<Map<String, dynamic>> _keuskupanList = [];
+  List<Map<String, dynamic>> _parokiList = [];
+  List<Map<String, dynamic>> _wilayahList = [];
+
   bool _isLoading = false;
 
   static const _urgensiOptions = [
@@ -40,8 +50,6 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
 
   static const _genderOptions = ['Laki-laki', 'Perempuan'];
 
-
-
   @override
   void initState() {
     super.initState();
@@ -51,6 +59,51 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     _jamMulai = '$hh:$mm';
     final endHour = (now.hour + 2) % 24;
     _jamSelesai = '${endHour.toString().padLeft(2, '0')}:$mm';
+
+    _loadMasterData();
+  }
+
+  Future<void> _loadMasterData() async {
+    final kList = await ApiService.getKeuskupanList();
+    if (mounted) {
+      setState(() {
+        _keuskupanList = kList;
+      });
+    }
+  }
+
+  Future<void> _onKeuskupanChanged(int? keuskupanId) async {
+    setState(() {
+      _selectedKeuskupanId = keuskupanId;
+      _selectedParokiId = null;
+      _selectedWilayahId = null;
+      _parokiList = [];
+      _wilayahList = [];
+    });
+    if (keuskupanId != null) {
+      final pList = await ApiService.getParokiList(keuskupanId: keuskupanId);
+      if (mounted) {
+        setState(() {
+          _parokiList = pList;
+        });
+      }
+    }
+  }
+
+  Future<void> _onParokiChanged(int? parokiId) async {
+    setState(() {
+      _selectedParokiId = parokiId;
+      _selectedWilayahId = null;
+      _wilayahList = [];
+    });
+    if (parokiId != null) {
+      final wList = await ApiService.getWilayahList(parokiId: parokiId);
+      if (mounted) {
+        setState(() {
+          _wilayahList = wList;
+        });
+      }
+    }
   }
 
   @override
@@ -150,6 +203,13 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       return;
     }
 
+    if (!_isSameParish) {
+      if (_selectedKeuskupanId == null || _selectedParokiId == null) {
+        _showError('Pilih Keuskupan dan Paroki tujuan penerima sakramen.');
+        return;
+      }
+    }
+
     setState(() => _isLoading = true);
 
     final parts = _tanggalController.text.split('/');
@@ -176,6 +236,9 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       addressDetail: _alamatController.text,
       notes: notes,
       userId: widget.userId,
+      keuskupanId: _isSameParish ? null : _selectedKeuskupanId,
+      parokiId: _isSameParish ? null : _selectedParokiId,
+      wilayahId: _isSameParish ? null : _selectedWilayahId,
     );
 
     setState(() => _isLoading = false);
@@ -326,6 +389,170 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                             ),
                           ],
                         ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ── Card 1b: Alamat & Paroki Penerima Sakramen (Toggle & Hierarchy) ──
+                    _buildFormCard(
+                      title: 'Alamat Paroki Penerima Sakramen',
+                      icon: Icons.church_rounded,
+                      iconColor: const Color(0xFF1E5399),
+                      children: [
+                        // Toggle Row
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Paroki yang sama',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      'Aktifkan jika penerima sakramen berada di Keuskupan & Paroki domisili Anda',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFF64748B),
+                                        height: 1.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch.adaptive(
+                                value: _isSameParish,
+                                activeColor: const Color(0xFF1E5399),
+                                onChanged: (val) {
+                                  setState(() {
+                                    _isSameParish = val;
+                                    if (val) {
+                                      _selectedKeuskupanId = null;
+                                      _selectedParokiId = null;
+                                      _selectedWilayahId = null;
+                                    }
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        if (_isSameParish) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E5399).withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFF1E5399).withOpacity(0.2),
+                              ),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.check_circle_outline_rounded,
+                                    size: 16, color: Color(0xFF1E5399)),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Pelayanan akan diproses oleh Paroki domisili Anda.',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1E5399),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ] else ...[
+                          const SizedBox(height: 14),
+                          // Dropdown Keuskupan
+                          _buildDropdownField<int>(
+                            value: _selectedKeuskupanId,
+                            label: 'Pilih Keuskupan Tujuan',
+                            hint: 'Pilih Keuskupan',
+                            prefixIcon: Icons.account_balance_rounded,
+                            items: _keuskupanList
+                                .map((e) => e['id'] as int)
+                                .toList(),
+                            itemLabel: (id) {
+                              final found = _keuskupanList.firstWhere(
+                                (e) => e['id'] == id,
+                                orElse: () => {'name': ''},
+                              );
+                              return found['name'] ?? '';
+                            },
+                            onChanged: _onKeuskupanChanged,
+                            validator: (v) => !_isSameParish && v == null
+                                ? 'Keuskupan wajib dipilih'
+                                : null,
+                          ),
+                          const SizedBox(height: 14),
+                          // Dropdown Paroki
+                          _buildDropdownField<int>(
+                            value: _selectedParokiId,
+                            label: 'Pilih Paroki Tujuan',
+                            hint: _selectedKeuskupanId == null
+                                ? 'Pilih Keuskupan Terlebih Dahulu'
+                                : 'Pilih Paroki',
+                            prefixIcon: Icons.church_outlined,
+                            items: _parokiList
+                                .map((e) => e['id'] as int)
+                                .toList(),
+                            itemLabel: (id) {
+                              final found = _parokiList.firstWhere(
+                                (e) => e['id'] == id,
+                                orElse: () => {'name': ''},
+                              );
+                              return found['name'] ?? '';
+                            },
+                            onChanged: _onParokiChanged,
+                            validator: (v) => !_isSameParish && v == null
+                                ? 'Paroki wajib dipilih'
+                                : null,
+                          ),
+                          if (_wilayahList.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            _buildDropdownField<int>(
+                              value: _selectedWilayahId,
+                              label: 'Pilih Wilayah (Opsional)',
+                              hint: 'Pilih Wilayah',
+                              prefixIcon: Icons.map_outlined,
+                              items: _wilayahList
+                                  .map((e) => e['id'] as int)
+                                  .toList(),
+                              itemLabel: (id) {
+                                final found = _wilayahList.firstWhere(
+                                  (e) => e['id'] == id,
+                                  orElse: () => {'name': ''},
+                                );
+                                return found['name'] ?? '';
+                              },
+                              onChanged: (v) =>
+                                  setState(() => _selectedWilayahId = v),
+                            ),
+                          ],
+                        ],
                       ],
                     ),
 

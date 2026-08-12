@@ -239,6 +239,11 @@ class ApiService {
     String? notes,
     List<OrderItem>? items,
     int? userId,
+    int? keuskupanId,
+    int? parokiId,
+    int? wilayahId,
+    int? lingkunganId,
+    int? kabupatenKotaId,
   }) async {
     try {
       final body = {
@@ -250,6 +255,11 @@ class ApiService {
         'addressDetail': addressDetail,
         'notes': notes ?? '',
         if (userId != null) 'userId': userId,
+        if (keuskupanId != null) 'keuskupanId': keuskupanId,
+        if (parokiId != null) 'parokiId': parokiId,
+        if (wilayahId != null) 'wilayahId': wilayahId,
+        if (lingkunganId != null) 'lingkunganId': lingkunganId,
+        if (kabupatenKotaId != null) 'kabupatenKotaId': kabupatenKotaId,
         if (items != null && items.isNotEmpty)
           'items': items.map((i) => i.toJson()).toList(),
       };

@@ -55,10 +55,40 @@ export class CreateOrderDto {
   @IsNotEmpty()
   locationName: string;
 
-  @ApiProperty({ example: 'Jl. Ahmad Yani No. 45, Jakarta', description: 'Alamat detail' })
+  @ApiPropertyOptional({ example: 'Jl. Ahmad Yani No. 45, Jakarta', description: 'Alamat detail' })
   @IsString()
   @IsNotEmpty()
   addressDetail: string;
+
+  @ApiPropertyOptional({ example: 1, description: 'ID Keuskupan (jika beda paroki)' })
+  @IsNumber()
+  @IsInt()
+  @IsOptional()
+  keuskupanId?: number;
+
+  @ApiPropertyOptional({ example: 10, description: 'ID Paroki (jika beda paroki)' })
+  @IsNumber()
+  @IsInt()
+  @IsOptional()
+  parokiId?: number;
+
+  @ApiPropertyOptional({ example: 101, description: 'ID Wilayah' })
+  @IsNumber()
+  @IsInt()
+  @IsOptional()
+  wilayahId?: number;
+
+  @ApiPropertyOptional({ example: 1001, description: 'ID Lingkungan' })
+  @IsNumber()
+  @IsInt()
+  @IsOptional()
+  lingkunganId?: number;
+
+  @ApiPropertyOptional({ example: 3175, description: 'ID Kabupaten/Kota' })
+  @IsNumber()
+  @IsInt()
+  @IsOptional()
+  kabupatenKotaId?: number;
 
   @ApiPropertyOptional({ example: 'Mohon membawa peralatan minyak suci', description: 'Catatan tambahan' })
   @IsString()

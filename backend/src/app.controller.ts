@@ -757,17 +757,48 @@ export class OrdersController {
   })
   async createOrder(@Body() dto: CreateOrderDto) {
     const orderNum = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
-    // Use userId from DTO, fallback to 1 if not provided
     const userId = dto.userId && dto.userId > 0 ? dto.userId : 1;
+
+    // Fetch user profile default hierarchy if DTO doesn't specify custom location hierarchy
+    let kId = dto.keuskupanId;
+    let pId = dto.parokiId;
+    let wId = dto.wilayahId;
+    let lId = dto.lingkunganId;
+    let kabId = dto.kabupatenKotaId;
+
+    if (!kId || !pId) {
+      const prof = await this.dataSource.query(
+        `SELECT keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id FROM user_profiles WHERE user_id = $1`,
+        [userId],
+      );
+      if (prof.length > 0) {
+        kId = kId || prof[0].keuskupan_id || 1;
+        pId = pId || prof[0].paroki_id || 10;
+        wId = wId || prof[0].wilayah_id || 101;
+        lId = lId || prof[0].lingkungan_id || 1001;
+        kabId = kabId || prof[0].kabupaten_kota_id || 3175;
+      } else {
+        kId = kId || 1;
+        pId = pId || 10;
+        wId = wId || 101;
+        lId = lId || 1001;
+        kabId = kabId || 3175;
+      }
+    }
 
     const orderResult = await this.dataSource.query(
       `INSERT INTO orders (order_number, user_id, service_category_id, urgency_level_id, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, status, scheduled_date, scheduled_time, location_name, address_detail, notes)
-       VALUES ($1, $2, $3, $4, 1, 10, 101, 1001, 3175, 'PENDING', $5, $6, $7, $8, $9) RETURNING id, order_number, status, created_at`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'PENDING', $10, $11, $12, $13, $14) RETURNING id, order_number, status, created_at`,
       [
         orderNum,
         userId,
         dto.serviceCategoryId,
         dto.urgencyLevelId,
+        kId,
+        pId,
+        wId || null,
+        lId || null,
+        kabId || null,
         dto.scheduledDate,
         dto.scheduledTime,
         dto.locationName,
