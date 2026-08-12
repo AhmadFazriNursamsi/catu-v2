@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsDateString, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateOrderItemDto {
@@ -27,9 +27,13 @@ export class CreateOrderItemDto {
 
 export class CreateOrderDto {
   @ApiProperty({ example: 1, description: 'ID Kategori Pelayanan (1: Perminyakan, 2: Misa Kedukaan, dll)' })
+  @IsNumber()
+  @IsInt()
   serviceCategoryId: number;
 
   @ApiProperty({ example: 3, description: 'ID Tingkat Urgensi (1: Biasa, 2: Penting, 3: Darurat/Kritis)' })
+  @IsNumber()
+  @IsInt()
   urgencyLevelId: number;
 
   @ApiProperty({ example: '2026-08-15', description: 'Tanggal utama pelayanan' })
