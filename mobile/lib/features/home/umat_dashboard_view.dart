@@ -331,7 +331,9 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (_) =>
-                                        CreatePerminyakanScreen(userId: _userId)),
+                                        CreatePerminyakanScreen(
+                                            userId: _userId,
+                                            user: widget.user)),
                               );
                               widget.onRefresh();
                             },
@@ -506,8 +508,8 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) =>
-                            CreatePerminyakanScreen(userId: _userId)),
+                        builder: (_) => CreatePerminyakanScreen(
+                            userId: _userId, user: widget.user)),
                   );
                   widget.onRefresh();
                 },

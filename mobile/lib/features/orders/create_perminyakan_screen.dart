@@ -7,7 +7,8 @@ import '../../core/services/api_service.dart';
 
 class CreatePerminyakanScreen extends StatefulWidget {
   final int? userId;
-  const CreatePerminyakanScreen({super.key, this.userId});
+  final Map<String, dynamic>? user;
+  const CreatePerminyakanScreen({super.key, this.userId, this.user});
 
   @override
   State<CreatePerminyakanScreen> createState() =>
@@ -78,12 +79,31 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
         _provinsiList = provList;
         _kabupatenKotaList = kabList;
 
-        if (_keuskupanList.isNotEmpty) _selectedKeuskupanId = _keuskupanList.first['id'];
-        if (_parokiList.isNotEmpty) _selectedParokiId = _parokiList.first['id'];
-        if (_provinsiList.isNotEmpty) _selectedProvinsiId = _provinsiList.first['id'];
-        if (_kabupatenKotaList.isNotEmpty) _selectedKabupatenKotaId = _kabupatenKotaList.first['id'];
+        if (_isSameParish) {
+          _applyProfileLocation();
+        }
       });
     }
+  }
+
+  void _applyProfileLocation() {
+    if (widget.user != null) {
+      final u = widget.user!;
+      final rawK = u['keuskupanId'] ?? u['keuskupan_id'];
+      final rawP = u['parokiId'] ?? u['paroki_id'];
+      final rawProv = u['provinsiId'] ?? u['provinsi_id'];
+      final rawKab = u['kabupatenKotaId'] ?? u['kabupaten_kota_id'];
+
+      if (rawK != null) _selectedKeuskupanId = int.tryParse(rawK.toString());
+      if (rawP != null) _selectedParokiId = int.tryParse(rawP.toString());
+      if (rawProv != null) _selectedProvinsiId = int.tryParse(rawProv.toString());
+      if (rawKab != null) _selectedKabupatenKotaId = int.tryParse(rawKab.toString());
+    }
+
+    _selectedKeuskupanId ??= _keuskupanList.isNotEmpty ? _keuskupanList.first['id'] : 1;
+    _selectedParokiId ??= _parokiList.isNotEmpty ? _parokiList.first['id'] : 10;
+    _selectedProvinsiId ??= _provinsiList.isNotEmpty ? _provinsiList.first['id'] : 31;
+    _selectedKabupatenKotaId ??= _kabupatenKotaList.isNotEmpty ? _kabupatenKotaList.first['id'] : 3175;
   }
 
   Future<void> _onKeuskupanChanged(int? keuskupanId) async {
@@ -605,6 +625,9 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                                 onChanged: (val) {
                                   setState(() {
                                     _isSameParish = val;
+                                    if (val) {
+                                      _applyProfileLocation();
+                                    }
                                   });
                                 },
                               ),
