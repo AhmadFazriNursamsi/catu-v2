@@ -110,12 +110,17 @@ export class LoginDto {
 
 export class ApproveUserDto {
   @ApiProperty({ example: 10, description: 'ID User pendaftar yang akan di-approve' })
+  @IsNotEmpty()
   targetUserId: number;
 
   @ApiProperty({ example: 'APPROVED', enum: ['APPROVED', 'REJECTED'] })
+  @IsString()
+  @IsNotEmpty()
   action: 'APPROVED' | 'REJECTED';
 
   @ApiPropertyOptional({ example: 'Data domisili telah terverifikasi', description: 'Catatan / Alasan keputusan' })
+  @IsString()
+  @IsOptional()
   rejectionReason?: string;
 }
 

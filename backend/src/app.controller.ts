@@ -10,6 +10,7 @@ import {
   RegisterResponseDto,
   LoginResponseDto,
   ApproveUserResponseDto,
+  RoleCodeEnum,
 } from './auth.dto';
 import { CreateOrderDto, RespondOrderAssignmentDto, SendChatMessageDto } from './orders.dto';
 
@@ -27,6 +28,15 @@ export class AuthController implements OnModuleInit {
         ADD COLUMN IF NOT EXISTS jabatan_start_date VARCHAR(20),
         ADD COLUMN IF NOT EXISTS jabatan_end_date VARCHAR(20),
         ADD COLUMN IF NOT EXISTS is_jabatan_active BOOLEAN DEFAULT FALSE;
+
+        -- Cleanup existing non-Romo profiles so romo_position is NULL
+        UPDATE user_profiles 
+        SET romo_position = NULL 
+        WHERE user_id IN (
+          SELECT u.id FROM auth_users u 
+          JOIN roles r ON u.role_id = r.id 
+          WHERE r.code NOT LIKE 'ROMO%'
+        );
       `);
     } catch (e) {
       console.log('Auto-migration user_profiles notice:', e);
@@ -88,8 +98,12 @@ export class AuthController implements OnModuleInit {
       // Hash password dengan Bcrypt salt 10
       const hashedPassword = await bcrypt.hash(dto.password, 10);
 
+      // Romo Position only applies to Romo roles (ROMO_PAROKI / ROMO_ORDO)
+      const isRomo = dto.roleCode === RoleCodeEnum.ROMO_PAROKI || dto.roleCode === RoleCodeEnum.ROMO_ORDO || (dto.roleCode as string).startsWith('ROMO');
+      const romoPositionVal = isRomo ? (dto.romoPosition || 'ROMO_BIASA') : null;
+
       // Flag Jabatan default is FALSE (Pending Admin Approval) for leadership positions
-      const isLeadershipPos = dto.pengurusPosition || dto.romoPosition === 'KETUA_ROMO';
+      const isLeadershipPos = dto.pengurusPosition || (isRomo && dto.romoPosition === 'KETUA_ROMO');
       const initialActiveFlag = isLeadershipPos ? false : (dto.isJabatanActive !== undefined ? dto.isJabatanActive : true);
 
       // Extract years from dates if missing
@@ -126,7 +140,7 @@ export class AuthController implements OnModuleInit {
           dto.lingkunganId || 1001,
           dto.kabupatenKotaId || 3175,
           dto.pengurusPosition || null,
-          dto.romoPosition || 'ROMO_BIASA',
+          romoPositionVal,
           startYear || null,
           endYear || null,
           dto.jabatanStartDate || null,
@@ -154,7 +168,7 @@ export class AuthController implements OnModuleInit {
           lingkunganName: 'Lingkungan St. Agnes 1',
           kabupatenKotaName: 'JAKARTA TIMUR',
           pengurusPosition: dto.pengurusPosition,
-          romoPosition: dto.romoPosition,
+          romoPosition: romoPositionVal,
           jabatanStartYear: startYear,
           jabatanEndYear: endYear,
           jabatanStartDate: dto.jabatanStartDate,
