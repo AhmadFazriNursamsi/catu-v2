@@ -384,21 +384,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Sesi #${index + 1}',
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF475569),
-                  ),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -660,9 +645,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           child: Divider(height: 1, color: Color(0xFFF1F5F9)),
                         ),
 
-                        // ── Detail Sesi Misa (Masing-masing Card adalah Title Misa) ──
+                        // ── Detail Misa Kedukaan (Masing-masing Card adalah Title Misa) ──
                         _buildSectionHeader(
-                          title: 'Rincian Sesi Misa Kedukaan',
+                          title: 'Rincian Pelayanan Misa Kedukaan',
                           icon: Icons.church_outlined,
                         ),
                         const SizedBox(height: 14),
