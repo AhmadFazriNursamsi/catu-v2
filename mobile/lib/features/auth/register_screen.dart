@@ -23,6 +23,12 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   String _selectedRomoOrdoPosition = 'ROMO_BIASA';
   String _selectedRomoParokiPosition = 'ROMO_BIASA';
 
+  String _selectedKeuskupan = 'Keuskupan Agung Jakarta';
+  String _selectedParoki = 'Paroki Santo Antonius Padua - Otista';
+  String _selectedWilayah = 'Wilayah St. Agustinus';
+  String _selectedLingkungan = 'Lingkungan St. Agnes 1';
+  String _selectedOrdo = 'SJ - Serikat Yesus';
+
   final _startDateController = TextEditingController(text: '01/01/${DateTime.now().year}');
   final _endDateController = TextEditingController(text: '31/12/${DateTime.now().year + 3}');
 
@@ -254,6 +260,161 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         ],
       ),
     );
+  }
+
+  Widget _buildHierarchyDropdowns() {
+    if (_selectedRole == 'UMAT' || _selectedRole == 'PENGURUS_LINGKUNGAN' || _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 12),
+          // 1. Keuskupan
+          DropdownButtonFormField<String>(
+            value: _selectedKeuskupan,
+            decoration: _fieldDeco(label: 'Keuskupan', icon: Icons.account_balance_outlined),
+            dropdownColor: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            isExpanded: true,
+            items: const [
+              DropdownMenuItem(value: 'Keuskupan Agung Jakarta', child: Text('Keuskupan Agung Jakarta', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Keuskupan Agung Semarang', child: Text('Keuskupan Agung Semarang', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Keuskupan Agung Medan', child: Text('Keuskupan Agung Medan', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Keuskupan Agung Makassar', child: Text('Keuskupan Agung Makassar', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Keuskupan Bandung', child: Text('Keuskupan Bandung', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Keuskupan Bogor', child: Text('Keuskupan Bogor', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Keuskupan Surabaya', child: Text('Keuskupan Surabaya', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Keuskupan Malang', child: Text('Keuskupan Malang', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Keuskupan Denpasar', child: Text('Keuskupan Denpasar', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: (val) { if (val != null) setState(() => _selectedKeuskupan = val); },
+          ),
+          const SizedBox(height: 12),
+
+          // 2. Paroki
+          DropdownButtonFormField<String>(
+            value: _selectedParoki,
+            decoration: _fieldDeco(label: 'Paroki', icon: Icons.church_outlined),
+            dropdownColor: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            isExpanded: true,
+            items: const [
+              DropdownMenuItem(value: 'Paroki Santo Antonius Padua - Otista', child: Text('Paroki Santo Antonius Padua - Otista', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Paroki Katedral Jakarta', child: Text('Paroki Katedral Jakarta', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Paroki Santo Joseph - Matraman', child: Text('Paroki Santo Joseph - Matraman', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Paroki Santa Monika - BSD', child: Text('Paroki Santa Monika - BSD', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Paroki Santo Laurensius - Alam Sutera', child: Text('Paroki Santo Laurensius - Alam Sutera', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Paroki Santo Yakobus - Kelapa Gading', child: Text('Paroki Santo Yakobus - Kelapa Gading', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: (val) { if (val != null) setState(() => _selectedParoki = val); },
+          ),
+          const SizedBox(height: 12),
+
+          // 3. Wilayah
+          DropdownButtonFormField<String>(
+            value: _selectedWilayah,
+            decoration: _fieldDeco(label: 'Wilayah', icon: Icons.map_outlined),
+            dropdownColor: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            isExpanded: true,
+            items: const [
+              DropdownMenuItem(value: 'Wilayah St. Agustinus', child: Text('Wilayah St. Agustinus', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Wilayah St. Ignatius Loyola', child: Text('Wilayah St. Ignatius Loyola', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Wilayah St. Franciscus Xaverius', child: Text('Wilayah St. Franciscus Xaverius', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Wilayah St. Theresia', child: Text('Wilayah St. Theresia', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: (val) { if (val != null) setState(() => _selectedWilayah = val); },
+          ),
+          const SizedBox(height: 12),
+
+          // 4. Lingkungan
+          DropdownButtonFormField<String>(
+            value: _selectedLingkungan,
+            decoration: _fieldDeco(label: 'Lingkungan', icon: Icons.home_work_outlined),
+            dropdownColor: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            isExpanded: true,
+            items: const [
+              DropdownMenuItem(value: 'Lingkungan St. Agnes 1', child: Text('Lingkungan St. Agnes 1', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Lingkungan St. Agnes 2', child: Text('Lingkungan St. Agnes 2', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Lingkungan St. Bernadette', child: Text('Lingkungan St. Bernadette', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Lingkungan St. Cecilia', child: Text('Lingkungan St. Cecilia', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: (val) { if (val != null) setState(() => _selectedLingkungan = val); },
+          ),
+          const SizedBox(height: 12),
+        ],
+      );
+    } else if (_selectedRole == 'ROMO_PAROKI') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 12),
+          // 1. Keuskupan
+          DropdownButtonFormField<String>(
+            value: _selectedKeuskupan,
+            decoration: _fieldDeco(label: 'Keuskupan', icon: Icons.account_balance_outlined),
+            dropdownColor: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            isExpanded: true,
+            items: const [
+              DropdownMenuItem(value: 'Keuskupan Agung Jakarta', child: Text('Keuskupan Agung Jakarta', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Keuskupan Agung Semarang', child: Text('Keuskupan Agung Semarang', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Keuskupan Agung Medan', child: Text('Keuskupan Agung Medan', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Keuskupan Bandung', child: Text('Keuskupan Bandung', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Keuskupan Bogor', child: Text('Keuskupan Bogor', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Keuskupan Surabaya', child: Text('Keuskupan Surabaya', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: (val) { if (val != null) setState(() => _selectedKeuskupan = val); },
+          ),
+          const SizedBox(height: 12),
+
+          // 2. Paroki
+          DropdownButtonFormField<String>(
+            value: _selectedParoki,
+            decoration: _fieldDeco(label: 'Paroki', icon: Icons.church_outlined),
+            dropdownColor: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            isExpanded: true,
+            items: const [
+              DropdownMenuItem(value: 'Paroki Santo Antonius Padua - Otista', child: Text('Paroki Santo Antonius Padua - Otista', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Paroki Katedral Jakarta', child: Text('Paroki Katedral Jakarta', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Paroki Santo Joseph - Matraman', child: Text('Paroki Santo Joseph - Matraman', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'Paroki Santa Monika - BSD', child: Text('Paroki Santa Monika - BSD', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: (val) { if (val != null) setState(() => _selectedParoki = val); },
+          ),
+          const SizedBox(height: 12),
+        ],
+      );
+    } else if (_selectedRole == 'ROMO_ORDO') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 12),
+          // 1. Ordo
+          DropdownButtonFormField<String>(
+            value: _selectedOrdo,
+            decoration: _fieldDeco(label: 'Ordo / Kongregasi', icon: Icons.workspace_premium_outlined),
+            dropdownColor: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            isExpanded: true,
+            items: const [
+              DropdownMenuItem(value: 'SJ - Serikat Yesus', child: Text('SJ - Serikat Yesus (Jesuit)', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'OFM - Ordo Fratrum Minorum', child: Text('OFM - Fransiskan', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'OFM Cap - Fransiskan Kapusin', child: Text('OFM Cap - Fransiskan Kapusin', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'MSF - Misionaris Keluarga Kudus', child: Text('MSF - Misionaris Keluarga Kudus', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'SVD - Serikat Sabda Allah', child: Text('SVD - Serikat Sabda Allah', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'CSsR - Redemptoris', child: Text('CSsR - Kongregasi Sang Penebus', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'O.Carm - Ordo Karmel', child: Text('O.Carm - Ordo Karmel', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: 'SCJ - Dehonian', child: Text('SCJ - Hati Kudus Yesus', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: (val) { if (val != null) setState(() => _selectedOrdo = val); },
+          ),
+          const SizedBox(height: 12),
+        ],
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   Widget _buildPositionDropdown() {
@@ -754,6 +915,9 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                                               }).toList(),
                                             ),
                                             const SizedBox(height: 14),
+
+                                            // Dropdown Hirarki Kondisional (Keuskupan/Paroki/Wilayah/Lingkungan atau Ordo)
+                                            _buildHierarchyDropdowns(),
 
                                             // Jabatan kondisional
                                             _buildPositionDropdown(),
