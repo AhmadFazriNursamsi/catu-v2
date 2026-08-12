@@ -101,24 +101,82 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   List<Map<String, dynamic>> _lingkunganList = [];
   List<Map<String, dynamic>> _ordoList = [];
 
+  int? _selectedKeuskupanId;
+  int? _selectedParokiId;
+  int? _selectedWilayahId;
+  int? _selectedLingkunganId;
+  int? _selectedOrdoId;
+
+  void _onKeuskupanChanged(int newKeuskupanId) async {
+    setState(() {
+      _selectedKeuskupanId = newKeuskupanId;
+      _selectedParokiId = null;
+      _selectedWilayahId = null;
+      _selectedLingkunganId = null;
+      _parokiList = [];
+      _wilayahList = [];
+      _lingkunganList = [];
+    });
+    final paroki = await ApiService.getParokiList(keuskupanId: newKeuskupanId);
+    if (!mounted) return;
+    setState(() {
+      _parokiList = paroki;
+      if (_parokiList.isNotEmpty) {
+        _selectedParokiId = int.parse(_parokiList[0]['id'].toString());
+        _onParokiChanged(_selectedParokiId!);
+      }
+    });
+  }
+
+  void _onParokiChanged(int newParokiId) async {
+    setState(() {
+      _selectedParokiId = newParokiId;
+      _selectedWilayahId = null;
+      _selectedLingkunganId = null;
+      _wilayahList = [];
+      _lingkunganList = [];
+    });
+    final wilayah = await ApiService.getWilayahList(parokiId: newParokiId);
+    if (!mounted) return;
+    setState(() {
+      _wilayahList = wilayah;
+      if (_wilayahList.isNotEmpty) {
+        _selectedWilayahId = int.parse(_wilayahList[0]['id'].toString());
+        _onWilayahChanged(_selectedWilayahId!);
+      }
+    });
+  }
+
+  void _onWilayahChanged(int newWilayahId) async {
+    setState(() {
+      _selectedWilayahId = newWilayahId;
+      _selectedLingkunganId = null;
+      _lingkunganList = [];
+    });
+    final lingkungan = await ApiService.getLingkunganList(wilayahId: newWilayahId);
+    if (!mounted) return;
+    setState(() {
+      _lingkunganList = lingkungan;
+      if (_lingkunganList.isNotEmpty) {
+        _selectedLingkunganId = int.parse(_lingkunganList[0]['id'].toString());
+      }
+    });
+  }
+
   void _loadMasterData() async {
     final keuskupan = await ApiService.getKeuskupanList();
-    final paroki = await ApiService.getParokiList();
-    final wilayah = await ApiService.getWilayahList();
-    final lingkungan = await ApiService.getLingkunganList();
     final ordo = await ApiService.getOrdoList();
     if (!mounted) return;
     setState(() {
       _keuskupanList = keuskupan;
-      _parokiList = paroki;
-      _wilayahList = wilayah;
-      _lingkunganList = lingkungan;
       _ordoList = ordo;
-      if (_keuskupanList.isNotEmpty) _selectedKeuskupan = _keuskupanList[0]['name'].toString();
-      if (_parokiList.isNotEmpty) _selectedParoki = _parokiList[0]['name'].toString();
-      if (_wilayahList.isNotEmpty) _selectedWilayah = _wilayahList[0]['name'].toString();
-      if (_lingkunganList.isNotEmpty) _selectedLingkungan = _lingkunganList[0]['name'].toString();
-      if (_ordoList.isNotEmpty) _selectedOrdo = _ordoList[0]['name'].toString();
+      if (_keuskupanList.isNotEmpty) {
+        _selectedKeuskupanId = int.parse(_keuskupanList[0]['id'].toString());
+        _onKeuskupanChanged(_selectedKeuskupanId!);
+      }
+      if (_ordoList.isNotEmpty) {
+        _selectedOrdoId = int.parse(_ordoList[0]['id'].toString());
+      }
     });
   }
 
@@ -185,6 +243,11 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       phoneNumber: fullPhone,
       password: password,
       roleCode: finalRoleCode,
+      keuskupanId: _selectedKeuskupanId,
+      parokiId: _selectedParokiId,
+      wilayahId: _selectedWilayahId,
+      lingkunganId: _selectedLingkunganId,
+      ordoId: _selectedOrdoId,
       pengurusPosition: pengurusPosition,
       romoPosition: romoPosition,
       jabatanStartYear: jabatanStartYear,
@@ -292,136 +355,166 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
   Widget _buildHierarchyDropdowns() {
     if (_selectedRole == 'UMAT' || _selectedRole == 'PENGURUS_LINGKUNGAN' || _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
-      final keuskupanItems = _keuskupanList.map((item) => item['name'].toString()).toSet().toList();
-      final parokiItems = _parokiList.map((item) => item['name'].toString()).toSet().toList();
-      final wilayahItems = _wilayahList.map((item) => item['name'].toString()).toSet().toList();
-      final lingkunganItems = _lingkunganList.map((item) => item['name'].toString()).toSet().toList();
-
-      if (keuskupanItems.isNotEmpty && !keuskupanItems.contains(_selectedKeuskupan)) {
-        _selectedKeuskupan = keuskupanItems.first;
-      }
-      if (parokiItems.isNotEmpty && !parokiItems.contains(_selectedParoki)) {
-        _selectedParoki = parokiItems.first;
-      }
-      if (wilayahItems.isNotEmpty && !wilayahItems.contains(_selectedWilayah)) {
-        _selectedWilayah = wilayahItems.first;
-      }
-      if (lingkunganItems.isNotEmpty && !lingkunganItems.contains(_selectedLingkungan)) {
-        _selectedLingkungan = lingkunganItems.first;
-      }
-
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 12),
           // 1. Keuskupan
-          DropdownButtonFormField<String>(
-            value: keuskupanItems.contains(_selectedKeuskupan) ? _selectedKeuskupan : null,
+          DropdownButtonFormField<int>(
+            value: _selectedKeuskupanId,
             decoration: _fieldDeco(label: 'Keuskupan', icon: Icons.account_balance_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: keuskupanItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
-            onChanged: (val) { if (val != null) setState(() => _selectedKeuskupan = val); },
+            items: _keuskupanList.map((item) {
+              final id = int.parse(item['id'].toString());
+              final name = item['name'].toString();
+              return DropdownMenuItem<int>(
+                value: id,
+                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) _onKeuskupanChanged(val);
+            },
           ),
           const SizedBox(height: 12),
 
           // 2. Paroki
-          DropdownButtonFormField<String>(
-            value: parokiItems.contains(_selectedParoki) ? _selectedParoki : null,
+          DropdownButtonFormField<int>(
+            value: _selectedParokiId,
             decoration: _fieldDeco(label: 'Paroki', icon: Icons.church_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: parokiItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
-            onChanged: (val) { if (val != null) setState(() => _selectedParoki = val); },
+            items: _parokiList.map((item) {
+              final id = int.parse(item['id'].toString());
+              final name = item['name'].toString();
+              return DropdownMenuItem<int>(
+                value: id,
+                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) _onParokiChanged(val);
+            },
           ),
           const SizedBox(height: 12),
 
           // 3. Wilayah
-          DropdownButtonFormField<String>(
-            value: wilayahItems.contains(_selectedWilayah) ? _selectedWilayah : null,
+          DropdownButtonFormField<int>(
+            value: _selectedWilayahId,
             decoration: _fieldDeco(label: 'Wilayah', icon: Icons.map_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: wilayahItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
-            onChanged: (val) { if (val != null) setState(() => _selectedWilayah = val); },
+            items: _wilayahList.map((item) {
+              final id = int.parse(item['id'].toString());
+              final name = item['name'].toString();
+              return DropdownMenuItem<int>(
+                value: id,
+                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) _onWilayahChanged(val);
+            },
           ),
           const SizedBox(height: 12),
 
           // 4. Lingkungan
-          DropdownButtonFormField<String>(
-            value: lingkunganItems.contains(_selectedLingkungan) ? _selectedLingkungan : null,
+          DropdownButtonFormField<int>(
+            value: _selectedLingkunganId,
             decoration: _fieldDeco(label: 'Lingkungan', icon: Icons.home_work_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: lingkunganItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
-            onChanged: (val) { if (val != null) setState(() => _selectedLingkungan = val); },
+            items: _lingkunganList.map((item) {
+              final id = int.parse(item['id'].toString());
+              final name = item['name'].toString();
+              return DropdownMenuItem<int>(
+                value: id,
+                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) setState(() => _selectedLingkunganId = val);
+            },
           ),
           const SizedBox(height: 12),
         ],
       );
     } else if (_selectedRole == 'ROMO_PAROKI') {
-      final keuskupanItems = _keuskupanList.map((item) => item['name'].toString()).toSet().toList();
-      final parokiItems = _parokiList.map((item) => item['name'].toString()).toSet().toList();
-
-      if (keuskupanItems.isNotEmpty && !keuskupanItems.contains(_selectedKeuskupan)) {
-        _selectedKeuskupan = keuskupanItems.first;
-      }
-      if (parokiItems.isNotEmpty && !parokiItems.contains(_selectedParoki)) {
-        _selectedParoki = parokiItems.first;
-      }
-
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 12),
           // 1. Keuskupan
-          DropdownButtonFormField<String>(
-            value: keuskupanItems.contains(_selectedKeuskupan) ? _selectedKeuskupan : null,
+          DropdownButtonFormField<int>(
+            value: _selectedKeuskupanId,
             decoration: _fieldDeco(label: 'Keuskupan', icon: Icons.account_balance_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: keuskupanItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
-            onChanged: (val) { if (val != null) setState(() => _selectedKeuskupan = val); },
+            items: _keuskupanList.map((item) {
+              final id = int.parse(item['id'].toString());
+              final name = item['name'].toString();
+              return DropdownMenuItem<int>(
+                value: id,
+                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) _onKeuskupanChanged(val);
+            },
           ),
           const SizedBox(height: 12),
 
           // 2. Paroki
-          DropdownButtonFormField<String>(
-            value: parokiItems.contains(_selectedParoki) ? _selectedParoki : null,
+          DropdownButtonFormField<int>(
+            value: _selectedParokiId,
             decoration: _fieldDeco(label: 'Paroki', icon: Icons.church_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: parokiItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
-            onChanged: (val) { if (val != null) setState(() => _selectedParoki = val); },
+            items: _parokiList.map((item) {
+              final id = int.parse(item['id'].toString());
+              final name = item['name'].toString();
+              return DropdownMenuItem<int>(
+                value: id,
+                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) _onParokiChanged(val);
+            },
           ),
           const SizedBox(height: 12),
         ],
       );
     } else if (_selectedRole == 'ROMO_ORDO') {
-      final ordoItems = _ordoList.map((item) => item['name'].toString()).toSet().toList();
-      if (ordoItems.isNotEmpty && !ordoItems.contains(_selectedOrdo)) {
-        _selectedOrdo = ordoItems.first;
-      }
-
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 12),
           // 1. Ordo
-          DropdownButtonFormField<String>(
-            value: ordoItems.contains(_selectedOrdo) ? _selectedOrdo : null,
+          DropdownButtonFormField<int>(
+            value: _selectedOrdoId,
             decoration: _fieldDeco(label: 'Ordo / Kongregasi', icon: Icons.workspace_premium_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: ordoItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
-            onChanged: (val) { if (val != null) setState(() => _selectedOrdo = val); },
+            items: _ordoList.map((item) {
+              final id = int.parse(item['id'].toString());
+              final name = item['name'].toString();
+              return DropdownMenuItem<int>(
+                value: id,
+                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) setState(() => _selectedOrdoId = val);
+            },
           ),
           const SizedBox(height: 12),
         ],

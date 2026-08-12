@@ -34,6 +34,11 @@ class ApiService {
     required String phoneNumber,
     required String password,
     required String roleCode,
+    int? keuskupanId,
+    int? parokiId,
+    int? wilayahId,
+    int? lingkunganId,
+    int? ordoId,
     String? pengurusPosition,
     String? romoPosition,
     int? jabatanStartYear,
@@ -48,11 +53,13 @@ class ApiService {
         'phoneNumber': phoneNumber,
         'password': password,
         'roleCode': roleCode,
-        'keuskupanId': 1,
-        'parokiId': 10,
-        'wilayahId': 101,
-        'lingkunganId': 1001,
       };
+
+      if (keuskupanId != null) payload['keuskupanId'] = keuskupanId;
+      if (parokiId != null) payload['parokiId'] = parokiId;
+      if (wilayahId != null) payload['wilayahId'] = wilayahId;
+      if (lingkunganId != null) payload['lingkunganId'] = lingkunganId;
+      if (ordoId != null) payload['ordoId'] = ordoId;
 
       if (pengurusPosition != null && pengurusPosition.isNotEmpty) {
         payload['pengurusPosition'] = pengurusPosition;
