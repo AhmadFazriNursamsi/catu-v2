@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'core/constants/app_constants.dart';
 import 'features/auth/login_screen.dart';
+import 'features/auth/register_screen.dart';
 
 void main() {
   runApp(const CatuApp());
@@ -24,7 +25,7 @@ class CatuApp extends StatelessWidget {
         scaffoldBackgroundColor: AppConstants.bgCanvas,
         fontFamily: 'Roboto',
       ),
-      home: const LoginScreen(),
+      home: const RegisterScreen(),
     );
   }
 }
