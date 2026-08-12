@@ -192,6 +192,35 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     });
   }
 
+  void _onRoleChanged(String newRole) {
+    if (_selectedRole == newRole) return;
+
+    setState(() {
+      _selectedRole = newRole;
+      _selectedUmatPosition = null;
+      _selectedRomoOrdoPosition = 'ROMO_BIASA';
+      _selectedRomoParokiPosition = 'ROMO_BIASA';
+      _startDateController.clear();
+      _endDateController.clear();
+
+      if (_keuskupanList.isNotEmpty) {
+        _selectedKeuskupanId = int.parse(_keuskupanList[0]['id'].toString());
+        _onKeuskupanChanged(_selectedKeuskupanId!);
+      } else {
+        _selectedKeuskupanId = null;
+        _selectedParokiId = null;
+        _selectedWilayahId = null;
+        _selectedLingkunganId = null;
+      }
+
+      if (_ordoList.isNotEmpty) {
+        _selectedOrdoId = int.parse(_ordoList[0]['id'].toString());
+      } else {
+        _selectedOrdoId = null;
+      }
+    });
+  }
+
   void _handleRegister() async {
     if (!_formKey.currentState!.validate()) {
       setState(() => _autovalidateMode = AutovalidateMode.onUserInteraction);
@@ -970,12 +999,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                                               children: _roleOptions.map((role) {
                                                 final isSelected = _selectedRole == role['code'];
                                                 return GestureDetector(
-                                                  onTap: () => setState(() {
-                                                    _selectedRole = role['code']!;
-                                                    _selectedUmatPosition = null;
-                                                    _selectedRomoOrdoPosition = 'ROMO_BIASA';
-                                                    _selectedRomoParokiPosition = 'ROMO_BIASA';
-                                                  }),
+                                                  onTap: () => _onRoleChanged(role['code']!),
                                                   child: AnimatedContainer(
                                                     duration: const Duration(milliseconds: 200),
                                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
