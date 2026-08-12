@@ -305,30 +305,45 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
                         // ── Section Title 2: Sakramen & Jadwal Timeline ──
                         _buildSectionHeader(
-                          title: order.categoryName,
+                          title: order.items.isNotEmpty
+                              ? '${order.categoryName} (${order.items.length} Sesi Misa)'
+                              : order.categoryName,
                           icon: Icons.sanitizer_rounded,
                         ),
                         const SizedBox(height: 16),
 
-                        // Timeline Item 1: Tanggal & Waktu
-                        _buildTimelineNode(
-                          icon: Icons.calendar_today_rounded,
-                          iconColor: const Color(0xFF1E5399),
-                          title: 'Jadwal Pelayanan',
-                          subtitle: order.jamSelesaiLabel.isNotEmpty
-                              ? '${order.scheduledDate} (${order.jamMulaiLabel} - ${order.jamSelesaiLabel} WIB)'
-                              : order.fullScheduleLabel,
-                          isLast: false,
-                        ),
+                        if (order.items.isNotEmpty) ...[
+                          for (int i = 0; i < order.items.length; i++) ...[
+                            _buildTimelineNode(
+                              icon: Icons.church_rounded,
+                              iconColor: const Color(0xFF1E5399),
+                              title: order.items[i].itemName,
+                              subtitle:
+                                  '📅 ${order.items[i].scheduledDate} (${order.items[i].scheduledTimeStart} - ${order.items[i].scheduledTimeEnd} WIB)\n📍 ${order.items[i].locationName}',
+                              isLast: i == order.items.length - 1,
+                            ),
+                          ],
+                        ] else ...[
+                          // Timeline Item 1: Tanggal & Waktu
+                          _buildTimelineNode(
+                            icon: Icons.calendar_today_rounded,
+                            iconColor: const Color(0xFF1E5399),
+                            title: 'Jadwal Pelayanan',
+                            subtitle: order.jamSelesaiLabel.isNotEmpty
+                                ? '${order.scheduledDate} (${order.jamMulaiLabel} - ${order.jamSelesaiLabel} WIB)'
+                                : order.fullScheduleLabel,
+                            isLast: false,
+                          ),
 
-                        // Timeline Item 2: Lokasi Tujuan
-                        _buildTimelineNode(
-                          icon: Icons.location_on_rounded,
-                          iconColor: const Color(0xFF0D9488),
-                          title: 'Alamat / Lokasi Tujuan',
-                          subtitle: order.displayAddress,
-                          isLast: true,
-                        ),
+                          // Timeline Item 2: Lokasi Tujuan
+                          _buildTimelineNode(
+                            icon: Icons.location_on_rounded,
+                            iconColor: const Color(0xFF0D9488),
+                            title: 'Alamat / Lokasi Tujuan',
+                            subtitle: order.displayAddress,
+                            isLast: true,
+                          ),
+                        ],
 
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 20),

@@ -36,6 +36,25 @@ class OrderItem {
     required this.locationName,
   });
 
+  factory OrderItem.fromJson(Map<String, dynamic> json) {
+    String rawDate = json['scheduledDate'] ?? json['scheduled_date'] ?? '';
+    if (rawDate.contains('T')) rawDate = rawDate.split('T').first;
+
+    String start = json['scheduledTimeStart'] ?? json['scheduled_time_start'] ?? '';
+    if (start.length >= 5) start = start.substring(0, 5);
+
+    String end = json['scheduledTimeEnd'] ?? json['scheduled_time_end'] ?? '';
+    if (end.length >= 5) end = end.substring(0, 5);
+
+    return OrderItem(
+      itemName: json['itemName'] ?? json['item_name'] ?? 'Misa Kedukaan',
+      scheduledDate: rawDate,
+      scheduledTimeStart: start,
+      scheduledTimeEnd: end,
+      locationName: json['locationName'] ?? json['location_name'] ?? '',
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'itemName': itemName,
@@ -62,6 +81,7 @@ class Order {
   final String keuskupanName;
   final String parokiName;
   final String lingkunganName;
+  final List<OrderItem> items;
 
   Order({
     required this.id,
@@ -78,6 +98,7 @@ class Order {
     this.keuskupanName = '',
     this.parokiName = '',
     this.lingkunganName = '',
+    this.items = const [],
   });
 
   /// Parse "Jam Mulai" from notes
@@ -133,7 +154,7 @@ class Order {
       for (final part in parts) {
         final trimmed = part.trim();
         final lower = trimmed.toLowerCase();
-        if (lower.startsWith('nama penerima') || lower.startsWith('nama:')) {
+        if (lower.startsWith('nama penerima') || lower.startsWith('nama almarhum') || lower.startsWith('nama:')) {
           final split = trimmed.split(':');
           if (split.length > 1) {
             final name = split.sublist(1).join(':').trim();
@@ -206,6 +227,13 @@ class Order {
     String rawTime = json['scheduled_time'] ?? json['scheduledTime'] ?? '';
     if (rawTime.length >= 5) rawTime = rawTime.substring(0, 5);
 
+    List<OrderItem> parsedItems = [];
+    if (json['items'] is List) {
+      parsedItems = (json['items'] as List)
+          .map((i) => OrderItem.fromJson(i as Map<String, dynamic>))
+          .toList();
+    }
+
     return Order(
       id: parsedId,
       orderNumber: json['order_number'] ?? json['orderNumber'] ?? '',
@@ -221,6 +249,7 @@ class Order {
       keuskupanName: json['keuskupan_name'] ?? json['keuskupanName'] ?? 'Keuskupan Agung Jakarta',
       parokiName: json['paroki_name'] ?? json['parokiName'] ?? 'Paroki Alam Sutera - St. Laurensius',
       lingkunganName: json['lingkungan_name'] ?? json['lingkunganName'] ?? 'St. Angela Merici',
+      items: parsedItems,
     );
   }
 }

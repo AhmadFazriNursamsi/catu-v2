@@ -895,15 +895,32 @@ export class OrdersController {
       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
     `;
 
+    let orders: any[];
     if (userId && !isNaN(parseInt(userId))) {
-      return await this.dataSource.query(
+      orders = await this.dataSource.query(
         `${selectQuery} WHERE o.user_id = $1 ORDER BY o.id DESC`,
         [parseInt(userId)],
       );
+    } else {
+      orders = await this.dataSource.query(
+        `${selectQuery} ORDER BY o.id DESC`,
+      );
     }
-    return await this.dataSource.query(
-      `${selectQuery} ORDER BY o.id DESC`,
-    );
+
+    for (const order of orders) {
+      const items = await this.dataSource.query(
+        `SELECT id, item_name as "itemName", scheduled_date as "scheduledDate", 
+                scheduled_time_start as "scheduledTimeStart", scheduled_time_end as "scheduledTimeEnd", 
+                location_name as "locationName"
+         FROM order_items 
+         WHERE order_id = $1 
+         ORDER BY id ASC`,
+        [order.id],
+      );
+      order.items = items;
+    }
+
+    return orders;
   }
 }
 
