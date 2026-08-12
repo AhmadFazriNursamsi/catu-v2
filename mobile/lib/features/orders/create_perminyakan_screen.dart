@@ -109,15 +109,14 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   Future<void> _onKeuskupanChanged(int? keuskupanId) async {
     setState(() {
       _selectedKeuskupanId = keuskupanId;
-      _selectedParokiId = null;
-      _parokiList = [];
     });
     if (keuskupanId != null) {
       final pList = await ApiService.getParokiList(keuskupanId: keuskupanId);
       if (mounted) {
         setState(() {
           _parokiList = pList;
-          if (_parokiList.isNotEmpty) {
+          if (_parokiList.isNotEmpty &&
+              !_parokiList.any((e) => e['id'] == _selectedParokiId)) {
             _selectedParokiId = _parokiList.first['id'];
           }
         });
@@ -128,15 +127,14 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   Future<void> _onProvinsiChanged(int? provinsiId) async {
     setState(() {
       _selectedProvinsiId = provinsiId;
-      _selectedKabupatenKotaId = null;
-      _kabupatenKotaList = [];
     });
     if (provinsiId != null) {
       final list = await ApiService.getKabupatenKotaList(provinsiId: provinsiId);
       if (mounted) {
         setState(() {
           _kabupatenKotaList = list;
-          if (_kabupatenKotaList.isNotEmpty) {
+          if (_kabupatenKotaList.isNotEmpty &&
+              !_kabupatenKotaList.any((e) => e['id'] == _selectedKabupatenKotaId)) {
             _selectedKabupatenKotaId = _kabupatenKotaList.first['id'];
           }
         });
@@ -988,6 +986,9 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     required void Function(T?)? onChanged,
     String? Function(T?)? validator,
   }) {
+    final bool valueInItems = value != null && items.contains(value);
+    final T? safeValue = valueInItems ? value : (items.isNotEmpty ? items.first : null);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1003,7 +1004,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
           const SizedBox(height: 6),
         ],
         DropdownButtonFormField<T>(
-          value: value,
+          value: safeValue,
           validator: validator,
           isExpanded: true,
           icon: const Icon(Icons.keyboard_arrow_down_rounded,
