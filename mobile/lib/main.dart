@@ -25,7 +25,7 @@ class CatuApp extends StatelessWidget {
         scaffoldBackgroundColor: AppConstants.bgCanvas,
         fontFamily: 'Roboto',
       ),
-      home: const RegisterScreen(),
+      home: const LoginScreen(),
     );
   }
 }
