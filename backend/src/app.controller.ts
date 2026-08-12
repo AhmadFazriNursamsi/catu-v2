@@ -157,9 +157,14 @@ export class AuthController implements OnModuleInit {
 
       await queryRunner.commitTransaction();
 
+      const isUmat = dto.roleCode === 'UMAT';
+      const approvalMsg = isUmat
+        ? `Registrasi berhasil! Akun Anda sedang menunggu persetujuan dari Pengurus Lingkungan.`
+        : `Registrasi berhasil! Akun Anda sedang menunggu persetujuan dari Admin Aplikasi.`;
+
       return {
         statusCode: 201,
-        message: 'Registrasi berhasil! Akun Anda sedang menunggu persetujuan (APPROVAL).',
+        message: approvalMsg,
         user: {
           id: authUser.id,
           uuid: authUser.uuid,

@@ -194,12 +194,25 @@ class _HomeScreenState extends State<HomeScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: isApproved ? Colors.green.shade600 : Colors.orange.shade700,
-                                  borderRadius: BorderRadius.circular(12),
+                                  color: isApproved ? Colors.green.shade600 : Colors.amber.shade800,
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: Text(
-                                  isApproved ? 'APPROVED' : 'PENDING',
-                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isApproved ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
+                                      size: 10,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      isApproved
+                                          ? (roleCode == 'UMAT' ? 'Disetujui Pengurus' : 'Disetujui Admin')
+                                          : (roleCode == 'UMAT' ? 'Pending Pengurus' : 'Pending Admin'),
+                                      style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
