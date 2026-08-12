@@ -40,16 +40,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
 
   static const _genderOptions = ['Laki-laki', 'Perempuan'];
 
-  static List<String> get _jamOptions {
-    final list = <String>[];
-    for (int h = 0; h < 24; h++) {
-      for (int m = 0; m < 60; m += 30) {
-        list.add(
-            '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}');
-      }
-    }
-    return list;
-  }
+
 
   @override
   void initState() {
@@ -90,6 +81,46 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       setState(() {
         _tanggalController.text =
             '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+      });
+    }
+  }
+
+  Future<void> _pickTime(bool isStart) async {
+    final currentStr = isStart ? _jamMulai : _jamSelesai;
+    TimeOfDay initialTime = TimeOfDay.now();
+    if (currentStr != null && currentStr.contains(':')) {
+      final parts = currentStr.split(':');
+      final h = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      if (h != null && m != null) {
+        initialTime = TimeOfDay(hour: h, minute: m);
+      }
+    }
+
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: AppConstants.primaryBlue,
+            onPrimary: Colors.white,
+            onSurface: Color(0xFF0F172A),
+          ),
+        ),
+        child: child!,
+      ),
+    );
+
+    if (picked != null) {
+      final hh = picked.hour.toString().padLeft(2, '0');
+      final mm = picked.minute.toString().padLeft(2, '0');
+      setState(() {
+        if (isStart) {
+          _jamMulai = '$hh:$mm';
+        } else {
+          _jamSelesai = '$hh:$mm';
+        }
       });
     }
   }
@@ -412,32 +443,24 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                           ],
                         ),
                         const SizedBox(height: 14),
-                        // Jam Mulai & Jam Selesai
+                        // Jam Mulai & Jam Selesai (Flexible Time Picker)
                         Row(
                           children: [
                             Expanded(
-                              child: _buildDropdownField<String>(
-                                value: _jamMulai,
+                              child: _buildTimePickerButton(
                                 label: 'Jam Mulai',
-                                hint: 'Jam Mulai',
+                                timeValue: _jamMulai,
                                 prefixIcon: Icons.access_time_rounded,
-                                items: _jamOptions,
-                                itemLabel: (e) => e,
-                                onChanged: (v) =>
-                                    setState(() => _jamMulai = v),
+                                onTap: () => _pickTime(true),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: _buildDropdownField<String>(
-                                value: _jamSelesai,
+                              child: _buildTimePickerButton(
                                 label: 'Jam Selesai',
-                                hint: 'Jam Selesai',
+                                timeValue: _jamSelesai,
                                 prefixIcon: Icons.access_time_filled_rounded,
-                                items: _jamOptions,
-                                itemLabel: (e) => e,
-                                onChanged: (v) =>
-                                    setState(() => _jamSelesai = v),
+                                onTap: () => _pickTime(false),
                               ),
                             ),
                           ],
@@ -795,6 +818,60 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                   ))
               .toList(),
           onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimePickerButton({
+    required String label,
+    required String? timeValue,
+    required IconData prefixIcon,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF334155),
+          ),
+        ),
+        const SizedBox(height: 6),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+            ),
+            child: Row(
+              children: [
+                Icon(prefixIcon, color: const Color(0xFF1E5399), size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    timeValue ?? 'Pilih Jam',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: timeValue != null
+                          ? const Color(0xFF0F172A)
+                          : const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ),
+                const Icon(Icons.arrow_drop_down_rounded,
+                    color: Color(0xFF64748B)),
+              ],
+            ),
+          ),
         ),
       ],
     );
