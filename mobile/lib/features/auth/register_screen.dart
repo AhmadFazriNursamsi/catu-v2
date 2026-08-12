@@ -1078,7 +1078,16 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                                     children: [
                                       Text('Sudah punya akun?', style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
                                       TextButton(
-                                        onPressed: () => Navigator.pop(context),
+                                        onPressed: () {
+                                          if (Navigator.canPop(context)) {
+                                            Navigator.pop(context);
+                                          } else {
+                                            Navigator.pushReplacement(
+                                              context,
+                                              FadeSlideRoute(page: const LoginScreen()),
+                                            );
+                                          }
+                                        },
                                         style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6)),
                                         child: const Text(
                                           'Masuk di sini',
