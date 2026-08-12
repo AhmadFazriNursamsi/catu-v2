@@ -20,8 +20,6 @@ class OrderDetailScreen extends StatefulWidget {
 }
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
-  bool _isDetailExpanded = true;
-
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
       case 'ACCEPTED':
@@ -64,37 +62,80 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return const Color(0xFF1E5399);
   }
 
-  Widget _buildDeceasedThumbnail(String? attachmentUrl) {
-    if (attachmentUrl != null && attachmentUrl.isNotEmpty) {
-      if (attachmentUrl.startsWith('http://') || attachmentUrl.startsWith('https://')) {
-        return Image.network(
-          attachmentUrl,
-          width: 76,
-          height: 76,
+  Widget _buildDeceasedPhotoCard(String attachmentUrl) {
+    Widget imageWidget;
+    if (attachmentUrl.startsWith('http://') || attachmentUrl.startsWith('https://')) {
+      imageWidget = Image.network(
+        attachmentUrl,
+        height: 180,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Image.asset(
+          'assets/images/church_1.jpg',
+          height: 180,
+          width: double.infinity,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildFallbackAvatar(),
-        );
-      }
+        ),
+      );
+    } else {
       final file = File(attachmentUrl);
       if (file.existsSync()) {
-        return Image.file(
+        imageWidget = Image.file(
           file,
-          width: 76,
-          height: 76,
+          height: 180,
+          width: double.infinity,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildFallbackAvatar(),
+          errorBuilder: (_, __, ___) => Image.asset(
+            'assets/images/church_1.jpg',
+            height: 180,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+        );
+      } else {
+        imageWidget = Image.asset(
+          'assets/images/church_1.jpg',
+          height: 180,
+          width: double.infinity,
+          fit: BoxFit.cover,
         );
       }
     }
-    return _buildFallbackAvatar();
-  }
 
-  Widget _buildFallbackAvatar() {
-    return Image.asset(
-      'assets/images/church_1.jpg',
-      width: 76,
-      height: 76,
-      fit: BoxFit.cover,
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            child: Row(
+              children: const [
+                Icon(Icons.photo_camera_front_rounded,
+                    size: 18, color: Color(0xFF1E5399)),
+                SizedBox(width: 8),
+                Text(
+                  'Foto Almarhum / Almarhumah',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+            child: imageWidget,
+          ),
+        ],
+      ),
     );
   }
 
@@ -104,22 +145,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final statusColor = _getStatusColor(order.status);
     final statusLabel = _getStatusLabel(order.status);
     final urgencyColor = _getUrgencyColor(order.urgencyName);
-
-    final String displayTitle = order.items.isNotEmpty
-        ? order.items.first.itemName
-        : (order.categoryName == 'Misa Kedukaan'
-            ? 'Misa Requiem / Misa Arwah'
-            : order.categoryName);
+    final bool isKedukaan = order.categoryName.toLowerCase().contains('kedukaan');
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
+          // Custom Scrollable Surface
           CustomScrollView(
             slivers: [
-              // ── 1. Hero Header Banner ──
+              // ── 1. Hero Glassmorphism Header Bar ──
               SliverAppBar(
-                expandedHeight: 250.0,
+                expandedHeight: 280.0,
                 pinned: true,
                 backgroundColor: const Color(0xFF0F172A),
                 elevation: 0,
@@ -187,10 +224,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           ),
                         ),
                       ),
+                      // Floating Glass Title Bar at bottom of Hero
                       Positioned(
                         left: 20,
                         right: 20,
-                        bottom: 20,
+                        bottom: 24,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -198,7 +236,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: urgencyColor,
+                                color: urgencyColor.withValues(alpha: 0.85),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -213,22 +251,29 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              displayTitle,
+                              order.penerimaName,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 24,
+                                fontSize: 26,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: -0.5,
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              order.categoryName,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            Row(
+                              children: [
+                                const Icon(Icons.person_rounded,
+                                    size: 14, color: Colors.white70),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${order.genderLabel.isNotEmpty ? order.genderLabel : 'Pria'} • ${order.usiaLabel.isNotEmpty ? order.usiaLabel : '-'}',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -238,7 +283,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
               ),
 
-              // ── 2. Seamless Body Surface ──
+              // ── 2. Seamless Single-Surface Body ──
               SliverToBoxAdapter(
                 child: Container(
                   decoration: const BoxDecoration(
@@ -247,240 +292,103 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         BorderRadius.vertical(top: Radius.circular(28)),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ── Main Header Info Block (Matching Reference Image) ──
-                        Text(
-                          displayTitle,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
-                            letterSpacing: -0.3,
+                        // ── Status Banner Badge ──
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                                color: statusColor.withValues(alpha: 0.2)),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          order.categoryName,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Info Row 1: Tingkat Urgensi
-                        Row(
-                          children: [
-                            const Icon(Icons.shopping_bag_outlined,
-                                size: 18, color: Color(0xFFEF4444)),
-                            const SizedBox(width: 10),
-                            Text(
-                              order.urgencyName,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Info Row 2: Tanggal & Jam Pelayanan
-                        Row(
-                          children: [
-                            const Icon(Icons.calendar_today_outlined,
-                                size: 18, color: Color(0xFF1E5399)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                order.jamSelesaiLabel.isNotEmpty
-                                    ? '${order.scheduledDate} ${order.jamMulaiLabel} - ${order.jamSelesaiLabel}'
-                                    : order.fullScheduleLabel,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF0F172A),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Info Row 3: Rumah Kedukaan / Lokasi
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on_outlined,
-                                size: 18, color: Color(0xFF0D9488)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                order.displayAddress,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF0F172A),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Status Badge Pill
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: statusColor.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Icons.hourglass_top_rounded,
-                                color: statusColor,
-                                size: 18,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              statusLabel,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: statusColor,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // ── Expandable Detail Section Accordion ──
-                        InkWell(
-                          onTap: () {
-                            setState(() {
-                              _isDetailExpanded = !_isDetailExpanded;
-                            });
-                          },
-                          splashColor: Colors.transparent,
-                          highlightColor: Colors.transparent,
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
-                                'Detail',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0F172A),
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  shape: BoxShape.circle,
                                 ),
                               ),
-                              Icon(
-                                _isDetailExpanded
-                                    ? Icons.keyboard_arrow_up_rounded
-                                    : Icons.keyboard_arrow_down_rounded,
-                                color: const Color(0xFF0F172A),
-                                size: 26,
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        if (_isDetailExpanded) ...[
-                          const SizedBox(height: 8),
-
-                          // Catatan tambahan (e.g. Meninggal karena ibadah)
-                          if (order.catatanLabel.isNotEmpty) ...[
-                            Text(
-                              order.catatanLabel,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF334155),
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                          ],
-
-                          // Foto Almarhum + Table Key-Value Pair (2 Columns)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Left: Foto Almarhum Avatar Box
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  width: 76,
-                                  height: 76,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade200,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: const Color(0xFFE2E8F0),
-                                    ),
-                                  ),
-                                  child: _buildDeceasedThumbnail(
-                                      order.attachmentUrl),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-
-                              // Right: Key-Value Table Details
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _buildDetailPairRow(
-                                      label: 'Hubungan',
-                                      value: order.hubunganLabel,
+                                    Text(
+                                      'Status Permintaan',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: statusColor,
+                                        letterSpacing: 0.5,
+                                      ),
                                     ),
-                                    _buildDetailPairRow(
-                                      label: 'Nama',
-                                      value: order.penerimaName,
-                                    ),
-                                    _buildDetailPairRow(
-                                      label: 'Rumah Kedukaan',
-                                      value: order.displayAddress,
-                                    ),
-                                    _buildDetailPairRow(
-                                      label: 'Tanggal meninggal',
-                                      value: order.tanggalMeninggalLabel,
-                                    ),
-                                    _buildDetailPairRow(
-                                      label: 'Waktu Meninggal',
-                                      value: order.waktuMeninggalLabel,
-                                    ),
-                                    _buildDetailPairRow(
-                                      label: 'Keuskupan',
-                                      value: order.keuskupanName,
-                                    ),
-                                    _buildDetailPairRow(
-                                      label: 'Paroki',
-                                      value: order.parokiName,
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      statusLabel,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: statusColor,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
+                              Icon(
+                                statusLabel.contains('Selesai') || statusLabel.contains('Disetujui')
+                                    ? Icons.verified_rounded
+                                    : Icons.hourglass_top_rounded,
+                                color: statusColor,
+                                size: 22,
+                              ),
                             ],
                           ),
-                        ],
+                        ),
 
-                        const SizedBox(height: 24),
-                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 28),
 
-                        // ── Multi-Item Misa Sessions Stepper (If Any) ──
+                        // ── Section Title 1: Lokasi Paroki ──
+                        _buildSectionHeader(
+                          title: 'Lokasi & Paroki Penerima',
+                          icon: Icons.church_outlined,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildSeamlessInfoRow(
+                          label: 'Keuskupan',
+                          value: order.keuskupanName,
+                          icon: Icons.account_balance_rounded,
+                        ),
+                        const SizedBox(height: 10),
+                        _buildSeamlessInfoRow(
+                          label: 'Paroki',
+                          value: order.parokiName,
+                          icon: Icons.church_rounded,
+                        ),
+
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        ),
+
+                        // ── Section Title 2: Sakramen & Jadwal Timeline ──
+                        _buildSectionHeader(
+                          title: order.items.isNotEmpty
+                              ? '${order.categoryName} (${order.items.length} Sesi Misa)'
+                              : order.categoryName,
+                          icon: Icons.sanitizer_rounded,
+                        ),
+                        const SizedBox(height: 16),
+
                         if (order.items.isNotEmpty) ...[
-                          _buildSectionHeader(
-                            title: 'Daftar Misa Kedukaan (${order.items.length} Sesi)',
-                            icon: Icons.church_outlined,
-                          ),
-                          const SizedBox(height: 16),
                           for (int i = 0; i < order.items.length; i++) ...[
                             _buildTimelineNode(
                               icon: Icons.church_rounded,
@@ -491,52 +399,141 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               isLast: i == order.items.length - 1,
                             ),
                           ],
-                          const SizedBox(height: 20),
-                          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                          const SizedBox(height: 20),
+                        ] else ...[
+                          // Timeline Item 1: Tanggal & Waktu
+                          _buildTimelineNode(
+                            icon: Icons.calendar_today_rounded,
+                            iconColor: const Color(0xFF1E5399),
+                            title: 'Jadwal Pelayanan',
+                            subtitle: order.jamSelesaiLabel.isNotEmpty
+                                ? '${order.scheduledDate} (${order.jamMulaiLabel} - ${order.jamSelesaiLabel} WIB)'
+                                : order.fullScheduleLabel,
+                            isLast: false,
+                          ),
+
+                          // Timeline Item 2: Lokasi Tujuan
+                          _buildTimelineNode(
+                            icon: Icons.location_on_rounded,
+                            iconColor: const Color(0xFF0D9488),
+                            title: 'Alamat / Lokasi Tujuan',
+                            subtitle: order.displayAddress,
+                            isLast: true,
+                          ),
                         ],
 
-                        // ── Bottom Requester Profile Section (Matching Screenshot) ──
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.person_outline_rounded,
-                                color: Color(0xFF0F172A),
-                                size: 28,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        ),
+
+                        // ── Section Title 3: Detail Permintaan & Pemohon ──
+                        _buildSectionHeader(
+                          title: 'Detail & Catatan Pemohon',
+                          icon: Icons.notes_rounded,
+                        ),
+                        const SizedBox(height: 14),
+
+                        // ── KHUSUS MISA KEDUKAAN: Foto Almarhum / Almarhumah Card ──
+                        if (isKedukaan &&
+                            order.attachmentUrl != null &&
+                            order.attachmentUrl!.isNotEmpty) ...[
+                          _buildDeceasedPhotoCard(order.attachmentUrl!),
+                          const SizedBox(height: 14),
+                        ],
+
+                        // Catatan Blockquote Callout
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: const [
+                                  Icon(Icons.format_quote_rounded,
+                                      size: 20, color: Color(0xFF64748B)),
+                                  SizedBox(width: 6),
                                   Text(
-                                    order.pemohonName,
-                                    style: const TextStyle(
-                                      fontSize: 16,
+                                    'Catatan Tambahan',
+                                    style: TextStyle(
+                                      fontSize: 12,
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFF0F172A),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Umat Dari Lingkungan ${order.lingkunganName}',
-                                    style: const TextStyle(
-                                      fontSize: 13,
                                       color: Color(0xFF64748B),
-                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 6),
+                              Text(
+                                order.catatanLabel.isNotEmpty
+                                    ? order.catatanLabel
+                                    : 'Tidak ada catatan tambahan.',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF1E293B),
+                                  height: 1.5,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Pemohon Profile Tile
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.person_rounded,
+                                  color: AppConstants.primaryBlue,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      order.pemohonName,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Umat Dari Lingkungan ${order.lingkunganName}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -546,7 +543,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ],
           ),
 
-          // ── Floating Chat Action Button ──
+          // ── 3. Bottom Floating Action Bar ──
           Positioned(
             left: 16,
             right: 16,
@@ -590,7 +587,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 52),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   elevation: 0,
                 ),
@@ -605,45 +602,62 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget _buildSectionHeader({required String title, required IconData icon}) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: const Color(0xFF1E5399)),
-        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: AppConstants.primaryBlue.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 18, color: AppConstants.primaryBlue),
+        ),
+        const SizedBox(width: 10),
         Text(
           title,
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Color(0xFF0F172A),
+            letterSpacing: -0.2,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDetailPairRow({required String label, required String value}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+  Widget _buildSeamlessInfoRow({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Color(0xFF475569),
-                fontWeight: FontWeight.w500,
-              ),
+          Icon(icon, size: 18, color: const Color(0xFF64748B)),
+          const SizedBox(width: 10),
+          Text(
+            '$label: ',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF64748B),
             ),
           ),
           Expanded(
             child: Text(
-              value.isNotEmpty ? value : '-',
+              value,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
                 color: Color(0xFF0F172A),
-                fontWeight: FontWeight.w600,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -666,43 +680,48 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.12),
+                color: iconColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 16, color: iconColor),
+              child: Icon(icon, size: 18, color: iconColor),
             ),
             if (!isLast)
               Container(
                 width: 2,
-                height: 38,
+                height: 34,
                 color: const Color(0xFFE2E8F0),
               ),
           ],
         ),
         const SizedBox(width: 14),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF64748B),
+                    letterSpacing: 0.2,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  color: Color(0xFF64748B),
-                  height: 1.4,
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF0F172A),
+                    height: 1.3,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
+                if (!isLast) const SizedBox(height: 14),
+              ],
+            ),
           ),
         ),
       ],
