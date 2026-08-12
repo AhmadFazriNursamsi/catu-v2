@@ -389,9 +389,9 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                               scrollDirection: Axis.horizontal,
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 20),
-                              itemCount: widget.orders.length,
+                              itemCount: _displayCardItems.length,
                               itemBuilder: (context, index) {
-                                final order = widget.orders[index];
+                                final item = _displayCardItems[index];
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 14),
                                   child: GestureDetector(
@@ -400,13 +400,13 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) => OrderDetailScreen(
-                                            order: order,
+                                            order: item.parentOrder,
                                             userName: userName,
                                           ),
                                         ),
                                       );
                                     },
-                                    child: _buildServiceCard(order),
+                                    child: _buildServiceCard(item),
                                   ),
                                 );
                               },
@@ -683,8 +683,53 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     return Colors.blue.shade600;
   }
 
+  List<DashboardCardItem> get _displayCardItems {
+    final List<DashboardCardItem> cardList = [];
+
+    for (final order in widget.orders) {
+      if (order.items.isNotEmpty) {
+        for (final item in order.items) {
+          String scheduleStr = item.scheduledDate;
+          if (item.scheduledTimeStart.isNotEmpty) {
+            scheduleStr = '${item.scheduledDate} • ${item.scheduledTimeStart}';
+            if (item.scheduledTimeEnd.isNotEmpty) {
+              scheduleStr += ' - ${item.scheduledTimeEnd} WIB';
+            } else {
+              scheduleStr += ' WIB';
+            }
+          }
+
+          cardList.add(
+            DashboardCardItem(
+              parentOrder: order,
+              title: item.itemName,
+              dateSchedule: scheduleStr,
+              location: item.locationName.isNotEmpty
+                  ? item.locationName
+                  : order.displayAddress,
+              penerimaName: order.penerimaName,
+            ),
+          );
+        }
+      } else {
+        cardList.add(
+          DashboardCardItem(
+            parentOrder: order,
+            title: order.categoryName,
+            dateSchedule: order.fullScheduleLabel,
+            location: order.displayAddress,
+            penerimaName: order.penerimaName,
+          ),
+        );
+      }
+    }
+
+    return cardList;
+  }
+
   // ── Redesigned Service Card ──
-  Widget _buildServiceCard(Order order) {
+  Widget _buildServiceCard(DashboardCardItem item) {
+    final order = item.parentOrder;
     final isConfirmed = order.status.toUpperCase() == 'ACCEPTED';
     final urgencyColor = _urgencyColor(order.urgencyName);
     final statusLabel = _statusLabel(order.status);
@@ -793,7 +838,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            order.displayAddress,
+                            item.location,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,
@@ -826,7 +871,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Category badge
+                  // Category / Item Misa Name badge
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 7, vertical: 2.5),
@@ -835,18 +880,20 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      order.categoryName,
+                      item.title,
                       style: const TextStyle(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF1E5399),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(height: 6),
                   // Nama penerima sakramen — main title
                   Text(
-                    order.penerimaName,
+                    item.penerimaName,
                     style: const TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.bold,
@@ -897,7 +944,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          order.fullScheduleLabel,
+                          item.dateSchedule,
                           style: const TextStyle(
                             fontSize: 10,
                             color: Color(0xFF64748B),
@@ -933,4 +980,20 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
       ),
     );
   }
+}
+
+class DashboardCardItem {
+  final Order parentOrder;
+  final String title;
+  final String dateSchedule;
+  final String location;
+  final String penerimaName;
+
+  DashboardCardItem({
+    required this.parentOrder,
+    required this.title,
+    required this.dateSchedule,
+    required this.location,
+    required this.penerimaName,
+  });
 }
