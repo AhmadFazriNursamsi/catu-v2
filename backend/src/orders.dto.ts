@@ -26,6 +26,12 @@ export class CreateOrderItemDto {
 }
 
 export class CreateOrderDto {
+  @ApiPropertyOptional({ example: 1, description: 'ID User yang membuat order' })
+  @IsNumber()
+  @IsInt()
+  @IsOptional()
+  userId?: number;
+
   @ApiProperty({ example: 1, description: 'ID Kategori Pelayanan (1: Perminyakan, 2: Misa Kedukaan, dll)' })
   @IsNumber()
   @IsInt()

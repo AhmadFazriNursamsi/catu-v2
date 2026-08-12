@@ -6,7 +6,8 @@ import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 
 class CreatePerminyakanScreen extends StatefulWidget {
-  const CreatePerminyakanScreen({super.key});
+  final int? userId;
+  const CreatePerminyakanScreen({super.key, this.userId});
 
   @override
   State<CreatePerminyakanScreen> createState() =>
@@ -136,6 +137,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       locationName: _alamatController.text,
       addressDetail: _alamatController.text,
       notes: notes,
+      userId: widget.userId,
     );
 
     setState(() => _isLoading = false);

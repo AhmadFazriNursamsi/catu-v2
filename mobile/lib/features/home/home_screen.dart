@@ -28,7 +28,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadOrders() async {
     setState(() => _isLoading = true);
-    final orders = await ApiService.getOrders();
+    final u = widget.user;
+    final String roleCode = u['roleCode'] ?? u['role_code'] ?? u['role'] ?? 'UMAT';
+    // Umat: filter orders by their own userId. Romo: get all orders.
+    final rawId = u['id'] ?? u['userId'] ?? u['user_id'];
+    final int? userId = rawId != null ? int.tryParse(rawId.toString()) : null;
+    final orders = await ApiService.getOrders(
+      userId: roleCode.startsWith('ROMO') ? null : userId,
+    );
     setState(() {
       _orders = orders;
       _isLoading = false;

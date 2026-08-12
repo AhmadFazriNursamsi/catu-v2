@@ -27,6 +27,11 @@ class UmatDashboardView extends StatefulWidget {
 class _UmatDashboardViewState extends State<UmatDashboardView> {
   int _currentNavIndex = 0;
 
+  int? get _userId {
+    final raw = widget.user['id'] ?? widget.user['userId'] ?? widget.user['user_id'];
+    return raw != null ? int.tryParse(raw.toString()) : null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final String userName =
@@ -332,7 +337,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (_) =>
-                                        const CreatePerminyakanScreen()),
+                                        CreatePerminyakanScreen(userId: _userId)),
                               );
                               widget.onRefresh();
                             },
@@ -522,7 +527,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => const CreatePerminyakanScreen()),
+                        builder: (_) => CreatePerminyakanScreen(userId: _userId)),
                   );
                   widget.onRefresh();
                 },

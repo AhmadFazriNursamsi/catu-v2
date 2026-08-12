@@ -211,10 +211,13 @@ class ApiService {
     ];
   }
 
-  // 2. Fetch Active Orders List
-  static Future<List<Order>> getOrders() async {
+  // 2. Fetch Orders - filtered by userId for Umat, all for Romo
+  static Future<List<Order>> getOrders({int? userId}) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/orders'));
+      final url = userId != null
+          ? '$baseUrl/orders?userId=$userId'
+          : '$baseUrl/orders';
+      final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => Order.fromJson(json)).toList();
@@ -235,6 +238,7 @@ class ApiService {
     required String addressDetail,
     String? notes,
     List<OrderItem>? items,
+    int? userId,
   }) async {
     try {
       final body = {
@@ -245,6 +249,7 @@ class ApiService {
         'locationName': locationName,
         'addressDetail': addressDetail,
         'notes': notes ?? '',
+        if (userId != null) 'userId': userId,
         if (items != null && items.isNotEmpty)
           'items': items.map((i) => i.toJson()).toList(),
       };

@@ -757,13 +757,15 @@ export class OrdersController {
   })
   async createOrder(@Body() dto: CreateOrderDto) {
     const orderNum = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+    // Use userId from DTO, fallback to 1 if not provided
+    const userId = dto.userId && dto.userId > 0 ? dto.userId : 1;
 
     const orderResult = await this.dataSource.query(
       `INSERT INTO orders (order_number, user_id, service_category_id, urgency_level_id, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, status, scheduled_date, scheduled_time, location_name, address_detail, notes)
        VALUES ($1, $2, $3, $4, 1, 10, 101, 1001, 3175, 'PENDING', $5, $6, $7, $8, $9) RETURNING id, order_number, status, created_at`,
       [
         orderNum,
-        1,
+        userId,
         dto.serviceCategoryId,
         dto.urgencyLevelId,
         dto.scheduledDate,
@@ -794,7 +796,7 @@ export class OrdersController {
     const groupId = groupResult[0].id;
 
     const initialMembers = [
-      { userId: 1, role: 'UMAT' },
+      { userId: userId, role: 'UMAT' },
       { userId: 4, role: 'PENGURUS_LINGKUNGAN' },
       { userId: 5, role: 'PENGURUS_LINGKUNGAN' },
       { userId: 6, role: 'KOORDINATOR_KEUSKUPAN' },
@@ -822,7 +824,21 @@ export class OrdersController {
   @Get()
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Mendapatkan Daftar Pelayanan / Monitoring Orders dari Database PostgreSQL' })
-  async getOrders() {
+  async getOrders(@Query('userId') userId?: string) {
+    if (userId && !isNaN(parseInt(userId))) {
+      // Filter by specific user
+      return await this.dataSource.query(
+        `SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, o.scheduled_date, o.location_name, p.full_name as pemohon_name
+         FROM orders o
+         JOIN service_categories sc ON o.service_category_id = sc.id
+         JOIN urgency_levels ul ON o.urgency_level_id = ul.id
+         JOIN user_profiles p ON o.user_id = p.user_id
+         WHERE o.user_id = $1
+         ORDER BY o.id DESC`,
+        [parseInt(userId)],
+      );
+    }
+    // No filter: return all (for Romo / admin)
     return await this.dataSource.query(
       `SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, o.scheduled_date, o.location_name, p.full_name as pemohon_name
        FROM orders o
