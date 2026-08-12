@@ -451,7 +451,6 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
       'Hubungan: $_selectedHubungan',
       'Tgl Meninggal: ${_tanggalMeninggalController.text}',
       'Waktu Meninggal: $_waktuMeninggal',
-      'Jumlah Misa: ${_misaList.length} sesi',
       if (_catatanController.text.isNotEmpty)
         'Catatan: ${_catatanController.text}',
     ].join(' | ');
