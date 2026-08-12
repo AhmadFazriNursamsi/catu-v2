@@ -402,6 +402,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                           builder: (_) => OrderDetailScreen(
                                             order: item.parentOrder,
                                             userName: userName,
+                                            selectedItemTitle: item.title,
                                           ),
                                         ),
                                       );

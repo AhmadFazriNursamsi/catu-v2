@@ -9,11 +9,13 @@ import '../chat/chat_screen.dart';
 class OrderDetailScreen extends StatefulWidget {
   final Order order;
   final String userName;
+  final String? selectedItemTitle;
 
   const OrderDetailScreen({
     Key? key,
     required this.order,
     required this.userName,
+    this.selectedItemTitle,
   }) : super(key: key);
 
   @override
@@ -346,7 +348,34 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _buildMisaDetailCard(OrderItem item, int index) {
+  Widget _buildSingleMisaCard(Order order) {
+    OrderItem? targetItem;
+    if (widget.selectedItemTitle != null && order.items.isNotEmpty) {
+      for (final item in order.items) {
+        if (item.itemName.toLowerCase().trim() ==
+            widget.selectedItemTitle!.toLowerCase().trim()) {
+          targetItem = item;
+          break;
+        }
+      }
+    }
+    targetItem ??= (order.items.isNotEmpty ? order.items.first : null);
+
+    final OrderItem displayItem = targetItem ??
+        OrderItem(
+          itemName: order.categoryName,
+          scheduledDate: order.scheduledDate,
+          scheduledTimeStart: order.jamMulaiLabel,
+          scheduledTimeEnd: order.jamSelesaiLabel.isNotEmpty
+              ? order.jamSelesaiLabel
+              : 'Selesai',
+          locationName: order.displayAddress,
+        );
+
+    return _buildMisaDetailCard(displayItem);
+  }
+
+  Widget _buildMisaDetailCard(OrderItem item) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
@@ -645,23 +674,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           child: Divider(height: 1, color: Color(0xFFF1F5F9)),
                         ),
 
-                        if (order.items.isNotEmpty) ...[
-                          for (int i = 0; i < order.items.length; i++)
-                            _buildMisaDetailCard(order.items[i], i),
-                        ] else ...[
-                          _buildMisaDetailCard(
-                            OrderItem(
-                              itemName: order.categoryName,
-                              scheduledDate: order.scheduledDate,
-                              scheduledTimeStart: order.jamMulaiLabel,
-                              scheduledTimeEnd: order.jamSelesaiLabel.isNotEmpty
-                                  ? order.jamSelesaiLabel
-                                  : 'Selesai',
-                              locationName: order.displayAddress,
-                            ),
-                            0,
-                          ),
-                        ],
+                        // ── Exactly 1 Card Per Detail Screen ──
+                        _buildSingleMisaCard(order),
 
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 20),
