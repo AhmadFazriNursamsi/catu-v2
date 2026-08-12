@@ -1004,6 +1004,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
           const SizedBox(height: 6),
         ],
         DropdownButtonFormField<T>(
+          key: ValueKey('${label}_${safeValue}_${items.length}_$_isSameParish'),
           value: safeValue,
           validator: validator,
           isExpanded: true,
