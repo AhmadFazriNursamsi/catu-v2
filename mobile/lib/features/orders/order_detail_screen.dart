@@ -348,7 +348,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _buildSingleMisaCard(Order order) {
+  Widget _buildTitleDrivenMisaSection(Order order) {
     OrderItem? targetItem;
     if (widget.selectedItemTitle != null && order.items.isNotEmpty) {
       for (final item in order.items) {
@@ -372,121 +372,72 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           locationName: order.displayAddress,
         );
 
-    return _buildMisaDetailCard(displayItem);
-  }
-
-  Widget _buildMisaDetailCard(OrderItem item) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppConstants.primaryBlue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.church_rounded,
-                  size: 18,
-                  color: AppConstants.primaryBlue,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Cardless Prominent Title Header (Nama Misa) ──
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppConstants.primaryBlue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  item.itemName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+              child: const Icon(
+                Icons.church_rounded,
+                size: 22,
+                color: AppConstants.primaryBlue,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'PELAYANAN MISA KEDUKAAN',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      color: AppConstants.primaryBlue,
+                      letterSpacing: 0.8,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 2),
+                  Text(
+                    displayItem.itemName,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: Color(0xFFE2E8F0)),
-          const SizedBox(height: 12),
-          // Tanggal & Jam Execution
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.calendar_today_rounded,
-                  size: 16, color: Color(0xFF1E5399)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Waktu Misa',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${item.scheduledDate} • ${item.scheduledTimeStart} - ${item.scheduledTimeEnd} WIB',
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          // Lokasi Execution
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.location_on_rounded,
-                  size: 16, color: Color(0xFF0D9488)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Lokasi Pelaksanaan',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item.locationName.isNotEmpty ? item.locationName : '-',
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // ── Cardless Waktu & Lokasi Info Rows ──
+        _buildSeamlessInfoRow(
+          label: 'Waktu Misa',
+          value:
+              '${displayItem.scheduledDate} • ${displayItem.scheduledTimeStart} - ${displayItem.scheduledTimeEnd} WIB',
+          icon: Icons.calendar_today_rounded,
+        ),
+        const SizedBox(height: 8),
+        _buildSeamlessInfoRow(
+          label: 'Lokasi Pelaksanaan',
+          value: displayItem.locationName.isNotEmpty
+              ? displayItem.locationName
+              : order.displayAddress,
+          icon: Icons.location_on_rounded,
+        ),
+      ],
     );
   }
 
@@ -633,7 +584,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
                         const SizedBox(height: 24),
 
-                        // ── Data Almarhum / Almarhumah Summary Card ──
+                        // ── 1. Cardless Prominent Misa Title & Execution Info ──
+                        _buildTitleDrivenMisaSection(order),
+
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        ),
+
+                        // ── 2. Data Almarhum / Almarhumah Summary ──
                         _buildSectionHeader(
                           title: 'Ringkasan Data Almarhum / Almarhumah',
                           icon: Icons.person_pin_rounded,
@@ -674,15 +633,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           child: Divider(height: 1, color: Color(0xFFF1F5F9)),
                         ),
 
-                        // ── Exactly 1 Card Per Detail Screen ──
-                        _buildSingleMisaCard(order),
-
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20),
-                          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        ),
-
-                        // ── Lokasi Paroki Penerima ──
+                        // ── 3. Lokasi Paroki Penerima ──
                         _buildSectionHeader(
                           title: 'Lokasi & Paroki Penerima',
                           icon: Icons.account_balance_outlined,
@@ -705,7 +656,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           child: Divider(height: 1, color: Color(0xFFF1F5F9)),
                         ),
 
-                        // ── Catatan Tambahan & Profile Pemohon ──
+                        // ── 4. Catatan Tambahan & Profile Pemohon ──
                         _buildSectionHeader(
                           title: 'Catatan Tambahan & Pemohon',
                           icon: Icons.notes_rounded,
