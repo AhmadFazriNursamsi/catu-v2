@@ -94,6 +94,10 @@ export class RegisterUserDto {
   @ApiPropertyOptional({ example: false, description: 'Flag Jabatan Aktif/Tidak (default false / PENDING persetujuan Admin)' })
   @IsOptional()
   isJabatanActive?: boolean;
+
+  @ApiPropertyOptional({ example: 1, description: 'ID Ordo / Kongregasi (Wajib untuk Romo Ordo)' })
+  @IsOptional()
+  ordoId?: number;
 }
 
 export class LoginDto {

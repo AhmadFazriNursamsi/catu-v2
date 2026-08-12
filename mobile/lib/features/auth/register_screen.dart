@@ -194,6 +194,18 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   void _handleRegister() async {
     if (!_formKey.currentState!.validate()) {
       setState(() => _autovalidateMode = AutovalidateMode.onUserInteraction);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.white),
+            SizedBox(width: 10),
+            Expanded(child: Text('Harap lengkapi semua kolom bertanda wajib dengan benar.')),
+          ]),
+          backgroundColor: Colors.orange.shade800,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
       return;
     }
 
@@ -247,7 +259,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       parokiId: _selectedParokiId,
       wilayahId: _selectedWilayahId,
       lingkunganId: _selectedLingkunganId,
-      ordoId: _selectedOrdoId,
+      ordoId: _selectedRole == 'ROMO_ORDO' ? _selectedOrdoId : null,
       pengurusPosition: pengurusPosition,
       romoPosition: romoPosition,
       jabatanStartYear: jabatanStartYear,
@@ -260,13 +272,24 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
     if (!mounted) return;
 
-    if (res['statusCode'] == 201 || res['user'] != null) {
+    String responseMsg = 'Registrasi berhasil! Silakan login.';
+    if (res['message'] != null) {
+      if (res['message'] is List) {
+        responseMsg = (res['message'] as List).join(', ');
+      } else {
+        responseMsg = res['message'].toString();
+      }
+    }
+
+    final isSuccess = res['statusCode'] == 201 || res['statusCode'] == 200 || res['user'] != null;
+
+    if (isSuccess) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(children: [
             const Icon(Icons.check_circle_rounded, color: Colors.white),
             const SizedBox(width: 10),
-            Expanded(child: Text(res['message'] ?? 'Registrasi berhasil! Silakan login.')),
+            Expanded(child: Text(responseMsg)),
           ]),
           backgroundColor: Colors.green.shade600,
           behavior: SnackBarBehavior.floating,
@@ -280,7 +303,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
           content: Row(children: [
             const Icon(Icons.error_outline_rounded, color: Colors.white),
             const SizedBox(width: 10),
-            Expanded(child: Text(res['message'] ?? 'Registrasi Gagal')),
+            Expanded(child: Text(responseMsg)),
           ]),
           backgroundColor: Colors.red.shade600,
           behavior: SnackBarBehavior.floating,
