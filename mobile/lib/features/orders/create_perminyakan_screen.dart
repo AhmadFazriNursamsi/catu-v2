@@ -67,10 +67,41 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   }
 
   Future<void> _loadMasterData() async {
+    await _forceResetToProfileLocation();
+  }
+
+  Future<void> _forceResetToProfileLocation() async {
     final kList = await ApiService.getKeuskupanList();
-    final pList = await ApiService.getParokiList();
     final provList = await ApiService.getProvinsiList();
-    final kabList = await ApiService.getKabupatenKotaList();
+
+    int? userKeuskupanId;
+    int? userProvinsiId;
+
+    if (widget.user != null) {
+      final u = widget.user!;
+      final rawK = u['keuskupanId'] ?? u['keuskupan_id'];
+      final rawProv = u['provinsiId'] ?? u['provinsi_id'];
+
+      if (rawK != null) userKeuskupanId = int.tryParse(rawK.toString());
+      if (rawProv != null) userProvinsiId = int.tryParse(rawProv.toString());
+
+      if (userKeuskupanId == null) {
+        final kName = (u['keuskupanName'] ?? u['keuskupan_name'] ?? '').toString().toLowerCase();
+        if (kName.isNotEmpty && kList.isNotEmpty) {
+          final match = kList.firstWhere(
+            (e) => e['name'].toString().toLowerCase().contains(kName) || kName.contains(e['name'].toString().toLowerCase()),
+            orElse: () => kList.first,
+          );
+          userKeuskupanId = int.tryParse(match['id'].toString());
+        }
+      }
+    }
+
+    userKeuskupanId ??= 1;
+    userProvinsiId ??= 31;
+
+    final pList = await ApiService.getParokiList(keuskupanId: userKeuskupanId);
+    final kabList = await ApiService.getKabupatenKotaList(provinsiId: userProvinsiId);
 
     if (mounted) {
       setState(() {
@@ -79,9 +110,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
         _provinsiList = provList;
         _kabupatenKotaList = kabList;
 
-        if (_isSameParish) {
-          _applyProfileLocation();
-        }
+        _applyProfileLocation();
       });
     }
   }
@@ -138,15 +167,15 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   Future<void> _onKeuskupanChanged(int? keuskupanId) async {
     setState(() {
       _selectedKeuskupanId = keuskupanId;
+      _selectedParokiId = null;
     });
     if (keuskupanId != null) {
       final pList = await ApiService.getParokiList(keuskupanId: keuskupanId);
       if (mounted) {
         setState(() {
           _parokiList = pList;
-          if (_parokiList.isNotEmpty &&
-              !_parokiList.any((e) => e['id'] == _selectedParokiId)) {
-            _selectedParokiId = _parokiList.first['id'];
+          if (_parokiList.isNotEmpty) {
+            _selectedParokiId = int.tryParse(_parokiList.first['id'].toString());
           }
         });
       }
@@ -156,15 +185,15 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   Future<void> _onProvinsiChanged(int? provinsiId) async {
     setState(() {
       _selectedProvinsiId = provinsiId;
+      _selectedKabupatenKotaId = null;
     });
     if (provinsiId != null) {
       final list = await ApiService.getKabupatenKotaList(provinsiId: provinsiId);
       if (mounted) {
         setState(() {
           _kabupatenKotaList = list;
-          if (_kabupatenKotaList.isNotEmpty &&
-              !_kabupatenKotaList.any((e) => e['id'] == _selectedKabupatenKotaId)) {
-            _selectedKabupatenKotaId = _kabupatenKotaList.first['id'];
+          if (_kabupatenKotaList.isNotEmpty) {
+            _selectedKabupatenKotaId = int.tryParse(_kabupatenKotaList.first['id'].toString());
           }
         });
       }
@@ -600,13 +629,14 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                       iconColor: const Color(0xFF1E5399),
                       children: [
                         InkWell(
-                          onTap: () {
+                          onTap: () async {
+                            final nextVal = !_isSameParish;
                             setState(() {
-                              _isSameParish = !_isSameParish;
-                              if (_isSameParish) {
-                                _applyProfileLocation();
-                              }
+                              _isSameParish = nextVal;
                             });
+                            if (nextVal) {
+                              await _forceResetToProfileLocation();
+                            }
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
@@ -649,13 +679,13 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                                 Switch.adaptive(
                                   value: _isSameParish,
                                   activeTrackColor: const Color(0xFF0D9488),
-                                  onChanged: (val) {
+                                  onChanged: (val) async {
                                     setState(() {
                                       _isSameParish = val;
-                                      if (val) {
-                                        _applyProfileLocation();
-                                      }
                                     });
+                                    if (val) {
+                                      await _forceResetToProfileLocation();
+                                    }
                                   },
                                 ),
                               ],
