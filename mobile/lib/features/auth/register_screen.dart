@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../core/utils/fade_slide_route.dart';
+import '../../widgets/searchable_select_field.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -383,88 +384,64 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         children: [
           const SizedBox(height: 12),
           // 1. Keuskupan
-          DropdownButtonFormField<int>(
+          SearchableSelectField<int>(
+            label: 'Keuskupan',
+            icon: Icons.account_balance_outlined,
             value: _selectedKeuskupanId,
-            decoration: _fieldDeco(label: 'Keuskupan', icon: Icons.account_balance_outlined),
-            dropdownColor: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            isExpanded: true,
-            items: _keuskupanList.map((item) {
-              final id = int.parse(item['id'].toString());
-              final name = item['name'].toString();
-              return DropdownMenuItem<int>(
-                value: id,
-                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
-              );
-            }).toList(),
+            items: _keuskupanList.map((item) => SearchableSelectItem<int>(
+              value: int.parse(item['id'].toString()),
+              label: item['name'].toString(),
+            )).toList(),
             onChanged: (val) {
               if (val != null) _onKeuskupanChanged(val);
             },
+            emptyMessage: 'Keuskupan tidak ditemukan',
           ),
-          const SizedBox(height: 12),
 
           // 2. Paroki
-          DropdownButtonFormField<int>(
+          SearchableSelectField<int>(
+            label: 'Paroki',
+            icon: Icons.church_outlined,
             value: _selectedParokiId,
-            decoration: _fieldDeco(label: 'Paroki', icon: Icons.church_outlined),
-            dropdownColor: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            isExpanded: true,
-            items: _parokiList.map((item) {
-              final id = int.parse(item['id'].toString());
-              final name = item['name'].toString();
-              return DropdownMenuItem<int>(
-                value: id,
-                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
-              );
-            }).toList(),
+            items: _parokiList.map((item) => SearchableSelectItem<int>(
+              value: int.parse(item['id'].toString()),
+              label: item['name'].toString(),
+            )).toList(),
             onChanged: (val) {
               if (val != null) _onParokiChanged(val);
             },
+            emptyMessage: 'Paroki tidak ditemukan pada keuskupan ini',
           ),
-          const SizedBox(height: 12),
 
           // 3. Wilayah
-          DropdownButtonFormField<int>(
+          SearchableSelectField<int>(
+            label: 'Wilayah',
+            icon: Icons.map_outlined,
             value: _selectedWilayahId,
-            decoration: _fieldDeco(label: 'Wilayah', icon: Icons.map_outlined),
-            dropdownColor: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            isExpanded: true,
-            items: _wilayahList.map((item) {
-              final id = int.parse(item['id'].toString());
-              final name = item['name'].toString();
-              return DropdownMenuItem<int>(
-                value: id,
-                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
-              );
-            }).toList(),
+            items: _wilayahList.map((item) => SearchableSelectItem<int>(
+              value: int.parse(item['id'].toString()),
+              label: item['name'].toString(),
+            )).toList(),
             onChanged: (val) {
               if (val != null) _onWilayahChanged(val);
             },
+            emptyMessage: 'Wilayah tidak ditemukan pada paroki ini',
           ),
-          const SizedBox(height: 12),
 
           // 4. Lingkungan
-          DropdownButtonFormField<int>(
+          SearchableSelectField<int>(
+            label: 'Lingkungan',
+            icon: Icons.home_work_outlined,
             value: _selectedLingkunganId,
-            decoration: _fieldDeco(label: 'Lingkungan', icon: Icons.home_work_outlined),
-            dropdownColor: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            isExpanded: true,
-            items: _lingkunganList.map((item) {
-              final id = int.parse(item['id'].toString());
-              final name = item['name'].toString();
-              return DropdownMenuItem<int>(
-                value: id,
-                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
-              );
-            }).toList(),
+            items: _lingkunganList.map((item) => SearchableSelectItem<int>(
+              value: int.parse(item['id'].toString()),
+              label: item['name'].toString(),
+            )).toList(),
             onChanged: (val) {
               if (val != null) setState(() => _selectedLingkunganId = val);
             },
+            emptyMessage: 'Lingkungan tidak ditemukan pada wilayah ini',
           ),
-          const SizedBox(height: 12),
         ],
       );
     } else if (_selectedRole == 'ROMO_PAROKI') {
@@ -473,46 +450,34 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         children: [
           const SizedBox(height: 12),
           // 1. Keuskupan
-          DropdownButtonFormField<int>(
+          SearchableSelectField<int>(
+            label: 'Keuskupan',
+            icon: Icons.account_balance_outlined,
             value: _selectedKeuskupanId,
-            decoration: _fieldDeco(label: 'Keuskupan', icon: Icons.account_balance_outlined),
-            dropdownColor: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            isExpanded: true,
-            items: _keuskupanList.map((item) {
-              final id = int.parse(item['id'].toString());
-              final name = item['name'].toString();
-              return DropdownMenuItem<int>(
-                value: id,
-                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
-              );
-            }).toList(),
+            items: _keuskupanList.map((item) => SearchableSelectItem<int>(
+              value: int.parse(item['id'].toString()),
+              label: item['name'].toString(),
+            )).toList(),
             onChanged: (val) {
               if (val != null) _onKeuskupanChanged(val);
             },
+            emptyMessage: 'Keuskupan tidak ditemukan',
           ),
-          const SizedBox(height: 12),
 
           // 2. Paroki
-          DropdownButtonFormField<int>(
+          SearchableSelectField<int>(
+            label: 'Paroki',
+            icon: Icons.church_outlined,
             value: _selectedParokiId,
-            decoration: _fieldDeco(label: 'Paroki', icon: Icons.church_outlined),
-            dropdownColor: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            isExpanded: true,
-            items: _parokiList.map((item) {
-              final id = int.parse(item['id'].toString());
-              final name = item['name'].toString();
-              return DropdownMenuItem<int>(
-                value: id,
-                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
-              );
-            }).toList(),
+            items: _parokiList.map((item) => SearchableSelectItem<int>(
+              value: int.parse(item['id'].toString()),
+              label: item['name'].toString(),
+            )).toList(),
             onChanged: (val) {
               if (val != null) _onParokiChanged(val);
             },
+            emptyMessage: 'Paroki tidak ditemukan pada keuskupan ini',
           ),
-          const SizedBox(height: 12),
         ],
       );
     } else if (_selectedRole == 'ROMO_ORDO') {
@@ -521,25 +486,19 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         children: [
           const SizedBox(height: 12),
           // 1. Ordo
-          DropdownButtonFormField<int>(
+          SearchableSelectField<int>(
+            label: 'Ordo / Kongregasi',
+            icon: Icons.workspace_premium_outlined,
             value: _selectedOrdoId,
-            decoration: _fieldDeco(label: 'Ordo / Kongregasi', icon: Icons.workspace_premium_outlined),
-            dropdownColor: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            isExpanded: true,
-            items: _ordoList.map((item) {
-              final id = int.parse(item['id'].toString());
-              final name = item['name'].toString();
-              return DropdownMenuItem<int>(
-                value: id,
-                child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
-              );
-            }).toList(),
+            items: _ordoList.map((item) => SearchableSelectItem<int>(
+              value: int.parse(item['id'].toString()),
+              label: item['name'].toString(),
+            )).toList(),
             onChanged: (val) {
               if (val != null) setState(() => _selectedOrdoId = val);
             },
+            emptyMessage: 'Ordo tidak ditemukan',
           ),
-          const SizedBox(height: 12),
         ],
       );
     }
