@@ -37,6 +37,12 @@ export class AuthController implements OnModuleInit {
           JOIN roles r ON u.role_id = r.id 
           WHERE r.code NOT LIKE 'ROMO%'
         );
+
+        -- Cleanup active flag for non-leadership positions (ordinary Umat & ordinary Romo)
+        UPDATE user_profiles 
+        SET is_jabatan_active = NULL 
+        WHERE (pengurus_position IS NULL OR pengurus_position = '') 
+          AND (romo_position IS NULL OR romo_position != 'KETUA_ROMO');
       `);
     } catch (e) {
       console.log('Auto-migration user_profiles notice:', e);
@@ -102,9 +108,9 @@ export class AuthController implements OnModuleInit {
       const isRomo = dto.roleCode === RoleCodeEnum.ROMO_PAROKI || dto.roleCode === RoleCodeEnum.ROMO_ORDO || (dto.roleCode as string).startsWith('ROMO');
       const romoPositionVal = isRomo ? (dto.romoPosition || 'ROMO_BIASA') : null;
 
-      // Flag Jabatan default is FALSE (Pending Admin Approval) for leadership positions
-      const isLeadershipPos = dto.pengurusPosition || (isRomo && dto.romoPosition === 'KETUA_ROMO');
-      const initialActiveFlag = isLeadershipPos ? false : (dto.isJabatanActive !== undefined ? dto.isJabatanActive : true);
+      // Flag Jabatan applies ONLY to leadership positions. Ordinary Umat & ordinary Romo have NO leadership position (null).
+      const isLeadershipPos = Boolean(dto.pengurusPosition || (isRomo && dto.romoPosition === 'KETUA_ROMO'));
+      const initialActiveFlag = isLeadershipPos ? false : null;
 
       // Extract years from dates if missing
       let startYear = dto.jabatanStartYear;
