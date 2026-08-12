@@ -642,14 +642,17 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                           hint: 'Pilih Keuskupan',
                           prefixIcon: Icons.account_balance_rounded,
                           items: _keuskupanList
-                              .map((e) => e['id'] as int)
+                              .map((e) => int.tryParse(e['id'].toString()))
+                              .whereType<int>()
                               .toList(),
                           itemLabel: (id) {
                             final found = _keuskupanList.firstWhere(
-                              (e) => e['id'] == id,
+                              (e) =>
+                                  (int.tryParse(e['id'].toString()) ?? -1) ==
+                                  id,
                               orElse: () => {'name': 'Keuskupan Agung Jakarta'},
                             );
-                            return found['name'] ?? '';
+                            return found['name']?.toString() ?? '';
                           },
                           onChanged: _isSameParish ? null : _onKeuskupanChanged,
                         ),
@@ -662,18 +665,23 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                           hint: 'Pilih Paroki',
                           prefixIcon: Icons.church_outlined,
                           items: _parokiList
-                              .map((e) => e['id'] as int)
+                              .map((e) => int.tryParse(e['id'].toString()))
+                              .whereType<int>()
                               .toList(),
                           itemLabel: (id) {
                             final found = _parokiList.firstWhere(
-                              (e) => e['id'] == id,
+                              (e) =>
+                                  (int.tryParse(e['id'].toString()) ?? -1) ==
+                                  id,
                               orElse: () => {
                                 'name': 'Paroki Alam Sutera - St. Laurensius'
                               },
                             );
-                            return found['name'] ?? '';
+                            return found['name']?.toString() ?? '';
                           },
-                          onChanged: _isSameParish ? null : (v) => setState(() => _selectedParokiId = v),
+                          onChanged: _isSameParish
+                              ? null
+                              : (v) => setState(() => _selectedParokiId = v),
                         ),
                         const SizedBox(height: 14),
 
@@ -684,14 +692,17 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                           hint: 'Pilih Provinsi',
                           prefixIcon: Icons.map_rounded,
                           items: _provinsiList
-                              .map((e) => e['id'] as int)
+                              .map((e) => int.tryParse(e['id'].toString()))
+                              .whereType<int>()
                               .toList(),
                           itemLabel: (id) {
                             final found = _provinsiList.firstWhere(
-                              (e) => e['id'] == id,
+                              (e) =>
+                                  (int.tryParse(e['id'].toString()) ?? -1) ==
+                                  id,
                               orElse: () => {'name': 'DKI JAKARTA'},
                             );
-                            return found['name'] ?? '';
+                            return found['name']?.toString() ?? '';
                           },
                           onChanged: _isSameParish ? null : _onProvinsiChanged,
                         ),
@@ -704,14 +715,17 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                           hint: 'Pilih Kota',
                           prefixIcon: Icons.location_city_rounded,
                           items: _kabupatenKotaList
-                              .map((e) => e['id'] as int)
+                              .map((e) => int.tryParse(e['id'].toString()))
+                              .whereType<int>()
                               .toList(),
                           itemLabel: (id) {
                             final found = _kabupatenKotaList.firstWhere(
-                              (e) => e['id'] == id,
+                              (e) =>
+                                  (int.tryParse(e['id'].toString()) ?? -1) ==
+                                  id,
                               orElse: () => {'name': 'KOTA JAKARTA UTARA'},
                             );
-                            return found['name'] ?? '';
+                            return found['name']?.toString() ?? '';
                           },
                           onChanged: _isSameParish
                               ? null
