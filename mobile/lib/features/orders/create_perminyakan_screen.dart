@@ -261,6 +261,27 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     );
 
     if (picked != null) {
+      final dateParts = _tanggalController.text.split('/');
+      if (dateParts.length == 3) {
+        final day = int.tryParse(dateParts[0]);
+        final month = int.tryParse(dateParts[1]);
+        final year = int.tryParse(dateParts[2]);
+
+        final now = DateTime.now();
+        if (day == now.day && month == now.month && year == now.year) {
+          final nowMinutes = now.hour * 60 + now.minute;
+          final pickedMinutes = picked.hour * 60 + picked.minute;
+          final currentTimeStr =
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+          if (pickedMinutes < nowMinutes) {
+            _showError(
+                'Untuk pelayanan hari ini, ${isStart ? "jam mulai" : "jam selesai"} tidak boleh lebih kecil dari jam sekarang ($currentTimeStr).');
+            return;
+          }
+        }
+      }
+
       final hh = picked.hour.toString().padLeft(2, '0');
       final mm = picked.minute.toString().padLeft(2, '0');
       setState(() {
@@ -296,6 +317,46 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     if (_jamMulai == null || _jamSelesai == null) {
       _showError('Jam mulai dan selesai harus dipilih.');
       return;
+    }
+
+    final startParts = _jamMulai!.split(':');
+    final endParts = _jamSelesai!.split(':');
+    final startHour = int.tryParse(startParts[0]) ?? 0;
+    final startMinute = int.tryParse(startParts[1]) ?? 0;
+    final endHour = int.tryParse(endParts[0]) ?? 0;
+    final endMinute = int.tryParse(endParts[1]) ?? 0;
+
+    final startMinutes = startHour * 60 + startMinute;
+    final endMinutes = endHour * 60 + endMinute;
+
+    if (endMinutes <= startMinutes) {
+      _showError('Jam selesai harus lebih besar dari jam mulai.');
+      return;
+    }
+
+    final dateParts = _tanggalController.text.split('/');
+    if (dateParts.length == 3) {
+      final day = int.tryParse(dateParts[0]);
+      final month = int.tryParse(dateParts[1]);
+      final year = int.tryParse(dateParts[2]);
+
+      final now = DateTime.now();
+      if (day == now.day && month == now.month && year == now.year) {
+        final nowMinutes = now.hour * 60 + now.minute;
+        final currentTimeStr =
+            '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+        if (startMinutes < nowMinutes) {
+          _showError(
+              'Untuk pelayanan hari ini, jam mulai tidak boleh lebih kecil dari jam sekarang ($currentTimeStr).');
+          return;
+        }
+        if (endMinutes < nowMinutes) {
+          _showError(
+              'Untuk pelayanan hari ini, jam selesai tidak boleh lebih kecil dari jam sekarang ($currentTimeStr).');
+          return;
+        }
+      }
     }
 
     setState(() => _isLoading = true);
