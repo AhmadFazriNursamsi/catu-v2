@@ -41,7 +41,7 @@ export class AuthController implements OnModuleInit {
         -- Cleanup active flag for non-leadership positions (ordinary Umat & ordinary Romo)
         UPDATE user_profiles 
         SET is_jabatan_active = NULL 
-        WHERE (pengurus_position IS NULL OR pengurus_position = '') 
+        WHERE pengurus_position IS NULL 
           AND (romo_position IS NULL OR romo_position != 'KETUA_ROMO');
 
         -- Create master tables if not exist
@@ -415,7 +415,7 @@ export class AuthController implements OnModuleInit {
           (6, 'CSsR', 'CSsR - Kongregasi Sang Penebus'),
           (7, 'O.Carm', 'O.Carm - Ordo Karmel'),
           (8, 'SCJ', 'SCJ - Hati Kudus Yesus')
-        ON CONFLICT (id) DO NOTHING;
+        ON CONFLICT (code) DO NOTHING;
       `);
     } catch (e) {
       console.log('Auto-migration user_profiles notice:', e);
@@ -519,10 +519,11 @@ export class AuthController implements OnModuleInit {
 
       // Romo Position only applies to Romo roles (ROMO_PAROKI / ROMO_ORDO)
       const isRomo = dto.roleCode === RoleCodeEnum.ROMO_PAROKI || dto.roleCode === RoleCodeEnum.ROMO_ORDO || (dto.roleCode as string).startsWith('ROMO');
-      const romoPositionVal = isRomo ? (dto.romoPosition || 'ROMO_BIASA') : null;
+      const pengurusPositionVal = (dto.pengurusPosition && dto.pengurusPosition.trim() !== '') ? dto.pengurusPosition : null;
+      const romoPositionVal = isRomo ? ((dto.romoPosition && dto.romoPosition.trim() !== '') ? dto.romoPosition : 'ROMO_BIASA') : null;
 
       // Flag Jabatan applies ONLY to leadership positions. Ordinary Umat & ordinary Romo have NO leadership position (null).
-      const isLeadershipPos = Boolean(dto.pengurusPosition || (isRomo && dto.romoPosition === 'KETUA_ROMO'));
+      const isLeadershipPos = Boolean(pengurusPositionVal || (isRomo && romoPositionVal === 'KETUA_ROMO'));
       const initialActiveFlag = isLeadershipPos ? false : null;
 
       // Extract years from dates if missing
@@ -558,7 +559,7 @@ export class AuthController implements OnModuleInit {
           dto.wilayahId || null,
           dto.lingkunganId || null,
           dto.kabupatenKotaId || 3175,
-          dto.pengurusPosition || null,
+          pengurusPositionVal,
           romoPositionVal,
           startYear || null,
           endYear || null,
@@ -610,10 +611,10 @@ export class AuthController implements OnModuleInit {
           email: dto.email || '',
           roleCode: dto.roleCode,
           accountStatus: authUser.account_status,
-          keuskupanName: 'Keuskupan Agung Jakarta',
-          parokiName: 'Paroki Santo Antonius Padua - Otista',
-          wilayahName: 'Wilayah St. Agustinus',
-          lingkunganName: 'Lingkungan St. Agnes 1',
+          keuskupanName: keuskupanName || 'Keuskupan Agung Jakarta',
+          parokiName: parokiName || 'Paroki Kelapa Gading - St. Yakobus',
+          wilayahName: wilayahName || 'Wilayah Anastasia',
+          lingkunganName: lingkunganName || 'Lingkungan Anastasia 1',
           kabupatenKotaName: 'JAKARTA TIMUR',
           pengurusPosition: dto.pengurusPosition,
           romoPosition: romoPositionVal,
