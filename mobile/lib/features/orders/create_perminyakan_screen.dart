@@ -45,6 +45,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   List<Map<String, dynamic>> _kabupatenKotaList = [];
 
   bool _isLoading = false;
+  AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   static const _urgensiOptions = [
     'Standar',
@@ -232,6 +233,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
         _tanggalController.text =
             '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
       });
+      _formKey.currentState?.validate();
     }
   }
 
@@ -296,6 +298,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
           _jamSelesai = '$hh:$mm';
         }
       });
+      _formKey.currentState?.validate();
     }
   }
 
@@ -314,7 +317,14 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _autovalidateMode = AutovalidateMode.onUserInteraction;
+    });
+
+    if (!_formKey.currentState!.validate()) {
+      _showError('Harap lengkapi semua kolom wajib dengan benar.');
+      return;
+    }
     if (_tanggalController.text.isEmpty) {
       _showError('Tanggal pelayanan belum dipilih.');
       return;
@@ -480,6 +490,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       ),
       body: Form(
         key: _formKey,
+        autovalidateMode: _autovalidateMode,
         child: Column(
           children: [
             Expanded(
