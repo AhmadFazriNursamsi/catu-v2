@@ -23,6 +23,10 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   String _selectedRomoOrdoPosition = 'ROMO_BIASA';
   String _selectedRomoParokiPosition = 'ROMO_BIASA';
 
+  final _startYearController = TextEditingController(text: DateTime.now().year.toString());
+  final _endYearController = TextEditingController(text: (DateTime.now().year + 3).toString());
+  bool _isJabatanActive = true;
+
   bool _isLoading = false;
   bool _isLoadingRoles = true;
   bool _obscurePassword = true;
@@ -54,7 +58,20 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     _nameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _startYearController.dispose();
+    _endYearController.dispose();
     super.dispose();
+  }
+
+  bool get _needsMasaJabatan {
+    if (_selectedRole == 'ROMO_PAROKI' && _selectedRomoParokiPosition == 'KETUA_ROMO') return true;
+    if (_selectedRole == 'ROMO_ORDO' && _selectedRomoOrdoPosition == 'KETUA_ROMO') return true;
+    if (_selectedRole == 'UMAT' || _selectedRole == 'PENGURUS_LINGKUNGAN' || _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
+      if (_selectedUmatPosition == 'KETUA' || _selectedUmatPosition == 'WAKIL' || _selectedUmatPosition == 'SEKRETARIS') {
+        return true;
+      }
+    }
+    return false;
   }
 
   void _onPhoneChanged() {
@@ -111,6 +128,16 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       romoPosition = _selectedRomoParokiPosition;
     }
 
+    int? jabatanStartYear;
+    int? jabatanEndYear;
+    bool? isJabatanActive;
+
+    if (_needsMasaJabatan) {
+      jabatanStartYear = int.tryParse(_startYearController.text.trim());
+      jabatanEndYear = int.tryParse(_endYearController.text.trim());
+      isJabatanActive = _isJabatanActive;
+    }
+
     setState(() => _isLoading = true);
     final res = await ApiService.register(
       fullName: name,
@@ -119,6 +146,9 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       roleCode: finalRoleCode,
       pengurusPosition: pengurusPosition,
       romoPosition: romoPosition,
+      jabatanStartYear: jabatanStartYear,
+      jabatanEndYear: jabatanEndYear,
+      isJabatanActive: isJabatanActive,
     );
     setState(() => _isLoading = false);
 
@@ -273,6 +303,106 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       );
     }
     return const SizedBox.shrink();
+  }
+
+  Widget _buildMasaJabatanAndFlagFields() {
+    if (!_needsMasaJabatan) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFCBD5E1)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.date_range_rounded, size: 18, color: AppConstants.primaryBlue),
+                  SizedBox(width: 8),
+                  Text(
+                    'Masa Jabatan & Flag Status',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _startYearController,
+                      keyboardType: TextInputType.number,
+                      decoration: _fieldDeco(label: 'Tahun Mulai', icon: Icons.calendar_today_outlined),
+                      validator: (val) {
+                        if (!_needsMasaJabatan) return null;
+                        if (val == null || val.trim().isEmpty) return 'Wajib diisi';
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _endYearController,
+                      keyboardType: TextInputType.number,
+                      decoration: _fieldDeco(label: 'Tahun Selesai', icon: Icons.event_outlined),
+                      validator: (val) {
+                        if (!_needsMasaJabatan) return null;
+                        if (val == null || val.trim().isEmpty) return 'Wajib diisi';
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          _isJabatanActive ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                          color: _isJabatanActive ? Colors.green : Colors.grey,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isJabatanActive ? 'Flag Jabatan: AKTIF' : 'Flag Jabatan: NON-AKTIF',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: _isJabatanActive ? Colors.green.shade800 : Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Switch(
+                      value: _isJabatanActive,
+                      activeColor: AppConstants.primaryBlue,
+                      onChanged: (val) => setState(() => _isJabatanActive = val),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -514,6 +644,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
                                             // Jabatan kondisional
                                             _buildPositionDropdown(),
+                                            _buildMasaJabatanAndFlagFields(),
                                           ],
                                         ),
 

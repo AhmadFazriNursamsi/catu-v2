@@ -71,6 +71,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final String accountStatus = u['accountStatus'] ?? u['account_status'] ?? 'APPROVED';
     final String pengurusPosition = u['pengurusPosition'] ?? u['pengurus_position'] ?? '';
     final String romoPosition = u['romoPosition'] ?? u['romo_position'] ?? '';
+    final int? startYear = u['jabatanStartYear'] ?? u['jabatan_start_year'];
+    final int? endYear = u['jabatanEndYear'] ?? u['jabatan_end_year'];
+    final bool isJabatanActive = u['isJabatanActive'] ?? u['is_jabatan_active'] ?? true;
 
     final String keuskupanName = u['keuskupanName'] ?? u['keuskupan_name'] ?? 'Keuskupan Agung Jakarta';
     final String parokiName = u['parokiName'] ?? u['paroki_name'] ?? 'Paroki Otista';
@@ -200,6 +203,31 @@ class _HomeScreenState extends State<HomeScreen> {
                             formattedRole,
                             style: const TextStyle(color: AppConstants.accentGold, fontSize: 13, fontWeight: FontWeight.w600),
                           ),
+                          if (startYear != null && endYear != null) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.date_range_rounded, size: 13, color: Colors.white70),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Periode: $startYear - $endYear',
+                                  style: const TextStyle(color: Colors.white70, fontSize: 11.5),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: isJabatanActive ? Colors.green.shade600 : Colors.grey.shade600,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    isJabatanActive ? 'AKTIF' : 'NON-AKTIF',
+                                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                           const SizedBox(height: 6),
                           Row(
                             children: [

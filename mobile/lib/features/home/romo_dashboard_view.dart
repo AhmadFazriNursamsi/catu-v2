@@ -26,6 +26,11 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
   @override
   Widget build(BuildContext context) {
     final String userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Romo Samuel';
+    final String romoPos = widget.user['romoPosition'] ?? widget.user['romo_position'] ?? '';
+    final int? startYear = widget.user['jabatanStartYear'] ?? widget.user['jabatan_start_year'];
+    final int? endYear = widget.user['jabatanEndYear'] ?? widget.user['jabatan_end_year'];
+    final bool isJabatanActive = widget.user['isJabatanActive'] ?? widget.user['is_jabatan_active'] ?? true;
+    final String positionTitle = romoPos == 'KETUA_ROMO' ? 'Pastor Kepala' : 'Pastor Rekan';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -39,15 +44,47 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
-                      'Hi, $userName',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
-                        letterSpacing: -0.3,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hi, $userName',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F172A),
+                            letterSpacing: -0.3,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Text(
+                              positionTitle,
+                              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF1E5399)),
+                            ),
+                            if (startYear != null && endYear != null) ...[
+                              Text(
+                                ' • $startYear-$endYear',
+                                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                              ),
+                              const SizedBox(width: 5),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: isJabatanActive ? Colors.green.shade600 : Colors.red.shade600,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  isJabatanActive ? 'AKTIF' : 'NON-AKTIF',
+                                  style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   Row(

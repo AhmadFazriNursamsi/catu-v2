@@ -36,6 +36,9 @@ class ApiService {
     required String roleCode,
     String? pengurusPosition,
     String? romoPosition,
+    int? jabatanStartYear,
+    int? jabatanEndYear,
+    bool? isJabatanActive,
   }) async {
     try {
       final Map<String, dynamic> payload = {
@@ -54,6 +57,15 @@ class ApiService {
       }
       if (romoPosition != null && romoPosition.isNotEmpty) {
         payload['romoPosition'] = romoPosition;
+      }
+      if (jabatanStartYear != null) {
+        payload['jabatanStartYear'] = jabatanStartYear;
+      }
+      if (jabatanEndYear != null) {
+        payload['jabatanEndYear'] = jabatanEndYear;
+      }
+      if (isJabatanActive != null) {
+        payload['isJabatanActive'] = isJabatanActive;
       }
 
       final response = await http.post(

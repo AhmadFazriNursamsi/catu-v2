@@ -74,6 +74,18 @@ export class RegisterUserDto {
   @IsEnum(RomoPositionEnum)
   @IsOptional()
   romoPosition?: RomoPositionEnum;
+
+  @ApiPropertyOptional({ example: 2024, description: 'Tahun Mulai Masa Jabatan (untuk Ketua Romo Paroki, Ketua Romo Ordo, Ketua/Wakil/Sekretaris Lingkungan)' })
+  @IsOptional()
+  jabatanStartYear?: number;
+
+  @ApiPropertyOptional({ example: 2027, description: 'Tahun Selesai Masa Jabatan' })
+  @IsOptional()
+  jabatanEndYear?: number;
+
+  @ApiPropertyOptional({ example: true, description: 'Flag Jabatan Aktif/Tidak' })
+  @IsOptional()
+  isJabatanActive?: boolean;
 }
 
 export class LoginDto {
@@ -145,6 +157,15 @@ export class UserProfileResponseDto {
 
   @ApiPropertyOptional({ example: 'KETUA_ROMO', enum: ['KETUA_ROMO', 'ROMO_BIASA'] })
   romoPosition?: string;
+
+  @ApiPropertyOptional({ example: 2024 })
+  jabatanStartYear?: number;
+
+  @ApiPropertyOptional({ example: 2027 })
+  jabatanEndYear?: number;
+
+  @ApiPropertyOptional({ example: true })
+  isJabatanActive?: boolean;
 }
 
 export class RegisterResponseDto {

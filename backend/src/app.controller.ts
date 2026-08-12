@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, OnModuleInit } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -15,8 +15,21 @@ import { CreateOrderDto, RespondOrderAssignmentDto, SendChatMessageDto } from '.
 
 @ApiTags('Auth & Registration')
 @Controller('auth')
-export class AuthController {
+export class AuthController implements OnModuleInit {
   constructor(@InjectDataSource() private dataSource: DataSource) {}
+
+  async onModuleInit() {
+    try {
+      await this.dataSource.query(`
+        ALTER TABLE user_profiles 
+        ADD COLUMN IF NOT EXISTS jabatan_start_year INT,
+        ADD COLUMN IF NOT EXISTS jabatan_end_year INT,
+        ADD COLUMN IF NOT EXISTS is_jabatan_active BOOLEAN DEFAULT TRUE;
+      `);
+    } catch (e) {
+      console.log('Auto-migration user_profiles notice:', e);
+    }
+  }
 
   @Get('roles')
   @ApiOperation({
@@ -83,8 +96,8 @@ export class AuthController {
 
       // 2. Insert ke user_profiles
       await queryRunner.query(
-        `INSERT INTO user_profiles (user_id, full_name, email, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, pengurus_position, romo_position)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        `INSERT INTO user_profiles (user_id, full_name, email, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, pengurus_position, romo_position, jabatan_start_year, jabatan_end_year, is_jabatan_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
           authUser.id,
           dto.fullName,
@@ -96,6 +109,9 @@ export class AuthController {
           dto.kabupatenKotaId || 3175,
           dto.pengurusPosition || null,
           dto.romoPosition || 'ROMO_BIASA',
+          dto.jabatanStartYear || null,
+          dto.jabatanEndYear || null,
+          dto.isJabatanActive !== undefined ? dto.isJabatanActive : true,
         ],
       );
 
@@ -119,6 +135,9 @@ export class AuthController {
           kabupatenKotaName: 'JAKARTA TIMUR',
           pengurusPosition: dto.pengurusPosition,
           romoPosition: dto.romoPosition,
+          jabatanStartYear: dto.jabatanStartYear,
+          jabatanEndYear: dto.jabatanEndYear,
+          isJabatanActive: dto.isJabatanActive !== undefined ? dto.isJabatanActive : true,
         },
         approvalAssignedTo: approverName,
       };
@@ -140,7 +159,7 @@ export class AuthController {
     const users = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.password_hash, u.account_status, r.code as role_code, 
               p.full_name, p.email, k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, kk.name as kota_name,
-              p.pengurus_position, p.romo_position
+              p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.is_jabatan_active
        FROM auth_users u 
        JOIN roles r ON u.role_id = r.id 
        JOIN user_profiles p ON p.user_id = u.id
@@ -189,6 +208,9 @@ export class AuthController {
         kabupatenKotaName: user.kota_name,
         pengurusPosition: user.pengurus_position,
         romoPosition: user.romo_position,
+        jabatanStartYear: user.jabatan_start_year,
+        jabatanEndYear: user.jabatan_end_year,
+        isJabatanActive: user.is_jabatan_active !== null ? user.is_jabatan_active : true,
       },
     };
   }
