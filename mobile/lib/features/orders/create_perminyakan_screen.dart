@@ -381,42 +381,31 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                               v == null || v.isEmpty ? 'Nama wajib diisi' : null,
                         ),
                         const SizedBox(height: 14),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: _buildInputField(
-                                controller: _usiaController,
-                                label: 'Usia Penerima Sakramen Perminyakan',
-                                hint: '0',
-                                prefixIcon: Icons.cake_outlined,
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly
-                                ],
-                                validator: (v) => v == null || v.isEmpty
-                                    ? 'Wajib diisi'
-                                    : null,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              flex: 4,
-                              child: _buildDropdownField<String>(
-                                value: _selectedGender,
-                                label: 'Pilih Gender',
-                                hint: 'Pilih Gender',
-                                prefixIcon: Icons.wc_rounded,
-                                items: _genderOptions,
-                                itemLabel: (e) => e,
-                                onChanged: (v) =>
-                                    setState(() => _selectedGender = v),
-                                validator: (v) =>
-                                    v == null ? 'Pilih gender' : null,
-                              ),
-                            ),
+                        _buildDropdownField<String>(
+                          value: _selectedGender,
+                          label: 'Pilih Gender',
+                          hint: 'Pilih Gender',
+                          prefixIcon: Icons.wc_rounded,
+                          items: _genderOptions,
+                          itemLabel: (e) => e,
+                          onChanged: (v) =>
+                              setState(() => _selectedGender = v),
+                          validator: (v) =>
+                              v == null ? 'Pilih gender' : null,
+                        ),
+                        const SizedBox(height: 14),
+                        _buildInputField(
+                          controller: _usiaController,
+                          label: 'Usia Penerima Sakramen Perminyakan',
+                          hint: 'e.g. 65',
+                          prefixIcon: Icons.cake_outlined,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
                           ],
+                          validator: (v) => v == null || v.isEmpty
+                              ? 'Wajib diisi'
+                              : null,
                         ),
                       ],
                     ),
@@ -581,57 +570,67 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                       icon: Icons.church_rounded,
                       iconColor: const Color(0xFF1E5399),
                       children: [
-                        // Toggle Switch Header
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFCBD5E1)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Paroki yang sama?',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF0F172A),
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              _isSameParish = !_isSameParish;
+                              if (!_isSameParish) {
+                                _applyProfileLocation();
+                              }
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFCBD5E1)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Paroki yang sama?',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF0F172A),
+                                        ),
                                       ),
-                                    ),
-                                    SizedBox(height: 2),
-                                    Text(
-                                      _isSameParish
-                                          ? 'Manual: Pilih Keuskupan & Paroki tujuan secara manual'
-                                          : 'Otomatis: Menggunakan Keuskupan & Paroki domisili profil Anda',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xFF64748B),
-                                        height: 1.2,
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _isSameParish
+                                            ? 'Manual: Pilih Keuskupan & Paroki tujuan secara manual'
+                                            : 'Otomatis: Menggunakan Keuskupan & Paroki domisili profil Anda',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFF64748B),
+                                          height: 1.2,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Switch.adaptive(
-                                value: _isSameParish,
-                                activeTrackColor: const Color(0xFF0D9488),
-                                onChanged: (val) {
-                                  setState(() {
-                                    _isSameParish = val;
-                                    if (!val) {
-                                      _applyProfileLocation();
-                                    }
-                                  });
-                                },
-                              ),
-                            ],
+                                Switch.adaptive(
+                                  value: _isSameParish,
+                                  activeTrackColor: const Color(0xFF0D9488),
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _isSameParish = val;
+                                      if (!val) {
+                                        _applyProfileLocation();
+                                      }
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ),
 
