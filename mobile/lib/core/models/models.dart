@@ -69,13 +69,22 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
+    // Backend returns id as String ("2"), parse safely to int
+    final rawId = json['id'];
+    final parsedId = rawId is int ? rawId : int.tryParse(rawId.toString()) ?? 0;
+
+    // Backend returns scheduled_date as ISO datetime "2026-08-20T00:00:00.000Z"
+    // Format to readable "2026-08-20"
+    String rawDate = json['scheduled_date'] ?? json['scheduledDate'] ?? '';
+    if (rawDate.contains('T')) rawDate = rawDate.split('T').first;
+
     return Order(
-      id: json['id'],
+      id: parsedId,
       orderNumber: json['order_number'] ?? json['orderNumber'] ?? '',
       categoryName: json['category_name'] ?? json['categoryName'] ?? 'Pelayanan',
       urgencyName: json['urgency_name'] ?? json['urgencyName'] ?? 'Biasa',
       status: json['status'] ?? 'PENDING',
-      scheduledDate: json['scheduled_date'] ?? json['scheduledDate'] ?? '',
+      scheduledDate: rawDate,
       locationName: json['location_name'] ?? json['locationName'] ?? '',
       pemohonName: json['pemohon_name'] ?? json['pemohonName'] ?? 'Umat',
     );
