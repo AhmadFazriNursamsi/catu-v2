@@ -37,12 +37,12 @@ class SearchableSelectField<T> extends StatelessWidget {
   }) : super(key: key);
 
   String get _selectedLabel {
-    if (value == null) return hint ?? 'Pilih $label';
+    if (value == null) return hint ?? 'Select $label';
     final found = items.firstWhere(
       (item) => item.value == value,
       orElse: () => SearchableSelectItem(value: value as T, label: ''),
     );
-    return found.label.isNotEmpty ? found.label : (hint ?? 'Pilih $label');
+    return found.label.isNotEmpty ? found.label : (hint ?? 'Select $label');
   }
 
   void _showSearchSheet(BuildContext context) {
@@ -79,7 +79,7 @@ class SearchableSelectField<T> extends StatelessWidget {
             onTap: isLoading ? null : () => _showSearchSheet(context),
             child: InputDecorator(
               decoration: InputDecoration(
-                labelText: label,
+                labelText: label.startsWith('Select') ? label : 'Select $label',
                 labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                 filled: true,
                 fillColor: const Color(0xFFF7F9FC),
@@ -202,7 +202,7 @@ class _SearchModalSheetState<T> extends State<_SearchModalSheet<T>> {
                 Icon(widget.icon, color: AppConstants.primaryBlue, size: 22),
                 const SizedBox(width: 10),
                 Text(
-                  'Pilih ${widget.title}',
+                  widget.title.startsWith('Select') ? widget.title : 'Select ${widget.title}',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -227,7 +227,7 @@ class _SearchModalSheetState<T> extends State<_SearchModalSheet<T>> {
               autofocus: true,
               style: const TextStyle(fontSize: 14),
               decoration: InputDecoration(
-                hintText: 'Cari ${widget.title}...',
+                hintText: 'Search / Cari ${widget.title}...',
                 hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
                 prefixIcon: const Icon(Icons.search_rounded, color: AppConstants.primaryBlue, size: 22),
                 suffixIcon: _searchController.text.isNotEmpty
