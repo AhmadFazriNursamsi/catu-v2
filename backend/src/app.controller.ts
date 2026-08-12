@@ -828,7 +828,7 @@ export class OrdersController {
     if (userId && !isNaN(parseInt(userId))) {
       // Filter by specific user
       return await this.dataSource.query(
-        `SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, o.scheduled_date, o.location_name, o.notes, p.full_name as pemohon_name
+        `SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, p.full_name as pemohon_name
          FROM orders o
          JOIN service_categories sc ON o.service_category_id = sc.id
          JOIN urgency_levels ul ON o.urgency_level_id = ul.id
@@ -840,7 +840,7 @@ export class OrdersController {
     }
     // No filter: return all (for Romo / admin)
     return await this.dataSource.query(
-      `SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, o.scheduled_date, o.location_name, o.notes, p.full_name as pemohon_name
+      `SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, p.full_name as pemohon_name
        FROM orders o
        JOIN service_categories sc ON o.service_category_id = sc.id
        JOIN urgency_levels ul ON o.urgency_level_id = ul.id

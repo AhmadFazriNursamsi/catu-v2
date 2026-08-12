@@ -660,40 +660,34 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                       ),
                     ),
                   ),
-                  // Order number + location (bottom)
+                  // Location / Address (bottom of image)
                   Positioned(
                     bottom: 8,
                     left: 10,
                     right: 10,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          order.orderNumber,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 9,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on_rounded,
-                                color: Colors.white70, size: 11),
-                            const SizedBox(width: 3),
-                            Expanded(
-                              child: Text(
-                                order.locationName,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
+                        const Icon(Icons.location_on_rounded,
+                            color: Colors.white, size: 12),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            order.displayAddress,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 4,
+                                  color: Colors.black45,
+                                  offset: Offset(0, 1),
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              ],
                             ),
-                          ],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
@@ -729,7 +723,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  // Nama penerima — main title
+                  // Nama penerima sakramen — main title
                   Text(
                     order.penerimaName,
                     style: const TextStyle(
@@ -774,7 +768,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                         ],
                       ),
                     ),
-                  // Date + urgency pill
+                  // Date + Start Time + urgency pill
                   Row(
                     children: [
                       const Icon(Icons.calendar_today_outlined,
@@ -782,14 +776,16 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          order.scheduledDate,
+                          order.fullScheduleLabel,
                           style: const TextStyle(
-                            fontSize: 10.5,
+                            fontSize: 10,
                             color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const SizedBox(width: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),

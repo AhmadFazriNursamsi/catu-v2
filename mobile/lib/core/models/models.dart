@@ -54,7 +54,9 @@ class Order {
   final String urgencyName;
   final String status;
   final String scheduledDate;
+  final String scheduledTime;
   final String locationName;
+  final String addressDetail;
   final String pemohonName;
   final String notes;
 
@@ -65,7 +67,9 @@ class Order {
     required this.urgencyName,
     required this.status,
     required this.scheduledDate,
+    this.scheduledTime = '',
     required this.locationName,
+    this.addressDetail = '',
     required this.pemohonName,
     this.notes = '',
   });
@@ -73,13 +77,18 @@ class Order {
   /// Parse "Nama Penerima" from notes string.
   /// Notes format: "Nama Penerima: Bapak Antonius | Gender: Laki-laki | Usia: 72 tahun"
   String get penerimaName {
-    if (notes.isEmpty) return pemohonName;
-    final parts = notes.split('|');
-    for (final part in parts) {
-      final trimmed = part.trim();
-      if (trimmed.toLowerCase().startsWith('nama penerima')) {
-        final split = trimmed.split(':');
-        if (split.length > 1) return split.sublist(1).join(':').trim();
+    if (notes.isNotEmpty) {
+      final parts = notes.split('|');
+      for (final part in parts) {
+        final trimmed = part.trim();
+        final lower = trimmed.toLowerCase();
+        if (lower.startsWith('nama penerima') || lower.startsWith('nama:')) {
+          final split = trimmed.split(':');
+          if (split.length > 1) {
+            final name = split.sublist(1).join(':').trim();
+            if (name.isNotEmpty) return name;
+          }
+        }
       }
     }
     return pemohonName;
@@ -113,6 +122,25 @@ class Order {
     return '';
   }
 
+  /// Format address for display
+  String get displayAddress {
+    if (addressDetail.isNotEmpty) return addressDetail;
+    if (locationName.isNotEmpty) return locationName;
+    return '-';
+  }
+
+  /// Format date + start time for display (e.g. "2026-08-20 • 14:00")
+  String get fullScheduleLabel {
+    String timeStr = scheduledTime;
+    if (timeStr.length >= 5) {
+      timeStr = timeStr.substring(0, 5);
+    }
+    if (timeStr.isNotEmpty) {
+      return '$scheduledDate • $timeStr WIB';
+    }
+    return scheduledDate;
+  }
+
   factory Order.fromJson(Map<String, dynamic> json) {
     // Backend returns id as String ("2"), parse safely to int
     final rawId = json['id'];
@@ -122,6 +150,9 @@ class Order {
     String rawDate = json['scheduled_date'] ?? json['scheduledDate'] ?? '';
     if (rawDate.contains('T')) rawDate = rawDate.split('T').first;
 
+    String rawTime = json['scheduled_time'] ?? json['scheduledTime'] ?? '';
+    if (rawTime.length >= 5) rawTime = rawTime.substring(0, 5);
+
     return Order(
       id: parsedId,
       orderNumber: json['order_number'] ?? json['orderNumber'] ?? '',
@@ -129,7 +160,9 @@ class Order {
       urgencyName: json['urgency_name'] ?? json['urgencyName'] ?? 'Biasa',
       status: json['status'] ?? 'PENDING',
       scheduledDate: rawDate,
+      scheduledTime: rawTime,
       locationName: json['location_name'] ?? json['locationName'] ?? '',
+      addressDetail: json['address_detail'] ?? json['addressDetail'] ?? '',
       pemohonName: json['pemohon_name'] ?? json['pemohonName'] ?? 'Umat',
       notes: json['notes'] ?? '',
     );
