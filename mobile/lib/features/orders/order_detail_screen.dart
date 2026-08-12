@@ -84,7 +84,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
             ),
           ),
-          // Subtle golden halo glow behind portrait
+          // Golden halo glow behind portrait
           Center(
             child: Container(
               width: 140,
@@ -93,7 +93,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.22),
                     blurRadius: 40,
                     spreadRadius: 10,
                   ),
@@ -101,7 +101,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
             ),
           ),
-          // Centered Dignified Content
+          // Centered Dignified Portrait
           Positioned.fill(
             child: Padding(
               padding: const EdgeInsets.only(top: 50, bottom: 20),
@@ -110,8 +110,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 children: [
                   // Gold Ring Framed Portrait
                   Container(
-                    width: 90,
-                    height: 90,
+                    width: 92,
+                    height: 92,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
@@ -120,8 +120,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.35),
-                          blurRadius: 12,
+                          color: Colors.black.withValues(alpha: 0.4),
+                          blurRadius: 14,
                           offset: const Offset(0, 4),
                         ),
                       ],
@@ -295,8 +295,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           final bytes = base64Decode(base64Content);
           return Image.memory(
             bytes,
-            width: 90,
-            height: 90,
+            width: 92,
+            height: 92,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => _buildDefaultAvatarIcon(),
           );
@@ -306,16 +306,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       } else if (attachmentUrl.startsWith('http://') || attachmentUrl.startsWith('https://')) {
         return Image.network(
           attachmentUrl,
-          width: 90,
-          height: 90,
+          width: 92,
+          height: 92,
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => _buildDefaultAvatarIcon(),
         );
       } else if (attachmentUrl.startsWith('assets/')) {
         return Image.asset(
           attachmentUrl,
-          width: 90,
-          height: 90,
+          width: 92,
+          height: 92,
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => _buildDefaultAvatarIcon(),
         );
@@ -324,8 +324,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         if (file.existsSync()) {
           return Image.file(
             file,
-            width: 90,
-            height: 90,
+            width: 92,
+            height: 92,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => _buildDefaultAvatarIcon(),
           );
@@ -348,7 +348,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _buildTitleDrivenMisaSection(Order order) {
+  @override
+  Widget build(BuildContext context) {
+    final order = widget.order;
+    final statusColor = _getStatusColor(order.status);
+    final statusLabel = _getStatusLabel(order.status);
+    final urgencyColor = _getUrgencyColor(order.urgencyName);
+    final bool isKedukaan = order.categoryName.toLowerCase().contains('kedukaan');
+
+    // Determine target single Misa item to display as the title
     OrderItem? targetItem;
     if (widget.selectedItemTitle != null && order.items.isNotEmpty) {
       for (final item in order.items) {
@@ -372,91 +380,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           locationName: order.displayAddress,
         );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Cardless Prominent Title Header (Nama Misa) ──
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppConstants.primaryBlue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.church_rounded,
-                size: 22,
-                color: AppConstants.primaryBlue,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'PELAYANAN MISA KEDUKAAN',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                      color: AppConstants.primaryBlue,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    displayItem.itemName,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 16),
-
-        // ── Cardless Waktu & Lokasi Info Rows ──
-        _buildSeamlessInfoRow(
-          label: 'Waktu Misa',
-          value:
-              '${displayItem.scheduledDate} • ${displayItem.scheduledTimeStart} - ${displayItem.scheduledTimeEnd} WIB',
-          icon: Icons.calendar_today_rounded,
-        ),
-        const SizedBox(height: 8),
-        _buildSeamlessInfoRow(
-          label: 'Lokasi Pelaksanaan',
-          value: displayItem.locationName.isNotEmpty
-              ? displayItem.locationName
-              : order.displayAddress,
-          icon: Icons.location_on_rounded,
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final order = widget.order;
-    final statusColor = _getStatusColor(order.status);
-    final statusLabel = _getStatusLabel(order.status);
-    final urgencyColor = _getUrgencyColor(order.urgencyName);
-    final bool isKedukaan = order.categoryName.toLowerCase().contains('kedukaan');
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Custom Scrollable Surface
           CustomScrollView(
             slivers: [
-              // ── 1. Hero Glassmorphism Header Bar ──
+              // ── 1. Hero AppBar Banner ──
               SliverAppBar(
                 expandedHeight: isKedukaan ? 310.0 : 280.0,
                 pinned: true,
@@ -511,252 +441,157 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
               ),
 
-              // ── 2. Seamless Single-Surface Body ──
+              // ── 2. Pure Cardless Surface Body (NO BOX CONTAINERS) ──
               SliverToBoxAdapter(
                 child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(28)),
-                  ),
+                  color: Colors.white,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
+                    padding: const EdgeInsets.fromLTRB(22, 28, 22, 110),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ── Status Banner Badge ──
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                                color: statusColor.withValues(alpha: 0.2)),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: statusColor,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Status Permintaan',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        color: statusColor,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      statusLabel,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w800,
-                                        color: statusColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                statusLabel.contains('Selesai') || statusLabel.contains('Disetujui')
-                                    ? Icons.verified_rounded
-                                    : Icons.hourglass_top_rounded,
-                                color: statusColor,
-                                size: 22,
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // ── 1. Cardless Prominent Misa Title & Execution Info ──
-                        _buildTitleDrivenMisaSection(order),
-
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20),
-                          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        ),
-
-                        // ── 2. Data Almarhum / Almarhumah Summary ──
-                        _buildSectionHeader(
-                          title: 'Ringkasan Data Almarhum / Almarhumah',
-                          icon: Icons.person_pin_rounded,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildSeamlessInfoRow(
-                          label: 'Nama Almarhum/ah',
-                          value: order.penerimaName,
-                          icon: Icons.person_outline_rounded,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildSeamlessInfoRow(
-                          label: 'Hubungan Pemohon',
-                          value: order.hubunganLabel,
-                          icon: Icons.people_outline_rounded,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildSeamlessInfoRow(
-                          label: 'Tanggal Meninggal',
-                          value: order.tanggalMeninggalLabel,
-                          icon: Icons.event_rounded,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildSeamlessInfoRow(
-                          label: 'Waktu Meninggal',
-                          value: '${order.waktuMeninggalLabel} WIB',
-                          icon: Icons.access_time_rounded,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildSeamlessInfoRow(
-                          label: 'Tingkat Urgensi',
-                          value: order.urgencyName,
-                          icon: Icons.error_outline_rounded,
-                        ),
-
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20),
-                          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        ),
-
-                        // ── 3. Lokasi Paroki Penerima ──
-                        _buildSectionHeader(
-                          title: 'Lokasi & Paroki Penerima',
-                          icon: Icons.account_balance_outlined,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildSeamlessInfoRow(
-                          label: 'Keuskupan',
-                          value: order.keuskupanName,
-                          icon: Icons.account_balance_rounded,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildSeamlessInfoRow(
-                          label: 'Paroki',
-                          value: order.parokiName,
-                          icon: Icons.church_rounded,
-                        ),
-
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20),
-                          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        ),
-
-                        // ── 4. Catatan Tambahan & Profile Pemohon ──
-                        _buildSectionHeader(
-                          title: 'Catatan Tambahan & Pemohon',
-                          icon: Icons.notes_rounded,
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Catatan Blockquote Callout
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: const [
-                                  Icon(Icons.format_quote_rounded,
-                                      size: 20, color: Color(0xFF64748B)),
-                                  SizedBox(width: 6),
+                        // ── Main Title Row & Status Pill (Pure Typography) ──
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Text(
-                                    'Catatan Pemohon',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
+                                    displayItem.itemName,
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF0F172A),
+                                      letterSpacing: -0.4,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    order.categoryName,
+                                    style: const TextStyle(
+                                      fontSize: 14,
                                       color: Color(0xFF64748B),
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                order.catatanLabel.isNotEmpty
-                                    ? order.catatanLabel
-                                    : 'Tidak ada catatan tambahan.',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF1E293B),
-                                  height: 1.5,
-                                  fontStyle: FontStyle.italic,
-                                ),
+                            ),
+                            const SizedBox(width: 12),
+                            // Clean Status Pill (No Boxed Card)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: statusColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(20),
                               ),
-                            ],
-                          ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: BoxDecoration(
+                                      color: statusColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    statusLabel,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: statusColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
 
+                        const SizedBox(height: 24),
+                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        const SizedBox(height: 22),
+
+                        // ── Section 1: Execution Details (Pure Rows, No Containers) ──
+                        _buildPureInfoRow(
+                          icon: Icons.calendar_today_rounded,
+                          iconColor: const Color(0xFF1E5399),
+                          label: 'Waktu Misa',
+                          value:
+                              '${displayItem.scheduledDate} • ${displayItem.scheduledTimeStart} - ${displayItem.scheduledTimeEnd} WIB',
+                        ),
                         const SizedBox(height: 16),
-
-                        // Pemohon Profile Tile
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.person_rounded,
-                                  color: AppConstants.primaryBlue,
-                                  size: 22,
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      order.pemohonName,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF0F172A),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Umat Dari Lingkungan ${order.lingkunganName}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Color(0xFF64748B),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                        _buildPureInfoRow(
+                          icon: Icons.location_on_rounded,
+                          iconColor: const Color(0xFF0D9488),
+                          label: 'Lokasi Pelaksanaan Misa',
+                          value: displayItem.locationName.isNotEmpty
+                              ? displayItem.locationName
+                              : order.displayAddress,
                         ),
+
+                        const SizedBox(height: 24),
+                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        const SizedBox(height: 22),
+
+                        // ── Section 2: Data Almarhum / Almarhumah ──
+                        _buildCleanSectionTitle('Data Almarhum / Almarhumah'),
+                        const SizedBox(height: 16),
+                        _buildPureTextDataRow('Nama Almarhum/ah', order.penerimaName),
+                        _buildPureTextDataRow('Hubungan Pemohon', order.hubunganLabel),
+                        _buildPureTextDataRow('Tanggal Meninggal', order.tanggalMeninggalLabel),
+                        _buildPureTextDataRow('Waktu Meninggal', '${order.waktuMeninggalLabel} WIB'),
+                        _buildPureTextDataRow('Tingkat Urgensi', order.urgencyName),
+
+                        const SizedBox(height: 24),
+                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        const SizedBox(height: 22),
+
+                        // ── Section 3: Lokasi & Paroki Penerima ──
+                        _buildCleanSectionTitle('Lokasi & Paroki Penerima'),
+                        const SizedBox(height: 16),
+                        _buildPureTextDataRow('Keuskupan', order.keuskupanName),
+                        _buildPureTextDataRow('Paroki', order.parokiName),
+
+                        const SizedBox(height: 24),
+                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        const SizedBox(height: 22),
+
+                        // ── Section 4: Catatan & Pemohon ──
+                        _buildCleanSectionTitle('Catatan & Pemohon'),
+                        const SizedBox(height: 16),
+                        _buildPureTextDataRow('Nama Pemohon', order.pemohonName),
+                        _buildPureTextDataRow(
+                            'Lingkungan', 'Lingkungan ${order.lingkunganName}'),
+                        if (order.catatanLabel.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Catatan Tambahan:',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '"${order.catatanLabel}"',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontStyle: FontStyle.italic,
+                              color: Color(0xFF1E293B),
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -765,7 +600,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ],
           ),
 
-          // ── 3. Bottom Floating Action Bar ──
+          // ── Bottom Floating Action Bar ──
           Positioned(
             left: 16,
             right: 16,
@@ -821,65 +656,77 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _buildSectionHeader({required String title, required IconData icon}) {
+  Widget _buildCleanSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w800,
+        color: Color(0xFF0F172A),
+        letterSpacing: -0.2,
+      ),
+    );
+  }
+
+  Widget _buildPureInfoRow({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+  }) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: AppConstants.primaryBlue.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 18, color: AppConstants.primaryBlue),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
-            letterSpacing: -0.2,
+        Icon(icon, size: 20, color: iconColor),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSeamlessInfoRow({
-    required String label,
-    required String value,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
+  Widget _buildPureTextDataRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(icon, size: 18, color: const Color(0xFF64748B)),
-          const SizedBox(width: 10),
           Text(
-            '$label: ',
+            label,
             style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontSize: 13.5,
               color: Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF0F172A),
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          Text(
+            value.isNotEmpty ? value : '-',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF0F172A),
             ),
           ),
         ],
