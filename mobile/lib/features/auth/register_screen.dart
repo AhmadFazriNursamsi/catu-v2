@@ -95,8 +95,36 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     );
   }
 
+  List<Map<String, dynamic>> _keuskupanList = [];
+  List<Map<String, dynamic>> _parokiList = [];
+  List<Map<String, dynamic>> _wilayahList = [];
+  List<Map<String, dynamic>> _lingkunganList = [];
+  List<Map<String, dynamic>> _ordoList = [];
+
+  void _loadMasterData() async {
+    final keuskupan = await ApiService.getKeuskupanList();
+    final paroki = await ApiService.getParokiList();
+    final wilayah = await ApiService.getWilayahList();
+    final lingkungan = await ApiService.getLingkunganList();
+    final ordo = await ApiService.getOrdoList();
+    if (!mounted) return;
+    setState(() {
+      _keuskupanList = keuskupan;
+      _parokiList = paroki;
+      _wilayahList = wilayah;
+      _lingkunganList = lingkungan;
+      _ordoList = ordo;
+      if (_keuskupanList.isNotEmpty) _selectedKeuskupan = _keuskupanList[0]['name'].toString();
+      if (_parokiList.isNotEmpty) _selectedParoki = _parokiList[0]['name'].toString();
+      if (_wilayahList.isNotEmpty) _selectedWilayah = _wilayahList[0]['name'].toString();
+      if (_lingkunganList.isNotEmpty) _selectedLingkungan = _lingkunganList[0]['name'].toString();
+      if (_ordoList.isNotEmpty) _selectedOrdo = _ordoList[0]['name'].toString();
+    });
+  }
+
   void _loadRoles() async {
     final roles = await ApiService.getRoles();
+    _loadMasterData();
     if (!mounted) return;
     setState(() {
       _roleOptions = roles;
@@ -264,150 +292,135 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
   Widget _buildHierarchyDropdowns() {
     if (_selectedRole == 'UMAT' || _selectedRole == 'PENGURUS_LINGKUNGAN' || _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
+      final keuskupanItems = _keuskupanList.map((item) => item['name'].toString()).toSet().toList();
+      final parokiItems = _parokiList.map((item) => item['name'].toString()).toSet().toList();
+      final wilayahItems = _wilayahList.map((item) => item['name'].toString()).toSet().toList();
+      final lingkunganItems = _lingkunganList.map((item) => item['name'].toString()).toSet().toList();
+
+      if (keuskupanItems.isNotEmpty && !keuskupanItems.contains(_selectedKeuskupan)) {
+        _selectedKeuskupan = keuskupanItems.first;
+      }
+      if (parokiItems.isNotEmpty && !parokiItems.contains(_selectedParoki)) {
+        _selectedParoki = parokiItems.first;
+      }
+      if (wilayahItems.isNotEmpty && !wilayahItems.contains(_selectedWilayah)) {
+        _selectedWilayah = wilayahItems.first;
+      }
+      if (lingkunganItems.isNotEmpty && !lingkunganItems.contains(_selectedLingkungan)) {
+        _selectedLingkungan = lingkunganItems.first;
+      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 12),
           // 1. Keuskupan
           DropdownButtonFormField<String>(
-            value: _selectedKeuskupan,
+            value: keuskupanItems.contains(_selectedKeuskupan) ? _selectedKeuskupan : null,
             decoration: _fieldDeco(label: 'Keuskupan', icon: Icons.account_balance_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: const [
-              DropdownMenuItem(value: 'Keuskupan Agung Jakarta', child: Text('Keuskupan Agung Jakarta', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Keuskupan Agung Semarang', child: Text('Keuskupan Agung Semarang', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Keuskupan Agung Medan', child: Text('Keuskupan Agung Medan', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Keuskupan Agung Makassar', child: Text('Keuskupan Agung Makassar', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Keuskupan Bandung', child: Text('Keuskupan Bandung', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Keuskupan Bogor', child: Text('Keuskupan Bogor', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Keuskupan Surabaya', child: Text('Keuskupan Surabaya', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Keuskupan Malang', child: Text('Keuskupan Malang', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Keuskupan Denpasar', child: Text('Keuskupan Denpasar', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-            ],
+            items: keuskupanItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
             onChanged: (val) { if (val != null) setState(() => _selectedKeuskupan = val); },
           ),
           const SizedBox(height: 12),
 
           // 2. Paroki
           DropdownButtonFormField<String>(
-            value: _selectedParoki,
+            value: parokiItems.contains(_selectedParoki) ? _selectedParoki : null,
             decoration: _fieldDeco(label: 'Paroki', icon: Icons.church_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: const [
-              DropdownMenuItem(value: 'Paroki Santo Antonius Padua - Otista', child: Text('Paroki Santo Antonius Padua - Otista', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Paroki Katedral Jakarta', child: Text('Paroki Katedral Jakarta', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Paroki Santo Joseph - Matraman', child: Text('Paroki Santo Joseph - Matraman', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Paroki Santa Monika - BSD', child: Text('Paroki Santa Monika - BSD', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Paroki Santo Laurensius - Alam Sutera', child: Text('Paroki Santo Laurensius - Alam Sutera', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Paroki Santo Yakobus - Kelapa Gading', child: Text('Paroki Santo Yakobus - Kelapa Gading', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-            ],
+            items: parokiItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
             onChanged: (val) { if (val != null) setState(() => _selectedParoki = val); },
           ),
           const SizedBox(height: 12),
 
           // 3. Wilayah
           DropdownButtonFormField<String>(
-            value: _selectedWilayah,
+            value: wilayahItems.contains(_selectedWilayah) ? _selectedWilayah : null,
             decoration: _fieldDeco(label: 'Wilayah', icon: Icons.map_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: const [
-              DropdownMenuItem(value: 'Wilayah St. Agustinus', child: Text('Wilayah St. Agustinus', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Wilayah St. Ignatius Loyola', child: Text('Wilayah St. Ignatius Loyola', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Wilayah St. Franciscus Xaverius', child: Text('Wilayah St. Franciscus Xaverius', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Wilayah St. Theresia', child: Text('Wilayah St. Theresia', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-            ],
+            items: wilayahItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
             onChanged: (val) { if (val != null) setState(() => _selectedWilayah = val); },
           ),
           const SizedBox(height: 12),
 
           // 4. Lingkungan
           DropdownButtonFormField<String>(
-            value: _selectedLingkungan,
+            value: lingkunganItems.contains(_selectedLingkungan) ? _selectedLingkungan : null,
             decoration: _fieldDeco(label: 'Lingkungan', icon: Icons.home_work_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: const [
-              DropdownMenuItem(value: 'Lingkungan St. Agnes 1', child: Text('Lingkungan St. Agnes 1', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Lingkungan St. Agnes 2', child: Text('Lingkungan St. Agnes 2', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Lingkungan St. Bernadette', child: Text('Lingkungan St. Bernadette', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Lingkungan St. Cecilia', child: Text('Lingkungan St. Cecilia', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-            ],
+            items: lingkunganItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
             onChanged: (val) { if (val != null) setState(() => _selectedLingkungan = val); },
           ),
           const SizedBox(height: 12),
         ],
       );
     } else if (_selectedRole == 'ROMO_PAROKI') {
+      final keuskupanItems = _keuskupanList.map((item) => item['name'].toString()).toSet().toList();
+      final parokiItems = _parokiList.map((item) => item['name'].toString()).toSet().toList();
+
+      if (keuskupanItems.isNotEmpty && !keuskupanItems.contains(_selectedKeuskupan)) {
+        _selectedKeuskupan = keuskupanItems.first;
+      }
+      if (parokiItems.isNotEmpty && !parokiItems.contains(_selectedParoki)) {
+        _selectedParoki = parokiItems.first;
+      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 12),
           // 1. Keuskupan
           DropdownButtonFormField<String>(
-            value: _selectedKeuskupan,
+            value: keuskupanItems.contains(_selectedKeuskupan) ? _selectedKeuskupan : null,
             decoration: _fieldDeco(label: 'Keuskupan', icon: Icons.account_balance_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: const [
-              DropdownMenuItem(value: 'Keuskupan Agung Jakarta', child: Text('Keuskupan Agung Jakarta', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Keuskupan Agung Semarang', child: Text('Keuskupan Agung Semarang', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Keuskupan Agung Medan', child: Text('Keuskupan Agung Medan', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Keuskupan Bandung', child: Text('Keuskupan Bandung', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Keuskupan Bogor', child: Text('Keuskupan Bogor', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Keuskupan Surabaya', child: Text('Keuskupan Surabaya', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-            ],
+            items: keuskupanItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
             onChanged: (val) { if (val != null) setState(() => _selectedKeuskupan = val); },
           ),
           const SizedBox(height: 12),
 
           // 2. Paroki
           DropdownButtonFormField<String>(
-            value: _selectedParoki,
+            value: parokiItems.contains(_selectedParoki) ? _selectedParoki : null,
             decoration: _fieldDeco(label: 'Paroki', icon: Icons.church_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: const [
-              DropdownMenuItem(value: 'Paroki Santo Antonius Padua - Otista', child: Text('Paroki Santo Antonius Padua - Otista', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Paroki Katedral Jakarta', child: Text('Paroki Katedral Jakarta', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Paroki Santo Joseph - Matraman', child: Text('Paroki Santo Joseph - Matraman', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'Paroki Santa Monika - BSD', child: Text('Paroki Santa Monika - BSD', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-            ],
+            items: parokiItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
             onChanged: (val) { if (val != null) setState(() => _selectedParoki = val); },
           ),
           const SizedBox(height: 12),
         ],
       );
     } else if (_selectedRole == 'ROMO_ORDO') {
+      final ordoItems = _ordoList.map((item) => item['name'].toString()).toSet().toList();
+      if (ordoItems.isNotEmpty && !ordoItems.contains(_selectedOrdo)) {
+        _selectedOrdo = ordoItems.first;
+      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 12),
           // 1. Ordo
           DropdownButtonFormField<String>(
-            value: _selectedOrdo,
+            value: ordoItems.contains(_selectedOrdo) ? _selectedOrdo : null,
             decoration: _fieldDeco(label: 'Ordo / Kongregasi', icon: Icons.workspace_premium_outlined),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
             isExpanded: true,
-            items: const [
-              DropdownMenuItem(value: 'SJ - Serikat Yesus', child: Text('SJ - Serikat Yesus (Jesuit)', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'OFM - Ordo Fratrum Minorum', child: Text('OFM - Fransiskan', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'OFM Cap - Fransiskan Kapusin', child: Text('OFM Cap - Fransiskan Kapusin', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'MSF - Misionaris Keluarga Kudus', child: Text('MSF - Misionaris Keluarga Kudus', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'SVD - Serikat Sabda Allah', child: Text('SVD - Serikat Sabda Allah', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'CSsR - Redemptoris', child: Text('CSsR - Kongregasi Sang Penebus', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'O.Carm - Ordo Karmel', child: Text('O.Carm - Ordo Karmel', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: 'SCJ - Dehonian', child: Text('SCJ - Hati Kudus Yesus', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-            ],
+            items: ordoItems.map((name) => DropdownMenuItem(value: name, child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
             onChanged: (val) { if (val != null) setState(() => _selectedOrdo = val); },
           ),
           const SizedBox(height: 12),

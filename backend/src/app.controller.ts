@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, OnModuleInit } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Query, OnModuleInit } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -43,6 +43,57 @@ export class AuthController implements OnModuleInit {
         SET is_jabatan_active = NULL 
         WHERE (pengurus_position IS NULL OR pengurus_position = '') 
           AND (romo_position IS NULL OR romo_position != 'KETUA_ROMO');
+
+        -- Create master tables if not exist
+        CREATE TABLE IF NOT EXISTS keuskupan (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL);
+        CREATE TABLE IF NOT EXISTS paroki (id SERIAL PRIMARY KEY, keuskupan_id INT, name VARCHAR(255) NOT NULL);
+        CREATE TABLE IF NOT EXISTS wilayah (id SERIAL PRIMARY KEY, paroki_id INT, name VARCHAR(255) NOT NULL);
+        CREATE TABLE IF NOT EXISTS lingkungan (id SERIAL PRIMARY KEY, wilayah_id INT, name VARCHAR(255) NOT NULL);
+        CREATE TABLE IF NOT EXISTS ordo (id SERIAL PRIMARY KEY, code VARCHAR(50) NOT NULL, name VARCHAR(255) NOT NULL);
+
+        -- Seed initial master data if empty
+        INSERT INTO keuskupan (id, name) VALUES 
+          (1, 'Keuskupan Agung Jakarta'),
+          (2, 'Keuskupan Agung Semarang'),
+          (3, 'Keuskupan Bandung'),
+          (4, 'Keuskupan Bogor'),
+          (5, 'Keuskupan Surabaya'),
+          (6, 'Keuskupan Malang')
+        ON CONFLICT (id) DO NOTHING;
+
+        INSERT INTO paroki (id, keuskupan_id, name) VALUES 
+          (10, 1, 'Paroki Santo Antonius Padua - Otista'),
+          (11, 1, 'Paroki Katedral Jakarta (Santa Maria Diangkat Ke Surga)'),
+          (12, 1, 'Paroki Santo Joseph - Matraman'),
+          (13, 1, 'Paroki Santa Monika - BSD'),
+          (14, 1, 'Paroki Santo Laurensius - Alam Sutera'),
+          (15, 1, 'Paroki Santo Yakobus - Kelapa Gading')
+        ON CONFLICT (id) DO NOTHING;
+
+        INSERT INTO wilayah (id, paroki_id, name) VALUES 
+          (101, 10, 'Wilayah St. Agustinus'),
+          (102, 10, 'Wilayah St. Ignatius Loyola'),
+          (103, 10, 'Wilayah St. Franciscus Xaverius'),
+          (104, 10, 'Wilayah St. Theresia')
+        ON CONFLICT (id) DO NOTHING;
+
+        INSERT INTO lingkungan (id, wilayah_id, name) VALUES 
+          (1001, 101, 'Lingkungan St. Agnes 1'),
+          (1002, 101, 'Lingkungan St. Agnes 2'),
+          (1003, 101, 'Lingkungan St. Bernadette'),
+          (1004, 101, 'Lingkungan St. Cecilia')
+        ON CONFLICT (id) DO NOTHING;
+
+        INSERT INTO ordo (id, code, name) VALUES 
+          (1, 'SJ', 'SJ - Serikat Yesus (Jesuit)'),
+          (2, 'OFM', 'OFM - Fransiskan'),
+          (3, 'OFM Cap', 'OFM Cap - Fransiskan Kapusin'),
+          (4, 'MSF', 'MSF - Misionaris Keluarga Kudus'),
+          (5, 'SVD', 'SVD - Serikat Sabda Allah'),
+          (6, 'CSsR', 'CSsR - Kongregasi Sang Penebus'),
+          (7, 'O.Carm', 'O.Carm - Ordo Karmel'),
+          (8, 'SCJ', 'SCJ - Hati Kudus Yesus')
+        ON CONFLICT (id) DO NOTHING;
       `);
     } catch (e) {
       console.log('Auto-migration user_profiles notice:', e);
@@ -69,6 +120,45 @@ export class AuthController implements OnModuleInit {
       }
       return { id: r.id, code: r.code, name: displayName, label: displayName };
     });
+  }
+
+  @Get('keuskupan')
+  @ApiOperation({ summary: 'Ambil Daftar Keuskupan dari Database' })
+  async getKeuskupan() {
+    return await this.dataSource.query('SELECT id, name FROM keuskupan ORDER BY id ASC');
+  }
+
+  @Get('paroki')
+  @ApiOperation({ summary: 'Ambil Daftar Paroki berdasarkan Keuskupan ID dari Database' })
+  async getParoki(@Query('keuskupanId') keuskupanId?: number) {
+    if (keuskupanId) {
+      return await this.dataSource.query('SELECT id, keuskupan_id, name FROM paroki WHERE keuskupan_id = $1 ORDER BY id ASC', [keuskupanId]);
+    }
+    return await this.dataSource.query('SELECT id, keuskupan_id, name FROM paroki ORDER BY id ASC');
+  }
+
+  @Get('wilayah')
+  @ApiOperation({ summary: 'Ambil Daftar Wilayah berdasarkan Paroki ID dari Database' })
+  async getWilayah(@Query('parokiId') parokiId?: number) {
+    if (parokiId) {
+      return await this.dataSource.query('SELECT id, paroki_id, name FROM wilayah WHERE paroki_id = $1 ORDER BY id ASC', [parokiId]);
+    }
+    return await this.dataSource.query('SELECT id, paroki_id, name FROM wilayah ORDER BY id ASC');
+  }
+
+  @Get('lingkungan')
+  @ApiOperation({ summary: 'Ambil Daftar Lingkungan berdasarkan Wilayah ID dari Database' })
+  async getLingkungan(@Query('wilayahId') wilayahId?: number) {
+    if (wilayahId) {
+      return await this.dataSource.query('SELECT id, wilayah_id, name FROM lingkungan WHERE wilayah_id = $1 ORDER BY id ASC', [wilayahId]);
+    }
+    return await this.dataSource.query('SELECT id, wilayah_id, name FROM lingkungan ORDER BY id ASC');
+  }
+
+  @Get('ordo')
+  @ApiOperation({ summary: 'Ambil Daftar Ordo / Kongregasi dari Database' })
+  async getOrdo() {
+    return await this.dataSource.query('SELECT id, code, name FROM ordo ORDER BY id ASC');
   }
 
   @Post('register')
