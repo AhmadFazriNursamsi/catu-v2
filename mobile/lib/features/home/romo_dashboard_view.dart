@@ -63,44 +63,62 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
+                        // Baris 1: Jabatan & Flag Status Badge
                         Row(
                           children: [
                             Text(
                               positionTitle,
-                              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF1E5399)),
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E5399)),
                             ),
-                            if (periodeText.isNotEmpty) ...[
-                              Text(
-                                ' • $periodeText',
-                                style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: isJabatanActive ? Colors.green.shade600 : const Color(0xFFD97706),
+                                borderRadius: BorderRadius.circular(5),
                               ),
-                              const SizedBox(width: 5),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                decoration: BoxDecoration(
-                                  color: isJabatanActive ? Colors.green.shade600 : const Color(0xFFD97706),
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      isJabatanActive ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
-                                      size: 9.5,
-                                      color: Colors.white,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      isJabatanActive ? 'Jabatan Aktif' : 'Menunggu Verifikasi Admin',
-                                      style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isJabatanActive ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
+                                    size: 9.5,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    isJabatanActive ? 'Jabatan Aktif' : 'Menunggu Verifikasi Admin',
+                                    style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ],
                         ),
+                        if (startDate != null && endDate != null && startDate.isNotEmpty && endDate.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          // Baris 2: Masa Jabatan 2 Kolom (Mulai & Selesai)
+                          Row(
+                            children: [
+                              Text(
+                                'Mulai: $startDate',
+                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Selesai: $endDate',
+                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
+                              ),
+                            ],
+                          ),
+                        ] else if (periodeText.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'Masa Bakti: $periodeText',
+                            style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                          ),
+                        ],
                       ],
                     ),
                   ),

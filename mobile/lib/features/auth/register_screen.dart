@@ -396,37 +396,74 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 ],
               ),
               const SizedBox(height: 14),
+              // 2 Column Layout for Masa Jabatan (Mulai & Selesai)
               Row(
                 children: [
+                  // Kolom 1: Tanggal Mulai
                   Expanded(
                     child: GestureDetector(
                       onTap: () => _selectDate(_startDateController),
-                      child: AbsorbPointer(
-                        child: TextFormField(
-                          controller: _startDateController,
-                          decoration: _fieldDeco(label: 'Tanggal Mulai', icon: Icons.calendar_today_outlined),
-                          validator: (val) {
-                            if (!_needsMasaJabatan) return null;
-                            if (val == null || val.trim().isEmpty) return 'Wajib diisi';
-                            return null;
-                          },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.calendar_today_outlined, size: 13, color: AppConstants.primaryBlue),
+                                SizedBox(width: 4),
+                                Text(
+                                  'TGL MULAI',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppConstants.primaryBlue, letterSpacing: 0.5),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _startDateController.text.isEmpty ? 'DD/MM/YYYY' : _startDateController.text,
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
+                  // Kolom 2: Tanggal Selesai
                   Expanded(
                     child: GestureDetector(
                       onTap: () => _selectDate(_endDateController),
-                      child: AbsorbPointer(
-                        child: TextFormField(
-                          controller: _endDateController,
-                          decoration: _fieldDeco(label: 'Tanggal Selesai', icon: Icons.event_available_outlined),
-                          validator: (val) {
-                            if (!_needsMasaJabatan) return null;
-                            if (val == null || val.trim().isEmpty) return 'Wajib diisi';
-                            return null;
-                          },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.event_available_outlined, size: 13, color: AppConstants.primaryBlue),
+                                SizedBox(width: 4),
+                                Text(
+                                  'TGL SELESAI',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppConstants.primaryBlue, letterSpacing: 0.5),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _endDateController.text.isEmpty ? 'DD/MM/YYYY' : _endDateController.text,
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                            ),
+                          ],
                         ),
                       ),
                     ),
