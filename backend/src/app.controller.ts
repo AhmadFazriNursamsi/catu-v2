@@ -477,6 +477,24 @@ export class AuthController implements OnModuleInit {
     return await this.dataSource.query('SELECT id, wilayah_id, name FROM lingkungan ORDER BY id ASC');
   }
 
+  @Get('provinsi')
+  @ApiOperation({ summary: 'Ambil Daftar Provinsi dari Database' })
+  async getProvinsi() {
+    return await this.dataSource.query('SELECT id, name FROM provinsi ORDER BY id ASC');
+  }
+
+  @Get('kabupaten-kota')
+  @ApiOperation({ summary: 'Ambil Daftar Kabupaten/Kota berdasarkan Provinsi ID dari Database' })
+  async getKabupatenKota(@Query('provinsiId') provinsiId?: number) {
+    if (provinsiId) {
+      return await this.dataSource.query(
+        'SELECT id, provinsi_id, name, type FROM kabupaten_kota WHERE provinsi_id = $1 ORDER BY id ASC',
+        [provinsiId],
+      );
+    }
+    return await this.dataSource.query('SELECT id, provinsi_id, name, type FROM kabupaten_kota ORDER BY id ASC');
+  }
+
   @Get('ordo')
   @ApiOperation({ summary: 'Ambil Daftar Ordo / Kongregasi dari Database' })
   async getOrdo() {

@@ -20,7 +20,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   // Controllers
   final _namaController = TextEditingController();
   final _catatanController = TextEditingController();
-  final _usiaController = TextEditingController();
+  final _usiaController = TextEditingController(text: '0');
   final _tanggalController = TextEditingController();
   final _alamatController = TextEditingController();
 
@@ -34,11 +34,13 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   bool _isSameParish = true;
   int? _selectedKeuskupanId;
   int? _selectedParokiId;
-  int? _selectedWilayahId;
+  int? _selectedProvinsiId;
+  int? _selectedKabupatenKotaId;
 
   List<Map<String, dynamic>> _keuskupanList = [];
   List<Map<String, dynamic>> _parokiList = [];
-  List<Map<String, dynamic>> _wilayahList = [];
+  List<Map<String, dynamic>> _provinsiList = [];
+  List<Map<String, dynamic>> _kabupatenKotaList = [];
 
   bool _isLoading = false;
 
@@ -65,9 +67,21 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
 
   Future<void> _loadMasterData() async {
     final kList = await ApiService.getKeuskupanList();
+    final pList = await ApiService.getParokiList();
+    final provList = await ApiService.getProvinsiList();
+    final kabList = await ApiService.getKabupatenKotaList();
+
     if (mounted) {
       setState(() {
         _keuskupanList = kList;
+        _parokiList = pList;
+        _provinsiList = provList;
+        _kabupatenKotaList = kabList;
+
+        if (_keuskupanList.isNotEmpty) _selectedKeuskupanId = _keuskupanList.first['id'];
+        if (_parokiList.isNotEmpty) _selectedParokiId = _parokiList.first['id'];
+        if (_provinsiList.isNotEmpty) _selectedProvinsiId = _provinsiList.first['id'];
+        if (_kabupatenKotaList.isNotEmpty) _selectedKabupatenKotaId = _kabupatenKotaList.first['id'];
       });
     }
   }
@@ -76,31 +90,35 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     setState(() {
       _selectedKeuskupanId = keuskupanId;
       _selectedParokiId = null;
-      _selectedWilayahId = null;
       _parokiList = [];
-      _wilayahList = [];
     });
     if (keuskupanId != null) {
       final pList = await ApiService.getParokiList(keuskupanId: keuskupanId);
       if (mounted) {
         setState(() {
           _parokiList = pList;
+          if (_parokiList.isNotEmpty) {
+            _selectedParokiId = _parokiList.first['id'];
+          }
         });
       }
     }
   }
 
-  Future<void> _onParokiChanged(int? parokiId) async {
+  Future<void> _onProvinsiChanged(int? provinsiId) async {
     setState(() {
-      _selectedParokiId = parokiId;
-      _selectedWilayahId = null;
-      _wilayahList = [];
+      _selectedProvinsiId = provinsiId;
+      _selectedKabupatenKotaId = null;
+      _kabupatenKotaList = [];
     });
-    if (parokiId != null) {
-      final wList = await ApiService.getWilayahList(parokiId: parokiId);
+    if (provinsiId != null) {
+      final list = await ApiService.getKabupatenKotaList(provinsiId: provinsiId);
       if (mounted) {
         setState(() {
-          _wilayahList = wList;
+          _kabupatenKotaList = list;
+          if (_kabupatenKotaList.isNotEmpty) {
+            _selectedKabupatenKotaId = _kabupatenKotaList.first['id'];
+          }
         });
       }
     }
@@ -185,13 +203,6 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     return 1;
   }
 
-  Color _getUrgensiColor(String? label) {
-    if (label == null) return const Color(0xFF1E5399);
-    if (label.contains('Sangat')) return Colors.red.shade700;
-    if (label.contains('Penting')) return Colors.amber.shade800;
-    return Colors.blue.shade700;
-  }
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_tanggalController.text.isEmpty) {
@@ -201,13 +212,6 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     if (_jamMulai == null || _jamSelesai == null) {
       _showError('Jam mulai dan selesai harus dipilih.');
       return;
-    }
-
-    if (!_isSameParish) {
-      if (_selectedKeuskupanId == null || _selectedParokiId == null) {
-        _showError('Pilih Keuskupan dan Paroki tujuan penerima sakramen.');
-        return;
-      }
     }
 
     setState(() => _isLoading = true);
@@ -238,7 +242,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       userId: widget.userId,
       keuskupanId: _isSameParish ? null : _selectedKeuskupanId,
       parokiId: _isSameParish ? null : _selectedParokiId,
-      wilayahId: _isSameParish ? null : _selectedWilayahId,
+      kabupatenKotaId: _isSameParish ? null : _selectedKabupatenKotaId,
     );
 
     setState(() => _isLoading = false);
@@ -293,814 +297,419 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                  color: Color(0xFF0F172A), size: 16),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded,
+              color: AppConstants.primaryBlue, size: 22),
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Permintaan Pelayanan',
           style: TextStyle(
-            color: Color(0xFF0F172A),
+            color: AppConstants.primaryBlue,
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            letterSpacing: -0.3,
           ),
         ),
       ),
       body: Form(
         key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Hero Banner ──
-                    _buildHeroHeader(),
-
-                    const SizedBox(height: 20),
-
-                    // ── Card 1: Data Penerima Sakramen ──
-                    _buildFormCard(
-                      title: 'Data Penerima Sakramen',
-                      icon: Icons.person_pin_rounded,
-                      iconColor: const Color(0xFF1E5399),
-                      children: [
-                        _buildInputField(
-                          controller: _namaController,
-                          label: 'Nama Lengkap Penerima Sakramen',
-                          hint: 'Contoh: Bapak Antonius Supardi',
-                          prefixIcon: Icons.person_outline_rounded,
-                          validator: (v) =>
-                              v == null || v.isEmpty ? 'Nama wajib diisi' : null,
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: _buildInputField(
-                                controller: _usiaController,
-                                label: 'Usia (Tahun)',
-                                hint: 'e.g. 65',
-                                prefixIcon: Icons.cake_outlined,
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly
-                                ],
-                                validator: (v) => v == null || v.isEmpty
-                                    ? 'Wajib diisi'
-                                    : null,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              flex: 4,
-                              child: _buildDropdownField<String>(
-                                value: _selectedGender,
-                                label: 'Gender',
-                                hint: 'Pilih Gender',
-                                prefixIcon: Icons.wc_rounded,
-                                items: _genderOptions,
-                                itemLabel: (e) => e,
-                                onChanged: (v) =>
-                                    setState(() => _selectedGender = v),
-                                validator: (v) =>
-                                    v == null ? 'Pilih gender' : null,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // ── Card 1b: Alamat & Paroki Penerima Sakramen (Toggle & Hierarchy) ──
-                    _buildFormCard(
-                      title: 'Alamat Paroki Penerima Sakramen',
-                      icon: Icons.church_rounded,
-                      iconColor: const Color(0xFF1E5399),
-                      children: [
-                        // Toggle Row
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFCBD5E1)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Paroki yang sama',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF0F172A),
-                                      ),
-                                    ),
-                                    SizedBox(height: 2),
-                                    Text(
-                                      'Aktifkan jika penerima sakramen berada di Keuskupan & Paroki domisili Anda',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xFF64748B),
-                                        height: 1.2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Switch.adaptive(
-                                value: _isSameParish,
-                                activeColor: const Color(0xFF1E5399),
-                                onChanged: (val) {
-                                  setState(() {
-                                    _isSameParish = val;
-                                    if (val) {
-                                      _selectedKeuskupanId = null;
-                                      _selectedParokiId = null;
-                                      _selectedWilayahId = null;
-                                    }
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        if (_isSameParish) ...[
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1E5399).withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: const Color(0xFF1E5399).withOpacity(0.2),
-                              ),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.check_circle_outline_rounded,
-                                    size: 16, color: Color(0xFF1E5399)),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Pelayanan akan diproses oleh Paroki domisili Anda.',
-                                    style: TextStyle(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF1E5399),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ] else ...[
-                          const SizedBox(height: 14),
-                          // Dropdown Keuskupan
-                          _buildDropdownField<int>(
-                            value: _selectedKeuskupanId,
-                            label: 'Pilih Keuskupan Tujuan',
-                            hint: 'Pilih Keuskupan',
-                            prefixIcon: Icons.account_balance_rounded,
-                            items: _keuskupanList
-                                .map((e) => e['id'] as int)
-                                .toList(),
-                            itemLabel: (id) {
-                              final found = _keuskupanList.firstWhere(
-                                (e) => e['id'] == id,
-                                orElse: () => {'name': ''},
-                              );
-                              return found['name'] ?? '';
-                            },
-                            onChanged: _onKeuskupanChanged,
-                            validator: (v) => !_isSameParish && v == null
-                                ? 'Keuskupan wajib dipilih'
-                                : null,
-                          ),
-                          const SizedBox(height: 14),
-                          // Dropdown Paroki
-                          _buildDropdownField<int>(
-                            value: _selectedParokiId,
-                            label: 'Pilih Paroki Tujuan',
-                            hint: _selectedKeuskupanId == null
-                                ? 'Pilih Keuskupan Terlebih Dahulu'
-                                : 'Pilih Paroki',
-                            prefixIcon: Icons.church_outlined,
-                            items: _parokiList
-                                .map((e) => e['id'] as int)
-                                .toList(),
-                            itemLabel: (id) {
-                              final found = _parokiList.firstWhere(
-                                (e) => e['id'] == id,
-                                orElse: () => {'name': ''},
-                              );
-                              return found['name'] ?? '';
-                            },
-                            onChanged: _onParokiChanged,
-                            validator: (v) => !_isSameParish && v == null
-                                ? 'Paroki wajib dipilih'
-                                : null,
-                          ),
-                          if (_wilayahList.isNotEmpty) ...[
-                            const SizedBox(height: 14),
-                            _buildDropdownField<int>(
-                              value: _selectedWilayahId,
-                              label: 'Pilih Wilayah (Opsional)',
-                              hint: 'Pilih Wilayah',
-                              prefixIcon: Icons.map_outlined,
-                              items: _wilayahList
-                                  .map((e) => e['id'] as int)
-                                  .toList(),
-                              itemLabel: (id) {
-                                final found = _wilayahList.firstWhere(
-                                  (e) => e['id'] == id,
-                                  orElse: () => {'name': ''},
-                                );
-                                return found['name'] ?? '';
-                              },
-                              onChanged: (v) =>
-                                  setState(() => _selectedWilayahId = v),
-                            ),
-                          ],
-                        ],
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // ── Card 2: Detail Pelayanan & Urgensi ──
-                    _buildFormCard(
-                      title: 'Detail Permintaan & Urgensi',
-                      icon: Icons.medical_services_rounded,
-                      iconColor: const Color(0xFF1E5399),
-                      children: [
-                        _buildDropdownField<String>(
-                          value: _selectedUrgensi,
-                          label: 'Tingkat Urgensi Pelayanan',
-                          hint: 'Pilih Tingkat Urgensi',
-                          prefixIcon: Icons.warning_amber_rounded,
-                          items: _urgensiOptions,
-                          itemLabel: (e) => e,
-                          onChanged: (v) =>
-                              setState(() => _selectedUrgensi = v),
-                          validator: (v) =>
-                              v == null ? 'Urgensi wajib dipilih' : null,
-                        ),
-                        if (_selectedUrgensi != null) ...[
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: _getUrgensiColor(_selectedUrgensi)
-                                  .withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: _getUrgensiColor(_selectedUrgensi)
-                                    .withOpacity(0.3),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline_rounded,
-                                  size: 16,
-                                  color: _getUrgensiColor(_selectedUrgensi),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _selectedUrgensi!
-                                            .contains('Sangat')
-                                        ? 'Pelayanan darurat/kritis akan mendapatkan prioritas penanganan cepat.'
-                                        : 'Permintaan akan diteruskan ke Romo dan Pengurus Lingkungan.',
-                                    style: TextStyle(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w600,
-                                      color:
-                                          _getUrgensiColor(_selectedUrgensi),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 14),
-                        _buildInputField(
-                          controller: _catatanController,
-                          label: 'Catatan / Kondisi Kesehatan (Opsional)',
-                          hint:
-                              'Tuliskan kondisi pasien, misal: Dirawat di ICU, butuh minyak suci segera',
-                          prefixIcon: Icons.notes_rounded,
-                          maxLines: 3,
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // ── Card 3: Jadwal & Lokasi ──
-                    _buildFormCard(
-                      title: 'Jadwal & Lokasi Pelayanan',
-                      icon: Icons.calendar_today_rounded,
-                      iconColor: const Color(0xFF1E5399),
-                      children: [
-                        // Tanggal Pelayanan Picker
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Tanggal Pelayanan',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF334155),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            GestureDetector(
-                              onTap: _pickDate,
-                              child: AbsorbPointer(
-                                child: _buildInputField(
-                                  controller: _tanggalController,
-                                  label: null,
-                                  hint: 'Pilih Tanggal Pelayanan',
-                                  prefixIcon: Icons.event_available_rounded,
-                                  suffixIcon: const Icon(
-                                      Icons.calendar_month_rounded,
-                                      color: Color(0xFF1E5399),
-                                      size: 20),
-                                  validator: (v) => v == null || v.isEmpty
-                                      ? 'Tanggal wajib dipilih'
-                                      : null,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        // Jam Mulai & Jam Selesai (Flexible Time Picker)
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildTimePickerButton(
-                                label: 'Jam Mulai',
-                                timeValue: _jamMulai,
-                                prefixIcon: Icons.access_time_rounded,
-                                onTap: () => _pickTime(true),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildTimePickerButton(
-                                label: 'Jam Selesai',
-                                timeValue: _jamSelesai,
-                                prefixIcon: Icons.access_time_filled_rounded,
-                                onTap: () => _pickTime(false),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        // Alamat Detail
-                        _buildInputField(
-                          controller: _alamatController,
-                          label: 'Alamat Detail & Lokasi',
-                          hint:
-                              'Contoh: RS Carolus Kamar 302, Jl. Salemba Raya No.41',
-                          prefixIcon: Icons.location_on_outlined,
-                          maxLines: 3,
-                          validator: (v) => v == null || v.isEmpty
-                              ? 'Alamat detail wajib diisi'
-                              : null,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // ── Sticky Bottom Submit Bar ──
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 16,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E5399),
-                      disabledBackgroundColor:
-                          const Color(0xFF1E5399).withOpacity(0.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 2,
-                      shadowColor: const Color(0xFF1E5399).withOpacity(0.35),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2.5),
-                          )
-                        : const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.send_rounded,
-                                  color: Colors.white, size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                'KIRIM PERMINTAAN PELAYANAN',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Helper UI Components ──
-
-  Widget _buildHeroHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E5399), Color(0xFF0F172A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1E5399).withOpacity(0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.sanitizer_rounded,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Sakramen Perminyakan',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Lengkapi form dibawah untuk memohon pengurapan minyak suci bagi anggota keluarga yang sakit.',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11.5,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFormCard({
-    required String title,
-    required IconData icon,
-    required Color iconColor,
-    required List<Widget> children,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 18, color: iconColor),
+              // 1. Nama Penerima
+              _buildOutlinedInput(
+                controller: _namaController,
+                hint: 'Nama penerima Sakramen Perminyakan',
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Nama wajib diisi' : null,
               ),
-              const SizedBox(width: 10),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
+              const SizedBox(height: 14),
+
+              // 2. Jenis Urgensi
+              _buildOutlinedDropdown<String>(
+                value: _selectedUrgensi,
+                hint: 'Jenis Urgensi',
+                items: _urgensiOptions,
+                itemLabel: (e) => e,
+                onChanged: (v) => setState(() => _selectedUrgensi = v),
+                validator: (v) =>
+                    v == null ? 'Jenis urgensi wajib dipilih' : null,
+              ),
+              const SizedBox(height: 14),
+
+              // 3. Catatan
+              _buildOutlinedInput(
+                controller: _catatanController,
+                hint: 'Catatan',
+                maxLines: 3,
+              ),
+              const SizedBox(height: 14),
+
+              // 4. Pilih Gender
+              _buildOutlinedDropdown<String>(
+                value: _selectedGender,
+                hint: 'Pilih Gender',
+                items: _genderOptions,
+                itemLabel: (e) => e,
+                onChanged: (v) => setState(() => _selectedGender = v),
+                validator: (v) => v == null ? 'Gender wajib dipilih' : null,
+              ),
+              const SizedBox(height: 14),
+
+              // 5. Usia Penerima Sakramen Perminyakan
+              _buildOutlinedInput(
+                controller: _usiaController,
+                label: 'Usia Penerima Sakramen Perminyakan',
+                hint: '0',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Usia wajib diisi' : null,
+              ),
+              const SizedBox(height: 20),
+
+              // Subtitle
+              const Text(
+                'Pilih tanggal mulai pelayanan yang anda minta.',
+                style: TextStyle(
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0F172A),
                 ),
               ),
+              const SizedBox(height: 12),
+
+              // 6. Tanggal Pelayanan
+              GestureDetector(
+                onTap: _pickDate,
+                child: AbsorbPointer(
+                  child: _buildOutlinedInput(
+                    controller: _tanggalController,
+                    hint: 'Tanggal Pelayanan',
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Tanggal wajib dipilih' : null,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // 7. Jam Mulai & Jam Selesai
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildOutlinedTimePicker(
+                      label: 'Jam Mulai',
+                      value: _jamMulai,
+                      onTap: () => _pickTime(true),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildOutlinedTimePicker(
+                      label: 'Jam Selesai',
+                      value: _jamSelesai,
+                      onTap: () => _pickTime(false),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // 8. Alamat Detail
+              _buildOutlinedInput(
+                controller: _alamatController,
+                hint: 'Alamat Detail',
+                maxLines: 3,
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Alamat wajib diisi' : null,
+              ),
+              const SizedBox(height: 20),
+
+              // ── Toggle Switch: Paroki yang sama? ──
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Paroki yang sama?',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: _isSameParish,
+                    activeTrackColor: const Color(0xFF0D9488),
+                    onChanged: (val) {
+                      setState(() {
+                        _isSameParish = val;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // 9. Pilih Keuskupan
+              _buildOutlinedDropdown<int>(
+                value: _selectedKeuskupanId,
+                label: 'Pilih Keuskupan',
+                hint: 'Pilih Keuskupan',
+                items: _keuskupanList.map((e) => e['id'] as int).toList(),
+                itemLabel: (id) {
+                  final found = _keuskupanList.firstWhere(
+                    (e) => e['id'] == id,
+                    orElse: () => {'name': 'Keuskupan Agung Jakarta'},
+                  );
+                  return found['name'] ?? '';
+                },
+                onChanged: _isSameParish ? null : _onKeuskupanChanged,
+              ),
+              const SizedBox(height: 14),
+
+              // 10. Pilih Paroki
+              _buildOutlinedDropdown<int>(
+                value: _selectedParokiId,
+                label: 'Pilih Paroki',
+                hint: 'Pilih Paroki',
+                items: _parokiList.map((e) => e['id'] as int).toList(),
+                itemLabel: (id) {
+                  final found = _parokiList.firstWhere(
+                    (e) => e['id'] == id,
+                    orElse: () =>
+                        {'name': 'Paroki Alam Sutera - St. Laurensius'},
+                  );
+                  return found['name'] ?? '';
+                },
+                onChanged: _isSameParish ? null : (v) => setState(() => _selectedParokiId = v),
+              ),
+              const SizedBox(height: 14),
+
+              // 11. Pilih Provinsi
+              _buildOutlinedDropdown<int>(
+                value: _selectedProvinsiId,
+                label: 'Pilih Provinsi',
+                hint: 'Pilih Provinsi',
+                items: _provinsiList.map((e) => e['id'] as int).toList(),
+                itemLabel: (id) {
+                  final found = _provinsiList.firstWhere(
+                    (e) => e['id'] == id,
+                    orElse: () => {'name': 'DKI JAKARTA'},
+                  );
+                  return found['name'] ?? '';
+                },
+                onChanged: _isSameParish ? null : _onProvinsiChanged,
+              ),
+              const SizedBox(height: 14),
+
+              // 12. Pilih Kota
+              _buildOutlinedDropdown<int>(
+                value: _selectedKabupatenKotaId,
+                label: 'Pilih Kota',
+                hint: 'Pilih Kota',
+                items: _kabupatenKotaList.map((e) => e['id'] as int).toList(),
+                itemLabel: (id) {
+                  final found = _kabupatenKotaList.firstWhere(
+                    (e) => e['id'] == id,
+                    orElse: () => {'name': 'KOTA JAKARTA UTARA'},
+                  );
+                  return found['name'] ?? '';
+                },
+                onChanged: _isSameParish
+                    ? null
+                    : (v) => setState(() => _selectedKabupatenKotaId = v),
+              ),
+              const SizedBox(height: 28),
+
+              // Submit Button
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.primaryBlue,
+                    disabledBackgroundColor:
+                        AppConstants.primaryBlue.withOpacity(0.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 1,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2.5),
+                        )
+                      : const Text(
+                          'BUAT PERMINTAAN PELAYANAN',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 16),
-          ...children,
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildInputField({
+  // ── Outlined UI Builders matching the design reference ──
+
+  Widget _buildOutlinedInput({
     required TextEditingController controller,
     required String hint,
     String? label,
-    IconData? prefixIcon,
-    Widget? suffixIcon,
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (label != null) ...[
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF334155),
-            ),
-          ),
-          const SizedBox(height: 6),
-        ],
-        TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          keyboardType: keyboardType,
-          inputFormatters: inputFormatters,
-          validator: validator,
-          style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF0F172A),
-              fontWeight: FontWeight.w500),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle:
-                const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
-            prefixIcon: prefixIcon != null
-                ? Icon(prefixIcon, color: const Color(0xFF1E5399), size: 20)
-                : null,
-            suffixIcon: suffixIcon,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            filled: true,
-            fillColor: const Color(0xFFF8FAFC),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: Color(0xFF1E5399), width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red, width: 1.2),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red, width: 2),
-            ),
-          ),
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      validator: validator,
+      style: const TextStyle(fontSize: 15, color: Color(0xFF0F172A)),
+      decoration: InputDecoration(
+        hintText: hint,
+        labelText: label ?? hint,
+        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+        labelStyle:
+            const TextStyle(color: AppConstants.primaryBlue, fontSize: 13),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide:
+              const BorderSide(color: AppConstants.primaryBlue, width: 1.5),
         ),
-      ],
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide:
+              const BorderSide(color: AppConstants.primaryBlue, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
+      ),
     );
   }
 
-  Widget _buildDropdownField<T>({
+  Widget _buildOutlinedDropdown<T>({
     required T? value,
     required String hint,
     String? label,
-    IconData? prefixIcon,
     required List<T> items,
     required String Function(T) itemLabel,
-    required void Function(T?) onChanged,
+    required void Function(T?)? onChanged,
     String? Function(T?)? validator,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (label != null) ...[
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF334155),
-            ),
-          ),
-          const SizedBox(height: 6),
-        ],
-        DropdownButtonFormField<T>(
-          value: value,
-          validator: validator,
-          isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded,
-              color: Color(0xFF64748B)),
-          style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF0F172A),
-              fontWeight: FontWeight.w500),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle:
-                const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
-            prefixIcon: prefixIcon != null
-                ? Icon(prefixIcon, color: const Color(0xFF1E5399), size: 20)
-                : null,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            filled: true,
-            fillColor: const Color(0xFFF8FAFC),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: Color(0xFF1E5399), width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red, width: 1.2),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red, width: 2),
-            ),
-          ),
-          hint: Text(
-            hint,
-            style: const TextStyle(
-                color: Color(0xFF94A3B8),
-                fontSize: 13.5,
-                fontWeight: FontWeight.normal),
-          ),
-          items: items
-              .map((e) => DropdownMenuItem<T>(
-                    value: e,
-                    child: Text(
-                      itemLabel(e),
-                      style: const TextStyle(
-                          fontSize: 14, color: Color(0xFF0F172A)),
-                    ),
-                  ))
-              .toList(),
-          onChanged: onChanged,
+    return DropdownButtonFormField<T>(
+      value: value,
+      validator: validator,
+      isExpanded: true,
+      icon: const Icon(Icons.arrow_drop_down_rounded,
+          color: Color(0xFF64748B)),
+      style: const TextStyle(fontSize: 15, color: Color(0xFF0F172A)),
+      decoration: InputDecoration(
+        labelText: label ?? hint,
+        labelStyle:
+            const TextStyle(color: AppConstants.primaryBlue, fontSize: 13),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide:
+              const BorderSide(color: AppConstants.primaryBlue, width: 1.5),
         ),
-      ],
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(
+              color: AppConstants.primaryBlue.withOpacity(0.4), width: 1.2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide:
+              const BorderSide(color: AppConstants.primaryBlue, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
+      ),
+      hint: Text(
+        hint,
+        style: const TextStyle(color: Color(0xFF0F172A), fontSize: 15),
+      ),
+      items: items
+          .map((e) => DropdownMenuItem<T>(
+                value: e,
+                child: Text(
+                  itemLabel(e),
+                  style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+                ),
+              ))
+          .toList(),
+      onChanged: onChanged,
     );
   }
 
-  Widget _buildTimePickerButton({
+  Widget _buildOutlinedTimePicker({
     required String label,
-    required String? timeValue,
-    required IconData prefixIcon,
+    required String? value,
     required VoidCallback onTap,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF334155),
+    return InkWell(
+      onTap: onTap,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle:
+              const TextStyle(color: AppConstants.primaryBlue, fontSize: 13),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide:
+                const BorderSide(color: AppConstants.primaryBlue, width: 1.5),
           ),
         ),
-        const SizedBox(height: 6),
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              value ?? label,
+              style: const TextStyle(fontSize: 15, color: Color(0xFF0F172A)),
             ),
-            child: Row(
-              children: [
-                Icon(prefixIcon, color: const Color(0xFF1E5399), size: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    timeValue ?? 'Pilih Jam',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: timeValue != null
-                          ? const Color(0xFF0F172A)
-                          : const Color(0xFF94A3B8),
-                    ),
-                  ),
-                ),
-                const Icon(Icons.arrow_drop_down_rounded,
-                    color: Color(0xFF64748B)),
-              ],
-            ),
-          ),
+            const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF64748B)),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
