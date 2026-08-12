@@ -20,11 +20,11 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   // Controllers
   final _namaController = TextEditingController();
   final _catatanController = TextEditingController();
-  final _usiaController = TextEditingController(text: '0');
+  final _usiaController = TextEditingController();
   final _tanggalController = TextEditingController();
   final _alamatController = TextEditingController();
 
-  // Dropdowns
+  // Dropdowns & Selections
   String? _selectedUrgensi;
   String? _selectedGender;
   String? _jamMulai;
@@ -40,12 +40,12 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
 
   static const _genderOptions = ['Laki-laki', 'Perempuan'];
 
-  // Generate jam options (00:00 - 23:30, step 30 menit)
   static List<String> get _jamOptions {
     final list = <String>[];
     for (int h = 0; h < 24; h++) {
       for (int m = 0; m < 60; m += 30) {
-        list.add('${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}');
+        list.add(
+            '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}');
       }
     }
     return list;
@@ -54,7 +54,6 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   @override
   void initState() {
     super.initState();
-    // Default jam mulai = now, jam selesai = now + 2 jam
     final now = TimeOfDay.now();
     final hh = now.hour.toString().padLeft(2, '0');
     final mm = (now.minute < 30 ? 0 : 30).toString().padLeft(2, '0');
@@ -81,7 +80,8 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(primary: AppConstants.primaryBlue),
+          colorScheme:
+              const ColorScheme.light(primary: AppConstants.primaryBlue),
         ),
         child: child!,
       ),
@@ -101,6 +101,13 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     return 1;
   }
 
+  Color _getUrgensiColor(String? label) {
+    if (label == null) return const Color(0xFF1E5399);
+    if (label.contains('Sangat')) return Colors.red.shade700;
+    if (label.contains('Penting')) return Colors.amber.shade800;
+    return Colors.blue.shade700;
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_tanggalController.text.isEmpty) {
@@ -114,23 +121,23 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
 
     setState(() => _isLoading = true);
 
-    // Parse tanggal dari dd/MM/yyyy ke yyyy-MM-dd
     final parts = _tanggalController.text.split('/');
-    final dateFormatted =
-        parts.length == 3 ? '${parts[2]}-${parts[1]}-${parts[0]}' : _tanggalController.text;
+    final dateFormatted = parts.length == 3
+        ? '${parts[2]}-${parts[1]}-${parts[0]}'
+        : _tanggalController.text;
 
-    // Build notes dengan data sakramen
     final notes = [
       'Nama Penerima: ${_namaController.text}',
       'Gender: ${_selectedGender ?? '-'}',
       'Usia: ${_usiaController.text} tahun',
       'Jam Mulai: $_jamMulai',
       'Jam Selesai: $_jamSelesai',
-      if (_catatanController.text.isNotEmpty) 'Catatan: ${_catatanController.text}',
+      if (_catatanController.text.isNotEmpty)
+        'Catatan: ${_catatanController.text}',
     ].join(' | ');
 
     final res = await ApiService.createOrder(
-      serviceCategoryId: 1, // Perminyakan Orang Sakit = id 1
+      serviceCategoryId: 1,
       urgencyLevelId: _urgensiToId(_selectedUrgensi),
       scheduledDate: dateFormatted,
       scheduledTime: _jamMulai!,
@@ -143,341 +150,653 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     setState(() => _isLoading = false);
     if (!mounted) return;
 
+    final bool isSuccess =
+        res['message']?.toString().toLowerCase().contains('gagal') != true;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(res['message'] ?? 'Permintaan berhasil dikirim'),
-        backgroundColor:
-            res['message']?.toString().toLowerCase().contains('gagal') == true
-                ? Colors.red
-                : Colors.green.shade700,
+        content: Row(
+          children: [
+            Icon(
+              isSuccess
+                  ? Icons.check_circle_outline_rounded
+                  : Icons.error_outline_rounded,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                res['message'] ?? 'Permintaan berhasil dikirim',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isSuccess ? Colors.green.shade700 : Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
       ),
     );
 
-    if (res['message']?.toString().toLowerCase().contains('gagal') != true) {
+    if (isSuccess) {
       Navigator.pop(context);
     }
   }
 
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: AppConstants.textDark, size: 20),
-          onPressed: () => Navigator.pop(context),
+        centerTitle: false,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                  color: Color(0xFF0F172A), size: 16),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
         ),
         title: const Text(
-          'Buat Permintaan Pelayanan',
+          'Permintaan Pelayanan',
           style: TextStyle(
-            color: AppConstants.textDark,
-            fontSize: 17,
+            color: Color(0xFF0F172A),
+            fontSize: 18,
             fontWeight: FontWeight.bold,
+            letterSpacing: -0.3,
           ),
         ),
       ),
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Subtitle
-              const Text(
-                'Isi form dibawah ini sesuai permintaan pelayanan yang dibutuhkan',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppConstants.textMuted,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 22),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Hero Banner ──
+                    _buildHeroHeader(),
 
-              // Section label
-              const Text(
-                'Sakramen Perminyakan',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: AppConstants.textDark,
-                ),
-              ),
-              const SizedBox(height: 14),
+                    const SizedBox(height: 20),
 
-              // 1. Nama Penerima
-              _buildTextField(
-                controller: _namaController,
-                hint: 'Nama penerima Sakramen Perminyakan',
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Nama wajib diisi' : null,
-              ),
-              const SizedBox(height: 12),
-
-              // 2. Jenis Urgensi
-              _buildDropdown<String>(
-                value: _selectedUrgensi,
-                hint: 'Jenis Urgensi',
-                items: _urgensiOptions,
-                itemLabel: (e) => e,
-                onChanged: (v) => setState(() => _selectedUrgensi = v),
-                validator: (v) =>
-                    v == null ? 'Jenis urgensi wajib dipilih' : null,
-              ),
-              const SizedBox(height: 12),
-
-              // 3. Catatan
-              _buildTextField(
-                controller: _catatanController,
-                hint: 'Catatan',
-                maxLines: 3,
-              ),
-              const SizedBox(height: 12),
-
-              // 4. Pilih Gender
-              _buildDropdown<String>(
-                value: _selectedGender,
-                hint: 'Pilih Gender',
-                items: _genderOptions,
-                itemLabel: (e) => e,
-                onChanged: (v) => setState(() => _selectedGender = v),
-                validator: (v) => v == null ? 'Gender wajib dipilih' : null,
-              ),
-              const SizedBox(height: 12),
-
-              // 5. Usia
-              _buildTextField(
-                controller: _usiaController,
-                hint: 'Usia Penerima Sakramen Perminyakan',
-                label: 'Usia Penerima Sakramen Perminyakan',
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Usia wajib diisi' : null,
-              ),
-              const SizedBox(height: 20),
-
-              // Date section label
-              const Text(
-                'Pilih tanggal mulai pelayanan yang anda minta.',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: AppConstants.textDark,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // 6. Tanggal Pelayanan
-              GestureDetector(
-                onTap: _pickDate,
-                child: AbsorbPointer(
-                  child: _buildTextField(
-                    controller: _tanggalController,
-                    hint: 'Tanggal Pelayanan',
-                    suffixIcon: const Icon(Icons.calendar_today_outlined,
-                        color: AppConstants.primaryBlue, size: 20),
-                    validator: (v) =>
-                        v == null || v.isEmpty ? 'Tanggal wajib dipilih' : null,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // 7. Jam Mulai & Jam Selesai (2 kolom)
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDropdown<String>(
-                      value: _jamMulai,
-                      hint: 'Jam Mulai',
-                      label: 'Jam Mulai',
-                      items: _jamOptions,
-                      itemLabel: (e) => e,
-                      onChanged: (v) => setState(() => _jamMulai = v),
+                    // ── Card 1: Data Penerima Sakramen ──
+                    _buildFormCard(
+                      title: 'Data Penerima Sakramen',
+                      icon: Icons.person_pin_rounded,
+                      iconColor: const Color(0xFF1E5399),
+                      children: [
+                        _buildInputField(
+                          controller: _namaController,
+                          label: 'Nama Lengkap Penerima Sakramen',
+                          hint: 'Contoh: Bapak Antonius Supardi',
+                          prefixIcon: Icons.person_outline_rounded,
+                          validator: (v) =>
+                              v == null || v.isEmpty ? 'Nama wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: _buildInputField(
+                                controller: _usiaController,
+                                label: 'Usia (Tahun)',
+                                hint: 'e.g. 65',
+                                prefixIcon: Icons.cake_outlined,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly
+                                ],
+                                validator: (v) => v == null || v.isEmpty
+                                    ? 'Wajib diisi'
+                                    : null,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 4,
+                              child: _buildDropdownField<String>(
+                                value: _selectedGender,
+                                label: 'Gender',
+                                hint: 'Pilih Gender',
+                                prefixIcon: Icons.wc_rounded,
+                                items: _genderOptions,
+                                itemLabel: (e) => e,
+                                onChanged: (v) =>
+                                    setState(() => _selectedGender = v),
+                                validator: (v) =>
+                                    v == null ? 'Pilih gender' : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildDropdown<String>(
-                      value: _jamSelesai,
-                      hint: 'Jam Selesai',
-                      label: 'Jam Selesai',
-                      items: _jamOptions,
-                      itemLabel: (e) => e,
-                      onChanged: (v) => setState(() => _jamSelesai = v),
+
+                    const SizedBox(height: 16),
+
+                    // ── Card 2: Detail Pelayanan & Urgensi ──
+                    _buildFormCard(
+                      title: 'Detail Permintaan & Urgensi',
+                      icon: Icons.medical_services_rounded,
+                      iconColor: const Color(0xFF1E5399),
+                      children: [
+                        _buildDropdownField<String>(
+                          value: _selectedUrgensi,
+                          label: 'Tingkat Urgensi Pelayanan',
+                          hint: 'Pilih Tingkat Urgensi',
+                          prefixIcon: Icons.warning_amber_rounded,
+                          items: _urgensiOptions,
+                          itemLabel: (e) => e,
+                          onChanged: (v) =>
+                              setState(() => _selectedUrgensi = v),
+                          validator: (v) =>
+                              v == null ? 'Urgensi wajib dipilih' : null,
+                        ),
+                        if (_selectedUrgensi != null) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _getUrgensiColor(_selectedUrgensi)
+                                  .withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: _getUrgensiColor(_selectedUrgensi)
+                                    .withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 16,
+                                  color: _getUrgensiColor(_selectedUrgensi),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _selectedUrgensi!
+                                            .contains('Sangat')
+                                        ? 'Pelayanan darurat/kritis akan mendapatkan prioritas penanganan cepat.'
+                                        : 'Permintaan akan diteruskan ke Romo dan Pengurus Lingkungan.',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
+                                      color:
+                                          _getUrgensiColor(_selectedUrgensi),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 14),
+                        _buildInputField(
+                          controller: _catatanController,
+                          label: 'Catatan / Kondisi Kesehatan (Opsional)',
+                          hint:
+                              'Tuliskan kondisi pasien, misal: Dirawat di ICU, butuh minyak suci segera',
+                          prefixIcon: Icons.notes_rounded,
+                          maxLines: 3,
+                        ),
+                      ],
                     ),
+
+                    const SizedBox(height: 16),
+
+                    // ── Card 3: Jadwal & Lokasi ──
+                    _buildFormCard(
+                      title: 'Jadwal & Lokasi Pelayanan',
+                      icon: Icons.calendar_today_rounded,
+                      iconColor: const Color(0xFF1E5399),
+                      children: [
+                        // Tanggal Pelayanan Picker
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Tanggal Pelayanan',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF334155),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            GestureDetector(
+                              onTap: _pickDate,
+                              child: AbsorbPointer(
+                                child: _buildInputField(
+                                  controller: _tanggalController,
+                                  label: null,
+                                  hint: 'Pilih Tanggal Pelayanan',
+                                  prefixIcon: Icons.event_available_rounded,
+                                  suffixIcon: const Icon(
+                                      Icons.calendar_month_rounded,
+                                      color: Color(0xFF1E5399),
+                                      size: 20),
+                                  validator: (v) => v == null || v.isEmpty
+                                      ? 'Tanggal wajib dipilih'
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        // Jam Mulai & Jam Selesai
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildDropdownField<String>(
+                                value: _jamMulai,
+                                label: 'Jam Mulai',
+                                hint: 'Jam Mulai',
+                                prefixIcon: Icons.access_time_rounded,
+                                items: _jamOptions,
+                                itemLabel: (e) => e,
+                                onChanged: (v) =>
+                                    setState(() => _jamMulai = v),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildDropdownField<String>(
+                                value: _jamSelesai,
+                                label: 'Jam Selesai',
+                                hint: 'Jam Selesai',
+                                prefixIcon: Icons.access_time_filled_rounded,
+                                items: _jamOptions,
+                                itemLabel: (e) => e,
+                                onChanged: (v) =>
+                                    setState(() => _jamSelesai = v),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        // Alamat Detail
+                        _buildInputField(
+                          controller: _alamatController,
+                          label: 'Alamat Detail & Lokasi',
+                          hint:
+                              'Contoh: RS Carolus Kamar 302, Jl. Salemba Raya No.41',
+                          prefixIcon: Icons.location_on_outlined,
+                          maxLines: 3,
+                          validator: (v) => v == null || v.isEmpty
+                              ? 'Alamat detail wajib diisi'
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── Sticky Bottom Submit Bar ──
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-
-              // 8. Alamat Detail
-              _buildTextField(
-                controller: _alamatController,
-                hint: 'Alamat Detail',
-                maxLines: 3,
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Alamat wajib diisi' : null,
-              ),
-              const SizedBox(height: 32),
-
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.primaryBlue,
-                    disabledBackgroundColor:
-                        AppConstants.primaryBlue.withOpacity(0.5),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    elevation: 2,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2.5),
-                        )
-                      : const Text(
-                          'KIRIM PERMINTAAN PELAYANAN',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
+              child: SafeArea(
+                top: false,
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E5399),
+                      disabledBackgroundColor:
+                          const Color(0xFF1E5399).withOpacity(0.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 2,
+                      shadowColor: const Color(0xFF1E5399).withOpacity(0.35),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2.5),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.send_rounded,
+                                  color: Colors.white, size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'KIRIM PERMINTAAN PELAYANAN',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Helper UI Components ──
+
+  Widget _buildHeroHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E5399), Color(0xFF0F172A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E5399).withOpacity(0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.sanitizer_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Sakramen Perminyakan',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Lengkapi form dibawah untuk memohon pengurapan minyak suci bagi anggota keluarga yang sakit.',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11.5,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormCard({
+    required String title,
+    required IconData icon,
+    required Color iconColor,
+    required List<Widget> children,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: iconColor),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          ...children,
+        ],
       ),
     );
   }
 
-  // ── Reusable Widgets ──
-
-  Widget _buildTextField({
+  Widget _buildInputField({
     required TextEditingController controller,
     required String hint,
     String? label,
+    IconData? prefixIcon,
+    Widget? suffixIcon,
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters,
-    Widget? suffixIcon,
     String? Function(String?)? validator,
   }) {
-    return TextFormField(
-      controller: controller,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      inputFormatters: inputFormatters,
-      validator: validator,
-      style: const TextStyle(fontSize: 15, color: AppConstants.textDark),
-      decoration: InputDecoration(
-        hintText: hint,
-        labelText: label,
-        hintStyle: const TextStyle(color: AppConstants.textMuted, fontSize: 14),
-        labelStyle: const TextStyle(color: AppConstants.textMuted, fontSize: 13),
-        suffixIcon: suffixIcon,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide:
-              const BorderSide(color: AppConstants.primaryBlue, width: 1.5),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (label != null) ...[
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF334155),
+            ),
+          ),
+          const SizedBox(height: 6),
+        ],
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          validator: validator,
+          style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF0F172A),
+              fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle:
+                const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
+            prefixIcon: prefixIcon != null
+                ? Icon(prefixIcon, color: const Color(0xFF1E5399), size: 20)
+                : null,
+            suffixIcon: suffixIcon,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: Color(0xFF1E5399), width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 1.2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide:
-              const BorderSide(color: AppConstants.primaryBlue, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.red, width: 2),
-        ),
-        filled: false,
-      ),
+      ],
     );
   }
 
-  Widget _buildDropdown<T>({
+  Widget _buildDropdownField<T>({
     required T? value,
     required String hint,
     String? label,
+    IconData? prefixIcon,
     required List<T> items,
     required String Function(T) itemLabel,
     required void Function(T?) onChanged,
     String? Function(T?)? validator,
   }) {
-    return DropdownButtonFormField<T>(
-      value: value,
-      validator: validator,
-      isExpanded: true,
-      icon: const Icon(Icons.keyboard_arrow_down_rounded,
-          color: AppConstants.textMuted),
-      style: const TextStyle(fontSize: 15, color: AppConstants.textDark),
-      decoration: InputDecoration(
-        hintText: label == null ? hint : null,
-        labelText: label,
-        hintStyle: const TextStyle(color: AppConstants.textDark, fontSize: 15),
-        labelStyle: const TextStyle(color: AppConstants.textMuted, fontSize: 13),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide:
-              const BorderSide(color: AppConstants.primaryBlue, width: 1.5),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (label != null) ...[
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF334155),
+            ),
+          ),
+          const SizedBox(height: 6),
+        ],
+        DropdownButtonFormField<T>(
+          value: value,
+          validator: validator,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded,
+              color: Color(0xFF64748B)),
+          style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF0F172A),
+              fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle:
+                const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
+            prefixIcon: prefixIcon != null
+                ? Icon(prefixIcon, color: const Color(0xFF1E5399), size: 20)
+                : null,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: Color(0xFF1E5399), width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 1.2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+          ),
+          hint: Text(
+            hint,
+            style: const TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 13.5,
+                fontWeight: FontWeight.normal),
+          ),
+          items: items
+              .map((e) => DropdownMenuItem<T>(
+                    value: e,
+                    child: Text(
+                      itemLabel(e),
+                      style: const TextStyle(
+                          fontSize: 14, color: Color(0xFF0F172A)),
+                    ),
+                  ))
+              .toList(),
+          onChanged: onChanged,
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide:
-              const BorderSide(color: AppConstants.primaryBlue, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.red, width: 2),
-        ),
-      ),
-      hint: label == null
-          ? Text(hint,
-              style: const TextStyle(
-                  color: AppConstants.textDark,
-                  fontSize: 15,
-                  fontWeight: FontWeight.normal))
-          : null,
-      items: items
-          .map((e) => DropdownMenuItem<T>(
-                value: e,
-                child: Text(itemLabel(e),
-                    style: const TextStyle(
-                        fontSize: 14, color: AppConstants.textDark)),
-              ))
-          .toList(),
-      onChanged: onChanged,
+      ],
     );
   }
 }
