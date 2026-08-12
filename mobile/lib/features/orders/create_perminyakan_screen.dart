@@ -27,8 +27,8 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   final _alamatController = TextEditingController();
 
   // Dropdowns & Selections
-  String? _selectedUrgensi;
-  String? _selectedGender;
+  String? _selectedUrgensi = 'Standar';
+  String? _selectedGender = 'Laki-laki';
   String? _jamMulai;
   String? _jamSelesai;
 
@@ -226,6 +226,8 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       ),
     );
     if (picked != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
       setState(() {
         _tanggalController.text =
             '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
@@ -261,6 +263,9 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     );
 
     if (picked != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+
       final dateParts = _tanggalController.text.split('/');
       if (dateParts.length == 3) {
         final day = int.tryParse(dateParts[0]);
@@ -428,6 +433,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   }
 
   void _showError(String msg) {
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
@@ -435,6 +441,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
