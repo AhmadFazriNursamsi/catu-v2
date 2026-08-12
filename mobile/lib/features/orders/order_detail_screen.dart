@@ -378,7 +378,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 child: Text(
                   item.itemName,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF0F172A),
                   ),
@@ -404,7 +404,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SizedBox(height: 12),
           const Divider(height: 1, color: Color(0xFFE2E8F0)),
           const SizedBox(height: 12),
-          // Tanggal Misa & Jam
+          // Tanggal & Jam Execution
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -416,7 +416,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Tanggal & Waktu Misa',
+                      'Waktu Misa',
                       style: TextStyle(
                         fontSize: 11,
                         color: Color(0xFF64748B),
@@ -438,7 +438,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          // Lokasi Misa
+          // Lokasi Execution
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -450,7 +450,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Lokasi Pelaksanaan Misa',
+                      'Lokasi Pelaksanaan',
                       style: TextStyle(
                         fontSize: 11,
                         color: Color(0xFF64748B),
@@ -660,11 +660,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           child: Divider(height: 1, color: Color(0xFFF1F5F9)),
                         ),
 
-                        // ── Detail Misa Kedukaan (Cards per Misa) ──
+                        // ── Detail Sesi Misa (Masing-masing Card adalah Title Misa) ──
                         _buildSectionHeader(
-                          title: order.items.isNotEmpty
-                              ? 'Detail Jadwal Misa Kedukaan (${order.items.length} Sesi)'
-                              : 'Detail Jadwal Pelayanan',
+                          title: 'Rincian Sesi Misa Kedukaan',
                           icon: Icons.church_outlined,
                         ),
                         const SizedBox(height: 14),
