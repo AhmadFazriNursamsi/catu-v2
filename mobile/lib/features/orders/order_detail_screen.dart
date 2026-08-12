@@ -645,13 +645,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           child: Divider(height: 1, color: Color(0xFFF1F5F9)),
                         ),
 
-                        // ── Detail Misa Kedukaan (Masing-masing Card adalah Title Misa) ──
-                        _buildSectionHeader(
-                          title: 'Rincian Pelayanan Misa Kedukaan',
-                          icon: Icons.church_outlined,
-                        ),
-                        const SizedBox(height: 14),
-
                         if (order.items.isNotEmpty) ...[
                           for (int i = 0; i < order.items.length; i++)
                             _buildMisaDetailCard(order.items[i], i),
