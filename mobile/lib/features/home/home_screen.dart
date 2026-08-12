@@ -71,9 +71,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final String accountStatus = u['accountStatus'] ?? u['account_status'] ?? 'APPROVED';
     final String pengurusPosition = u['pengurusPosition'] ?? u['pengurus_position'] ?? '';
     final String romoPosition = u['romoPosition'] ?? u['romo_position'] ?? '';
+    final String? startDate = u['jabatanStartDate'] ?? u['jabatan_start_date'];
+    final String? endDate = u['jabatanEndDate'] ?? u['jabatan_end_date'];
     final int? startYear = u['jabatanStartYear'] ?? u['jabatan_start_year'];
     final int? endYear = u['jabatanEndYear'] ?? u['jabatan_end_year'];
-    final bool isJabatanActive = u['isJabatanActive'] ?? u['is_jabatan_active'] ?? true;
+    final bool isJabatanActive = u['isJabatanActive'] ?? u['is_jabatan_active'] ?? false;
+
+    final String periodeText = (startDate != null && endDate != null && startDate.isNotEmpty && endDate.isNotEmpty)
+        ? '$startDate - $endDate'
+        : (startYear != null && endYear != null ? '$startYear - $endYear' : '');
 
     final String keuskupanName = u['keuskupanName'] ?? u['keuskupan_name'] ?? 'Keuskupan Agung Jakarta';
     final String parokiName = u['parokiName'] ?? u['paroki_name'] ?? 'Paroki Otista';
@@ -203,25 +209,25 @@ class _HomeScreenState extends State<HomeScreen> {
                             formattedRole,
                             style: const TextStyle(color: AppConstants.accentGold, fontSize: 13, fontWeight: FontWeight.w600),
                           ),
-                          if (startYear != null && endYear != null) ...[
+                          if (periodeText.isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Row(
                               children: [
                                 const Icon(Icons.date_range_rounded, size: 13, color: Colors.white70),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Periode: $startYear - $endYear',
+                                  'Periode: $periodeText',
                                   style: const TextStyle(color: Colors.white70, fontSize: 11.5),
                                 ),
                                 const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                   decoration: BoxDecoration(
-                                    color: isJabatanActive ? Colors.green.shade600 : Colors.grey.shade600,
+                                    color: isJabatanActive ? Colors.green.shade600 : Colors.orange.shade700,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    isJabatanActive ? 'AKTIF' : 'NON-AKTIF',
+                                    isJabatanActive ? 'AKTIF' : 'PENDING ADMIN',
                                     style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
                                   ),
                                 ),

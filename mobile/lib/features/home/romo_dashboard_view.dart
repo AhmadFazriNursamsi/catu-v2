@@ -27,10 +27,16 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
   Widget build(BuildContext context) {
     final String userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Romo Samuel';
     final String romoPos = widget.user['romoPosition'] ?? widget.user['romo_position'] ?? '';
+    final String? startDate = widget.user['jabatanStartDate'] ?? widget.user['jabatan_start_date'];
+    final String? endDate = widget.user['jabatanEndDate'] ?? widget.user['jabatan_end_date'];
     final int? startYear = widget.user['jabatanStartYear'] ?? widget.user['jabatan_start_year'];
     final int? endYear = widget.user['jabatanEndYear'] ?? widget.user['jabatan_end_year'];
-    final bool isJabatanActive = widget.user['isJabatanActive'] ?? widget.user['is_jabatan_active'] ?? true;
+    final bool isJabatanActive = widget.user['isJabatanActive'] ?? widget.user['is_jabatan_active'] ?? false;
     final String positionTitle = romoPos == 'KETUA_ROMO' ? 'Pastor Kepala' : 'Pastor Rekan';
+
+    final String periodeText = (startDate != null && endDate != null && startDate.isNotEmpty && endDate.isNotEmpty)
+        ? '$startDate - $endDate'
+        : (startYear != null && endYear != null ? '$startYear - $endYear' : '');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -64,20 +70,20 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                               positionTitle,
                               style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF1E5399)),
                             ),
-                            if (startYear != null && endYear != null) ...[
+                            if (periodeText.isNotEmpty) ...[
                               Text(
-                                ' • $startYear-$endYear',
-                                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                ' • $periodeText',
+                                style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
                               ),
                               const SizedBox(width: 5),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                 decoration: BoxDecoration(
-                                  color: isJabatanActive ? Colors.green.shade600 : Colors.red.shade600,
+                                  color: isJabatanActive ? Colors.green.shade600 : Colors.orange.shade800,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  isJabatanActive ? 'AKTIF' : 'NON-AKTIF',
+                                  isJabatanActive ? 'AKTIF' : 'PENDING ADMIN',
                                   style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold),
                                 ),
                               ),

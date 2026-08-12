@@ -38,6 +38,8 @@ class ApiService {
     String? romoPosition,
     int? jabatanStartYear,
     int? jabatanEndYear,
+    String? jabatanStartDate,
+    String? jabatanEndDate,
     bool? isJabatanActive,
   }) async {
     try {
@@ -63,6 +65,12 @@ class ApiService {
       }
       if (jabatanEndYear != null) {
         payload['jabatanEndYear'] = jabatanEndYear;
+      }
+      if (jabatanStartDate != null && jabatanStartDate.isNotEmpty) {
+        payload['jabatanStartDate'] = jabatanStartDate;
+      }
+      if (jabatanEndDate != null && jabatanEndDate.isNotEmpty) {
+        payload['jabatanEndDate'] = jabatanEndDate;
       }
       if (isJabatanActive != null) {
         payload['isJabatanActive'] = isJabatanActive;

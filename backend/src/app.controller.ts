@@ -24,7 +24,9 @@ export class AuthController implements OnModuleInit {
         ALTER TABLE user_profiles 
         ADD COLUMN IF NOT EXISTS jabatan_start_year INT,
         ADD COLUMN IF NOT EXISTS jabatan_end_year INT,
-        ADD COLUMN IF NOT EXISTS is_jabatan_active BOOLEAN DEFAULT TRUE;
+        ADD COLUMN IF NOT EXISTS jabatan_start_date VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS jabatan_end_date VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS is_jabatan_active BOOLEAN DEFAULT FALSE;
       `);
     } catch (e) {
       console.log('Auto-migration user_profiles notice:', e);
@@ -86,6 +88,22 @@ export class AuthController implements OnModuleInit {
       // Hash password dengan Bcrypt salt 10
       const hashedPassword = await bcrypt.hash(dto.password, 10);
 
+      // Flag Jabatan default is FALSE (Pending Admin Approval) for leadership positions
+      const isLeadershipPos = dto.pengurusPosition || dto.romoPosition === 'KETUA_ROMO';
+      const initialActiveFlag = isLeadershipPos ? false : (dto.isJabatanActive !== undefined ? dto.isJabatanActive : true);
+
+      // Extract years from dates if missing
+      let startYear = dto.jabatanStartYear;
+      let endYear = dto.jabatanEndYear;
+      if (!startYear && dto.jabatanStartDate && dto.jabatanStartDate.includes('/')) {
+        const parts = dto.jabatanStartDate.split('/');
+        if (parts.length === 3) startYear = parseInt(parts[2], 10);
+      }
+      if (!endYear && dto.jabatanEndDate && dto.jabatanEndDate.includes('/')) {
+        const parts = dto.jabatanEndDate.split('/');
+        if (parts.length === 3) endYear = parseInt(parts[2], 10);
+      }
+
       // 1. Insert ke auth_users
       const authResult = await queryRunner.query(
         `INSERT INTO auth_users (phone_number, password_hash, role_id, account_status)
@@ -96,8 +114,8 @@ export class AuthController implements OnModuleInit {
 
       // 2. Insert ke user_profiles
       await queryRunner.query(
-        `INSERT INTO user_profiles (user_id, full_name, email, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, pengurus_position, romo_position, jabatan_start_year, jabatan_end_year, is_jabatan_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        `INSERT INTO user_profiles (user_id, full_name, email, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, pengurus_position, romo_position, jabatan_start_year, jabatan_end_year, jabatan_start_date, jabatan_end_date, is_jabatan_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
         [
           authUser.id,
           dto.fullName,
@@ -109,9 +127,11 @@ export class AuthController implements OnModuleInit {
           dto.kabupatenKotaId || 3175,
           dto.pengurusPosition || null,
           dto.romoPosition || 'ROMO_BIASA',
-          dto.jabatanStartYear || null,
-          dto.jabatanEndYear || null,
-          dto.isJabatanActive !== undefined ? dto.isJabatanActive : true,
+          startYear || null,
+          endYear || null,
+          dto.jabatanStartDate || null,
+          dto.jabatanEndDate || null,
+          initialActiveFlag,
         ],
       );
 
@@ -135,9 +155,11 @@ export class AuthController implements OnModuleInit {
           kabupatenKotaName: 'JAKARTA TIMUR',
           pengurusPosition: dto.pengurusPosition,
           romoPosition: dto.romoPosition,
-          jabatanStartYear: dto.jabatanStartYear,
-          jabatanEndYear: dto.jabatanEndYear,
-          isJabatanActive: dto.isJabatanActive !== undefined ? dto.isJabatanActive : true,
+          jabatanStartYear: startYear,
+          jabatanEndYear: endYear,
+          jabatanStartDate: dto.jabatanStartDate,
+          jabatanEndDate: dto.jabatanEndDate,
+          isJabatanActive: initialActiveFlag,
         },
         approvalAssignedTo: approverName,
       };
@@ -159,7 +181,7 @@ export class AuthController implements OnModuleInit {
     const users = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.password_hash, u.account_status, r.code as role_code, 
               p.full_name, p.email, k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, kk.name as kota_name,
-              p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.is_jabatan_active
+              p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
        FROM auth_users u 
        JOIN roles r ON u.role_id = r.id 
        JOIN user_profiles p ON p.user_id = u.id
@@ -210,7 +232,9 @@ export class AuthController implements OnModuleInit {
         romoPosition: user.romo_position,
         jabatanStartYear: user.jabatan_start_year,
         jabatanEndYear: user.jabatan_end_year,
-        isJabatanActive: user.is_jabatan_active !== null ? user.is_jabatan_active : true,
+        jabatanStartDate: user.jabatan_start_date,
+        jabatanEndDate: user.jabatan_end_date,
+        isJabatanActive: user.is_jabatan_active !== null ? user.is_jabatan_active : false,
       },
     };
   }
@@ -227,6 +251,13 @@ export class AuthController implements OnModuleInit {
       `UPDATE auth_users SET account_status = $1 WHERE id = $2 RETURNING id, account_status`,
       [dto.action, dto.targetUserId],
     );
+
+    if (dto.action === 'APPROVED') {
+      await this.dataSource.query(
+        `UPDATE user_profiles SET is_jabatan_active = TRUE WHERE user_id = $1`,
+        [dto.targetUserId],
+      );
+    }
 
     const userProfile = await this.dataSource.query(`SELECT full_name FROM user_profiles WHERE user_id = $1`, [dto.targetUserId]);
 

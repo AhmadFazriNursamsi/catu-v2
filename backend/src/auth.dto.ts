@@ -75,7 +75,7 @@ export class RegisterUserDto {
   @IsOptional()
   romoPosition?: RomoPositionEnum;
 
-  @ApiPropertyOptional({ example: 2024, description: 'Tahun Mulai Masa Jabatan (untuk Ketua Romo Paroki, Ketua Romo Ordo, Ketua/Wakil/Sekretaris Lingkungan)' })
+  @ApiPropertyOptional({ example: 2024, description: 'Tahun Mulai Masa Jabatan' })
   @IsOptional()
   jabatanStartYear?: number;
 
@@ -83,7 +83,15 @@ export class RegisterUserDto {
   @IsOptional()
   jabatanEndYear?: number;
 
-  @ApiPropertyOptional({ example: true, description: 'Flag Jabatan Aktif/Tidak' })
+  @ApiPropertyOptional({ example: '01/01/2024', description: 'Tanggal Mulai Masa Jabatan (DD/MM/YYYY)' })
+  @IsOptional()
+  jabatanStartDate?: string;
+
+  @ApiPropertyOptional({ example: '31/12/2027', description: 'Tanggal Selesai Masa Jabatan (DD/MM/YYYY)' })
+  @IsOptional()
+  jabatanEndDate?: string;
+
+  @ApiPropertyOptional({ example: false, description: 'Flag Jabatan Aktif/Tidak (default false / PENDING persetujuan Admin)' })
   @IsOptional()
   isJabatanActive?: boolean;
 }
@@ -164,7 +172,13 @@ export class UserProfileResponseDto {
   @ApiPropertyOptional({ example: 2027 })
   jabatanEndYear?: number;
 
-  @ApiPropertyOptional({ example: true })
+  @ApiPropertyOptional({ example: '01/01/2024' })
+  jabatanStartDate?: string;
+
+  @ApiPropertyOptional({ example: '31/12/2027' })
+  jabatanEndDate?: string;
+
+  @ApiPropertyOptional({ example: false })
   isJabatanActive?: boolean;
 }
 

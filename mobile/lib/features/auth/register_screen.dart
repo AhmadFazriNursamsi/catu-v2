@@ -23,9 +23,8 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   String _selectedRomoOrdoPosition = 'ROMO_BIASA';
   String _selectedRomoParokiPosition = 'ROMO_BIASA';
 
-  final _startYearController = TextEditingController(text: DateTime.now().year.toString());
-  final _endYearController = TextEditingController(text: (DateTime.now().year + 3).toString());
-  bool _isJabatanActive = true;
+  final _startDateController = TextEditingController(text: '01/01/${DateTime.now().year}');
+  final _endDateController = TextEditingController(text: '31/12/${DateTime.now().year + 3}');
 
   bool _isLoading = false;
   bool _isLoadingRoles = true;
@@ -58,8 +57,8 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     _nameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _startYearController.dispose();
-    _endYearController.dispose();
+    _startDateController.dispose();
+    _endDateController.dispose();
     super.dispose();
   }
 
@@ -128,14 +127,22 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       romoPosition = _selectedRomoParokiPosition;
     }
 
+    String? jabatanStartDate;
+    String? jabatanEndDate;
     int? jabatanStartYear;
     int? jabatanEndYear;
-    bool? isJabatanActive;
 
     if (_needsMasaJabatan) {
-      jabatanStartYear = int.tryParse(_startYearController.text.trim());
-      jabatanEndYear = int.tryParse(_endYearController.text.trim());
-      isJabatanActive = _isJabatanActive;
+      jabatanStartDate = _startDateController.text.trim();
+      jabatanEndDate = _endDateController.text.trim();
+      if (jabatanStartDate.contains('/')) {
+        final parts = jabatanStartDate.split('/');
+        if (parts.length == 3) jabatanStartYear = int.tryParse(parts[2]);
+      }
+      if (jabatanEndDate.contains('/')) {
+        final parts = jabatanEndDate.split('/');
+        if (parts.length == 3) jabatanEndYear = int.tryParse(parts[2]);
+      }
     }
 
     setState(() => _isLoading = true);
@@ -148,7 +155,9 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       romoPosition: romoPosition,
       jabatanStartYear: jabatanStartYear,
       jabatanEndYear: jabatanEndYear,
-      isJabatanActive: isJabatanActive,
+      jabatanStartDate: jabatanStartDate,
+      jabatanEndDate: jabatanEndDate,
+      isJabatanActive: false, // Flag Jabatan auto PENDING (Menunggu Persetujuan Admin)
     );
     setState(() => _isLoading = false);
 
@@ -305,6 +314,35 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     return const SizedBox.shrink();
   }
 
+  Future<void> _selectDate(TextEditingController controller) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2050),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppConstants.primaryBlue,
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF0F172A),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      final day = picked.day.toString().padLeft(2, '0');
+      final month = picked.month.toString().padLeft(2, '0');
+      final year = picked.year.toString();
+      setState(() {
+        controller.text = '$day/$month/$year';
+      });
+    }
+  }
+
   Widget _buildMasaJabatanAndFlagFields() {
     if (!_needsMasaJabatan) return const SizedBox.shrink();
     return Column(
@@ -335,65 +373,62 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
               Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
-                      controller: _startYearController,
-                      keyboardType: TextInputType.number,
-                      decoration: _fieldDeco(label: 'Tahun Mulai', icon: Icons.calendar_today_outlined),
-                      validator: (val) {
-                        if (!_needsMasaJabatan) return null;
-                        if (val == null || val.trim().isEmpty) return 'Wajib diisi';
-                        return null;
-                      },
+                    child: GestureDetector(
+                      onTap: () => _selectDate(_startDateController),
+                      child: AbsorbPointer(
+                        child: TextFormField(
+                          controller: _startDateController,
+                          decoration: _fieldDeco(label: 'Mulai (DD/MM/YYYY)', icon: Icons.calendar_today_outlined),
+                          validator: (val) {
+                            if (!_needsMasaJabatan) return null;
+                            if (val == null || val.trim().isEmpty) return 'Wajib diisi';
+                            return null;
+                          },
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: TextFormField(
-                      controller: _endYearController,
-                      keyboardType: TextInputType.number,
-                      decoration: _fieldDeco(label: 'Tahun Selesai', icon: Icons.event_outlined),
-                      validator: (val) {
-                        if (!_needsMasaJabatan) return null;
-                        if (val == null || val.trim().isEmpty) return 'Wajib diisi';
-                        return null;
-                      },
+                    child: GestureDetector(
+                      onTap: () => _selectDate(_endDateController),
+                      child: AbsorbPointer(
+                        child: TextFormField(
+                          controller: _endDateController,
+                          decoration: _fieldDeco(label: 'Selesai (DD/MM/YYYY)', icon: Icons.event_outlined),
+                          validator: (val) {
+                            if (!_needsMasaJabatan) return null;
+                            if (val == null || val.trim().isEmpty) return 'Wajib diisi';
+                            return null;
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: const Color(0xFFFFF7ED),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: const Color(0xFFFDBA74)),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          _isJabatanActive ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                          color: _isJabatanActive ? Colors.green : Colors.grey,
-                          size: 20,
+                  children: const [
+                    Icon(Icons.admin_panel_settings_rounded, color: Color(0xFFEA580C), size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Flag Jabatan: PENDING\n(Hak persetujuan & aktivasi jabatan milik Admin)',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFC2410C),
+                          height: 1.3,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _isJabatanActive ? 'Flag Jabatan: AKTIF' : 'Flag Jabatan: NON-AKTIF',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: _isJabatanActive ? Colors.green.shade800 : Colors.grey.shade700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Switch(
-                      value: _isJabatanActive,
-                      activeColor: AppConstants.primaryBlue,
-                      onChanged: (val) => setState(() => _isJabatanActive = val),
+                      ),
                     ),
                   ],
                 ),
