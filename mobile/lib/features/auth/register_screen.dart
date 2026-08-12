@@ -4,6 +4,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../core/utils/fade_slide_route.dart';
 import '../../widgets/searchable_select_field.dart';
+import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -331,7 +332,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       } else {
         Navigator.pushReplacement(
           context,
-          FadeSlideRoute(page: const LoginScreen()),
+          FadeSlideRoute(page: LoginScreen()),
         );
       }
     } else {
@@ -1084,7 +1085,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                                           } else {
                                             Navigator.pushReplacement(
                                               context,
-                                              FadeSlideRoute(page: const LoginScreen()),
+                                              FadeSlideRoute(page: LoginScreen()),
                                             );
                                           }
                                         },
