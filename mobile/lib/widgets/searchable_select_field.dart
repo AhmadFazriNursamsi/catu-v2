@@ -22,6 +22,7 @@ class SearchableSelectField<T> extends StatelessWidget {
   final List<SearchableSelectItem<T>> items;
   final ValueChanged<T?> onChanged;
   final bool isLoading;
+  final bool enabled;
   final String emptyMessage;
 
   const SearchableSelectField({
@@ -33,6 +34,7 @@ class SearchableSelectField<T> extends StatelessWidget {
     required this.items,
     required this.onChanged,
     this.isLoading = false,
+    this.enabled = true,
     this.emptyMessage = 'Tidak ada data ditemukan',
   }) : super(key: key);
 
@@ -76,13 +78,13 @@ class SearchableSelectField<T> extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           GestureDetector(
-            onTap: isLoading ? null : () => _showSearchSheet(context),
+            onTap: (isLoading || !enabled) ? null : () => _showSearchSheet(context),
             child: InputDecorator(
               decoration: InputDecoration(
                 labelText: label.startsWith('Select') ? label : 'Select $label',
                 labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                 filled: true,
-                fillColor: const Color(0xFFF7F9FC),
+                fillColor: enabled ? const Color(0xFFF7F9FC) : const Color(0xFFF1F5F9),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 prefixIcon: Icon(icon, color: hasValue ? AppConstants.primaryBlue : Colors.grey.shade500, size: 22),
                 suffixIcon: isLoading

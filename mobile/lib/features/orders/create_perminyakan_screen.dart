@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
+import '../../widgets/searchable_select_field.dart';
 
 class CreatePerminyakanScreen extends StatefulWidget {
   final int? userId;
@@ -695,102 +696,76 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
 
                         const SizedBox(height: 14),
 
-                        // 1. Pilih Keuskupan
-                        _buildDropdownField<int>(
+                        // 1. Keuskupan
+                        SearchableSelectField<int>(
+                          label: 'Keuskupan',
+                          icon: Icons.account_balance_rounded,
                           value: _selectedKeuskupanId,
-                          label: 'Pilih Keuskupan',
-                          hint: 'Pilih Keuskupan',
-                          prefixIcon: Icons.account_balance_rounded,
+                          enabled: !_isSameParish,
                           items: _keuskupanList
-                              .map((e) => int.tryParse(e['id'].toString()))
-                              .whereType<int>()
+                              .map((item) => SearchableSelectItem<int>(
+                                    value: int.parse(item['id'].toString()),
+                                    label: item['name'].toString(),
+                                  ))
                               .toList(),
-                          itemLabel: (id) {
-                            final found = _keuskupanList.firstWhere(
-                              (e) =>
-                                  (int.tryParse(e['id'].toString()) ?? -1) ==
-                                  id,
-                              orElse: () => {'name': 'Keuskupan Agung Jakarta'},
-                            );
-                            return found['name']?.toString() ?? '';
+                          onChanged: (val) {
+                            if (val != null) _onKeuskupanChanged(val);
                           },
-                          onChanged: _isSameParish ? null : _onKeuskupanChanged,
+                          emptyMessage: 'Keuskupan tidak ditemukan',
                         ),
-                        const SizedBox(height: 14),
 
-                        // 2. Pilih Paroki
-                        _buildDropdownField<int>(
+                        // 2. Paroki
+                        SearchableSelectField<int>(
+                          label: 'Paroki',
+                          icon: Icons.church_outlined,
                           value: _selectedParokiId,
-                          label: 'Pilih Paroki',
-                          hint: 'Pilih Paroki',
-                          prefixIcon: Icons.church_outlined,
+                          enabled: !_isSameParish,
                           items: _parokiList
-                              .map((e) => int.tryParse(e['id'].toString()))
-                              .whereType<int>()
+                              .map((item) => SearchableSelectItem<int>(
+                                    value: int.parse(item['id'].toString()),
+                                    label: item['name'].toString(),
+                                  ))
                               .toList(),
-                          itemLabel: (id) {
-                            final found = _parokiList.firstWhere(
-                              (e) =>
-                                  (int.tryParse(e['id'].toString()) ?? -1) ==
-                                  id,
-                              orElse: () => {
-                                'name': 'Paroki Alam Sutera - St. Laurensius'
-                              },
-                            );
-                            return found['name']?.toString() ?? '';
+                          onChanged: (val) {
+                            if (val != null) setState(() => _selectedParokiId = val);
                           },
-                          onChanged: _isSameParish
-                              ? null
-                              : (v) => setState(() => _selectedParokiId = v),
+                          emptyMessage: 'Paroki tidak ditemukan pada keuskupan ini',
                         ),
-                        const SizedBox(height: 14),
 
-                        // 3. Pilih Provinsi
-                        _buildDropdownField<int>(
+                        // 3. Provinsi
+                        SearchableSelectField<int>(
+                          label: 'Provinsi',
+                          icon: Icons.map_rounded,
                           value: _selectedProvinsiId,
-                          label: 'Pilih Provinsi',
-                          hint: 'Pilih Provinsi',
-                          prefixIcon: Icons.map_rounded,
+                          enabled: !_isSameParish,
                           items: _provinsiList
-                              .map((e) => int.tryParse(e['id'].toString()))
-                              .whereType<int>()
+                              .map((item) => SearchableSelectItem<int>(
+                                    value: int.parse(item['id'].toString()),
+                                    label: item['name'].toString(),
+                                  ))
                               .toList(),
-                          itemLabel: (id) {
-                            final found = _provinsiList.firstWhere(
-                              (e) =>
-                                  (int.tryParse(e['id'].toString()) ?? -1) ==
-                                  id,
-                              orElse: () => {'name': 'DKI JAKARTA'},
-                            );
-                            return found['name']?.toString() ?? '';
+                          onChanged: (val) {
+                            if (val != null) _onProvinsiChanged(val);
                           },
-                          onChanged: _isSameParish ? null : _onProvinsiChanged,
+                          emptyMessage: 'Provinsi tidak ditemukan',
                         ),
-                        const SizedBox(height: 14),
 
-                        // 4. Pilih Kota
-                        _buildDropdownField<int>(
+                        // 4. Kota / Kabupaten
+                        SearchableSelectField<int>(
+                          label: 'Kota / Kabupaten',
+                          icon: Icons.location_city_rounded,
                           value: _selectedKabupatenKotaId,
-                          label: 'Pilih Kota',
-                          hint: 'Pilih Kota',
-                          prefixIcon: Icons.location_city_rounded,
+                          enabled: !_isSameParish,
                           items: _kabupatenKotaList
-                              .map((e) => int.tryParse(e['id'].toString()))
-                              .whereType<int>()
+                              .map((item) => SearchableSelectItem<int>(
+                                    value: int.parse(item['id'].toString()),
+                                    label: item['name'].toString(),
+                                  ))
                               .toList(),
-                          itemLabel: (id) {
-                            final found = _kabupatenKotaList.firstWhere(
-                              (e) =>
-                                  (int.tryParse(e['id'].toString()) ?? -1) ==
-                                  id,
-                              orElse: () => {'name': 'KOTA JAKARTA UTARA'},
-                            );
-                            return found['name']?.toString() ?? '';
+                          onChanged: (val) {
+                            if (val != null) setState(() => _selectedKabupatenKotaId = val);
                           },
-                          onChanged: _isSameParish
-                              ? null
-                              : (v) => setState(
-                                  () => _selectedKabupatenKotaId = v),
+                          emptyMessage: 'Kota tidak ditemukan pada provinsi ini',
                         ),
                       ],
                     ),
