@@ -211,24 +211,42 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           if (periodeText.isNotEmpty) ...[
                             const SizedBox(height: 4),
-                            Row(
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 6,
+                              runSpacing: 4,
                               children: [
-                                const Icon(Icons.date_range_rounded, size: 13, color: Colors.white70),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Periode: $periodeText',
-                                  style: const TextStyle(color: Colors.white70, fontSize: 11.5),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.date_range_rounded, size: 13, color: Colors.white70),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Masa Bakti: $periodeText',
+                                      style: const TextStyle(color: Colors.white70, fontSize: 11.5),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: isJabatanActive ? Colors.green.shade600 : Colors.orange.shade700,
+                                    color: isJabatanActive ? Colors.green.shade600 : Colors.amber.shade800,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: Text(
-                                    isJabatanActive ? 'AKTIF' : 'PENDING ADMIN',
-                                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        isJabatanActive ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
+                                        size: 10,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        isJabatanActive ? 'Jabatan Aktif' : 'Menunggu Verifikasi Admin',
+                                        style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],

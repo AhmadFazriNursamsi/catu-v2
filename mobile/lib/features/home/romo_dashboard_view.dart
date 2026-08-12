@@ -77,14 +77,25 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                               ),
                               const SizedBox(width: 5),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                                 decoration: BoxDecoration(
-                                  color: isJabatanActive ? Colors.green.shade600 : Colors.orange.shade800,
-                                  borderRadius: BorderRadius.circular(4),
+                                  color: isJabatanActive ? Colors.green.shade600 : const Color(0xFFD97706),
+                                  borderRadius: BorderRadius.circular(5),
                                 ),
-                                child: Text(
-                                  isJabatanActive ? 'AKTIF' : 'PENDING ADMIN',
-                                  style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isJabatanActive ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
+                                      size: 9.5,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      isJabatanActive ? 'Jabatan Aktif' : 'Menunggu Verifikasi Admin',
+                                      style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],

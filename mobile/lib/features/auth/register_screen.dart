@@ -348,28 +348,54 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                children: const [
-                  Icon(Icons.date_range_rounded, size: 18, color: AppConstants.primaryBlue),
-                  SizedBox(width: 8),
-                  Text(
-                    'Masa Jabatan & Flag Status',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppConstants.primaryBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.calendar_month_rounded, size: 18, color: AppConstants.primaryBlue),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Periode Masa Jabatan',
+                          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                        ),
+                        SizedBox(height: 1),
+                        Text(
+                          'Ketuk kolom untuk memilih tanggal mulai & selesai',
+                          style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Expanded(
@@ -378,7 +404,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                       child: AbsorbPointer(
                         child: TextFormField(
                           controller: _startDateController,
-                          decoration: _fieldDeco(label: 'Mulai (DD/MM/YYYY)', icon: Icons.calendar_today_outlined),
+                          decoration: _fieldDeco(label: 'Tanggal Mulai', icon: Icons.calendar_today_outlined),
                           validator: (val) {
                             if (!_needsMasaJabatan) return null;
                             if (val == null || val.trim().isEmpty) return 'Wajib diisi';
@@ -395,7 +421,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                       child: AbsorbPointer(
                         child: TextFormField(
                           controller: _endDateController,
-                          decoration: _fieldDeco(label: 'Selesai (DD/MM/YYYY)', icon: Icons.event_outlined),
+                          decoration: _fieldDeco(label: 'Tanggal Selesai', icon: Icons.event_available_outlined),
                           validator: (val) {
                             if (!_needsMasaJabatan) return null;
                             if (val == null || val.trim().isEmpty) return 'Wajib diisi';
@@ -407,27 +433,42 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
+              // User friendly Admin verification status card
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF7ED),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFFDBA74)),
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
-                    Icon(Icons.admin_panel_settings_rounded, color: Color(0xFFEA580C), size: 20),
-                    SizedBox(width: 8),
+                    Icon(Icons.verified_user_outlined, color: Color(0xFFD97706), size: 20),
+                    SizedBox(width: 10),
                     Expanded(
-                      child: Text(
-                        'Flag Jabatan: PENDING\n(Hak persetujuan & aktivasi jabatan milik Admin)',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFFC2410C),
-                          height: 1.3,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Status Jabatan: Menunggu Verifikasi Admin',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFB45309),
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Jabatan ini akan diverifikasi & diaktifkan oleh Admin setelah pendaftaran Anda disetujui.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFFD97706),
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
