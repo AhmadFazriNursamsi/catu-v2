@@ -198,6 +198,52 @@ class Order {
     return '';
   }
 
+  /// Parse "Hubungan" from notes
+  String get hubunganLabel {
+    if (notes.isNotEmpty) {
+      final parts = notes.split('|');
+      for (final part in parts) {
+        final trimmed = part.trim();
+        if (trimmed.toLowerCase().startsWith('hubungan')) {
+          final split = trimmed.split(':');
+          if (split.length > 1) return split.sublist(1).join(':').trim();
+        }
+      }
+    }
+    return 'Kerabat';
+  }
+
+  /// Parse "Tgl Meninggal" from notes
+  String get tanggalMeninggalLabel {
+    if (notes.isNotEmpty) {
+      final parts = notes.split('|');
+      for (final part in parts) {
+        final trimmed = part.trim();
+        final lower = trimmed.toLowerCase();
+        if (lower.startsWith('tgl meninggal') || lower.startsWith('tanggal meninggal')) {
+          final split = trimmed.split(':');
+          if (split.length > 1) return split.sublist(1).join(':').trim();
+        }
+      }
+    }
+    return scheduledDate;
+  }
+
+  /// Parse "Waktu Meninggal" from notes
+  String get waktuMeninggalLabel {
+    if (notes.isNotEmpty) {
+      final parts = notes.split('|');
+      for (final part in parts) {
+        final trimmed = part.trim();
+        if (trimmed.toLowerCase().startsWith('waktu meninggal')) {
+          final split = trimmed.split(':');
+          if (split.length > 1) return split.sublist(1).join(':').trim();
+        }
+      }
+    }
+    return jamMulaiLabel.isNotEmpty ? jamMulaiLabel : '06:26';
+  }
+
   /// Format address for display
   String get displayAddress {
     if (addressDetail.isNotEmpty) return addressDetail;
