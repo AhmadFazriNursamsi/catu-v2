@@ -32,7 +32,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   String? _jamSelesai;
 
   // Hierarchy Toggle & Master Data
-  bool _isSameParish = false;
+  bool _isSameParish = true;
   int? _selectedKeuskupanId;
   int? _selectedParokiId;
   int? _selectedProvinsiId;
@@ -79,7 +79,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
         _provinsiList = provList;
         _kabupatenKotaList = kabList;
 
-        if (!_isSameParish) {
+        if (_isSameParish) {
           _applyProfileLocation();
         }
       });
@@ -265,9 +265,9 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       addressDetail: _alamatController.text,
       notes: notes,
       userId: widget.userId,
-      keuskupanId: _isSameParish ? _selectedKeuskupanId : null,
-      parokiId: _isSameParish ? _selectedParokiId : null,
-      kabupatenKotaId: _isSameParish ? _selectedKabupatenKotaId : null,
+      keuskupanId: _isSameParish ? null : _selectedKeuskupanId,
+      parokiId: _isSameParish ? null : _selectedParokiId,
+      kabupatenKotaId: _isSameParish ? null : _selectedKabupatenKotaId,
     );
 
     setState(() => _isLoading = false);
@@ -574,7 +574,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                           onTap: () {
                             setState(() {
                               _isSameParish = !_isSameParish;
-                              if (!_isSameParish) {
+                              if (_isSameParish) {
                                 _applyProfileLocation();
                               }
                             });
@@ -606,8 +606,8 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                                       const SizedBox(height: 2),
                                       Text(
                                         _isSameParish
-                                            ? 'Manual: Pilih Keuskupan & Paroki tujuan secara manual'
-                                            : 'Otomatis: Menggunakan Keuskupan & Paroki domisili profil Anda',
+                                            ? 'Aktif: Menggunakan Keuskupan & Paroki domisili profil Anda (Read Only)'
+                                            : 'Tidak Aktif: Pilih Keuskupan & Paroki tujuan secara manual',
                                         style: const TextStyle(
                                           fontSize: 11,
                                           color: Color(0xFF64748B),
@@ -623,7 +623,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                                   onChanged: (val) {
                                     setState(() {
                                       _isSameParish = val;
-                                      if (!val) {
+                                      if (val) {
                                         _applyProfileLocation();
                                       }
                                     });
@@ -655,7 +655,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                             );
                             return found['name']?.toString() ?? '';
                           },
-                          onChanged: _isSameParish ? _onKeuskupanChanged : null,
+                          onChanged: _isSameParish ? null : _onKeuskupanChanged,
                         ),
                         const SizedBox(height: 14),
 
@@ -681,8 +681,8 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                             return found['name']?.toString() ?? '';
                           },
                           onChanged: _isSameParish
-                              ? (v) => setState(() => _selectedParokiId = v)
-                              : null,
+                              ? null
+                              : (v) => setState(() => _selectedParokiId = v),
                         ),
                         const SizedBox(height: 14),
 
@@ -705,7 +705,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                             );
                             return found['name']?.toString() ?? '';
                           },
-                          onChanged: _isSameParish ? _onProvinsiChanged : null,
+                          onChanged: _isSameParish ? null : _onProvinsiChanged,
                         ),
                         const SizedBox(height: 14),
 
@@ -729,9 +729,9 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                             return found['name']?.toString() ?? '';
                           },
                           onChanged: _isSameParish
-                              ? (v) => setState(
-                                  () => _selectedKabupatenKotaId = v)
-                              : null,
+                              ? null
+                              : (v) => setState(
+                                  () => _selectedKabupatenKotaId = v),
                         ),
                       ],
                     ),
