@@ -63,113 +63,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return const Color(0xFF1E5399);
   }
 
-  Widget _buildDeceasedPhotoCard(String attachmentUrl) {
-    Widget imageWidget;
-    if (attachmentUrl.startsWith('data:image')) {
-      try {
-        final base64Content = attachmentUrl.split(',').last;
-        final bytes = base64Decode(base64Content);
-        imageWidget = Image.memory(
-          bytes,
-          height: 200,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildFallbackPhotoPlaceholder(),
-        );
-      } catch (e) {
-        imageWidget = _buildFallbackPhotoPlaceholder();
-      }
-    } else if (attachmentUrl.startsWith('http://') || attachmentUrl.startsWith('https://')) {
-      imageWidget = Image.network(
-        attachmentUrl,
-        height: 200,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildFallbackPhotoPlaceholder(),
-      );
-    } else if (attachmentUrl.startsWith('assets/')) {
-      imageWidget = Image.asset(
-        attachmentUrl,
-        height: 200,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildFallbackPhotoPlaceholder(),
-      );
-    } else {
-      final file = File(attachmentUrl);
-      if (file.existsSync()) {
-        imageWidget = Image.file(
-          file,
-          height: 200,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildFallbackPhotoPlaceholder(),
-        );
-      } else {
-        imageWidget = _buildFallbackPhotoPlaceholder();
-      }
-    }
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-            child: Row(
-              children: const [
-                Icon(Icons.photo_camera_front_rounded,
-                    size: 18, color: Color(0xFF1E5399)),
-                SizedBox(width: 8),
-                Text(
-                  'Foto Almarhum / Almarhumah',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
-            child: imageWidget,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFallbackPhotoPlaceholder() {
-    return Container(
-      height: 160,
-      width: double.infinity,
-      color: const Color(0xFFF1F5F9),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(Icons.person_rounded, size: 48, color: Color(0xFF94A3B8)),
-          SizedBox(height: 6),
-          Text(
-            'Foto Almarhum / Almarhumah',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF64748B),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildHeroBackground(Order order, bool isKedukaan, Color urgencyColor) {
     if (isKedukaan) {
       return Stack(
@@ -453,6 +346,136 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
+  Widget _buildMisaDetailCard(OrderItem item, int index) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppConstants.primaryBlue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.church_rounded,
+                  size: 18,
+                  color: AppConstants.primaryBlue,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  item.itemName,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Sesi #${index + 1}',
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF475569),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          const SizedBox(height: 12),
+          // Tanggal Misa & Jam
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.calendar_today_rounded,
+                  size: 16, color: Color(0xFF1E5399)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Tanggal & Waktu Misa',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${item.scheduledDate} • ${item.scheduledTimeStart} - ${item.scheduledTimeEnd} WIB',
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Lokasi Misa
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.location_on_rounded,
+                  size: 16, color: Color(0xFF0D9488)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Lokasi Pelaksanaan Misa',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      item.locationName.isNotEmpty ? item.locationName : '-',
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final order = widget.order;
@@ -594,12 +617,85 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 24),
 
-                        // ── Section Title 1: Lokasi Paroki ──
+                        // ── Data Almarhum / Almarhumah Summary Card ──
+                        _buildSectionHeader(
+                          title: 'Ringkasan Data Almarhum / Almarhumah',
+                          icon: Icons.person_pin_rounded,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildSeamlessInfoRow(
+                          label: 'Nama Almarhum/ah',
+                          value: order.penerimaName,
+                          icon: Icons.person_outline_rounded,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildSeamlessInfoRow(
+                          label: 'Hubungan Pemohon',
+                          value: order.hubunganLabel,
+                          icon: Icons.people_outline_rounded,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildSeamlessInfoRow(
+                          label: 'Tanggal Meninggal',
+                          value: order.tanggalMeninggalLabel,
+                          icon: Icons.event_rounded,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildSeamlessInfoRow(
+                          label: 'Waktu Meninggal',
+                          value: '${order.waktuMeninggalLabel} WIB',
+                          icon: Icons.access_time_rounded,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildSeamlessInfoRow(
+                          label: 'Tingkat Urgensi',
+                          value: order.urgencyName,
+                          icon: Icons.error_outline_rounded,
+                        ),
+
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        ),
+
+                        // ── Detail Misa Kedukaan (Cards per Misa) ──
+                        _buildSectionHeader(
+                          title: order.items.isNotEmpty
+                              ? 'Detail Jadwal Misa Kedukaan (${order.items.length} Sesi)'
+                              : 'Detail Jadwal Pelayanan',
+                          icon: Icons.church_outlined,
+                        ),
+                        const SizedBox(height: 14),
+
+                        if (order.items.isNotEmpty) ...[
+                          for (int i = 0; i < order.items.length; i++)
+                            _buildMisaDetailCard(order.items[i], i),
+                        ] else ...[
+                          _buildMisaDetailCard(
+                            OrderItem(
+                              itemName: order.categoryName,
+                              scheduledDate: order.scheduledDate,
+                              scheduledTimeStart: order.jamMulaiLabel,
+                              scheduledTimeEnd: order.jamSelesaiLabel.isNotEmpty
+                                  ? order.jamSelesaiLabel
+                                  : 'Selesai',
+                              locationName: order.displayAddress,
+                            ),
+                            0,
+                          ),
+                        ],
+
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        ),
+
+                        // ── Lokasi Paroki Penerima ──
                         _buildSectionHeader(
                           title: 'Lokasi & Paroki Penerima',
-                          icon: Icons.church_outlined,
+                          icon: Icons.account_balance_outlined,
                         ),
                         const SizedBox(height: 12),
                         _buildSeamlessInfoRow(
@@ -607,7 +703,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           value: order.keuskupanName,
                           icon: Icons.account_balance_rounded,
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
                         _buildSeamlessInfoRow(
                           label: 'Paroki',
                           value: order.parokiName,
@@ -619,67 +715,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           child: Divider(height: 1, color: Color(0xFFF1F5F9)),
                         ),
 
-                        // ── Section Title 2: Sakramen & Jadwal Timeline ──
+                        // ── Catatan Tambahan & Profile Pemohon ──
                         _buildSectionHeader(
-                          title: order.items.isNotEmpty
-                              ? '${order.categoryName} (${order.items.length} Sesi Misa)'
-                              : order.categoryName,
-                          icon: Icons.sanitizer_rounded,
-                        ),
-                        const SizedBox(height: 16),
-
-                        if (order.items.isNotEmpty) ...[
-                          for (int i = 0; i < order.items.length; i++) ...[
-                            _buildTimelineNode(
-                              icon: Icons.church_rounded,
-                              iconColor: const Color(0xFF1E5399),
-                              title: order.items[i].itemName,
-                              subtitle:
-                                  '📅 ${order.items[i].scheduledDate} (${order.items[i].scheduledTimeStart} - ${order.items[i].scheduledTimeEnd} WIB)\n📍 ${order.items[i].locationName}',
-                              isLast: i == order.items.length - 1,
-                            ),
-                          ],
-                        ] else ...[
-                          // Timeline Item 1: Tanggal & Waktu
-                          _buildTimelineNode(
-                            icon: Icons.calendar_today_rounded,
-                            iconColor: const Color(0xFF1E5399),
-                            title: 'Jadwal Pelayanan',
-                            subtitle: order.jamSelesaiLabel.isNotEmpty
-                                ? '${order.scheduledDate} (${order.jamMulaiLabel} - ${order.jamSelesaiLabel} WIB)'
-                                : order.fullScheduleLabel,
-                            isLast: false,
-                          ),
-
-                          // Timeline Item 2: Lokasi Tujuan
-                          _buildTimelineNode(
-                            icon: Icons.location_on_rounded,
-                            iconColor: const Color(0xFF0D9488),
-                            title: 'Alamat / Lokasi Tujuan',
-                            subtitle: order.displayAddress,
-                            isLast: true,
-                          ),
-                        ],
-
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20),
-                          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        ),
-
-                        // ── Section Title 3: Detail Permintaan & Pemohon ──
-                        _buildSectionHeader(
-                          title: 'Detail & Catatan Pemohon',
+                          title: 'Catatan Tambahan & Pemohon',
                           icon: Icons.notes_rounded,
                         ),
                         const SizedBox(height: 14),
-
-                        // ── KHUSUS MISA KEDUKAAN: Foto Almarhum / Almarhumah Card ──
-                        if (isKedukaan &&
-                            order.attachmentUrl != null &&
-                            order.attachmentUrl!.isNotEmpty) ...[
-                          _buildDeceasedPhotoCard(order.attachmentUrl!),
-                          const SizedBox(height: 14),
-                        ],
 
                         // Catatan Blockquote Callout
                         Container(
@@ -699,7 +740,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                       size: 20, color: Color(0xFF64748B)),
                                   SizedBox(width: 6),
                                   Text(
-                                    'Catatan Tambahan',
+                                    'Catatan Pemohon',
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
@@ -902,69 +943,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTimelineNode({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required bool isLast,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 18, color: iconColor),
-            ),
-            if (!isLast)
-              Container(
-                width: 2,
-                height: 34,
-                color: const Color(0xFFE2E8F0),
-              ),
-          ],
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF64748B),
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0F172A),
-                    height: 1.3,
-                  ),
-                ),
-                if (!isLast) const SizedBox(height: 14),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
