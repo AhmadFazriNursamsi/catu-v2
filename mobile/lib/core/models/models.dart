@@ -59,6 +59,9 @@ class Order {
   final String addressDetail;
   final String pemohonName;
   final String notes;
+  final String keuskupanName;
+  final String parokiName;
+  final String lingkunganName;
 
   Order({
     required this.id,
@@ -72,7 +75,55 @@ class Order {
     this.addressDetail = '',
     required this.pemohonName,
     this.notes = '',
+    this.keuskupanName = '',
+    this.parokiName = '',
+    this.lingkunganName = '',
   });
+
+  /// Parse "Jam Mulai" from notes
+  String get jamMulaiLabel {
+    if (notes.isNotEmpty) {
+      final parts = notes.split('|');
+      for (final part in parts) {
+        final trimmed = part.trim();
+        if (trimmed.toLowerCase().startsWith('jam mulai')) {
+          final split = trimmed.split(':');
+          if (split.length > 1) return split.sublist(1).join(':').trim();
+        }
+      }
+    }
+    return scheduledTime;
+  }
+
+  /// Parse "Jam Selesai" from notes
+  String get jamSelesaiLabel {
+    if (notes.isNotEmpty) {
+      final parts = notes.split('|');
+      for (final part in parts) {
+        final trimmed = part.trim();
+        if (trimmed.toLowerCase().startsWith('jam selesai')) {
+          final split = trimmed.split(':');
+          if (split.length > 1) return split.sublist(1).join(':').trim();
+        }
+      }
+    }
+    return '';
+  }
+
+  /// Parse "Catatan" from notes
+  String get catatanLabel {
+    if (notes.isNotEmpty) {
+      final parts = notes.split('|');
+      for (final part in parts) {
+        final trimmed = part.trim();
+        if (trimmed.toLowerCase().startsWith('catatan')) {
+          final split = trimmed.split(':');
+          if (split.length > 1) return split.sublist(1).join(':').trim();
+        }
+      }
+    }
+    return '';
+  }
 
   /// Parse "Nama Penerima" from notes string.
   /// Notes format: "Nama Penerima: Bapak Antonius | Gender: Laki-laki | Usia: 72 tahun"
@@ -96,13 +147,14 @@ class Order {
 
   /// Parse gender from notes
   String get genderLabel {
-    if (notes.isEmpty) return '';
-    final parts = notes.split('|');
-    for (final part in parts) {
-      final trimmed = part.trim();
-      if (trimmed.toLowerCase().startsWith('gender')) {
-        final split = trimmed.split(':');
-        if (split.length > 1) return split.sublist(1).join(':').trim();
+    if (notes.isNotEmpty) {
+      final parts = notes.split('|');
+      for (final part in parts) {
+        final trimmed = part.trim();
+        if (trimmed.toLowerCase().startsWith('gender')) {
+          final split = trimmed.split(':');
+          if (split.length > 1) return split.sublist(1).join(':').trim();
+        }
       }
     }
     return '';
@@ -110,13 +162,14 @@ class Order {
 
   /// Parse usia from notes
   String get usiaLabel {
-    if (notes.isEmpty) return '';
-    final parts = notes.split('|');
-    for (final part in parts) {
-      final trimmed = part.trim();
-      if (trimmed.toLowerCase().startsWith('usia')) {
-        final split = trimmed.split(':');
-        if (split.length > 1) return split.sublist(1).join(':').trim();
+    if (notes.isNotEmpty) {
+      final parts = notes.split('|');
+      for (final part in parts) {
+        final trimmed = part.trim();
+        if (trimmed.toLowerCase().startsWith('usia')) {
+          final split = trimmed.split(':');
+          if (split.length > 1) return split.sublist(1).join(':').trim();
+        }
       }
     }
     return '';
@@ -165,6 +218,9 @@ class Order {
       addressDetail: json['address_detail'] ?? json['addressDetail'] ?? '',
       pemohonName: json['pemohon_name'] ?? json['pemohonName'] ?? 'Umat',
       notes: json['notes'] ?? '',
+      keuskupanName: json['keuskupan_name'] ?? json['keuskupanName'] ?? 'Keuskupan Agung Jakarta',
+      parokiName: json['paroki_name'] ?? json['parokiName'] ?? 'Paroki Alam Sutera - St. Laurensius',
+      lingkunganName: json['lingkungan_name'] ?? json['lingkunganName'] ?? 'St. Angela Merici',
     );
   }
 }

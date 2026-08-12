@@ -881,27 +881,28 @@ export class OrdersController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Mendapatkan Daftar Pelayanan / Monitoring Orders dari Database PostgreSQL' })
   async getOrders(@Query('userId') userId?: string) {
+    const selectQuery = `
+      SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, 
+             o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, 
+             p.full_name as pemohon_name,
+             k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name
+      FROM orders o
+      JOIN service_categories sc ON o.service_category_id = sc.id
+      JOIN urgency_levels ul ON o.urgency_level_id = ul.id
+      JOIN user_profiles p ON o.user_id = p.user_id
+      LEFT JOIN keuskupan k ON COALESCE(o.keuskupan_id, p.keuskupan_id) = k.id
+      LEFT JOIN paroki par ON COALESCE(o.paroki_id, p.paroki_id) = par.id
+      LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+    `;
+
     if (userId && !isNaN(parseInt(userId))) {
-      // Filter by specific user
       return await this.dataSource.query(
-        `SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, p.full_name as pemohon_name
-         FROM orders o
-         JOIN service_categories sc ON o.service_category_id = sc.id
-         JOIN urgency_levels ul ON o.urgency_level_id = ul.id
-         JOIN user_profiles p ON o.user_id = p.user_id
-         WHERE o.user_id = $1
-         ORDER BY o.id DESC`,
+        `${selectQuery} WHERE o.user_id = $1 ORDER BY o.id DESC`,
         [parseInt(userId)],
       );
     }
-    // No filter: return all (for Romo / admin)
     return await this.dataSource.query(
-      `SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, p.full_name as pemohon_name
-       FROM orders o
-       JOIN service_categories sc ON o.service_category_id = sc.id
-       JOIN urgency_levels ul ON o.urgency_level_id = ul.id
-       JOIN user_profiles p ON o.user_id = p.user_id
-       ORDER BY o.id DESC`,
+      `${selectQuery} ORDER BY o.id DESC`,
     );
   }
 }

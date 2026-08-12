@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../core/models/models.dart';
 import '../../core/widgets/liquid_bottom_nav_bar.dart';
 import '../orders/create_perminyakan_screen.dart';
+import '../orders/order_detail_screen.dart';
 import '../chat/chat_screen.dart';
 
 class UmatDashboardView extends StatefulWidget {
@@ -407,9 +408,8 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (_) => ChatScreen(
-                                            groupId: order.id,
-                                            orderNumber: order.orderNumber,
+                                          builder: (_) => OrderDetailScreen(
+                                            order: order,
                                             userName: userName,
                                           ),
                                         ),
