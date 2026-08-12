@@ -665,7 +665,8 @@ export class AuthController implements OnModuleInit {
   async login(@Body() dto: LoginDto) {
     const users = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.password_hash, u.account_status, r.code as role_code, 
-              p.full_name, p.email, k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, kk.name as kota_name,
+              p.full_name, p.email, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id, kk.provinsi_id,
+              k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, kk.name as kota_name,
               p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
        FROM auth_users u 
        JOIN roles r ON u.role_id = r.id 
@@ -708,6 +709,12 @@ export class AuthController implements OnModuleInit {
         email: user.email,
         roleCode: user.role_code,
         accountStatus: user.account_status,
+        keuskupanId: user.keuskupan_id,
+        parokiId: user.paroki_id,
+        wilayahId: user.wilayah_id,
+        lingkunganId: user.lingkungan_id,
+        kabupatenKotaId: user.kabupaten_kota_id,
+        provinsiId: user.provinsi_id,
         keuskupanName: user.keuskupan_name,
         parokiName: user.paroki_name,
         wilayahName: user.wilayah_name,

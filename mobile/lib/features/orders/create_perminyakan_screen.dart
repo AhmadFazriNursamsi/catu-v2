@@ -98,12 +98,41 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       if (rawP != null) _selectedParokiId = int.tryParse(rawP.toString());
       if (rawProv != null) _selectedProvinsiId = int.tryParse(rawProv.toString());
       if (rawKab != null) _selectedKabupatenKotaId = int.tryParse(rawKab.toString());
+
+      // Fallback: Name-based matching if IDs are missing in current user map
+      final kName = (u['keuskupanName'] ?? u['keuskupan_name'] ?? '').toString().toLowerCase();
+      final pName = (u['parokiName'] ?? u['paroki_name'] ?? '').toString().toLowerCase();
+      final kabName = (u['kabupatenKotaName'] ?? u['kota_name'] ?? u['kotaName'] ?? '').toString().toLowerCase();
+
+      if (_selectedKeuskupanId == null && kName.isNotEmpty && _keuskupanList.isNotEmpty) {
+        final match = _keuskupanList.firstWhere(
+          (e) => e['name'].toString().toLowerCase().contains(kName) || kName.contains(e['name'].toString().toLowerCase()),
+          orElse: () => _keuskupanList.first,
+        );
+        _selectedKeuskupanId = int.tryParse(match['id'].toString());
+      }
+
+      if (_selectedParokiId == null && pName.isNotEmpty && _parokiList.isNotEmpty) {
+        final match = _parokiList.firstWhere(
+          (e) => e['name'].toString().toLowerCase().contains(pName) || pName.contains(e['name'].toString().toLowerCase()),
+          orElse: () => _parokiList.first,
+        );
+        _selectedParokiId = int.tryParse(match['id'].toString());
+      }
+
+      if (_selectedKabupatenKotaId == null && kabName.isNotEmpty && _kabupatenKotaList.isNotEmpty) {
+        final match = _kabupatenKotaList.firstWhere(
+          (e) => e['name'].toString().toLowerCase().contains(kabName) || kabName.contains(e['name'].toString().toLowerCase()),
+          orElse: () => _kabupatenKotaList.first,
+        );
+        _selectedKabupatenKotaId = int.tryParse(match['id'].toString());
+      }
     }
 
-    _selectedKeuskupanId ??= _keuskupanList.isNotEmpty ? _keuskupanList.first['id'] : 1;
-    _selectedParokiId ??= _parokiList.isNotEmpty ? _parokiList.first['id'] : 10;
-    _selectedProvinsiId ??= _provinsiList.isNotEmpty ? _provinsiList.first['id'] : 31;
-    _selectedKabupatenKotaId ??= _kabupatenKotaList.isNotEmpty ? _kabupatenKotaList.first['id'] : 3175;
+    _selectedKeuskupanId ??= _keuskupanList.isNotEmpty ? int.tryParse(_keuskupanList.first['id'].toString()) : 1;
+    _selectedParokiId ??= _parokiList.isNotEmpty ? int.tryParse(_parokiList.first['id'].toString()) : 10;
+    _selectedProvinsiId ??= _provinsiList.isNotEmpty ? int.tryParse(_provinsiList.first['id'].toString()) : 31;
+    _selectedKabupatenKotaId ??= _kabupatenKotaList.isNotEmpty ? int.tryParse(_kabupatenKotaList.first['id'].toString()) : 3175;
   }
 
   Future<void> _onKeuskupanChanged(int? keuskupanId) async {
