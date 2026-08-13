@@ -463,12 +463,36 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   // ── Top Header ──────────────────────────────────────────────────────────────
 
   Widget _buildTopHeader() {
+    final bool canGoBack = Navigator.canPop(context);
+
     return Container(
       color: Colors.white,
       padding: EdgeInsets.fromLTRB(
           16, MediaQuery.of(context).padding.top + 12, 16, 12),
       child: Row(
         children: [
+          if (canGoBack) ...[
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Color(0xFF0F172A),
+                    size: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
