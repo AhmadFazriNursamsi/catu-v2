@@ -89,7 +89,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
           groupTitle: 'Group Pelayanan Bp. Antonius',
           lastMessageText: 'Romo Fajar Pr telah bergabung ke grup chat.',
           lastMessageAt: '15:30',
-          orderTitle: 'Perminyakan Orang Sakit',
+          orderTitle: 'Sakramen Perminyakan',
           orderCategory: 'Sakramen Perminyakan',
           orderStatus: 'CONFIRMED',
           scheduledDate: '2026-08-15',
@@ -97,6 +97,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
           scheduledTimeEnd: '17:00',
           penerimaName: 'Bp. Antonius Subagyo',
           requesterName: 'Maria Subagyo',
+          notes: 'Nama Penerima: Bp. Antonius Subagyo',
           unreadCount: 2,
         ),
         ChatGroupItem(
@@ -105,14 +106,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
           groupTitle: 'Group Pelayanan Misa Kedukaan',
           lastMessageText: 'Terima kasih Romo, jadwal telah kami konfirmasi.',
           lastMessageAt: '12:15',
-          orderTitle: 'Misa Kedukaan Alm. Yohanes',
-          orderCategory: 'Pelayanan Kedukaan',
+          orderTitle: 'Misa Kedukaan',
+          orderCategory: 'Misa Kedukaan',
           orderStatus: 'IN_PROGRESS',
           scheduledDate: '2026-08-14',
           scheduledTimeStart: '10:00',
           scheduledTimeEnd: '11:30',
           penerimaName: 'Alm. Yohanes Setiawan',
           requesterName: 'Theresia Setiawan',
+          notes: 'Misa: Misa Penutupan Peti | Nama Almarhum: Alm. Yohanes Setiawan',
           unreadCount: 0,
         ),
       ];
@@ -135,6 +137,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
         scheduledTimeEnd: o.jamSelesaiLabel,
         penerimaName: o.penerimaName,
         requesterName: _userName,
+        notes: o.notes,
         unreadCount: o.status == 'CONFIRMED' ? 1 : 0,
       );
     }).toList();
@@ -144,7 +147,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
     if (_searchQuery.isEmpty) return _chatGroups;
     final query = _searchQuery.toLowerCase();
     return _chatGroups.where((g) {
-      return g.groupTitle.toLowerCase().contains(query) ||
+      return g.displayTitle.toLowerCase().contains(query) ||
+          g.displayServiceDetail.toLowerCase().contains(query) ||
+          g.groupTitle.toLowerCase().contains(query) ||
           g.orderTitle.toLowerCase().contains(query) ||
           g.penerimaName.toLowerCase().contains(query) ||
           g.requesterName.toLowerCase().contains(query);
@@ -356,9 +361,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Line 1: User / Group Title
+                  // Line 1: User / Group Title (Perminyakan: a/n penerima, Kedukaan: detail misa)
                   Text(
-                    group.requesterName.isNotEmpty ? group.requesterName : group.groupTitle,
+                    group.displayTitle,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -369,7 +374,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   ),
                   const SizedBox(height: 3),
 
-                  // Line 2: Alert Icon + Judul Permintaan • Tanggal
+                  // Line 2: Alert Icon + Judul Permintaan / Detail Misa • Tanggal
                   Row(
                     children: [
                       const Icon(Icons.info_outline_rounded,
@@ -377,7 +382,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          '${group.orderTitle} • ${group.scheduledDate.isNotEmpty ? group.scheduledDate : "15:30"}',
+                          group.displayServiceDetail,
                           style: const TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,

@@ -410,6 +410,7 @@ class ChatGroupItem {
   final String penerimaName;
   final String requesterName;
   final String? requesterAvatar;
+  final String notes;
   final int unreadCount;
 
   ChatGroupItem({
@@ -427,8 +428,81 @@ class ChatGroupItem {
     required this.penerimaName,
     required this.requesterName,
     this.requesterAvatar,
+    this.notes = '',
     this.unreadCount = 0,
   });
+
+  /// Parse "Nama Penerima" or "Nama Almarhum" from notes
+  String get penerimaOrDeceasedName {
+    if (penerimaName.isNotEmpty && penerimaName != 'Umat' && penerimaName != requesterName) {
+      return penerimaName;
+    }
+    if (notes.isNotEmpty) {
+      final parts = notes.split('|');
+      for (final part in parts) {
+        final trimmed = part.trim();
+        final lower = trimmed.toLowerCase();
+        if (lower.startsWith('nama penerima') ||
+            lower.startsWith('nama almarhum') ||
+            lower.startsWith('nama yang meninggal') ||
+            lower.startsWith('nama:')) {
+          final split = trimmed.split(':');
+          if (split.length > 1) {
+            final name = split.sublist(1).join(':').trim();
+            if (name.isNotEmpty) return name;
+          }
+        }
+      }
+    }
+    return requesterName.isNotEmpty ? requesterName : 'Umat';
+  }
+
+  /// Parse "Misa Detail" or "Jenis Misa" from notes (e.g. Misa Penutupan Peti, Misa Requiem, Misa 40 Hari)
+  String get detailMisaLabel {
+    if (notes.isNotEmpty) {
+      final parts = notes.split('|');
+      for (final part in parts) {
+        final trimmed = part.trim();
+        final lower = trimmed.toLowerCase();
+        if (lower.startsWith('misa:') ||
+            lower.startsWith('jenis misa') ||
+            lower.startsWith('detail misa') ||
+            lower.startsWith('tipe misa')) {
+          final split = trimmed.split(':');
+          if (split.length > 1) {
+            final val = split.sublist(1).join(':').trim();
+            if (val.isNotEmpty) return val;
+          }
+        }
+      }
+    }
+    return 'Misa Kedukaan';
+  }
+
+  /// Display Title for List Chat (Line 1)
+  String get displayTitle {
+    final catLower = orderCategory.toLowerCase();
+    if (catLower.contains('perminyakan')) {
+      return 'a/n $penerimaOrDeceasedName';
+    } else if (catLower.contains('kedukaan')) {
+      return '$detailMisaLabel - $penerimaOrDeceasedName';
+    }
+    return requesterName.isNotEmpty ? requesterName : groupTitle;
+  }
+
+  /// Display Subtitle / Service Category Detail for List Chat (Line 2)
+  String get displayServiceDetail {
+    final catLower = orderCategory.toLowerCase();
+    final timeStr = scheduledTimeStart.isNotEmpty ? scheduledTimeStart : '15:30';
+    final dateStr = scheduledDate.isNotEmpty ? scheduledDate : '5/3/23';
+
+    if (catLower.contains('perminyakan')) {
+      return 'Sakramen Perminyakan • $dateStr - $timeStr';
+    } else if (catLower.contains('kedukaan')) {
+      return '$detailMisaLabel • $dateStr - $timeStr';
+    }
+    return '$orderCategory • $dateStr - $timeStr';
+  }
 
   factory ChatGroupItem.fromJson(Map<String, dynamic> json) {
     final rawGId = json['group_id'] ?? json['groupId'] ?? json['id'];
@@ -455,6 +529,7 @@ class ChatGroupItem {
       penerimaName: json['penerima_name'] ?? json['penerimaName'] ?? 'Umat',
       requesterName: json['requester_name'] ?? json['requesterName'] ?? 'Nama Umat',
       requesterAvatar: json['requester_avatar'] ?? json['requesterAvatar'],
+      notes: json['notes'] ?? '',
       unreadCount: parsedUnread,
     );
   }
