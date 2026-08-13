@@ -114,7 +114,17 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   String get _lingkungan =>
       _userData['lingkunganName'] ?? _userData['lingkungan_name'] ?? 'Lingkungan St. Angela Merici';
 
+  String get _roleCode =>
+      _userData['roleCode'] ?? _userData['role_code'] ?? _userData['role'] ?? 'UMAT';
+
+  String get _romoPos =>
+      _userData['romoPosition'] ?? _userData['romo_position'] ?? '';
+
   String get _positionTitle {
+    if (_roleCode.startsWith('ROMO')) {
+      if (_romoPos == 'KETUA_ROMO') return 'Romo — Pastor Kepala';
+      return 'Romo — Pastor Rekan';
+    }
     if (_pengurusPos == 'KETUA') return 'Umat — Ketua Lingkungan';
     if (_pengurusPos == 'WAKIL') return 'Umat — Wakil Ketua';
     if (_pengurusPos == 'SEKRETARIS') return 'Umat — Sekretaris';

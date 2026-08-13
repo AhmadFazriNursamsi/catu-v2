@@ -6,6 +6,7 @@ import '../chat/chat_screen.dart';
 import '../orders/histori_screen.dart';
 import '../orders/order_detail_screen.dart';
 import '../orders/schedule_screen.dart';
+import '../profile/main_menu_screen.dart';
 
 class RomoDashboardCardItem {
   final Order parentOrder;
@@ -46,6 +47,31 @@ class RomoDashboardView extends StatefulWidget {
 class _RomoDashboardViewState extends State<RomoDashboardView> {
   int _currentNavIndex = 0;
 
+  List<LiquidNavItem> _buildNavItems() {
+    return const [
+      LiquidNavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: 'Beranda',
+      ),
+      LiquidNavItem(
+        icon: Icons.history_outlined,
+        activeIcon: Icons.history_rounded,
+        label: 'Histori',
+      ),
+      LiquidNavItem(
+        icon: Icons.calendar_today_outlined,
+        activeIcon: Icons.calendar_today_rounded,
+        label: 'Jadwal',
+      ),
+      LiquidNavItem(
+        icon: Icons.menu_outlined,
+        activeIcon: Icons.menu_rounded,
+        label: 'Menu',
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final String userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Romo Samuel';
@@ -80,32 +106,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           selectedIndex: _currentNavIndex,
           onTabSelected: (index) {
             setState(() => _currentNavIndex = index);
-            if (index == 3) {
-              _showMenuBottomSheet();
-            }
           },
-          items: const [
-            LiquidNavItem(
-              icon: Icons.home_outlined,
-              activeIcon: Icons.home_rounded,
-              label: 'Beranda',
-            ),
-            LiquidNavItem(
-              icon: Icons.history_outlined,
-              activeIcon: Icons.history_rounded,
-              label: 'Histori',
-            ),
-            LiquidNavItem(
-              icon: Icons.calendar_today_outlined,
-              activeIcon: Icons.calendar_today_rounded,
-              label: 'Jadwal',
-            ),
-            LiquidNavItem(
-              icon: Icons.menu_outlined,
-              activeIcon: Icons.menu_rounded,
-              label: 'Menu',
-            ),
-          ],
+          items: _buildNavItems(),
         ),
       );
     }
@@ -125,32 +127,27 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           selectedIndex: _currentNavIndex,
           onTabSelected: (index) {
             setState(() => _currentNavIndex = index);
-            if (index == 3) {
-              _showMenuBottomSheet();
-            }
           },
-          items: const [
-            LiquidNavItem(
-              icon: Icons.home_outlined,
-              activeIcon: Icons.home_rounded,
-              label: 'Beranda',
-            ),
-            LiquidNavItem(
-              icon: Icons.history_outlined,
-              activeIcon: Icons.history_rounded,
-              label: 'Histori',
-            ),
-            LiquidNavItem(
-              icon: Icons.calendar_today_outlined,
-              activeIcon: Icons.calendar_today_rounded,
-              label: 'Jadwal',
-            ),
-            LiquidNavItem(
-              icon: Icons.menu_outlined,
-              activeIcon: Icons.menu_rounded,
-              label: 'Menu',
-            ),
-          ],
+          items: _buildNavItems(),
+        ),
+      );
+    }
+
+    // ── Menu Utama Tab (Nav Index 3) ──
+    if (_currentNavIndex == 3) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        body: MainMenuScreen(
+          user: widget.user,
+          onRefresh: widget.onRefresh,
+          onLogout: widget.onLogout,
+        ),
+        bottomNavigationBar: LiquidBottomNavBar(
+          selectedIndex: _currentNavIndex,
+          onTabSelected: (index) {
+            setState(() => _currentNavIndex = index);
+          },
+          items: _buildNavItems(),
         ),
       );
     }
@@ -525,32 +522,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         selectedIndex: _currentNavIndex,
         onTabSelected: (index) {
           setState(() => _currentNavIndex = index);
-          if (index == 3) {
-            _showMenuBottomSheet();
-          }
         },
-        items: const [
-          LiquidNavItem(
-            icon: Icons.home_outlined,
-            activeIcon: Icons.home_rounded,
-            label: 'Beranda',
-          ),
-          LiquidNavItem(
-            icon: Icons.history_outlined,
-            activeIcon: Icons.history_rounded,
-            label: 'Histori',
-          ),
-          LiquidNavItem(
-            icon: Icons.calendar_today_outlined,
-            activeIcon: Icons.calendar_today_rounded,
-            label: 'Jadwal',
-          ),
-          LiquidNavItem(
-            icon: Icons.menu_outlined,
-            activeIcon: Icons.menu_rounded,
-            label: 'Menu',
-          ),
-        ],
+        items: _buildNavItems(),
       ),
     );
   }
