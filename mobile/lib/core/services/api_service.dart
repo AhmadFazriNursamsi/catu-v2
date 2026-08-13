@@ -277,6 +277,28 @@ class ApiService {
     return [];
   }
 
+  // 2b. Fetch Single Order by ID
+  static Future<Order?> getOrderById(int orderId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/orders/$orderId'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic> && data['id'] != null) {
+          return Order.fromJson(data);
+        }
+      }
+    } catch (e) {
+      print('Error getOrderById: $e');
+    }
+    try {
+      final orders = await getOrders();
+      for (final o in orders) {
+        if (o.id == orderId) return o;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   // 3. Create Order Pelayanan / Misa Kedukaan
   static Future<Map<String, dynamic>> createOrder({
     required int serviceCategoryId,

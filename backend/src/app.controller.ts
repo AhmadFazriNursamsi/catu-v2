@@ -1119,6 +1119,45 @@ export class OrdersController {
 
     return orders;
   }
+
+  @Get(':id')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Mendapatkan Detail Transaksi Order Pelayanan berdasarkan ID' })
+  async getOrderById(@Param('id') idParam: string) {
+    const orderId = parseInt(idParam, 10) || 0;
+    const selectQuery = `
+      SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, 
+             o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, 
+             o.attachment_url as "attachmentUrl",
+             p.full_name as pemohon_name,
+             k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
+             o.user_id
+      FROM orders o
+      JOIN service_categories sc ON o.service_category_id = sc.id
+      JOIN urgency_levels ul ON o.urgency_level_id = ul.id
+      JOIN user_profiles p ON o.user_id = p.user_id
+      LEFT JOIN keuskupan k ON COALESCE(o.keuskupan_id, p.keuskupan_id) = k.id
+      LEFT JOIN paroki par ON COALESCE(o.paroki_id, p.paroki_id) = par.id
+      LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+      WHERE o.id = $1
+    `;
+    const orders = await this.dataSource.query(selectQuery, [orderId]);
+    if (orders.length > 0) {
+      const order = orders[0];
+      const items = await this.dataSource.query(
+        `SELECT id, item_name as "itemName", scheduled_date as "scheduledDate", 
+                scheduled_time_start as "scheduledTimeStart", scheduled_time_end as "scheduledTimeEnd", 
+                location_name as "locationName"
+         FROM order_items 
+         WHERE order_id = $1 
+         ORDER BY id ASC`,
+        [order.id],
+      );
+      order.items = items;
+      return order;
+    }
+    return { statusCode: 404, message: 'Order tidak ditemukan' };
+  }
 }
 
 @ApiTags('Romo Assignments')

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
+import '../orders/order_detail_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final int groupId;
@@ -228,71 +229,117 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Column(
         children: [
-          // ── Sticky Header Card / Pinned Banner (Matching Reference DetailChat.png) ──
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEDF4FE),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFD0E1FD)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.info_outline_rounded,
-                        size: 16, color: Color(0xFFEF4444)),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        mainTitle,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1E293B),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+          // ── Sticky Header Card / Pinned Banner (Clickable -> Detail Pelayanan) ──
+          InkWell(
+            onTap: () async {
+              HapticFeedback.selectionClick();
+              final orderId = group?.orderId ?? widget.groupId;
+              final order = await ApiService.getOrderById(orderId);
+              if (context.mounted) {
+                if (order != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => OrderDetailScreen(
+                        order: order,
+                        userName: widget.userName,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${_formatDayAndDate(group?.scheduledDate ?? '')} - ${_formatTimeOnly(group?.scheduledTimeStart ?? '')}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF64748B),
-                        ),
+                  );
+                } else {
+                  final fallbackOrder = Order(
+                    id: orderId,
+                    userId: widget.userId,
+                    orderNumber: widget.orderNumber,
+                    categoryName: group?.orderCategory ?? 'Pelayanan',
+                    urgencyName: 'Biasa',
+                    status: group?.orderStatus ?? 'CONFIRMED',
+                    scheduledDate: group?.scheduledDate ?? '',
+                    scheduledTime: group?.scheduledTimeStart ?? '',
+                    locationName: 'Gereja Paroki St. Laurensius',
+                    pemohonName: group?.penerimaName ?? widget.userName,
+                    notes: group?.notes ?? '',
+                  );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => OrderDetailScreen(
+                        order: fallbackOrder,
+                        userName: widget.userName,
                       ),
                     ),
-                    Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3B82F6),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        statusText,
-                        style: const TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
+                  );
+                }
+              }
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: double.infinity,
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEDF4FE),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFD0E1FD)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.info_outline_rounded,
+                          size: 16, color: Color(0xFFEF4444)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          mainTitle,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1E293B),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const Icon(Icons.chevron_right_rounded,
+                          size: 18, color: Color(0xFF1E5399)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${_formatDayAndDate(group?.scheduledDate ?? '')} - ${_formatTimeOnly(group?.scheduledTimeStart ?? '')}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B82F6),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          statusText,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
 
