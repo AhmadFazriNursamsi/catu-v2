@@ -411,4 +411,18 @@ class ApiService {
     }
     return [];
   }
+
+  // 8. Fetch Chat Group Members
+  static Future<List<Map<String, dynamic>>> getGroupMembers(int groupId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/chat/groups/$groupId/members'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      print('Error getGroupMembers: $e');
+    }
+    return [];
+  }
 }
