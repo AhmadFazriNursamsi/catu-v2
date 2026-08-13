@@ -286,11 +286,10 @@ class Order {
   }
 
   /// Belongs to Dashboard (Active Schedule):
-  /// Date is today or future AND status is active (PENDING, CONFIRMED, IN_PROGRESS)
+  /// Status is active (PENDING, CONFIRMED, IN_PROGRESS)
   bool get isActiveDashboardOrder {
     final st = status.toUpperCase();
     if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return false;
-    if (isPastDate) return false;
     return true;
   }
 
@@ -320,16 +319,6 @@ class Order {
     }
 
     String parsedStatus = json['status'] ?? 'PENDING';
-    if (parsedStatus.toUpperCase() == 'PENDING' && rawDate.isNotEmpty) {
-      try {
-        final date = DateTime.parse(rawDate);
-        final now = DateTime.now();
-        final today = DateTime(now.year, now.month, now.day);
-        if (DateTime(date.year, date.month, date.day).isBefore(today)) {
-          parsedStatus = 'FAIL';
-        }
-      } catch (_) {}
-    }
 
     return Order(
       id: parsedId,
