@@ -266,6 +266,7 @@ class _ChatScreenState extends State<ChatScreen> {
         groupTitle: widget.groupItem?.displayTitle ?? 'Group Pelayanan',
         penerimaName: widget.groupItem?.penerimaOrDeceasedName ?? widget.userName,
         requesterName: widget.groupItem?.requesterName ?? widget.userName,
+        orderStatus: widget.groupItem?.orderStatus ?? 'PENDING',
       ),
     );
   }
@@ -696,12 +697,14 @@ class _GroupMembersBottomSheet extends StatefulWidget {
   final String groupTitle;
   final String penerimaName;
   final String requesterName;
+  final String orderStatus;
 
   const _GroupMembersBottomSheet({
     required this.groupId,
     required this.groupTitle,
     required this.penerimaName,
     required this.requesterName,
+    required this.orderStatus,
   });
 
   @override
@@ -730,20 +733,15 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
   }
 
   List<Map<String, dynamic>> _getDefaultMembers() {
-    return [
+    final isRomoAccepted = widget.orderStatus.toUpperCase() != 'PENDING';
+
+    final members = <Map<String, dynamic>>[
       {
         'user_id': 1,
         'role_in_group': 'PEMOHON',
         'full_name': widget.penerimaName.isNotEmpty ? widget.penerimaName : widget.requesterName,
         'phone_number': '+62 812-3456-7890',
         'lingkungan_name': 'Pemohon / Penerima Pelayanan',
-      },
-      {
-        'user_id': 2,
-        'role_in_group': 'ROMO',
-        'full_name': 'Romo Yohanes, Pr',
-        'phone_number': '+62 819-8765-4321',
-        'lingkungan_name': 'Romo Paroki St. Laurensius',
       },
       {
         'user_id': 3,
@@ -755,11 +753,23 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
       {
         'user_id': 4,
         'role_in_group': 'PENGURUS_LINGKUNGAN',
-        'full_name': 'Bp. Antonius (Ketua Lingkungan)',
+        'full_name': 'Ketua Lingkungan',
         'phone_number': '+62 815-5667-7889',
-        'lingkungan_name': 'Lingkungan St. Yustinus',
+        'lingkungan_name': 'Pengurus Lingkungan Pemohon',
       },
     ];
+
+    if (isRomoAccepted) {
+      members.insert(1, {
+        'user_id': 2,
+        'role_in_group': 'ROMO',
+        'full_name': 'Romo Yohanes, Pr',
+        'phone_number': '+62 819-8765-4321',
+        'lingkungan_name': 'Romo Paroki St. Laurensius',
+      });
+    }
+
+    return members;
   }
 
   Color _getRoleBadgeBg(String role) {
@@ -871,6 +881,33 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
           ),
           const SizedBox(height: 12),
           const Divider(height: 1, color: Color(0xFFE2E8F0)),
+
+          if (widget.orderStatus.toUpperCase() == 'PENDING')
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFFB45309)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Romo Paroki akan otomatis bergabung ke grup ini setelah mengkonfirmasi dan menerima pelayanan.',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFFB45309),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           // Member List
           Expanded(
