@@ -403,7 +403,9 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                           ),
                         ),
                         ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            setState(() => _currentNavIndex = 2);
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1E5399),
                             foregroundColor: Colors.white,
@@ -426,9 +428,9 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'Sunday, 6 March 2023',
-                      style: TextStyle(
+                    Text(
+                      '${DateTime.now().day} Masehi ${DateTime.now().year}',
+                      style: const TextStyle(
                         fontSize: 13,
                         color: Color(0xFF64748B),
                         fontWeight: FontWeight.w500,
@@ -465,7 +467,9 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        setState(() => _currentNavIndex = 1);
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1E5399),
                         foregroundColor: Colors.white,
