@@ -3,6 +3,7 @@ import '../../core/models/models.dart';
 import '../../core/widgets/liquid_bottom_nav_bar.dart';
 import '../chat/chat_list_screen.dart';
 import '../chat/chat_screen.dart';
+import '../orders/order_detail_screen.dart';
 
 class RomoDashboardView extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -572,16 +573,53 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       priorityIcon = Icons.error_outline_rounded;
     }
 
-    return _buildServiceCard(
-      statusBadge: statusBadge,
-      isConfirmed: isConfirmed,
-      location: order.locationName.isNotEmpty ? order.locationName : order.displayAddress,
-      dateTime: '${order.scheduledDate} • ${order.scheduledTime}',
-      category: order.categoryName,
-      priorityLabel: order.urgencyName,
-      priorityColor: priorityColor,
-      priorityIcon: priorityIcon,
-      onTapChat: () {},
+    final int? romoId = widget.user['id'] != null
+        ? int.tryParse(widget.user['id'].toString())
+        : (widget.user['userId'] != null ? int.tryParse(widget.user['userId'].toString()) : null);
+
+    return GestureDetector(
+      onTap: () async {
+        final bool? refreshed = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(
+              order: order,
+              userName: widget.user['fullName'] ?? widget.user['full_name'] ?? 'Romo',
+              isRomo: true,
+              romoId: romoId,
+            ),
+          ),
+        );
+        if (refreshed == true) {
+          widget.onRefresh();
+        }
+      },
+      child: _buildServiceCard(
+        statusBadge: statusBadge,
+        isConfirmed: isConfirmed,
+        location: order.locationName.isNotEmpty ? order.locationName : order.displayAddress,
+        dateTime: '${order.scheduledDate} • ${order.scheduledTime}',
+        category: order.categoryName,
+        priorityLabel: order.urgencyName,
+        priorityColor: priorityColor,
+        priorityIcon: priorityIcon,
+        onTapChat: () async {
+          final bool? refreshed = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OrderDetailScreen(
+                order: order,
+                userName: widget.user['fullName'] ?? widget.user['full_name'] ?? 'Romo',
+                isRomo: true,
+                romoId: romoId,
+              ),
+            ),
+          );
+          if (refreshed == true) {
+            widget.onRefresh();
+          }
+        },
+      ),
     );
   }
 

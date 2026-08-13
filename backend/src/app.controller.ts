@@ -1173,13 +1173,14 @@ export class AssignmentsController {
   @Post(':orderId/respond')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Romo mengubah status pelayanan: CONFIRMED | IN_PROGRESS | DONE | CLOSE | FAIL',
+    summary: 'Romo mengubah status pelayanan: CONFIRMED | IN_PROGRESS | DONE | CLOSE | FAIL | ACCEPTED',
   })
   async respondAssignment(
-    @Param('orderId') orderId: string,
+    @Param('orderId') orderIdParam: string,
     @Body() dto: RespondOrderAssignmentDto,
   ) {
-    const romoId = 2;
+    const orderId = parseInt(orderIdParam, 10) || 0;
+    const romoId = dto.romoId ? dto.romoId : 2;
 
     const validStatuses = ['CONFIRMED', 'IN_PROGRESS', 'DONE', 'CLOSE', 'FAIL'];
     const newStatus = dto.status === 'ACCEPTED' ? 'CONFIRMED' : dto.status;
@@ -1197,12 +1198,18 @@ export class AssignmentsController {
 
     await this.dataSource.query(`UPDATE orders SET status = $1 WHERE id = $2`, [newStatus, orderId]);
 
+    const romoProf = await this.dataSource.query(
+      `SELECT full_name FROM user_profiles WHERE user_id = $1`,
+      [romoId],
+    );
+    const romoName = romoProf.length > 0 ? romoProf[0].full_name : 'Romo';
+
     const statusMessages: Record<string, string> = {
-      CONFIRMED: 'Romo Fajar Pr telah mengkonfirmasi kehadiran dan bergabung dalam grup chat.',
-      IN_PROGRESS: 'Romo Fajar Pr sedang menjalankan pelayanan.',
-      DONE: 'Romo Fajar Pr telah menyelesaikan pelayanan. Terima kasih.',
-      CLOSE: 'Romo Fajar Pr menutup pelayanan tanpa penyelesaian.',
-      FAIL: 'Tidak ada Romo yang menerima pelayanan ini hingga melewati tanggal pelayanan.',
+      CONFIRMED: `Romo ${romoName} telah mengkonfirmasi kehadiran dan bergabung dalam grup chat.`,
+      IN_PROGRESS: `Romo ${romoName} sedang menjalankan pelayanan.`,
+      DONE: `Romo ${romoName} telah menyelesaikan pelayanan. Terima kasih.`,
+      CLOSE: `Romo ${romoName} menutup pelayanan tanpa penyelesaian.`,
+      FAIL: `Tidak ada Romo yang menerima pelayanan ini hingga melewati tanggal pelayanan.`,
     };
 
     const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
@@ -1211,7 +1218,7 @@ export class AssignmentsController {
 
       if (newStatus === 'CONFIRMED') {
         await this.dataSource.query(
-          `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'ROMO') ON CONFLICT DO NOTHING`,
+          `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'ROMO_PAROKI') ON CONFLICT DO NOTHING`,
           [groupId, romoId],
         );
       }

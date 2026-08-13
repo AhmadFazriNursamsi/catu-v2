@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
+import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import '../chat/chat_screen.dart';
 
@@ -12,12 +13,16 @@ class OrderDetailScreen extends StatefulWidget {
   final Order order;
   final String userName;
   final String? selectedItemTitle;
+  final bool isRomo;
+  final int? romoId;
 
   const OrderDetailScreen({
     Key? key,
     required this.order,
     required this.userName,
     this.selectedItemTitle,
+    this.isRomo = false,
+    this.romoId,
   }) : super(key: key);
 
   @override
@@ -29,6 +34,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   late AnimationController _animController;
   late Animation<double> _fadeIn;
   late Animation<Offset> _slideUp;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -624,9 +630,118 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               left: 16,
               right: 16,
               bottom: 24,
-              child: _buildFloatingChatButton(order),
+              child: widget.isRomo && order.status.toUpperCase() == 'PENDING'
+                  ? _buildRomoAcceptButtonBar(order)
+                  : _buildFloatingChatButton(order),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _acceptService(Order order) async {
+    setState(() => _isSubmitting = true);
+    try {
+      final res = await ApiService.respondAssignment(
+        order.id,
+        'CONFIRMED',
+        romoId: widget.romoId,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message'] ?? 'Pelayanan berhasil diterima! Anda telah bergabung ke grup chat.'),
+            backgroundColor: const Color(0xFF059669),
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menerima pelayanan: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Widget _buildRomoAcceptButtonBar(Order order) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF059669).withValues(alpha: 0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: const Color(0xFF059669),
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: _isSubmitting ? null : () => _acceptService(order),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.check_circle_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Text(
+                      'Terima Pelayanan',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    Text(
+                      'Konfirmasi Kehadiran & Masuk Grup Chat',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
+              ],
+            ),
+          ),
         ),
       ),
     );
