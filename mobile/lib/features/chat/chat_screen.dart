@@ -163,13 +163,9 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final group = widget.groupItem;
-    final String title = group?.requesterName ?? group?.groupTitle ?? 'Nama Umat';
-    final String orderTitle = group?.orderTitle ?? 'Judul Permintaan';
-    final String categoryTitle = group?.orderCategory ?? 'Kategori Permintaan';
-    final String scheduleText = group?.scheduledDate.isNotEmpty == true
-        ? 'Sunday, ${group!.scheduledDate} - ${group.scheduledTimeStart}'
-        : 'Sunday, 5/3/23 - 15:30';
-    final String statusText = group?.orderStatus ?? 'BERLANGSUNG';
+    final String mainTitle = group?.displayTitle ?? 'Group Pelayanan';
+    final String serviceDetail = group?.displayServiceDetail ?? 'Detail Pelayanan';
+    final String statusText = group?.orderStatus ?? 'CONFIRMED';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -189,14 +185,30 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
-                ),
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    mainTitle,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    serviceDetail,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
           ],
@@ -230,9 +242,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        '$orderTitle • $categoryTitle',
+                        mainTitle,
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF1E293B),
                         ),
@@ -247,7 +259,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        scheduleText,
+                        serviceDetail,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
