@@ -184,11 +184,66 @@ class _ChatScreenState extends State<ChatScreen> {
     return timeStr;
   }
 
+  Color _getStatusBgColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'CONFIRMED':
+        return const Color(0xFFDCFCE7); // Soft Green
+      case 'IN_PROGRESS':
+        return const Color(0xFFDBEAFE); // Soft Blue
+      case 'DONE':
+        return const Color(0xFFEDE9FE); // Soft Purple
+      case 'CLOSE':
+        return const Color(0xFFF1F5F9); // Soft Slate
+      case 'FAIL':
+        return const Color(0xFFFEE2E2); // Soft Red
+      case 'PENDING':
+      default:
+        return const Color(0xFFFEF3C7); // Soft Amber
+    }
+  }
+
+  Color _getStatusTextColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'CONFIRMED':
+        return const Color(0xFF15803D); // Dark Green
+      case 'IN_PROGRESS':
+        return const Color(0xFF1D4ED8); // Dark Blue
+      case 'DONE':
+        return const Color(0xFF6D28D9); // Dark Purple
+      case 'CLOSE':
+        return const Color(0xFF475569); // Dark Slate
+      case 'FAIL':
+        return const Color(0xFFB91C1C); // Dark Red
+      case 'PENDING':
+      default:
+        return const Color(0xFFB45309); // Dark Amber
+    }
+  }
+
+  String _getStatusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+        return 'MENUNGGU KONFIRMASI';
+      case 'CONFIRMED':
+        return 'DIKONFIRMASI';
+      case 'IN_PROGRESS':
+        return 'SEDANG BERLANGSUNG';
+      case 'DONE':
+        return 'SELESAI';
+      case 'CLOSE':
+        return 'DITUTUP';
+      case 'FAIL':
+        return 'GAGAL / BATAL';
+      default:
+        return status.toUpperCase();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final group = widget.groupItem;
     final String mainTitle = group?.displayTitle ?? 'Group Pelayanan';
-    final String statusText = group?.orderStatus ?? 'CONFIRMED';
+    final String rawStatus = group?.orderStatus ?? 'PENDING';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -253,7 +308,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     orderNumber: widget.orderNumber,
                     categoryName: group?.orderCategory ?? 'Pelayanan',
                     urgencyName: 'Biasa',
-                    status: group?.orderStatus ?? 'CONFIRMED',
+                    status: group?.orderStatus ?? 'PENDING',
                     scheduledDate: group?.scheduledDate ?? '',
                     scheduledTime: group?.scheduledTimeStart ?? '',
                     locationName: 'Gereja Paroki St. Laurensius',
@@ -321,17 +376,21 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                       Container(
                         padding:
-                            const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF3B82F6),
+                          color: _getStatusBgColor(rawStatus),
                           borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: _getStatusTextColor(rawStatus).withValues(alpha: 0.3),
+                            width: 1,
+                          ),
                         ),
                         child: Text(
-                          statusText,
-                          style: const TextStyle(
+                          _getStatusLabel(rawStatus),
+                          style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: _getStatusTextColor(rawStatus),
                             letterSpacing: 0.3,
                           ),
                         ),
