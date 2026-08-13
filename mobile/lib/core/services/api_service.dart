@@ -260,12 +260,16 @@ class ApiService {
     ];
   }
 
-  // 2. Fetch Orders - filtered by userId for Umat, all for Romo
-  static Future<List<Order>> getOrders({int? userId}) async {
+  // 2. Fetch Orders - filtered by userId for Umat, parokiId/romoId for Romo
+  static Future<List<Order>> getOrders({int? userId, int? parokiId, int? romoId}) async {
     try {
-      final url = userId != null
-          ? '$baseUrl/orders?userId=$userId'
-          : '$baseUrl/orders';
+      String url = '$baseUrl/orders';
+      final params = <String>[];
+      if (userId != null) params.add('userId=$userId');
+      if (parokiId != null) params.add('parokiId=$parokiId');
+      if (romoId != null) params.add('romoId=$romoId');
+      if (params.isNotEmpty) url += '?${params.join('&')}';
+
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);

@@ -64,13 +64,19 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    final String roleCode = _currentUserMap['roleCode'] ??
-        _currentUserMap['role_code'] ??
-        _currentUserMap['role'] ??
-        'UMAT';
-    final orders = await ApiService.getOrders(
-      userId: roleCode.startsWith('ROMO') ? null : userId,
-    );
+      final String roleCode = _currentUserMap['roleCode'] ??
+          _currentUserMap['role_code'] ??
+          _currentUserMap['role'] ??
+          'UMAT';
+
+      final rawParoki = _currentUserMap['parokiId'] ?? _currentUserMap['paroki_id'];
+      final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
+
+      final orders = await ApiService.getOrders(
+        userId: roleCode.startsWith('ROMO') ? null : userId,
+        parokiId: roleCode.startsWith('ROMO') ? parokiId : null,
+        romoId: roleCode.startsWith('ROMO') ? userId : null,
+      );
 
     if (mounted) {
       setState(() {
