@@ -51,7 +51,11 @@ class _ChatScreenState extends State<ChatScreen> {
     final msgs = await ApiService.getGroupMessages(widget.groupId);
     if (mounted) {
       setState(() {
-        _messages = msgs.isNotEmpty ? msgs : _buildInitialDemoMessages();
+        if (msgs.isNotEmpty) {
+          _messages = msgs;
+        } else if (_messages.isEmpty) {
+          _messages = _buildInitialDemoMessages();
+        }
         _isLoading = false;
       });
       _scrollToBottom();
@@ -115,6 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final newMsg = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch,
       chatGroupId: widget.groupId,
+      senderId: 1,
       senderName: widget.userName,
       messageType: 'TEXT',
       message: text,
@@ -126,8 +131,15 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     _scrollToBottom();
 
-    await ApiService.sendChatMessage(widget.groupId, 'TEXT', text);
-    _loadMessages();
+    await ApiService.sendChatMessage(widget.groupId, 'TEXT', text, senderId: 1);
+
+    final backendMsgs = await ApiService.getGroupMessages(widget.groupId);
+    if (mounted && backendMsgs.isNotEmpty) {
+      setState(() {
+        _messages = backendMsgs;
+      });
+      _scrollToBottom();
+    }
   }
 
   void _simulateAttachment(String type) {
@@ -273,7 +285,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       final msg = _messages[index];
                       final bool isSystem = msg.messageType == 'SYSTEM_EVENT';
                       final bool isMe = msg.senderName == widget.userName ||
-                          msg.senderName == 'Umat';
+                          msg.senderName == 'Umat' ||
+                          (msg.senderId != null && msg.senderId == 1) ||
+                          (!isSystem && msg.senderName == null);
 
                       if (isSystem) {
                         return Center(

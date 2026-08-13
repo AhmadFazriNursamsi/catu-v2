@@ -356,12 +356,13 @@ class ApiService {
   }
 
   // 6. Send WhatsApp Group Message
-  static Future<Map<String, dynamic>> sendChatMessage(int groupId, String messageType, String message, {String? attachmentUrl}) async {
+  static Future<Map<String, dynamic>> sendChatMessage(int groupId, String messageType, String message, {int? senderId, String? attachmentUrl}) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/chat/groups/$groupId/messages'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
+          'senderId': senderId ?? 1,
           'messageType': messageType,
           'message': message,
           'attachmentUrl': attachmentUrl,

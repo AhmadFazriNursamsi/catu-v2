@@ -183,6 +183,10 @@ export class UpdateUserProfileDto {
 }
 
 export class SendChatMessageDto {
+  @ApiPropertyOptional({ example: 1, description: 'ID user pengirim pesan' })
+  @IsOptional()
+  senderId?: number;
+
   @ApiProperty({ example: 'TEXT', enum: ['TEXT', 'IMAGE', 'DOCUMENT', 'LOCATION'], description: 'Tipe pesan' })
   @IsEnum(['TEXT', 'IMAGE', 'DOCUMENT', 'LOCATION'])
   messageType: 'TEXT' | 'IMAGE' | 'DOCUMENT' | 'LOCATION';

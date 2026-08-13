@@ -348,6 +348,7 @@ class Order {
 class ChatMessage {
   final int id;
   final int chatGroupId;
+  final int? senderId;
   final String? senderName;
   final String messageType;
   final String message;
@@ -357,6 +358,7 @@ class ChatMessage {
   ChatMessage({
     required this.id,
     required this.chatGroupId,
+    this.senderId,
     this.senderName,
     required this.messageType,
     required this.message,
@@ -368,6 +370,7 @@ class ChatMessage {
     return ChatMessage(
       id: json['id'] ?? 0,
       chatGroupId: json['chat_group_id'] ?? json['chatGroupId'] ?? 0,
+      senderId: json['sender_id'] ?? json['senderId'],
       senderName: json['sender_name'] ?? json['senderName'],
       messageType: json['message_type'] ?? json['messageType'] ?? 'TEXT',
       message: json['message'] ?? '',
