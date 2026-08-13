@@ -53,8 +53,13 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     );
     _fadeIn = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
+    LanguageService.currentLanguage.addListener(_onLanguageChanged);
 
     _fetchFreshUser();
+  }
+
+  void _onLanguageChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _fetchFreshUser() async {
@@ -78,6 +83,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
   @override
   void dispose() {
+    LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _animController.dispose();
     super.dispose();
   }
@@ -164,10 +170,10 @@ class _MainMenuScreenState extends State<MainMenuScreen>
           20, MediaQuery.of(context).padding.top + 14, 20, 14),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Text(
-              'Menu Utama',
-              style: TextStyle(
+              LanguageService.tr('menu_title'),
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF0F172A),
@@ -309,7 +315,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      _isApproved ? 'Akun Disetujui' : 'Menunggu Verifikasi',
+                      _isApproved ? LanguageService.tr('account_approved') : LanguageService.tr('pending_verification'),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -355,14 +361,14 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                   color: const Color(0xFF1D4ED8).withValues(alpha: 0.3),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.edit_rounded, size: 14, color: Color(0xFF1D4ED8)),
-                  SizedBox(width: 6),
+                  const Icon(Icons.edit_rounded, size: 14, color: Color(0xFF1D4ED8)),
+                  const SizedBox(width: 6),
                   Text(
-                    'Ubah Profil',
-                    style: TextStyle(
+                    LanguageService.tr('edit_profile'),
+                    style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF1D4ED8),
@@ -434,7 +440,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
           // ── Section 1: 👤 AKUN (Expandable Accordion) ──
           _buildAccordionHeader(
             icon: Icons.account_circle_rounded,
-            title: 'Akun',
+            title: LanguageService.tr('account'),
             isExpanded: _isAkunExpanded,
             onTap: () {
               HapticFeedback.selectionClick();
@@ -444,23 +450,23 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
           if (_isAkunExpanded) ...[
             _buildSubMenuItem(
-              title: 'Profil Saya',
-              subtitle: 'Data diri, alamat & kontak',
+              title: LanguageService.tr('my_profile'),
+              subtitle: LanguageService.tr('my_profile_sub'),
               onTap: _navigateToEditProfile,
             ),
             _buildSubMenuItem(
-              title: 'Verifikasi Data & Jabatan',
-              subtitle: 'Status kepengurusan lingkungan & paroki',
+              title: LanguageService.tr('verification'),
+              subtitle: LanguageService.tr('verification_sub'),
               onTap: _showVerificationModal,
             ),
             _buildSubMenuItem(
-              title: 'Privasi & Keamanan',
-              subtitle: 'Ubah kata sandi & akses',
+              title: LanguageService.tr('privacy_security'),
+              subtitle: LanguageService.tr('privacy_security_sub'),
               onTap: () => _showToast('Fitur Pengaturan Keamanan Aktif'),
             ),
             _buildSubMenuItem(
-              title: 'Akun Tertaut',
-              subtitle: 'WhatsApp & SSO Paroki',
+              title: LanguageService.tr('linked_accounts'),
+              subtitle: LanguageService.tr('linked_accounts_sub'),
               onTap: () => _showToast('Nomor WhatsApp aktif dan terhubung'),
             ),
             const SizedBox(height: 6),
@@ -471,8 +477,8 @@ class _MainMenuScreenState extends State<MainMenuScreen>
           // ── Section 2: ⚙️ SETELAN ──
           _buildMenuItem(
             icon: Icons.settings_rounded,
-            title: 'Setelan',
-            subtitle: 'Notifikasi, bahasa & tampilan',
+            title: LanguageService.tr('app_settings'),
+            subtitle: LanguageService.tr('settings_sub'),
             onTap: _showSettingsModal,
           ),
 
@@ -481,8 +487,8 @@ class _MainMenuScreenState extends State<MainMenuScreen>
           // ── Section 3: 🎧 PUSAT BANTUAN ──
           _buildMenuItem(
             icon: Icons.headset_mic_rounded,
-            title: 'Pusat Bantuan',
-            subtitle: 'Kontak sekretariat paroki & FAQ',
+            title: LanguageService.tr('help_center'),
+            subtitle: LanguageService.tr('help_center_sub'),
             onTap: _showHelpModal,
           ),
 
@@ -491,8 +497,8 @@ class _MainMenuScreenState extends State<MainMenuScreen>
           // ── Section 4: ℹ️ TENTANG CATU ──
           _buildMenuItem(
             icon: Icons.info_outline_rounded,
-            title: 'Tentang Catu',
-            subtitle: 'Versi aplikasi v2.4.0 & lisensi',
+            title: LanguageService.tr('about_app'),
+            subtitle: LanguageService.tr('about_app_sub'),
             onTap: _showAboutModal,
           ),
 
@@ -501,8 +507,8 @@ class _MainMenuScreenState extends State<MainMenuScreen>
           // ── Section 5: 🚪 KELUAR ──
           _buildMenuItem(
             icon: Icons.logout_rounded,
-            title: 'Keluar',
-            subtitle: 'Keluar dari akun CATU',
+            title: LanguageService.tr('logout'),
+            subtitle: LanguageService.tr('logout_sub'),
             titleColor: const Color(0xFFDC2626),
             iconColor: const Color(0xFFDC2626),
             iconBgColor: const Color(0xFFDC2626).withValues(alpha: 0.08),
@@ -831,9 +837,9 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Setelan Aplikasi',
-                    style: TextStyle(
+                  Text(
+                    LanguageService.tr('app_settings'),
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF0F172A),
@@ -841,7 +847,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                   ),
                   const SizedBox(height: 16),
                   _buildSwitchRow(
-                    'Notifikasi Pelayanan',
+                    LanguageService.tr('notification_pelayanan'),
                     _notifyPelayanan,
                     (val) {
                       setState(() => _notifyPelayanan = val);
@@ -849,7 +855,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                     },
                   ),
                   _buildSwitchRow(
-                    'Notifikasi Chat Romo',
+                    LanguageService.tr('notification_chat'),
                     _notifyChatRomo,
                     (val) {
                       setState(() => _notifyChatRomo = val);
@@ -858,13 +864,13 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                   ),
                   const SizedBox(height: 8),
                   _buildDetailRow(
-                    'Bahasa',
+                    LanguageService.tr('language'),
                     _selectedLanguage,
                     onTap: () => _showLanguagePickerModal(setModalState),
                   ),
                   const SizedBox(height: 4),
                   _buildDetailRow(
-                    'Tema Aplikasi',
+                    LanguageService.tr('theme'),
                     _selectedTheme,
                     onTap: () => _showThemePickerModal(setModalState),
                   ),
@@ -883,8 +889,8 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14)),
                       ),
-                      child: const Text('Simpan & Tutup',
-                          style: TextStyle(
+                      child: Text(LanguageService.tr('close_save'),
+                          style: const TextStyle(
                               color: Colors.white,
                               fontSize: 15,
                               fontWeight: FontWeight.bold)),

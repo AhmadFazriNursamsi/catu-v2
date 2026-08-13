@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
+import '../../core/services/language_service.dart';
 import '../chat/chat_screen.dart';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -32,6 +33,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   @override
   void initState() {
     super.initState();
+    LanguageService.currentLanguage.addListener(_onLanguageChanged);
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -44,8 +46,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     _animController.forward();
   }
 
+  void _onLanguageChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _animController.dispose();
     super.dispose();
   }
@@ -73,19 +80,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   String _getStatusLabel(String status) {
     switch (status.toUpperCase()) {
       case 'PENDING':
-        return 'Menunggu Konfirmasi';
+        return LanguageService.tr('status_pending');
       case 'CONFIRMED':
-        return 'Kehadiran Dikonfirmasi';
+        return LanguageService.tr('status_confirmed');
       case 'IN_PROGRESS':
-        return 'Berlangsung';
+        return LanguageService.tr('status_in_progress');
       case 'DONE':
-        return 'Selesai';
+        return LanguageService.tr('status_done');
       case 'CLOSE':
-        return 'Ditutup';
+        return LanguageService.tr('status_closed');
       case 'FAIL':
-        return 'Gagal';
+        return LanguageService.tr('status_failed');
       default:
-        return 'Menunggu Konfirmasi';
+        return LanguageService.tr('status_pending');
     }
   }
 
@@ -466,7 +473,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             _buildInfoCard(
                               icon: Icons.event_rounded,
                               iconBg: const Color(0xFF1D4ED8),
-                              title: 'Waktu & Lokasi',
+                              title: LanguageService.tr('time_location'),
                               children: [
                                 _buildInfoTile(
                                   icon: Icons.calendar_month_rounded,
@@ -497,11 +504,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               _buildInfoCard(
                                 icon: Icons.person_outline_rounded,
                                 iconBg: const Color(0xFF7C3AED),
-                                title: 'Data Almarhum / Almarhumah',
+                                title: LanguageService.tr('deceased_data'),
                                 children: [
                                   _buildInfoTile(
                                     icon: Icons.badge_rounded,
-                                    label: 'Nama',
+                                    label: LanguageService.tr('name_label'),
                                     value: order.penerimaName,
                                   ),
                                   _buildInfoTile(
@@ -533,11 +540,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               _buildInfoCard(
                                 icon: Icons.person_outline_rounded,
                                 iconBg: const Color(0xFF7C3AED),
-                                title: 'Data Penerima',
+                                title: LanguageService.tr('recipient_data'),
                                 children: [
                                   _buildInfoTile(
                                     icon: Icons.badge_rounded,
-                                    label: 'Nama',
+                                    label: LanguageService.tr('name_label'),
                                     value: order.penerimaName,
                                   ),
                                   _buildInfoTile(
@@ -564,7 +571,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             _buildInfoCard(
                               icon: Icons.church_rounded,
                               iconBg: const Color(0xFF0D9488),
-                              title: 'Paroki & Wilayah',
+                              title: LanguageService.tr('parish_region'),
                               children: [
                                 _buildInfoTile(
                                   icon: Icons.location_city_rounded,
@@ -586,7 +593,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             _buildInfoCard(
                               icon: Icons.notes_rounded,
                               iconBg: const Color(0xFFD97706),
-                              title: 'Catatan & Pemohon',
+                              title: LanguageService.tr('notes_applicant'),
                               children: [
                                 _buildInfoTile(
                                   icon: Icons.account_circle_outlined,
@@ -925,20 +932,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Diskusi Pelayanan',
-                      style: TextStyle(
+                      LanguageService.tr('service_discussion'),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.2,
                       ),
                     ),
-                    Text(
+                    const Text(
                       'Buka chat dengan Romo',
                       style: TextStyle(
                         color: Colors.white60,

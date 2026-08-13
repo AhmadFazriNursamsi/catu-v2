@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/language_service.dart';
 import '../../core/utils/fade_slide_route.dart';
 import '../auth/login_screen.dart';
 import 'romo_dashboard_view.dart';
@@ -27,6 +28,17 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _currentUserMap = Map<String, dynamic>.from(widget.user);
     _loadOrders();
+    LanguageService.currentLanguage.addListener(_onLanguageChanged);
+  }
+
+  void _onLanguageChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    LanguageService.currentLanguage.removeListener(_onLanguageChanged);
+    super.dispose();
   }
 
   Future<void> _loadOrders() async {

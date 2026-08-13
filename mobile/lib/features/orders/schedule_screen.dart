@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
 import 'order_detail_screen.dart';
+import '../../core/services/language_service.dart';
 
 /// Individual schedule item entry for exact date & time timeline precision
 class ScheduleTimelineEntry {
@@ -69,6 +70,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   @override
   void initState() {
     super.initState();
+    LanguageService.currentLanguage.addListener(_onLanguageChanged);
     final now = DateTime.now();
     _selectedMonth = DateTime(now.year, now.month, 1);
     // Default select TODAY for crisp, intuitive schedule viewing
@@ -83,8 +85,13 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     _animController.forward();
   }
 
+  void _onLanguageChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _animController.dispose();
     super.dispose();
   }
@@ -309,7 +316,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
         return 'Berlangsung';
       case 'PENDING':
       default:
-        return 'Menunggu Konfirmasi';
+        return LanguageService.tr('status_pending');
     }
   }
 
@@ -398,9 +405,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                               color: const Color(0xFF1D4ED8).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Text(
-                              'Lihat Semua Hari',
-                              style: TextStyle(
+                            child: Text(
+                              LanguageService.tr('view_all_days'),
+                              style: const TextStyle(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF1D4ED8),
@@ -448,23 +455,23 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           16, MediaQuery.of(context).padding.top + 12, 16, 12),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Daftar Pelayanan',
-                  style: TextStyle(
+                  LanguageService.tr('schedule_title'),
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF0F172A),
                     letterSpacing: -0.4,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  'Jadwal aktif & mendatang',
-                  style: TextStyle(
+                  LanguageService.tr('schedule_subtitle'),
+                  style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF64748B),
                     fontWeight: FontWeight.w500,
@@ -549,9 +556,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                       color: const Color(0xFF1D4ED8).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Text(
-                      'Hari Ini',
-                      style: TextStyle(
+                    child: Text(
+                      LanguageService.tr('today_label'),
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF1D4ED8),
@@ -734,13 +741,13 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
   String _getDayAbbr(int weekday) {
     switch (weekday) {
-      case DateTime.monday: return 'SEN';
-      case DateTime.tuesday: return 'SEL';
-      case DateTime.wednesday: return 'RAB';
-      case DateTime.thursday: return 'KAM';
-      case DateTime.friday: return 'JUM';
-      case DateTime.saturday: return 'SAB';
-      case DateTime.sunday: return 'MIN';
+      case DateTime.monday: return LanguageService.tr('mon');
+      case DateTime.tuesday: return LanguageService.tr('tue');
+      case DateTime.wednesday: return LanguageService.tr('wed');
+      case DateTime.thursday: return LanguageService.tr('thu');
+      case DateTime.friday: return LanguageService.tr('fri');
+      case DateTime.saturday: return LanguageService.tr('sat');
+      case DateTime.sunday: return LanguageService.tr('sun');
       default: return '';
     }
   }
@@ -783,8 +790,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                     const SizedBox(width: 6),
                     Text(
                       _activeFilterCount > 0
-                          ? 'Filter ($_activeFilterCount)'
-                          : 'Filter',
+                          ? '${LanguageService.tr('filter_label')} ($_activeFilterCount)'
+                          : LanguageService.tr('filter_label'),
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -951,7 +958,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                     children: [
                       _buildModalChip('SEMUA', 'Semua Status', _selectedStatus,
                           (v) => setModalState(() => _selectedStatus = v)),
-                      _buildModalChip('PENDING', 'Menunggu Konfirmasi', _selectedStatus,
+                      _buildModalChip('PENDING', LanguageService.tr('status_pending'), _selectedStatus,
                           (v) => setModalState(() => _selectedStatus = v)),
                       _buildModalChip('CONFIRMED', 'Kehadiran Dikonfirmasi', _selectedStatus,
                           (v) => setModalState(() => _selectedStatus = v)),
@@ -1412,15 +1419,15 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                             color: const Color(0xFF1D4ED8),
                             borderRadius: BorderRadius.circular(9),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.visibility_rounded,
+                              const Icon(Icons.visibility_rounded,
                                   size: 12, color: Colors.white),
-                              SizedBox(width: 5),
+                              const SizedBox(width: 5),
                               Text(
-                                'Lihat Detail',
-                                style: TextStyle(
+                                LanguageService.tr('view_detail'),
+                                style: const TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,

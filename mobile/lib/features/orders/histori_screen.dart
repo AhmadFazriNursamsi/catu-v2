@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
+import '../../core/services/language_service.dart';
 import '../orders/order_detail_screen.dart';
 
 class HistoriScreen extends StatefulWidget {
@@ -47,6 +48,7 @@ class _HistoriScreenState extends State<HistoriScreen>
   @override
   void initState() {
     super.initState();
+    LanguageService.currentLanguage.addListener(_onLanguageChanged);
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -56,8 +58,13 @@ class _HistoriScreenState extends State<HistoriScreen>
     _animController.forward();
   }
 
+  void _onLanguageChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _animController.dispose();
     _searchController.dispose();
     _searchFocus.dispose();
@@ -87,19 +94,19 @@ class _HistoriScreenState extends State<HistoriScreen>
   String _statusLabel(String status) {
     switch (status.toUpperCase()) {
       case 'PENDING':
-        return 'Menunggu Konfirmasi';
+        return LanguageService.tr('status_pending');
       case 'CONFIRMED':
         return 'Kehadiran Dikonfirmasi';
       case 'IN_PROGRESS':
-        return 'Berlangsung';
+        return LanguageService.tr('status_in_progress');
       case 'DONE':
-        return 'Selesai';
+        return LanguageService.tr('status_done');
       case 'CLOSE':
         return 'Ditutup';
       case 'FAIL':
         return 'Gagal';
       default:
-        return 'Menunggu Konfirmasi';
+        return LanguageService.tr('status_pending');
     }
   }
 
@@ -300,15 +307,15 @@ class _HistoriScreenState extends State<HistoriScreen>
                         onChanged: (v) => setState(() => _searchQuery = v),
                         style: const TextStyle(
                             fontSize: 14, color: Color(0xFF0F172A)),
-                        decoration: const InputDecoration(
-                          hintText: 'Cari nama, kategori, lokasi...',
+                        decoration: InputDecoration(
+                          hintText: LanguageService.tr('search_hint'),
                           hintStyle:
-                              TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
-                          prefixIcon: Icon(Icons.search_rounded,
+                              const TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
+                          prefixIcon: const Icon(Icons.search_rounded,
                               size: 20, color: Color(0xFF64748B)),
                           border: InputBorder.none,
                           contentPadding:
-                              EdgeInsets.symmetric(vertical: 11, horizontal: 4),
+                              const EdgeInsets.symmetric(vertical: 11, horizontal: 4),
                         ),
                       ),
                     ),
@@ -322,9 +329,9 @@ class _HistoriScreenState extends State<HistoriScreen>
                         _searchController.clear();
                       });
                     },
-                    child: const Text(
-                      'Batal',
-                      style: TextStyle(
+                    child: Text(
+                      LanguageService.tr('cancel'),
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF1D4ED8),
@@ -336,10 +343,10 @@ class _HistoriScreenState extends State<HistoriScreen>
             : Row(
                 key: const ValueKey('title'),
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Histori Permintaan',
-                      style: TextStyle(
+                      LanguageService.tr('history_title'),
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF0F172A),
@@ -405,21 +412,21 @@ class _HistoriScreenState extends State<HistoriScreen>
           _buildStatDivider(),
           _buildStatItem(
             '${counts['pending']}',
-            'Menunggu',
+            LanguageService.tr('status_pending_short'),
             const Color(0xFFD97706),
             Icons.schedule_rounded,
           ),
           _buildStatDivider(),
           _buildStatItem(
             '${counts['berlangsung']}',
-            'Berlangsung',
+            LanguageService.tr('status_in_progress'),
             const Color(0xFF2563EB),
             Icons.timelapse_rounded,
           ),
           _buildStatDivider(),
           _buildStatItem(
             '${counts['selesai']}',
-            'Selesai',
+            LanguageService.tr('status_done'),
             const Color(0xFF059669),
             Icons.check_circle_rounded,
           ),
@@ -530,10 +537,10 @@ class _HistoriScreenState extends State<HistoriScreen>
   String _filterChipLabel(String s) {
     switch (s) {
       case 'SEMUA':       return 'Semua';
-      case 'PENDING':     return 'Menunggu';
+      case 'PENDING':     return LanguageService.tr('status_pending_short');
       case 'CONFIRMED':   return 'Dikonfirmasi';
-      case 'IN_PROGRESS': return 'Berlangsung';
-      case 'DONE':        return 'Selesai';
+      case 'IN_PROGRESS': return LanguageService.tr('status_in_progress');
+      case 'DONE':        return LanguageService.tr('status_done');
       case 'CLOSE':       return 'Ditutup';
       case 'FAIL':        return 'Gagal';
       default:            return s;
@@ -602,9 +609,9 @@ class _HistoriScreenState extends State<HistoriScreen>
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
-                'Urutkan',
-                style: TextStyle(
+              Text(
+                LanguageService.tr('sort_title'),
+                style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF0F172A),
@@ -947,9 +954,9 @@ class _HistoriScreenState extends State<HistoriScreen>
                             ),
                             if (showDetail) ...[
                               const SizedBox(width: 5),
-                              const Text(
-                                'Lihat Detail',
-                                style: TextStyle(
+                              Text(
+                                LanguageService.tr('view_detail'),
+                                style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
@@ -1026,9 +1033,9 @@ class _HistoriScreenState extends State<HistoriScreen>
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Belum Ada Permintaan',
-              style: TextStyle(
+            Text(
+              LanguageService.tr('no_requests'),
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF334155),

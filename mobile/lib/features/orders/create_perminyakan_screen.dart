@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../widgets/searchable_select_field.dart';
+import '../../core/services/language_service.dart';
 
 class CreatePerminyakanScreen extends StatefulWidget {
   final int? userId;
@@ -58,6 +59,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   @override
   void initState() {
     super.initState();
+    LanguageService.currentLanguage.addListener(_onLanguageChanged);
     final now = TimeOfDay.now();
     final hh = now.hour.toString().padLeft(2, '0');
     final mm = (now.minute < 30 ? 0 : 30).toString().padLeft(2, '0');
@@ -204,12 +206,17 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
 
   @override
   void dispose() {
+    LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _namaController.dispose();
     _catatanController.dispose();
     _usiaController.dispose();
     _tanggalController.dispose();
     _alamatController.dispose();
     super.dispose();
+  }
+
+  void _onLanguageChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _pickDate() async {
@@ -322,15 +329,15 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     });
 
     if (!_formKey.currentState!.validate()) {
-      _showError('Harap lengkapi semua kolom wajib dengan benar.');
+      _showError(LanguageService.tr('error_form_incomplete'));
       return;
     }
     if (_tanggalController.text.isEmpty) {
-      _showError('Tanggal pelayanan belum dipilih.');
+      _showError(LanguageService.tr('error_date_unselected'));
       return;
     }
     if (_jamMulai == null || _jamSelesai == null) {
-      _showError('Jam mulai dan selesai harus dipilih.');
+      _showError(LanguageService.tr('error_time_unselected'));
       return;
     }
 
@@ -345,7 +352,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     final endMinutes = endHour * 60 + endMinute;
 
     if (endMinutes <= startMinutes) {
-      _showError('Jam selesai harus lebih besar dari jam mulai.');
+      _showError(LanguageService.tr('error_end_before_start'));
       return;
     }
 
@@ -478,9 +485,9 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
             ),
           ),
         ),
-        title: const Text(
-          'Buat Permintaan Pelayanan',
-          style: TextStyle(
+        title: Text(
+          LanguageService.tr('create_service'),
+          style: const TextStyle(
             color: Color(0xFF0F172A),
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -506,13 +513,13 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
 
                     // ── Card 1: Data Penerima Sakramen ──
                     _buildFormCard(
-                      title: 'Data Penerima Sakramen',
+                      title: LanguageService.tr('recipient_data'),
                       icon: Icons.person_pin_rounded,
                       iconColor: const Color(0xFF1E5399),
                       children: [
                         _buildInputField(
                           controller: _namaController,
-                          label: 'Nama Lengkap Penerima Sakramen',
+                          label: LanguageService.tr('recipient_name'),
                           hint: 'Contoh: Bapak Antonius Supardi',
                           prefixIcon: Icons.person_outline_rounded,
                           validator: (v) =>
@@ -552,7 +559,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
 
                     // ── Card 2: Detail Permintaan & Urgensi ──
                     _buildFormCard(
-                      title: 'Detail Permintaan & Urgensi',
+                      title: LanguageService.tr('request_details'),
                       icon: Icons.medical_services_rounded,
                       iconColor: const Color(0xFF1E5399),
                       children: [
@@ -624,7 +631,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
 
                     // ── Card 3: Jadwal & Lokasi Pelayanan ──
                     _buildFormCard(
-                      title: 'Jadwal & Lokasi Pelayanan',
+                      title: LanguageService.tr('schedule_location'),
                       icon: Icons.calendar_today_rounded,
                       iconColor: const Color(0xFF1E5399),
                       children: [
@@ -688,7 +695,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                         // Alamat Detail
                         _buildInputField(
                           controller: _alamatController,
-                          label: 'Alamat Detail',
+                          label: LanguageService.tr('address_detail'),
                           hint:
                               'Contoh: RS Carolus Kamar 302, Jl. Salemba Raya No.41',
                           prefixIcon: Icons.location_on_outlined,
@@ -704,7 +711,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
 
                     // ── Card 4: Fitur Tambahan (Toggle Paroki yang sama + 4 Dropdowns) ──
                     _buildFormCard(
-                      title: 'Alamat Paroki Penerima Sakramen',
+                      title: LanguageService.tr('parish_address'),
                       icon: Icons.church_rounded,
                       iconColor: const Color(0xFF1E5399),
                       children: [
@@ -734,9 +741,9 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
-                                        'Paroki yang sama?',
-                                        style: TextStyle(
+                                      Text(
+                                        LanguageService.tr('same_parish'),
+                                        style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                           color: Color(0xFF0F172A),
@@ -890,15 +897,15 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                             child: CircularProgressIndicator(
                                 color: Colors.white, strokeWidth: 2.5),
                           )
-                        : const Row(
+                        : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.send_rounded,
+                              const Icon(Icons.send_rounded,
                                   color: Colors.white, size: 18),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
-                                'BUAT PERMINTAAN PELAYANAN',
-                                style: TextStyle(
+                                LanguageService.tr('submit_service'),
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,

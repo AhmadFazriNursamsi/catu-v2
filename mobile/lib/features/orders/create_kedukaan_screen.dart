@@ -7,6 +7,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../widgets/searchable_select_field.dart';
+import '../../core/services/language_service.dart';
 
 class CreateKedukaanScreen extends StatefulWidget {
   final int? userId;
@@ -141,6 +142,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
   @override
   void initState() {
     super.initState();
+    LanguageService.currentLanguage.addListener(_onLanguageChanged);
     final now = DateTime.now();
     _tanggalMeninggalController.text =
         '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
@@ -148,6 +150,10 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
         '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
 
     _loadMasterData();
+  }
+
+  void _onLanguageChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadMasterData() async {
@@ -285,6 +291,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
   @override
   void dispose() {
+    LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _namaMeninggalController.dispose();
     _tanggalMeninggalController.dispose();
     _catatanController.dispose();
@@ -427,7 +434,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     });
 
     if (!_formKey.currentState!.validate()) {
-      _showError('Harap lengkapi semua kolom wajib dengan benar.');
+      _showError(LanguageService.tr('error_form_incomplete'));
       return;
     }
 
@@ -544,9 +551,9 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
             ),
           ),
         ),
-        title: const Text(
-          'Permintaan Pelayanan',
-          style: TextStyle(
+        title: Text(
+          LanguageService.tr('create_service'),
+          style: const TextStyle(
             color: Color(0xFF0F172A),
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -572,14 +579,14 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
                     // ── Card 1: Misa Kedukaan (Data Almarhum / Almarhumah) ──
                     _buildFormCard(
-                      title: 'Misa Kedukaan (Data Almarhum / Almarhumah)',
+                      title: LanguageService.tr('deceased_data'),
                       icon: Icons.personal_injury_rounded,
                       iconColor: const Color(0xFF1E5399),
                       children: [
                         // 1. Nama Yang Meninggal
                         _buildInputField(
                           controller: _namaMeninggalController,
-                          label: 'Nama Yang Meninggal',
+                          label: LanguageService.tr('deceased_name'),
                           hint: 'Contoh: Alm. Bapak Fransiskus Subagyo',
                           prefixIcon: Icons.person_outline_rounded,
                           validator: (v) =>
@@ -590,7 +597,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                         // 2. Hubungan Dengan Yang Meninggal
                         _buildDropdownField<String>(
                           value: _selectedHubungan,
-                          label: 'Hubungan Dengan Yang Meninggal',
+                          label: LanguageService.tr('relation_deceased'),
                           hint: 'Pilih Hubungan',
                           prefixIcon: Icons.family_restroom_rounded,
                           items: _hubunganOptions,
@@ -607,8 +614,8 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                           child: AbsorbPointer(
                             child: _buildInputField(
                               controller: _tanggalMeninggalController,
-                              label: 'Tanggal Meninggal',
-                              hint: 'Tanggal Meninggal',
+                              label: LanguageService.tr('date_of_death'),
+                              hint: LanguageService.tr('date_of_death'),
                               prefixIcon: Icons.event_available_rounded,
                               suffixIcon: const Icon(
                                 Icons.calendar_month_rounded,
@@ -772,15 +779,15 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
                     // ── Card 2: Detail Pelayanan Misa Kedukaan (Multi-Item List) ──
                     _buildFormCard(
-                      title: 'Jadwal & Lokasi Misa Kedukaan',
+                      title: LanguageService.tr('mass_schedule'),
                       icon: Icons.church_rounded,
                       iconColor: const Color(0xFF1E5399),
                       children: [
                         // 1. Pilih Misa
                         _buildDropdownField<String>(
                           value: _selectedJenisMisa,
-                          label: 'Pilih Misa',
-                          hint: 'Pilih Misa',
+                          label: LanguageService.tr('select_mass'),
+                          hint: LanguageService.tr('select_mass'),
                           prefixIcon: Icons.sanitizer_rounded,
                           items: _jenisMisaOptions,
                           itemLabel: (e) => e,
@@ -856,9 +863,9 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                             onPressed: _addMisaItem,
                             icon: const Icon(Icons.add_circle_outline_rounded,
                                 size: 20),
-                            label: const Text(
-                              'TAMBAHKAN MISA',
-                              style: TextStyle(
+                            label: Text(
+                              LanguageService.tr('add_mass'),
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.5,
@@ -879,9 +886,9 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                         // 6. Dynamic Misa Items Cards List
                         if (_misaList.isNotEmpty) ...[
                           const SizedBox(height: 20),
-                          const Text(
-                            'Daftar Misa Yang Ditambahkan:',
-                            style: TextStyle(
+                          Text(
+                            LanguageService.tr('added_mass_list'),
+                            style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF0F172A),
@@ -978,7 +985,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
                     // ── Card 3: Alamat Paroki Penerima Sakramen (Cross-Parish Toggle) ──
                     _buildFormCard(
-                      title: 'Alamat Paroki Penerima Sakramen',
+                      title: LanguageService.tr('parish_address'),
                       icon: Icons.location_city_rounded,
                       iconColor: const Color(0xFF1E5399),
                       children: [
@@ -1166,9 +1173,9 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text(
-                                'KIRIM PELAYANAN',
-                                style: TextStyle(
+                            : Text(
+                                LanguageService.tr('send_service'),
+                                style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 0.5,
@@ -1190,9 +1197,9 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'BATALKAN',
-                          style: TextStyle(
+                        child: Text(
+                          LanguageService.tr('cancel_action'),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,

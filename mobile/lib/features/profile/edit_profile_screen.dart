@@ -88,10 +88,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _initDataFromUserMap(widget.user);
     _loadDynamicProvinsiKota();
     _fetchProfileFromBackend();
+    LanguageService.currentLanguage.addListener(_onLanguageChanged);
+  }
+
+  void _onLanguageChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _firstNameController.dispose();
     _lastNameController.dispose();
     _birthDateController.dispose();

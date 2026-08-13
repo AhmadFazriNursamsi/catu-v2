@@ -55,6 +55,22 @@ class UmatDashboardView extends StatefulWidget {
 class _UmatDashboardViewState extends State<UmatDashboardView> {
   int _currentNavIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    LanguageService.currentLanguage.addListener(_onLanguageChanged);
+  }
+
+  void _onLanguageChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    LanguageService.currentLanguage.removeListener(_onLanguageChanged);
+    super.dispose();
+  }
+
   int? get _userId {
     final raw = widget.user['id'] ?? widget.user['userId'] ?? widget.user['user_id'];
     return raw != null ? int.tryParse(raw.toString()) : null;
@@ -398,11 +414,11 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(
+                          SizedBox(
                             width: 180,
                             child: Text(
-                              'Daftar\nPermintaan\nPelayanan',
-                              style: TextStyle(
+                              LanguageService.tr('recent_orders'),
+                              style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF0F172A),
@@ -421,14 +437,14 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                   borderRadius: BorderRadius.circular(14)),
                               elevation: 0,
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.add_rounded, size: 16),
-                                SizedBox(width: 5),
+                                const Icon(Icons.add_rounded, size: 16),
+                                const SizedBox(width: 5),
                                 Text(
-                                  'Buat Permintaan\nPelayanan',
-                                  style: TextStyle(
+                                  LanguageService.tr('quick_services'),
+                                  style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600),
                                   textAlign: TextAlign.center,

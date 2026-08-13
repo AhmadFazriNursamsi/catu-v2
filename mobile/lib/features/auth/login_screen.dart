@@ -5,6 +5,7 @@ import '../../core/services/api_service.dart';
 import '../../core/utils/fade_slide_route.dart';
 import '../home/home_screen.dart';
 import 'register_screen.dart';
+import '../../core/services/language_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,15 +40,21 @@ class _LoginScreenState extends State<LoginScreen>
             begin: const Offset(0, 0.08), end: Offset.zero)
         .animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
     _animCtrl.forward();
+    LanguageService.currentLanguage.addListener(_onLanguageChanged);
   }
 
   @override
   void dispose() {
+    LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _animCtrl.dispose();
     _phoneController.removeListener(_onPhoneChanged);
     _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _onLanguageChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onPhoneChanged() {
@@ -210,9 +217,9 @@ class _LoginScreenState extends State<LoginScreen>
                         fit: BoxFit.contain,
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Selamat Datang',
-                        style: TextStyle(
+                      Text(
+                        LanguageService.tr('welcome'),
+                        style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -221,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Masuk untuk melanjutkan',
+                        LanguageService.tr('login_title'),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white.withOpacity(0.75),
@@ -347,7 +354,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     obscureText: _obscurePassword,
                                     style: const TextStyle(fontSize: 14, color: AppConstants.textDark),
                                     decoration: _fieldDeco(
-                                      label: 'Password',
+                                      label: LanguageService.tr('password'),
                                       hint: '••••••••',
                                       prefix: const Icon(Icons.lock_outline_rounded,
                                           color: AppConstants.primaryBlue, size: 20),
@@ -398,15 +405,15 @@ class _LoginScreenState extends State<LoginScreen>
                                               child: CircularProgressIndicator(
                                                   color: Colors.white, strokeWidth: 2.5),
                                             )
-                                          : const Row(
+                                          : Row(
                                               mainAxisAlignment: MainAxisAlignment.center,
                                               children: [
-                                                Icon(Icons.login_rounded,
+                                                const Icon(Icons.login_rounded,
                                                     color: Colors.white, size: 20),
-                                                SizedBox(width: 8),
+                                                const SizedBox(width: 8),
                                                 Text(
-                                                  'MASUK SEKARANG',
-                                                  style: TextStyle(
+                                                  LanguageService.tr('login_button'),
+                                                  style: const TextStyle(
                                                     fontSize: 15,
                                                     fontWeight: FontWeight.bold,
                                                     color: Colors.white,
@@ -449,9 +456,9 @@ class _LoginScreenState extends State<LoginScreen>
                                       shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(14)),
                                     ),
-                                    child: const Text(
-                                      'Buat Akun Baru',
-                                      style: TextStyle(
+                                    child: Text(
+                                      LanguageService.tr('register_here'),
+                                      style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                         color: AppConstants.primaryBlue,
