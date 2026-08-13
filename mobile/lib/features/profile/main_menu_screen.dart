@@ -30,6 +30,11 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   late AnimationController _animController;
   late Animation<double> _fadeIn;
 
+  String _selectedLanguage = 'Bahasa Indonesia';
+  String _selectedTheme = 'Terang (Otomatis)';
+  bool _notifyPelayanan = true;
+  bool _notifyChatRomo = true;
+
   @override
   void initState() {
     super.initState();
@@ -798,6 +803,110 @@ class _MainMenuScreenState extends State<MainMenuScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                  24, 16, 24, MediaQuery.of(ctx).padding.bottom + 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Setelan Aplikasi',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSwitchRow(
+                    'Notifikasi Pelayanan',
+                    _notifyPelayanan,
+                    (val) {
+                      setState(() => _notifyPelayanan = val);
+                      setModalState(() {});
+                    },
+                  ),
+                  _buildSwitchRow(
+                    'Notifikasi Chat Romo',
+                    _notifyChatRomo,
+                    (val) {
+                      setState(() => _notifyChatRomo = val);
+                      setModalState(() {});
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _buildDetailRow(
+                    'Bahasa',
+                    _selectedLanguage,
+                    onTap: () => _showLanguagePickerModal(setModalState),
+                  ),
+                  const SizedBox(height: 4),
+                  _buildDetailRow(
+                    'Tema Aplikasi',
+                    _selectedTheme,
+                    onTap: () => _showThemePickerModal(setModalState),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showToast('✅ Setelan berhasil disimpan');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1D4ED8),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text('Simpan & Tutup',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showLanguagePickerModal(StateSetter parentSetModalState) {
+    HapticFeedback.mediumImpact();
+    final languages = [
+      {'name': 'Bahasa Indonesia', 'flag': '🇮🇩', 'subtitle': 'Bahasa utama'},
+      {'name': 'English (US)', 'flag': '🇺🇸', 'subtitle': 'International English'},
+      {'name': 'Lingua Latina', 'flag': '🇻🇦', 'subtitle': 'Vatican Latin'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
         return Padding(
           padding: EdgeInsets.fromLTRB(
               24, 16, 24, MediaQuery.of(ctx).padding.bottom + 24),
@@ -817,34 +926,208 @@ class _MainMenuScreenState extends State<MainMenuScreen>
               ),
               const SizedBox(height: 16),
               const Text(
-                'Setelan Aplikasi',
+                'Pilih Bahasa / Language',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF0F172A),
                 ),
               ),
-              const SizedBox(height: 16),
-              _buildSwitchRow('Notifikasi Pelayanan', true),
-              _buildSwitchRow('Notifikasi Chat Romo', true),
-              _buildDetailRow('Bahasa', 'Bahasa Indonesia'),
-              _buildDetailRow('Tema Aplikasi', 'Terang (Otomatis)'),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1D4ED8),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+              const SizedBox(height: 6),
+              const Text(
+                'Pilih bahasa tampilan yang ingin Anda gunakan',
+                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 18),
+              ...languages.map((lang) {
+                final isSelected = _selectedLanguage == lang['name'];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFEFF6FF)
+                        : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF1D4ED8)
+                          : const Color(0xFFE2E8F0),
+                      width: isSelected ? 2 : 1,
+                    ),
                   ),
-                  child: const Text('Simpan & Tutup',
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 4),
+                    leading: Text(
+                      lang['flag']!,
+                      style: const TextStyle(fontSize: 26),
+                    ),
+                    title: Text(
+                      lang['name']!,
                       style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
+                        fontSize: 14.5,
+                        fontWeight:
+                            isSelected ? FontWeight.w800 : FontWeight.w600,
+                        color: isSelected
+                            ? const Color(0xFF1D4ED8)
+                            : const Color(0xFF0F172A),
+                      ),
+                    ),
+                    subtitle: Text(
+                      lang['subtitle']!,
+                      style: const TextStyle(
+                          fontSize: 12, color: Color(0xFF64748B)),
+                    ),
+                    trailing: isSelected
+                        ? const Icon(Icons.check_circle_rounded,
+                            color: Color(0xFF1D4ED8), size: 22)
+                        : const Icon(Icons.radio_button_unchecked_rounded,
+                            color: Color(0xFF94A3B8), size: 20),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        _selectedLanguage = lang['name']!;
+                      });
+                      parentSetModalState(() {});
+                      Navigator.pop(ctx);
+                      _showToast('🌐 Bahasa diubah ke ${lang['name']}');
+                    },
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showThemePickerModal(StateSetter parentSetModalState) {
+    HapticFeedback.mediumImpact();
+    final themes = [
+      {
+        'name': 'Terang (Otomatis)',
+        'icon': Icons.wb_sunny_rounded,
+        'subtitle': 'Tampilan terang default'
+      },
+      {
+        'name': 'Gelap (Dark Mode)',
+        'icon': Icons.dark_mode_rounded,
+        'subtitle': 'Mode malam nyaman di mata'
+      },
+      {
+        'name': 'Ikuti Sistem HP',
+        'icon': Icons.settings_suggest_rounded,
+        'subtitle': 'Menyesuaikan tema perangkat'
+      },
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+              24, 16, 24, MediaQuery.of(ctx).padding.bottom + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
+              const SizedBox(height: 16),
+              const Text(
+                'Pilih Tema Tampilan',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Sesuaikan skema warna tampilan aplikasi CATU',
+                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 18),
+              ...themes.map((theme) {
+                final isSelected = _selectedTheme == theme['name'];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFEFF6FF)
+                        : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF1D4ED8)
+                          : const Color(0xFFE2E8F0),
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 4),
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF1D4ED8).withValues(alpha: 0.1)
+                            : const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(theme['icon'] as IconData,
+                          color: isSelected
+                              ? const Color(0xFF1D4ED8)
+                              : const Color(0xFF64748B),
+                          size: 20),
+                    ),
+                    title: Text(
+                      theme['name'] as String,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight:
+                            isSelected ? FontWeight.w800 : FontWeight.w600,
+                        color: isSelected
+                            ? const Color(0xFF1D4ED8)
+                            : const Color(0xFF0F172A),
+                      ),
+                    ),
+                    subtitle: Text(
+                      theme['subtitle'] as String,
+                      style: const TextStyle(
+                          fontSize: 12, color: Color(0xFF64748B)),
+                    ),
+                    trailing: isSelected
+                        ? const Icon(Icons.check_circle_rounded,
+                            color: Color(0xFF1D4ED8), size: 22)
+                        : const Icon(Icons.radio_button_unchecked_rounded,
+                            color: Color(0xFF94A3B8), size: 20),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        _selectedTheme = theme['name'] as String;
+                      });
+                      parentSetModalState(() {});
+                      Navigator.pop(ctx);
+                      _showToast('🎨 Tema diubah ke ${theme['name']}');
+                    },
+                  ),
+                );
+              }).toList(),
             ],
           ),
         );
@@ -1038,42 +1321,70 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
   // ── Sub-widgets ────────────────────────────────────────────────────────────
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-          Flexible(
-            child: Text(
-              value,
-              style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A)),
-              textAlign: TextAlign.end,
-              overflow: TextOverflow.ellipsis,
-            ),
+  Widget _buildDetailRow(String label, String value, {VoidCallback? onTap}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF475569),
+                ),
+              ),
+              Row(
+                children: [
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1D4ED8),
+                    ),
+                    textAlign: TextAlign.end,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (onTap != null) ...[
+                    const SizedBox(width: 6),
+                    const Icon(Icons.chevron_right_rounded,
+                        size: 18, color: Color(0xFF94A3B8)),
+                  ],
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildSwitchRow(String label, bool value) {
+  Widget _buildSwitchRow(
+      String label, bool value, ValueChanged<bool>? onChanged) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: const TextStyle(fontSize: 13.5, color: Color(0xFF0F172A))),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF0F172A),
+            ),
+          ),
           Switch.adaptive(
             value: value,
-            activeColor: const Color(0xFF1D4ED8),
-            onChanged: (val) {},
+            activeTrackColor: const Color(0xFF1D4ED8),
+            onChanged: onChanged,
           ),
         ],
       ),
