@@ -42,6 +42,7 @@ class ScheduleScreen extends StatefulWidget {
   final VoidCallback onRefresh;
   final bool isRomo;
   final int? romoId;
+  final bool showPendingOnly;
 
   const ScheduleScreen({
     Key? key,
@@ -50,6 +51,7 @@ class ScheduleScreen extends StatefulWidget {
     required this.onRefresh,
     this.isRomo = false,
     this.romoId,
+    this.showPendingOnly = false,
   }) : super(key: key);
 
   @override
@@ -111,7 +113,11 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     for (final order in widget.orders) {
       if (widget.isRomo) {
         final st = order.status.toUpperCase();
-        if (st == 'PENDING') continue;
+        if (widget.showPendingOnly) {
+          if (st != 'PENDING') continue;
+        } else {
+          if (st == 'PENDING') continue;
+        }
       }
       if (!order.isActiveDashboardOrder) continue;
 
@@ -468,7 +474,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  LanguageService.tr('schedule_title'),
+                  widget.showPendingOnly
+                      ? 'Permintaan Pelayanan'
+                      : LanguageService.tr('schedule_title'),
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -478,7 +486,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  LanguageService.tr('schedule_subtitle'),
+                  widget.showPendingOnly
+                      ? 'Daftar permintaan pelayanan paroki yang belum dikonfirmasi.'
+                      : LanguageService.tr('schedule_subtitle'),
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF64748B),

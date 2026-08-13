@@ -467,8 +467,23 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: () {
-                        setState(() => _currentNavIndex = 1);
+                      onPressed: () async {
+                        final bool? refreshed = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ScheduleScreen(
+                              orders: widget.orders,
+                              userName: userName,
+                              onRefresh: widget.onRefresh,
+                              isRomo: true,
+                              romoId: romoId,
+                              showPendingOnly: true,
+                            ),
+                          ),
+                        );
+                        if (refreshed == true) {
+                          widget.onRefresh();
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1E5399),
