@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class ServiceCategory {
   final int id;
   final String name;
@@ -404,6 +406,7 @@ class ChatGroupItem {
   final String orderTitle;
   final String orderCategory;
   final String orderStatus;
+  final String urgencyName;
   final String scheduledDate;
   final String scheduledTimeStart;
   final String scheduledTimeEnd;
@@ -422,6 +425,7 @@ class ChatGroupItem {
     required this.orderTitle,
     required this.orderCategory,
     required this.orderStatus,
+    this.urgencyName = 'Biasa',
     required this.scheduledDate,
     required this.scheduledTimeStart,
     required this.scheduledTimeEnd,
@@ -431,6 +435,28 @@ class ChatGroupItem {
     this.notes = '',
     this.unreadCount = 0,
   });
+
+  /// Urgency Level Icon Data
+  IconData get urgencyIcon {
+    final lower = urgencyName.toLowerCase();
+    if (lower.contains('sangat penting') || lower.contains('darurat') || lower.contains('emergency') || lower.contains('tinggi')) {
+      return Icons.error_outline_rounded;
+    } else if (lower.contains('penting') || lower.contains('urgent') || lower.contains('sedang')) {
+      return Icons.warning_amber_rounded;
+    }
+    return Icons.info_outline_rounded;
+  }
+
+  /// Urgency Level Color
+  Color get urgencyColor {
+    final lower = urgencyName.toLowerCase();
+    if (lower.contains('sangat penting') || lower.contains('darurat') || lower.contains('emergency') || lower.contains('tinggi')) {
+      return const Color(0xFFEF4444); // Red
+    } else if (lower.contains('penting') || lower.contains('urgent') || lower.contains('sedang')) {
+      return const Color(0xFFF59E0B); // Amber / Orange
+    }
+    return const Color(0xFF3B82F6); // Blue / Normal
+  }
 
   /// Parse "Nama Penerima" or "Nama Almarhum" from notes
   String get penerimaOrDeceasedName {
@@ -561,6 +587,7 @@ class ChatGroupItem {
       orderTitle: json['order_title'] ?? json['orderTitle'] ?? json['title'] ?? 'Pelayanan',
       orderCategory: json['order_category'] ?? json['orderCategory'] ?? json['category'] ?? 'Permintaan Pelayanan',
       orderStatus: json['order_status'] ?? json['orderStatus'] ?? json['status'] ?? 'CONFIRMED',
+      urgencyName: json['urgency_name'] ?? json['urgencyName'] ?? 'Biasa',
       scheduledDate: json['scheduled_date'] ?? json['scheduledDate'] ?? '',
       scheduledTimeStart: json['scheduled_time_start'] ?? json['scheduledTimeStart'] ?? '08:00',
       scheduledTimeEnd: json['scheduled_time_end'] ?? json['scheduledTimeEnd'] ?? '09:00',

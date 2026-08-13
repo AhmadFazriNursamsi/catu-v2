@@ -342,8 +342,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.info_outline_rounded,
-                          size: 16, color: Color(0xFFEF4444)),
+                      Icon(
+                        group?.urgencyIcon ?? Icons.info_outline_rounded,
+                        size: 16,
+                        color: group?.urgencyColor ?? const Color(0xFF3B82F6),
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(

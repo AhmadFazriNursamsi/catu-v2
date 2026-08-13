@@ -1346,11 +1346,12 @@ export class ChatController {
               ) as order_title,
               sc.name as order_category, o.status as order_status,
               o.scheduled_date, o.scheduled_time as scheduled_time_start, '' as scheduled_time_end,
-              o.notes, p.full_name as penerima_name,
+              o.notes, ul.name as urgency_name, p.full_name as penerima_name,
               p.full_name as requester_name, p.avatar_url as requester_avatar
        FROM chat_groups g
        JOIN orders o ON g.order_id = o.id
        JOIN service_categories sc ON o.service_category_id = sc.id
+       LEFT JOIN urgency_levels ul ON o.urgency_level_id = ul.id
        LEFT JOIN user_profiles p ON o.user_id = p.user_id
        ORDER BY COALESCE(g.last_message_at, o.created_at) DESC, g.id DESC`
     );

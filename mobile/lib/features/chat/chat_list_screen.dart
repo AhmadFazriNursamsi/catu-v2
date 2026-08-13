@@ -374,11 +374,14 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   ),
                   const SizedBox(height: 3),
 
-                  // Line 2: Alert Icon + Judul Permintaan / Detail Misa • Tanggal
+                  // Line 2: Dynamic Urgency Icon + Judul Permintaan / Detail Misa • Tanggal
                   Row(
                     children: [
-                      const Icon(Icons.info_outline_rounded,
-                          size: 13, color: Color(0xFFEF4444)),
+                      Icon(
+                        group.urgencyIcon,
+                        size: 13,
+                        color: group.urgencyColor,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
