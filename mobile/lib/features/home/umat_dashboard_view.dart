@@ -761,7 +761,15 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
       }
     }
 
-    return cardList;
+    // Sort items by scheduled date ascending (closest to current date first)
+    cardList.sort((a, b) {
+      final dateA = a.parentOrder.parsedDate ?? DateTime(2099);
+      final dateB = b.parentOrder.parsedDate ?? DateTime(2099);
+      return dateA.compareTo(dateB);
+    });
+
+    // Limit to max 5 items closest to current date
+    return cardList.take(5).toList();
   }
 
   // ── Redesigned Service Card ──
