@@ -404,7 +404,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          group.lastMessageText ?? 'Isi Chat sebagian yang tampil',
+                          group.displayLastMessage,
                           style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF94A3B8),
@@ -426,7 +426,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  group.lastMessageAt ?? '23:59',
+                  group.formattedLastTime,
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,

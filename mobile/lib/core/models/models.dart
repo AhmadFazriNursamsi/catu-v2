@@ -504,6 +504,36 @@ class ChatGroupItem {
     return '$orderCategory • $dateStr - $timeStr';
   }
 
+  /// Formatted Last Message Time (HH:mm format, e.g. 15:30)
+  String get formattedLastTime {
+    if (lastMessageAt == null || lastMessageAt!.isEmpty) {
+      return '15:30';
+    }
+    final raw = lastMessageAt!;
+    if (raw.contains('T')) {
+      final parts = raw.split('T');
+      if (parts.length > 1 && parts[1].length >= 5) {
+        return parts[1].substring(0, 5);
+      }
+    } else if (raw.contains(' ')) {
+      final parts = raw.split(' ');
+      if (parts.length > 1 && parts[1].length >= 5) {
+        return parts[1].substring(0, 5);
+      }
+    } else if (raw.length >= 5 && raw.contains(':')) {
+      return raw.substring(0, 5);
+    }
+    return raw;
+  }
+
+  /// Display text for last message preview
+  String get displayLastMessage {
+    if (lastMessageText != null && lastMessageText!.isNotEmpty) {
+      return lastMessageText!;
+    }
+    return 'Belum ada pesan chat.';
+  }
+
   factory ChatGroupItem.fromJson(Map<String, dynamic> json) {
     final rawGId = json['group_id'] ?? json['groupId'] ?? json['id'];
     final parsedGId = rawGId is int ? rawGId : int.tryParse(rawGId?.toString() ?? '') ?? 0;
