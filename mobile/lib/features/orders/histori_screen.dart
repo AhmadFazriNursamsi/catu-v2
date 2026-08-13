@@ -151,12 +151,39 @@ class _HistoriScreenState extends State<HistoriScreen>
     return '📿';
   }
 
+  bool _isDateBeforeToday(String dateStr) {
+    if (dateStr.isEmpty) return false;
+    try {
+      String cleanStr = dateStr;
+      if (cleanStr.contains('T')) cleanStr = cleanStr.split('T').first;
+      final d = DateTime.parse(cleanStr);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      return DateTime(d.year, d.month, d.day).isBefore(today);
+    } catch (_) {
+      return false;
+    }
+  }
+
   List<Order> get _historyBaseOrders {
     return widget.orders.where((o) {
+      final st = o.status.toUpperCase();
+
       if (widget.isRomo) {
-        final st = o.status.toUpperCase();
+        // 1. Romo History ONLY contains services accepted by Romo (NOT PENDING)
         if (st == 'PENDING') return false;
+
+        // 2. Finished statuses (DONE, CLOSE, FAIL) always belong to History
+        if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return true;
+
+        // 3. Active accepted status (CONFIRMED, IN_PROGRESS) ONLY belongs to History
+        //    if its scheduled date has PASSED (< today)
+        final bool mainDatePassed = _isDateBeforeToday(o.scheduledDate);
+        final bool hasPastSubItems = o.items.any((item) => _isDateBeforeToday(item.scheduledDate));
+
+        return mainDatePassed || hasPastSubItems;
       }
+
       return o.isHistoryOrder;
     }).toList();
   }
