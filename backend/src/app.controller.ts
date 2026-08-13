@@ -1286,10 +1286,20 @@ export class ChatController {
     );
 
     const result = await this.dataSource.query(
-      `SELECT g.id as group_id, g.order_id, g.title as group_title, g.last_message_text, g.last_message_at,
+      `SELECT g.id as group_id, g.order_id, g.title as group_title,
+              COALESCE(
+                (SELECT message FROM chat_messages m WHERE m.chat_group_id = g.id ORDER BY m.id DESC LIMIT 1),
+                g.last_message_text,
+                'Grup chat pelayanan aktif'
+              ) as last_message_text,
+              COALESCE(
+                (SELECT created_at FROM chat_messages m WHERE m.chat_group_id = g.id ORDER BY m.id DESC LIMIT 1),
+                g.last_message_at,
+                o.created_at
+              ) as last_message_at,
               o.category_name as order_title, o.category_name as order_category, o.status as order_status,
               o.scheduled_date, o.scheduled_time as scheduled_time_start, '' as scheduled_time_end,
-              o.pemohon_name as penerima_name,
+              o.notes, o.pemohon_name as penerima_name,
               p.full_name as requester_name, p.avatar_url as requester_avatar
        FROM chat_groups g
        JOIN orders o ON g.order_id = o.id
