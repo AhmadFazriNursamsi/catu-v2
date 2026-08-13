@@ -524,18 +524,43 @@ class ChatGroupItem {
     return requesterName.isNotEmpty ? requesterName : groupTitle;
   }
 
+  /// Formatted Day & Date (e.g. Kamis, 13/08/2026) matching Detail Chat
+  String get formattedScheduledDayAndDate {
+    if (scheduledDate.isEmpty) return 'Kamis, 13/08/2026';
+    try {
+      final dt = DateTime.parse(scheduledDate);
+      final days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+      final dayName = days[dt.weekday - 1];
+      final dd = dt.day.toString().padLeft(2, '0');
+      final mm = dt.month.toString().padLeft(2, '0');
+      final yyyy = dt.year.toString();
+      return '$dayName, $dd/$mm/$yyyy';
+    } catch (_) {
+      return scheduledDate;
+    }
+  }
+
+  /// Formatted Time HH:mm
+  String get formattedScheduledTimeOnly {
+    if (scheduledTimeStart.isEmpty) return '13:30';
+    if (scheduledTimeStart.length >= 5 && scheduledTimeStart.contains(':')) {
+      return scheduledTimeStart.substring(0, 5);
+    }
+    return scheduledTimeStart;
+  }
+
   /// Display Subtitle / Service Category Detail for List Chat (Line 2)
   String get displayServiceDetail {
     final catLower = orderCategory.toLowerCase();
-    final timeStr = scheduledTimeStart.isNotEmpty ? scheduledTimeStart : '15:30';
-    final dateStr = scheduledDate.isNotEmpty ? scheduledDate : '5/3/23';
+    final dateFormatted = formattedScheduledDayAndDate;
+    final timeFormatted = formattedScheduledTimeOnly;
 
     if (catLower.contains('perminyakan')) {
-      return 'Sakramen Perminyakan • $dateStr - $timeStr';
+      return 'Sakramen Perminyakan • $dateFormatted - $timeFormatted';
     } else if (catLower.contains('kedukaan')) {
-      return '$detailMisaLabel • $dateStr - $timeStr';
+      return '$detailMisaLabel • $dateFormatted - $timeFormatted';
     }
-    return '$orderCategory • $dateStr - $timeStr';
+    return '$orderCategory • $dateFormatted - $timeFormatted';
   }
 
   /// Formatted Last Message Time (HH:mm format in local device time)
