@@ -40,12 +40,16 @@ class ScheduleScreen extends StatefulWidget {
   final List<Order> orders;
   final String userName;
   final VoidCallback onRefresh;
+  final bool isRomo;
+  final int? romoId;
 
   const ScheduleScreen({
     Key? key,
     required this.orders,
     required this.userName,
     required this.onRefresh,
+    this.isRomo = false,
+    this.romoId,
   }) : super(key: key);
 
   @override
@@ -1177,18 +1181,23 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: GestureDetector(
-        onTap: () {
+        onTap: () async {
           HapticFeedback.selectionClick();
-          Navigator.push(
+          final bool? refreshed = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => OrderDetailScreen(
                 order: order,
                 userName: widget.userName,
                 selectedItemTitle: entry.item?.itemName,
+                isRomo: widget.isRomo,
+                romoId: widget.romoId,
               ),
             ),
           );
+          if (refreshed == true) {
+            widget.onRefresh();
+          }
         },
         child: Container(
           decoration: BoxDecoration(

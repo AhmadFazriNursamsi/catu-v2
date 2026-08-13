@@ -9,12 +9,16 @@ class HistoriScreen extends StatefulWidget {
   final List<Order> orders;
   final String userName;
   final VoidCallback onRefresh;
+  final bool isRomo;
+  final int? romoId;
 
   const HistoriScreen({
     Key? key,
     required this.orders,
     required this.userName,
     required this.onRefresh,
+    this.isRomo = false,
+    this.romoId,
   }) : super(key: key);
 
   @override
@@ -706,9 +710,9 @@ class _HistoriScreenState extends State<HistoriScreen>
         order.status.toUpperCase() == 'FAIL' ||
         order.status.toUpperCase() == 'CONFIRMED';
 
-    void goToDetail() {
+    void goToDetail() async {
       HapticFeedback.lightImpact();
-      Navigator.push(
+      final bool? refreshed = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => OrderDetailScreen(
@@ -716,9 +720,14 @@ class _HistoriScreenState extends State<HistoriScreen>
             userName: widget.userName,
             selectedItemTitle:
                 order.items.isNotEmpty ? order.items.first.itemName : null,
+            isRomo: widget.isRomo,
+            romoId: widget.romoId,
           ),
         ),
       );
+      if (refreshed == true) {
+        widget.onRefresh();
+      }
     }
 
     return Padding(

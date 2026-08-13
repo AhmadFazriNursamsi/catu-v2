@@ -3,7 +3,9 @@ import '../../core/models/models.dart';
 import '../../core/widgets/liquid_bottom_nav_bar.dart';
 import '../chat/chat_list_screen.dart';
 import '../chat/chat_screen.dart';
+import '../orders/histori_screen.dart';
 import '../orders/order_detail_screen.dart';
+import '../orders/schedule_screen.dart';
 
 class RomoDashboardCardItem {
   final Order parentOrder;
@@ -58,6 +60,100 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     final String periodeText = (startDate != null && endDate != null && startDate.isNotEmpty && endDate.isNotEmpty)
         ? '$startDate - $endDate'
         : (startYear != null && endYear != null ? '$startYear - $endYear' : '');
+
+    final int? romoId = widget.user['id'] != null
+        ? int.tryParse(widget.user['id'].toString())
+        : (widget.user['userId'] != null ? int.tryParse(widget.user['userId'].toString()) : null);
+
+    // ── Histori Tab (Nav Index 1) ──
+    if (_currentNavIndex == 1) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        body: HistoriScreen(
+          orders: widget.orders,
+          userName: userName,
+          onRefresh: widget.onRefresh,
+          isRomo: true,
+          romoId: romoId,
+        ),
+        bottomNavigationBar: LiquidBottomNavBar(
+          selectedIndex: _currentNavIndex,
+          onTabSelected: (index) {
+            setState(() => _currentNavIndex = index);
+            if (index == 3) {
+              _showMenuBottomSheet();
+            }
+          },
+          items: const [
+            LiquidNavItem(
+              icon: Icons.home_outlined,
+              activeIcon: Icons.home_rounded,
+              label: 'Beranda',
+            ),
+            LiquidNavItem(
+              icon: Icons.history_outlined,
+              activeIcon: Icons.history_rounded,
+              label: 'Histori',
+            ),
+            LiquidNavItem(
+              icon: Icons.calendar_today_outlined,
+              activeIcon: Icons.calendar_today_rounded,
+              label: 'Jadwal',
+            ),
+            LiquidNavItem(
+              icon: Icons.menu_outlined,
+              activeIcon: Icons.menu_rounded,
+              label: 'Menu',
+            ),
+          ],
+        ),
+      );
+    }
+
+    // ── Schedule / Jadwal Tab (Nav Index 2) ──
+    if (_currentNavIndex == 2) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        body: ScheduleScreen(
+          orders: widget.orders,
+          userName: userName,
+          onRefresh: widget.onRefresh,
+          isRomo: true,
+          romoId: romoId,
+        ),
+        bottomNavigationBar: LiquidBottomNavBar(
+          selectedIndex: _currentNavIndex,
+          onTabSelected: (index) {
+            setState(() => _currentNavIndex = index);
+            if (index == 3) {
+              _showMenuBottomSheet();
+            }
+          },
+          items: const [
+            LiquidNavItem(
+              icon: Icons.home_outlined,
+              activeIcon: Icons.home_rounded,
+              label: 'Beranda',
+            ),
+            LiquidNavItem(
+              icon: Icons.history_outlined,
+              activeIcon: Icons.history_rounded,
+              label: 'Histori',
+            ),
+            LiquidNavItem(
+              icon: Icons.calendar_today_outlined,
+              activeIcon: Icons.calendar_today_rounded,
+              label: 'Jadwal',
+            ),
+            LiquidNavItem(
+              icon: Icons.menu_outlined,
+              activeIcon: Icons.menu_rounded,
+              label: 'Menu',
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
