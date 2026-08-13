@@ -263,6 +263,36 @@ class Order {
     return scheduledDate;
   }
 
+  DateTime? get parsedDate {
+    if (scheduledDate.isEmpty) return null;
+    try {
+      return DateTime.parse(scheduledDate);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool get isPastDate {
+    final d = parsedDate;
+    if (d == null) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final orderDay = DateTime(d.year, d.month, d.day);
+    return orderDay.isBefore(today);
+  }
+
+  /// Belongs to Dashboard (Active Schedule):
+  /// Date is today or future AND status is active (PENDING, CONFIRMED, IN_PROGRESS)
+  bool get isActiveDashboardOrder {
+    final st = status.toUpperCase();
+    if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return false;
+    if (isPastDate) return false;
+    return true;
+  }
+
+  /// Belongs to History (strictly mutually exclusive with Dashboard):
+  bool get isHistoryOrder => !isActiveDashboardOrder;
+
   factory Order.fromJson(Map<String, dynamic> json) {
     // Backend returns id as String ("2"), parse safely to int
     final rawId = json['id'];
@@ -282,12 +312,24 @@ class Order {
           .toList();
     }
 
+    String parsedStatus = json['status'] ?? 'PENDING';
+    if (parsedStatus.toUpperCase() == 'PENDING' && rawDate.isNotEmpty) {
+      try {
+        final date = DateTime.parse(rawDate);
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        if (DateTime(date.year, date.month, date.day).isBefore(today)) {
+          parsedStatus = 'FAIL';
+        }
+      } catch (_) {}
+    }
+
     return Order(
       id: parsedId,
       orderNumber: json['order_number'] ?? json['orderNumber'] ?? '',
       categoryName: json['category_name'] ?? json['categoryName'] ?? 'Pelayanan',
       urgencyName: json['urgency_name'] ?? json['urgencyName'] ?? 'Biasa',
-      status: json['status'] ?? 'PENDING',
+      status: parsedStatus,
       scheduledDate: rawDate,
       scheduledTime: rawTime,
       locationName: json['location_name'] ?? json['locationName'] ?? '',

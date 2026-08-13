@@ -13,10 +13,17 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProviderStateMixin {
+class _RegisterScreenState extends State<RegisterScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+
+  // Text Controllers
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _birthDateController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _addressController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -25,14 +32,15 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   String _selectedRomoOrdoPosition = 'ROMO_BIASA';
   String _selectedRomoParokiPosition = 'ROMO_BIASA';
 
-  String _selectedKeuskupan = 'Keuskupan Agung Jakarta';
-  String _selectedParoki = 'Paroki Santo Antonius Padua - Otista';
-  String _selectedWilayah = 'Wilayah St. Agustinus';
-  String _selectedLingkungan = 'Lingkungan St. Agnes 1';
-  String _selectedOrdo = 'SJ - Serikat Yesus';
+  List<Map<String, dynamic>> _dynamicProvinsiList = [];
+  List<Map<String, dynamic>> _dynamicKotaList = [];
+  int? _selectedProvinsiId;
+  int? _selectedKabupatenKotaId;
 
-  final _startDateController = TextEditingController(text: '01/01/${DateTime.now().year}');
-  final _endDateController = TextEditingController(text: '31/12/${DateTime.now().year + 3}');
+  final _startDateController =
+      TextEditingController(text: '01/01/${DateTime.now().year}');
+  final _endDateController =
+      TextEditingController(text: '31/12/${DateTime.now().year + 3}');
 
   bool _isLoading = false;
   bool _isLoadingRoles = true;
@@ -50,7 +58,8 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     super.initState();
     _phoneController.addListener(_onPhoneChanged);
     _loadRoles();
-    _animCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _animCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
     _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero)
         .animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
@@ -62,7 +71,11 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     _animCtrl.dispose();
     _phoneController.removeListener(_onPhoneChanged);
     _phoneController.dispose();
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _birthDateController.dispose();
+    _emailController.dispose();
+    _addressController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _startDateController.dispose();
@@ -71,10 +84,16 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   }
 
   bool get _needsMasaJabatan {
-    if (_selectedRole == 'ROMO_PAROKI' && _selectedRomoParokiPosition == 'KETUA_ROMO') return true;
-    if (_selectedRole == 'ROMO_ORDO' && _selectedRomoOrdoPosition == 'KETUA_ROMO') return true;
-    if (_selectedRole == 'UMAT' || _selectedRole == 'PENGURUS_LINGKUNGAN' || _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
-      if (_selectedUmatPosition == 'KETUA' || _selectedUmatPosition == 'WAKIL' || _selectedUmatPosition == 'SEKRETARIS') {
+    if (_selectedRole == 'ROMO_PAROKI' &&
+        _selectedRomoParokiPosition == 'KETUA_ROMO') return true;
+    if (_selectedRole == 'ROMO_ORDO' &&
+        _selectedRomoOrdoPosition == 'KETUA_ROMO') return true;
+    if (_selectedRole == 'UMAT' ||
+        _selectedRole == 'PENGURUS_LINGKUNGAN' ||
+        _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
+      if (_selectedUmatPosition == 'KETUA' ||
+          _selectedUmatPosition == 'WAKIL' ||
+          _selectedUmatPosition == 'SEKRETARIS') {
         return true;
       }
     }
@@ -119,14 +138,9 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       _wilayahList = [];
       _lingkunganList = [];
     });
-    final paroki = await ApiService.getParokiList(keuskupanId: newKeuskupanId);
-    if (!mounted) return;
+    final parokis = await ApiService.getParoki(keuskupanId: newKeuskupanId);
     setState(() {
-      _parokiList = paroki;
-      if (_parokiList.isNotEmpty) {
-        _selectedParokiId = int.parse(_parokiList[0]['id'].toString());
-        _onParokiChanged(_selectedParokiId!);
-      }
+      _parokiList = parokis;
     });
   }
 
@@ -138,14 +152,9 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       _wilayahList = [];
       _lingkunganList = [];
     });
-    final wilayah = await ApiService.getWilayahList(parokiId: newParokiId);
-    if (!mounted) return;
+    final wilayahs = await ApiService.getWilayah(parokiId: newParokiId);
     setState(() {
-      _wilayahList = wilayah;
-      if (_wilayahList.isNotEmpty) {
-        _selectedWilayahId = int.parse(_wilayahList[0]['id'].toString());
-        _onWilayahChanged(_selectedWilayahId!);
-      }
+      _wilayahList = wilayahs;
     });
   }
 
@@ -155,104 +164,104 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       _selectedLingkunganId = null;
       _lingkunganList = [];
     });
-    final lingkungan = await ApiService.getLingkunganList(wilayahId: newWilayahId);
-    if (!mounted) return;
+    final lingkungans =
+        await ApiService.getLingkungan(wilayahId: newWilayahId);
     setState(() {
-      _lingkunganList = lingkungan;
-      if (_lingkunganList.isNotEmpty) {
-        _selectedLingkunganId = int.parse(_lingkunganList[0]['id'].toString());
-      }
+      _lingkunganList = lingkungans;
     });
   }
 
-  void _loadMasterData() async {
-    final keuskupan = await ApiService.getKeuskupanList();
-    final ordo = await ApiService.getOrdoList();
-    if (!mounted) return;
+  void _onProvinsiChanged(int newProvId) async {
     setState(() {
-      _keuskupanList = keuskupan;
-      _ordoList = ordo;
-      if (_keuskupanList.isNotEmpty) {
-        _selectedKeuskupanId = int.parse(_keuskupanList[0]['id'].toString());
-        _onKeuskupanChanged(_selectedKeuskupanId!);
-      }
-      if (_ordoList.isNotEmpty) {
-        _selectedOrdoId = int.parse(_ordoList[0]['id'].toString());
-      }
+      _selectedProvinsiId = newProvId;
+      _selectedKabupatenKotaId = null;
+      _dynamicKotaList = [];
     });
+    final kotas = await ApiService.getKabupatenKotaList(provinsiId: newProvId);
+    if (mounted) {
+      setState(() {
+        _dynamicKotaList = kotas;
+        if (kotas.isNotEmpty) {
+          _selectedKabupatenKotaId = int.tryParse(kotas.first['id'].toString());
+        }
+      });
+    }
   }
 
-  void _loadRoles() async {
+  Future<void> _loadRoles() async {
     final roles = await ApiService.getRoles();
-    _loadMasterData();
-    if (!mounted) return;
-    setState(() {
-      _roleOptions = roles;
-      _isLoadingRoles = false;
-      if (_roleOptions.isNotEmpty) _selectedRole = _roleOptions[0]['code']!;
-    });
+    final keuskupans = await ApiService.getKeuskupan();
+    final ordos = await ApiService.getOrdo();
+    final provs = await ApiService.getProvinsiList();
+
+    if (mounted) {
+      setState(() {
+        _roleOptions = roles;
+        _keuskupanList = keuskupans;
+        _ordoList = ordos;
+        _dynamicProvinsiList = provs;
+        _isLoadingRoles = false;
+
+        if (_keuskupanList.isNotEmpty) {
+          _selectedKeuskupanId =
+              int.tryParse(_keuskupanList.first['id'].toString());
+          if (_selectedKeuskupanId != null) {
+            _onKeuskupanChanged(_selectedKeuskupanId!);
+          }
+        }
+
+        if (_ordoList.isNotEmpty) {
+          _selectedOrdoId = int.tryParse(_ordoList.first['id'].toString());
+        }
+
+        if (_dynamicProvinsiList.isNotEmpty) {
+          _selectedProvinsiId =
+              int.tryParse(_dynamicProvinsiList.first['id'].toString());
+          if (_selectedProvinsiId != null) {
+            _onProvinsiChanged(_selectedProvinsiId!);
+          }
+        }
+      });
+    }
   }
 
-  void _onRoleChanged(String newRole) {
-    if (_selectedRole == newRole) return;
-
+  void _onRoleChanged(String roleCode) {
     setState(() {
-      _selectedRole = newRole;
+      _selectedRole = roleCode;
       _selectedUmatPosition = null;
-      _selectedRomoOrdoPosition = 'ROMO_BIASA';
-      _selectedRomoParokiPosition = 'ROMO_BIASA';
-      _startDateController.clear();
-      _endDateController.clear();
-
-      if (_keuskupanList.isNotEmpty) {
-        _selectedKeuskupanId = int.parse(_keuskupanList[0]['id'].toString());
-        _onKeuskupanChanged(_selectedKeuskupanId!);
-      } else {
-        _selectedKeuskupanId = null;
-        _selectedParokiId = null;
-        _selectedWilayahId = null;
-        _selectedLingkunganId = null;
-      }
-
-      if (_ordoList.isNotEmpty) {
-        _selectedOrdoId = int.parse(_ordoList[0]['id'].toString());
-      } else {
-        _selectedOrdoId = null;
-      }
     });
   }
 
   void _handleRegister() async {
-    if (!_formKey.currentState!.validate()) {
+    HapticFeedback.mediumImpact();
+    FocusScope.of(context).unfocus();
+
+    if (!(_formKey.currentState?.validate() ?? false)) {
       setState(() => _autovalidateMode = AutovalidateMode.onUserInteraction);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.white),
-            SizedBox(width: 10),
-            Expanded(child: Text('Harap lengkapi semua kolom bertanda wajib dengan benar.')),
-          ]),
-          backgroundColor: Colors.orange.shade800,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
       return;
     }
 
-    final name = _nameController.text.trim();
+    final fullName =
+        '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'
+            .trim();
     var phone = _phoneController.text.trim();
     if (phone.startsWith('0')) phone = phone.substring(1);
     if (phone.startsWith('62')) phone = phone.substring(2);
     final fullPhone = '62$phone';
     final password = _passwordController.text.trim();
+    final email = _emailController.text.trim();
+    final birthDate = _birthDateController.text.trim();
+    final address = _addressController.text.trim();
 
     String finalRoleCode = _selectedRole;
     String? pengurusPosition;
     String? romoPosition;
 
-    if (_selectedRole == 'UMAT' || _selectedRole == 'PENGURUS_LINGKUNGAN' || _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
-      if (_selectedUmatPosition != null && _selectedUmatPosition!.isNotEmpty) {
+    if (_selectedRole == 'UMAT' ||
+        _selectedRole == 'PENGURUS_LINGKUNGAN' ||
+        _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
+      if (_selectedUmatPosition != null &&
+          _selectedUmatPosition!.isNotEmpty) {
         pengurusPosition = _selectedUmatPosition;
         if (_selectedRole == 'UMAT') finalRoleCode = 'PENGURUS_LINGKUNGAN';
       }
@@ -282,14 +291,18 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
     setState(() => _isLoading = true);
     final res = await ApiService.register(
-      fullName: name,
+      fullName: fullName,
       phoneNumber: fullPhone,
       password: password,
       roleCode: finalRoleCode,
+      email: email.isNotEmpty ? email : null,
+      birthDate: birthDate.isNotEmpty ? birthDate : null,
+      address: address.isNotEmpty ? address : null,
       keuskupanId: _selectedKeuskupanId,
       parokiId: _selectedParokiId,
       wilayahId: _selectedWilayahId,
       lingkunganId: _selectedLingkunganId,
+      kabupatenKotaId: _selectedKabupatenKotaId,
       ordoId: _selectedRole == 'ROMO_ORDO' ? _selectedOrdoId : null,
       pengurusPosition: pengurusPosition,
       romoPosition: romoPosition,
@@ -297,7 +310,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       jabatanEndYear: jabatanEndYear,
       jabatanStartDate: jabatanStartDate,
       jabatanEndDate: jabatanEndDate,
-      isJabatanActive: false, // Flag Jabatan auto PENDING (Menunggu Persetujuan Admin)
+      isJabatanActive: false,
     );
     setState(() => _isLoading = false);
 
@@ -312,7 +325,9 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       }
     }
 
-    final isSuccess = res['statusCode'] == 201 || res['statusCode'] == 200 || res['user'] != null;
+    final isSuccess = res['statusCode'] == 201 ||
+        res['statusCode'] == 200 ||
+        res['user'] != null;
 
     if (isSuccess) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -322,9 +337,10 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
             const SizedBox(width: 10),
             Expanded(child: Text(responseMsg)),
           ]),
-          backgroundColor: Colors.green.shade600,
+          backgroundColor: const Color(0xFF059669),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       if (Navigator.canPop(context)) {
@@ -332,7 +348,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       } else {
         Navigator.pushReplacement(
           context,
-          FadeSlideRoute(page: LoginScreen()),
+          FadeSlideRoute(page: const LoginScreen()),
         );
       }
     } else {
@@ -345,7 +361,8 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
           ]),
           backgroundColor: Colors.red.shade600,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     }
@@ -393,7 +410,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
   Widget _buildSectionLabel(String label, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12, top: 12),
       child: Row(
         children: [
           Icon(icon, size: 15, color: AppConstants.primaryBlue),
@@ -415,7 +432,10 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   }
 
   Widget _buildHierarchyDropdowns() {
-    if (_selectedRole == 'UMAT' || _selectedRole == 'PENGURUS_LINGKUNGAN' || _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
+    if (_selectedRole == 'UMAT' ||
+        _selectedRole == 'PENGURUS_LINGKUNGAN' ||
+        _selectedRole == 'KOORDINATOR_KEUSKUPAN' ||
+        _selectedRole == 'ROMO_PAROKI') {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -425,10 +445,12 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
             label: 'Keuskupan',
             icon: Icons.account_balance_outlined,
             value: _selectedKeuskupanId,
-            items: _keuskupanList.map((item) => SearchableSelectItem<int>(
-              value: int.parse(item['id'].toString()),
-              label: item['name'].toString(),
-            )).toList(),
+            items: _keuskupanList
+                .map((item) => SearchableSelectItem<int>(
+                      value: int.parse(item['id'].toString()),
+                      label: item['name'].toString(),
+                    ))
+                .toList(),
             onChanged: (val) {
               if (val != null) _onKeuskupanChanged(val);
             },
@@ -440,81 +462,53 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
             label: 'Paroki',
             icon: Icons.church_outlined,
             value: _selectedParokiId,
-            items: _parokiList.map((item) => SearchableSelectItem<int>(
-              value: int.parse(item['id'].toString()),
-              label: item['name'].toString(),
-            )).toList(),
+            items: _parokiList
+                .map((item) => SearchableSelectItem<int>(
+                      value: int.parse(item['id'].toString()),
+                      label: item['name'].toString(),
+                    ))
+                .toList(),
             onChanged: (val) {
               if (val != null) _onParokiChanged(val);
             },
             emptyMessage: 'Paroki tidak ditemukan pada keuskupan ini',
           ),
 
-          // 3. Wilayah
-          SearchableSelectField<int>(
-            label: 'Wilayah',
-            icon: Icons.map_outlined,
-            value: _selectedWilayahId,
-            items: _wilayahList.map((item) => SearchableSelectItem<int>(
-              value: int.parse(item['id'].toString()),
-              label: item['name'].toString(),
-            )).toList(),
-            onChanged: (val) {
-              if (val != null) _onWilayahChanged(val);
-            },
-            emptyMessage: 'Wilayah tidak ditemukan pada paroki ini',
-          ),
+          // 3. Wilayah (Hanya untuk Umat & Pengurus Lingkungan)
+          if (_selectedRole != 'ROMO_PAROKI') ...[
+            SearchableSelectField<int>(
+              label: 'Wilayah',
+              icon: Icons.map_outlined,
+              value: _selectedWilayahId,
+              items: _wilayahList
+                  .map((item) => SearchableSelectItem<int>(
+                        value: int.parse(item['id'].toString()),
+                        label: item['name'].toString(),
+                      ))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) _onWilayahChanged(val);
+              },
+              emptyMessage: 'Wilayah tidak ditemukan pada paroki ini',
+            ),
 
-          // 4. Lingkungan
-          SearchableSelectField<int>(
-            label: 'Lingkungan',
-            icon: Icons.home_work_outlined,
-            value: _selectedLingkunganId,
-            items: _lingkunganList.map((item) => SearchableSelectItem<int>(
-              value: int.parse(item['id'].toString()),
-              label: item['name'].toString(),
-            )).toList(),
-            onChanged: (val) {
-              if (val != null) setState(() => _selectedLingkunganId = val);
-            },
-            emptyMessage: 'Lingkungan tidak ditemukan pada wilayah ini',
-          ),
-        ],
-      );
-    } else if (_selectedRole == 'ROMO_PAROKI') {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 12),
-          // 1. Keuskupan
-          SearchableSelectField<int>(
-            label: 'Keuskupan',
-            icon: Icons.account_balance_outlined,
-            value: _selectedKeuskupanId,
-            items: _keuskupanList.map((item) => SearchableSelectItem<int>(
-              value: int.parse(item['id'].toString()),
-              label: item['name'].toString(),
-            )).toList(),
-            onChanged: (val) {
-              if (val != null) _onKeuskupanChanged(val);
-            },
-            emptyMessage: 'Keuskupan tidak ditemukan',
-          ),
-
-          // 2. Paroki
-          SearchableSelectField<int>(
-            label: 'Paroki',
-            icon: Icons.church_outlined,
-            value: _selectedParokiId,
-            items: _parokiList.map((item) => SearchableSelectItem<int>(
-              value: int.parse(item['id'].toString()),
-              label: item['name'].toString(),
-            )).toList(),
-            onChanged: (val) {
-              if (val != null) _onParokiChanged(val);
-            },
-            emptyMessage: 'Paroki tidak ditemukan pada keuskupan ini',
-          ),
+            // 4. Lingkungan
+            SearchableSelectField<int>(
+              label: 'Lingkungan',
+              icon: Icons.groups_outlined,
+              value: _selectedLingkunganId,
+              items: _lingkunganList
+                  .map((item) => SearchableSelectItem<int>(
+                        value: int.parse(item['id'].toString()),
+                        label: item['name'].toString(),
+                      ))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _selectedLingkunganId = val);
+              },
+              emptyMessage: 'Lingkungan tidak ditemukan pada wilayah ini',
+            ),
+          ],
         ],
       );
     } else if (_selectedRole == 'ROMO_ORDO') {
@@ -527,10 +521,12 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
             label: 'Ordo / Kongregasi',
             icon: Icons.workspace_premium_outlined,
             value: _selectedOrdoId,
-            items: _ordoList.map((item) => SearchableSelectItem<int>(
-              value: int.parse(item['id'].toString()),
-              label: item['name'].toString(),
-            )).toList(),
+            items: _ordoList
+                .map((item) => SearchableSelectItem<int>(
+                      value: int.parse(item['id'].toString()),
+                      label: item['name'].toString(),
+                    ))
+                .toList(),
             onChanged: (val) {
               if (val != null) setState(() => _selectedOrdoId = val);
             },
@@ -543,58 +539,91 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   }
 
   Widget _buildPositionDropdown() {
-    if (_selectedRole == 'UMAT' || _selectedRole == 'PENGURUS_LINGKUNGAN' || _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
+    if (_selectedRole == 'UMAT' ||
+        _selectedRole == 'PENGURUS_LINGKUNGAN' ||
+        _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
       return DropdownButtonFormField<String?>(
         value: _selectedUmatPosition,
-        decoration: _fieldDeco(label: 'Jabatan / Peran Umat', icon: Icons.badge_outlined),
+        decoration: _fieldDeco(
+            label: 'Jabatan / Peran Umat', icon: Icons.badge_outlined),
         dropdownColor: Colors.white,
         borderRadius: BorderRadius.circular(12),
         isExpanded: true,
         items: const [
-          DropdownMenuItem<String?>(value: null, child: Text('Anggota Umat', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-          DropdownMenuItem<String?>(value: 'KETUA', child: Text('Ketua Lingkungan', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-          DropdownMenuItem<String?>(value: 'WAKIL', child: Text('Wakil Ketua Lingkungan', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
-          DropdownMenuItem<String?>(value: 'SEKRETARIS', child: Text('Sekretaris Lingkungan', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+          DropdownMenuItem<String?>(
+              value: null,
+              child: Text('Anggota Umat',
+                  style: TextStyle(fontSize: 13),
+                  overflow: TextOverflow.ellipsis)),
+          DropdownMenuItem<String?>(
+              value: 'KETUA',
+              child: Text('Ketua Lingkungan',
+                  style: TextStyle(fontSize: 13),
+                  overflow: TextOverflow.ellipsis)),
+          DropdownMenuItem<String?>(
+              value: 'WAKIL',
+              child: Text('Wakil Ketua Lingkungan',
+                  style: TextStyle(fontSize: 13),
+                  overflow: TextOverflow.ellipsis)),
+          DropdownMenuItem<String?>(
+              value: 'SEKRETARIS',
+              child: Text('Sekretaris Lingkungan',
+                  style: TextStyle(fontSize: 13),
+                  overflow: TextOverflow.ellipsis)),
         ],
         onChanged: (val) => setState(() => _selectedUmatPosition = val),
       );
     } else if (_selectedRole == 'ROMO_ORDO') {
       return DropdownButtonFormField<String>(
         value: _selectedRomoOrdoPosition,
-        decoration: _fieldDeco(label: 'Jabatan Romo Ordo', icon: Icons.military_tech_outlined),
+        decoration: _fieldDeco(
+            label: 'Jabatan Romo Ordo', icon: Icons.military_tech_outlined),
         dropdownColor: Colors.white,
         borderRadius: BorderRadius.circular(12),
         isExpanded: true,
         items: const [
           DropdownMenuItem(
             value: 'KETUA_ROMO',
-            child: Text('Ketua Ordo', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+            child: Text('Ketua Ordo',
+                style: TextStyle(fontSize: 13),
+                overflow: TextOverflow.ellipsis),
           ),
           DropdownMenuItem(
             value: 'ROMO_BIASA',
-            child: Text('Romo Ordo Biasa', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+            child: Text('Romo Ordo Biasa',
+                style: TextStyle(fontSize: 13),
+                overflow: TextOverflow.ellipsis),
           ),
         ],
-        onChanged: (val) { if (val != null) setState(() => _selectedRomoOrdoPosition = val); },
+        onChanged: (val) {
+          if (val != null) setState(() => _selectedRomoOrdoPosition = val);
+        },
       );
     } else if (_selectedRole == 'ROMO_PAROKI') {
       return DropdownButtonFormField<String>(
         value: _selectedRomoParokiPosition,
-        decoration: _fieldDeco(label: 'Jabatan Romo Paroki', icon: Icons.church_outlined),
+        decoration: _fieldDeco(
+            label: 'Jabatan Romo Paroki', icon: Icons.church_outlined),
         dropdownColor: Colors.white,
         borderRadius: BorderRadius.circular(12),
         isExpanded: true,
         items: const [
           DropdownMenuItem(
             value: 'KETUA_ROMO',
-            child: Text('Pastor Kepala (Ketua Paroki)', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+            child: Text('Pastor Kepala (Ketua Paroki)',
+                style: TextStyle(fontSize: 13),
+                overflow: TextOverflow.ellipsis),
           ),
           DropdownMenuItem(
             value: 'ROMO_BIASA',
-            child: Text('Romo Paroki Biasa (Pastor Rekan)', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+            child: Text('Romo Paroki Biasa (Pastor Rekan)',
+                style: TextStyle(fontSize: 13),
+                overflow: TextOverflow.ellipsis),
           ),
         ],
-        onChanged: (val) { if (val != null) setState(() => _selectedRomoParokiPosition = val); },
+        onChanged: (val) {
+          if (val != null) setState(() => _selectedRomoParokiPosition = val);
+        },
       );
     }
     return const SizedBox.shrink();
@@ -604,7 +633,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: DateTime(1920),
       lastDate: DateTime(2050),
       builder: (context, child) {
         return Theme(
@@ -641,13 +670,6 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
             color: const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -657,24 +679,29 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: AppConstants.primaryBlue.withOpacity(0.1),
+                      color: AppConstants.primaryBlue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.calendar_month_rounded, size: 18, color: AppConstants.primaryBlue),
+                    child: const Icon(Icons.calendar_month_rounded,
+                        size: 18, color: AppConstants.primaryBlue),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(
+                  const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
                           'Periode Masa Jabatan',
-                          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                          style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A)),
                         ),
                         SizedBox(height: 1),
                         Text(
                           'Ketuk kolom untuk memilih tanggal mulai & selesai',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                          style: TextStyle(
+                              fontSize: 11, color: Color(0xFF64748B)),
                         ),
                       ],
                     ),
@@ -682,15 +709,14 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 ],
               ),
               const SizedBox(height: 14),
-              // 2 Column Layout for Masa Jabatan (Mulai & Selesai)
               Row(
                 children: [
-                  // Kolom 1: Tanggal Mulai
                   Expanded(
                     child: GestureDetector(
                       onTap: () => _selectDate(_startDateController),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
@@ -699,20 +725,18 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.calendar_today_outlined, size: 13, color: AppConstants.primaryBlue),
-                                SizedBox(width: 4),
-                                Text(
-                                  'TGL MULAI',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppConstants.primaryBlue, letterSpacing: 0.5),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
+                            const Text('TANGGAL MULAI',
+                                style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF64748B))),
+                            const SizedBox(height: 3),
                             Text(
-                              _startDateController.text.isEmpty ? 'DD/MM/YYYY' : _startDateController.text,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                              _startDateController.text,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF0F172A)),
                             ),
                           ],
                         ),
@@ -720,12 +744,12 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // Kolom 2: Tanggal Selesai
                   Expanded(
                     child: GestureDetector(
                       onTap: () => _selectDate(_endDateController),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
@@ -734,20 +758,18 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.event_available_outlined, size: 13, color: AppConstants.primaryBlue),
-                                SizedBox(width: 4),
-                                Text(
-                                  'TGL SELESAI',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppConstants.primaryBlue, letterSpacing: 0.5),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
+                            const Text('TANGGAL SELESAI',
+                                style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF64748B))),
+                            const SizedBox(height: 3),
                             Text(
-                              _endDateController.text.isEmpty ? 'DD/MM/YYYY' : _endDateController.text,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                              _endDateController.text,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF0F172A)),
                             ),
                           ],
                         ),
@@ -755,47 +777,6 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 14),
-              // User friendly Admin verification status card
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFFBEB),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFDE68A)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Icon(Icons.verified_user_outlined, color: Color(0xFFD97706), size: 20),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Status Jabatan: Menunggu Verifikasi Admin',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFB45309),
-                            ),
-                          ),
-                          SizedBox(height: 3),
-                          Text(
-                            'Jabatan ini akan diverifikasi & diaktifkan oleh Admin setelah pendaftaran Anda disetujui.',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFFD97706),
-                              height: 1.35,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),
@@ -810,9 +791,10 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       backgroundColor: const Color(0xFFF0F4FA),
       body: Stack(
         children: [
-          // Top decorative gradient header
           Positioned(
-            top: 0, left: 0, right: 0,
+            top: 0,
+            left: 0,
+            right: 0,
             child: Container(
               height: 200,
               decoration: const BoxDecoration(
@@ -828,7 +810,6 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
               ),
             ),
           ),
-
           SafeArea(
             child: FadeTransition(
               opacity: _fadeAnim,
@@ -840,7 +821,6 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                     constraints: const BoxConstraints(maxWidth: 480),
                     child: Column(
                       children: [
-                        // Title di atas gradient
                         const Text(
                           'Buat Akun CATU',
                           style: TextStyle(
@@ -852,19 +832,17 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                         ),
                         const SizedBox(height: 6),
                         const Text(
-                          'Isi data diri Anda untuk bergabung',
+                          'Isi data akun Anda untuk bergabung',
                           style: TextStyle(fontSize: 13, color: Colors.white70),
                         ),
                         const SizedBox(height: 24),
-
-                        // Form Card
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(24),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
+                                color: Colors.black.withValues(alpha: 0.08),
                                 blurRadius: 24,
                                 spreadRadius: 0,
                                 offset: const Offset(0, 8),
@@ -879,171 +857,407 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
+                                  // ── 1. AKUN & KEAMANAN ──
+                                  _buildSectionLabel(
+                                      'AKUN & KEAMANAN', Icons.lock_outline_rounded),
 
-                                  // ── Seksi: Data Diri ──
-                                  _buildSectionLabel('DATA DIRI', Icons.person_outline_rounded),
-
-                                  // Nama Lengkap
                                   TextFormField(
-                                    controller: _nameController,
-                                    textCapitalization: TextCapitalization.words,
-                                    style: const TextStyle(fontSize: 14, color: AppConstants.textDark),
-                                    decoration: _fieldDeco(label: 'Nama Lengkap', icon: Icons.person_outline_rounded),
-                                    validator: (v) {
-                                      if (v == null || v.trim().isEmpty) return 'Nama lengkap wajib diisi';
-                                      if (v.trim().length < 3) return 'Nama minimal 3 karakter';
+                                    controller: _phoneController,
+                                    keyboardType: TextInputType.phone,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly
+                                    ],
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppConstants.textDark),
+                                    decoration: InputDecoration(
+                                      labelText: 'Nomor WhatsApp / HP (Username)',
+                                      hintText: '81234567890',
+                                      hintStyle: TextStyle(
+                                          color: Colors.grey.shade400,
+                                          fontSize: 14),
+                                      labelStyle: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 14),
+                                      filled: true,
+                                      fillColor: const Color(0xFFF7F9FC),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 18),
+                                      prefixIcon: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 14),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Text('🇮🇩',
+                                                style: TextStyle(fontSize: 18)),
+                                            const SizedBox(width: 6),
+                                            const Text('+62',
+                                                style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: AppConstants
+                                                        .primaryBlue)),
+                                            const SizedBox(width: 10),
+                                            Container(
+                                                height: 22,
+                                                width: 1,
+                                                color: Colors.grey.shade300),
+                                          ],
+                                        ),
+                                      ),
+                                      border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                          borderSide: BorderSide(
+                                              color: Colors.grey.shade200)),
+                                      enabledBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                          borderSide: BorderSide(
+                                              color: Colors.grey.shade200)),
+                                      focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                          borderSide: const BorderSide(
+                                              color: AppConstants.primaryBlue,
+                                              width: 2)),
+                                      errorBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                          borderSide: BorderSide(
+                                              color: Colors.red.shade400,
+                                              width: 1.5)),
+                                      focusedErrorBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                          borderSide: BorderSide(
+                                              color: Colors.red.shade600,
+                                              width: 2)),
+                                      errorStyle: TextStyle(
+                                          color: Colors.red.shade600,
+                                          fontSize: 11.5),
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.trim().isEmpty) {
+                                        return 'Nomor WhatsApp wajib diisi';
+                                      }
+                                      var clean = value.trim();
+                                      if (clean.startsWith('0')) {
+                                        clean = clean.substring(1);
+                                      }
+                                      if (clean.startsWith('62')) {
+                                        clean = clean.substring(2);
+                                      }
+                                      if (!clean.startsWith('8')) {
+                                        return 'Nomor HP harus diawali angka 8';
+                                      }
+                                      if (clean.length < 9) {
+                                        return 'Nomor HP minimal 9 digit';
+                                      }
                                       return null;
                                     },
                                   ),
                                   const SizedBox(height: 14),
 
-                                  // Nomor HP
-                                  TextFormField(
-                                    controller: _phoneController,
-                                    keyboardType: TextInputType.phone,
-                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                    style: const TextStyle(fontSize: 14, color: AppConstants.textDark),
-                                    decoration: InputDecoration(
-                                      labelText: 'Nomor WhatsApp / HP',
-                                      hintText: '81234567890',
-                                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                                      labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                                      filled: true,
-                                      fillColor: const Color(0xFFF7F9FC),
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                                      prefixIcon: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Text('🇮🇩', style: TextStyle(fontSize: 18)),
-                                            const SizedBox(width: 6),
-                                            const Text('+62', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppConstants.primaryBlue)),
-                                            const SizedBox(width: 10),
-                                            Container(height: 22, width: 1, color: Colors.grey.shade300),
-                                          ],
-                                        ),
-                                      ),
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade200)),
-                                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade200)),
-                                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppConstants.primaryBlue, width: 2)),
-                                      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.red.shade400, width: 1.5)),
-                                      focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.red.shade600, width: 2)),
-                                      errorStyle: TextStyle(color: Colors.red.shade600, fontSize: 11.5),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.trim().isEmpty) return 'Nomor WhatsApp wajib diisi';
-                                      var clean = value.trim();
-                                      if (clean.startsWith('0')) clean = clean.substring(1);
-                                      if (clean.startsWith('62')) clean = clean.substring(2);
-                                      if (!clean.startsWith('8')) return 'Nomor HP harus diawali angka 8';
-                                      if (clean.length < 9) return 'Nomor HP minimal 9 digit';
-                                      return null;
-                                    },
-                                  ),
-                                  const SizedBox(height: 24),
-
-                                  // ── Seksi: Keamanan ──
-                                  _buildSectionLabel('KEAMANAN AKUN', Icons.lock_outline_rounded),
-
-                                  // Password
                                   TextFormField(
                                     controller: _passwordController,
                                     obscureText: _obscurePassword,
-                                    style: const TextStyle(fontSize: 14, color: AppConstants.textDark),
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppConstants.textDark),
                                     decoration: _fieldDeco(
                                       label: 'Password',
                                       icon: Icons.lock_outline_rounded,
                                       suffix: IconButton(
-                                        icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey.shade500, size: 20),
-                                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                        icon: Icon(
+                                            _obscurePassword
+                                                ? Icons.visibility_off_outlined
+                                                : Icons.visibility_outlined,
+                                            color: Colors.grey.shade500,
+                                            size: 20),
+                                        onPressed: () => setState(() =>
+                                            _obscurePassword =
+                                                !_obscurePassword),
                                       ),
                                     ),
                                     validator: (v) {
-                                      if (v == null || v.trim().isEmpty) return 'Password wajib diisi';
-                                      if (v.trim().length < 6) return 'Password minimal 6 karakter';
+                                      if (v == null || v.trim().isEmpty) {
+                                        return 'Password wajib diisi';
+                                      }
+                                      if (v.trim().length < 6) {
+                                        return 'Password minimal 6 karakter';
+                                      }
                                       return null;
                                     },
                                   ),
                                   const SizedBox(height: 14),
 
-                                  // Konfirmasi Password
                                   TextFormField(
                                     controller: _confirmPasswordController,
                                     obscureText: _obscureConfirmPassword,
-                                    style: const TextStyle(fontSize: 14, color: AppConstants.textDark),
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppConstants.textDark),
                                     decoration: _fieldDeco(
                                       label: 'Konfirmasi Password',
                                       icon: Icons.lock_reset_rounded,
                                       suffix: IconButton(
-                                        icon: Icon(_obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey.shade500, size: 20),
-                                        onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                                        icon: Icon(
+                                            _obscureConfirmPassword
+                                                ? Icons.visibility_off_outlined
+                                                : Icons.visibility_outlined,
+                                            color: Colors.grey.shade500,
+                                            size: 20),
+                                        onPressed: () => setState(() =>
+                                            _obscureConfirmPassword =
+                                                !_obscureConfirmPassword),
                                       ),
                                     ),
                                     validator: (v) {
-                                      if (v == null || v.trim().isEmpty) return 'Konfirmasi password wajib diisi';
-                                      if (v.trim() != _passwordController.text.trim()) return 'Password tidak cocok!';
+                                      if (v == null || v.trim().isEmpty) {
+                                        return 'Konfirmasi password wajib diisi';
+                                      }
+                                      if (v.trim() !=
+                                          _passwordController.text.trim()) {
+                                        return 'Password tidak cocok!';
+                                      }
                                       return null;
                                     },
                                   ),
+                                  const SizedBox(height: 16),
+
+                                  const Text(
+                                    'Pilih Role Akun',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF334155),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  _isLoadingRoles
+                                      ? const Center(
+                                          child: Padding(
+                                          padding: EdgeInsets.all(12.0),
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: AppConstants.primaryBlue),
+                                        ))
+                                      : Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: _roleOptions.map((role) {
+                                            final isSelected =
+                                                _selectedRole == role['code'];
+                                            return GestureDetector(
+                                              onTap: () =>
+                                                  _onRoleChanged(role['code']!),
+                                              child: AnimatedContainer(
+                                                duration: const Duration(
+                                                    milliseconds: 200),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 16,
+                                                        vertical: 10),
+                                                decoration: BoxDecoration(
+                                                  color: isSelected
+                                                      ? AppConstants.primaryBlue
+                                                      : const Color(0xFFF7F9FC),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  border: Border.all(
+                                                    color: isSelected
+                                                        ? AppConstants
+                                                            .primaryBlue
+                                                        : Colors.grey.shade200,
+                                                    width: isSelected ? 2 : 1,
+                                                  ),
+                                                  boxShadow: isSelected
+                                                      ? [
+                                                          BoxShadow(
+                                                              color: AppConstants
+                                                                  .primaryBlue
+                                                                  .withValues(
+                                                                      alpha:
+                                                                          0.25),
+                                                              blurRadius: 8,
+                                                              offset:
+                                                                  const Offset(
+                                                                      0, 3))
+                                                        ]
+                                                      : [],
+                                                ),
+                                                child: Text(
+                                                  role['label']!,
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: isSelected
+                                                        ? Colors.white
+                                                        : AppConstants.textMuted,
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
+
                                   const SizedBox(height: 24),
 
-                                  // ── Seksi: Keanggotaan ──
-                                  _buildSectionLabel('KEANGGOTAAN', Icons.church_outlined),
+                                  // ── 2. INFORMASI PRIBADI ──
+                                  _buildSectionLabel('INFORMASI PRIBADI',
+                                      Icons.person_outline_rounded),
 
-                                  // Role chips + Dropdown
-                                  _isLoadingRoles
-                                      ? const Center(child: Padding(
-                                          padding: EdgeInsets.all(12.0),
-                                          child: CircularProgressIndicator(strokeWidth: 2, color: AppConstants.primaryBlue),
-                                        ))
-                                      : Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            // Role chips
-                                            Wrap(
-                                              spacing: 8,
-                                              runSpacing: 8,
-                                              children: _roleOptions.map((role) {
-                                                final isSelected = _selectedRole == role['code'];
-                                                return GestureDetector(
-                                                  onTap: () => _onRoleChanged(role['code']!),
-                                                  child: AnimatedContainer(
-                                                    duration: const Duration(milliseconds: 200),
-                                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                                    decoration: BoxDecoration(
-                                                      color: isSelected ? AppConstants.primaryBlue : const Color(0xFFF7F9FC),
-                                                      borderRadius: BorderRadius.circular(12),
-                                                      border: Border.all(
-                                                        color: isSelected ? AppConstants.primaryBlue : Colors.grey.shade200,
-                                                        width: isSelected ? 2 : 1,
-                                                      ),
-                                                      boxShadow: isSelected ? [
-                                                        BoxShadow(color: AppConstants.primaryBlue.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3))
-                                                      ] : [],
-                                                    ),
-                                                    child: Text(
-                                                      role['label']!,
-                                                      style: TextStyle(
-                                                        fontSize: 13,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: isSelected ? Colors.white : AppConstants.textMuted,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                );
-                                              }).toList(),
-                                            ),
-                                            const SizedBox(height: 14),
-
-                                            // Dropdown Hirarki Kondisional (Keuskupan/Paroki/Wilayah/Lingkungan atau Ordo)
-                                            _buildHierarchyDropdowns(),
-
-                                            // Jabatan kondisional
-                                            _buildPositionDropdown(),
-                                            _buildMasaJabatanAndFlagFields(),
-                                          ],
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller: _firstNameController,
+                                          textCapitalization:
+                                              TextCapitalization.words,
+                                          style: const TextStyle(
+                                              fontSize: 14,
+                                              color: AppConstants.textDark),
+                                          decoration: _fieldDeco(
+                                              label: 'Nama Depan',
+                                              icon: Icons.person_rounded),
+                                          validator: (v) {
+                                            if (v == null || v.trim().isEmpty) {
+                                              return 'Wajib diisi';
+                                            }
+                                            return null;
+                                          },
                                         ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller: _lastNameController,
+                                          textCapitalization:
+                                              TextCapitalization.words,
+                                          style: const TextStyle(
+                                              fontSize: 14,
+                                              color: AppConstants.textDark),
+                                          decoration: _fieldDeco(
+                                              label: 'Nama Belakang',
+                                              icon: Icons.person_outline_rounded),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+
+                                  GestureDetector(
+                                    onTap: () =>
+                                        _selectDate(_birthDateController),
+                                    child: AbsorbPointer(
+                                      child: TextFormField(
+                                        controller: _birthDateController,
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppConstants.textDark),
+                                        decoration: _fieldDeco(
+                                          label: 'Tanggal Lahir',
+                                          icon: Icons.calendar_month_rounded,
+                                          hint: 'DD/MM/YYYY',
+                                          suffix: const Icon(
+                                              Icons.calendar_today_rounded,
+                                              size: 18,
+                                              color: AppConstants.primaryBlue),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+
+                                  TextFormField(
+                                    controller: _emailController,
+                                    keyboardType: TextInputType.emailAddress,
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppConstants.textDark),
+                                    decoration: _fieldDeco(
+                                      label: 'Email (Opsional)',
+                                      icon: Icons.email_rounded,
+                                      hint: 'umat@catu.id',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+
+                                  // ── 3. DATA KEUMATAN & GEREJA ──
+                                  _buildSectionLabel(
+                                      'DATA KEUMATAN & GEREJA',
+                                      Icons.church_rounded),
+
+                                  _buildHierarchyDropdowns(),
+                                  _buildPositionDropdown(),
+                                  _buildMasaJabatanAndFlagFields(),
+
+                                  const SizedBox(height: 24),
+
+                                  // ── 4. ALAMAT TEMPAT TINGGAL ──
+                                  _buildSectionLabel('ALAMAT TEMPAT TINGGAL',
+                                      Icons.home_rounded),
+
+                                  TextFormField(
+                                    controller: _addressController,
+                                    maxLines: 2,
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppConstants.textDark),
+                                    decoration: _fieldDeco(
+                                      label: 'Alamat Jalan / Rumah',
+                                      icon: Icons.place_rounded,
+                                      hint: 'Jl. Sutera Utama No. 18',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+
+                                  // Dynamic Backend Dropdowns for Provinsi & Kota
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: SearchableSelectField<int>(
+                                          label: 'Provinsi',
+                                          icon: Icons.map_rounded,
+                                          value: _selectedProvinsiId,
+                                          items: _dynamicProvinsiList
+                                              .map((item) => SearchableSelectItem<int>(
+                                                    value: int.parse(item['id'].toString()),
+                                                    label: item['name'].toString(),
+                                                  ))
+                                              .toList(),
+                                          onChanged: (val) {
+                                            if (val != null) _onProvinsiChanged(val);
+                                          },
+                                          emptyMessage: 'Provinsi tidak ditemukan',
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: SearchableSelectField<int>(
+                                          label: 'Kota / Kabupaten',
+                                          icon: Icons.location_city_rounded,
+                                          value: _selectedKabupatenKotaId,
+                                          items: _dynamicKotaList
+                                              .map((item) => SearchableSelectItem<int>(
+                                                    value: int.parse(item['id'].toString()),
+                                                    label: item['name'].toString(),
+                                                  ))
+                                              .toList(),
+                                          onChanged: (val) {
+                                            if (val != null) {
+                                              setState(() => _selectedKabupatenKotaId = val);
+                                            }
+                                          },
+                                          emptyMessage: 'Kota tidak ditemukan pada provinsi ini',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
 
                                   const SizedBox(height: 30),
 
@@ -1051,22 +1265,43 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                                   SizedBox(
                                     height: 52,
                                     child: ElevatedButton(
-                                      onPressed: _isLoading ? null : _handleRegister,
+                                      onPressed:
+                                          _isLoading ? null : _handleRegister,
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppConstants.primaryBlue,
-                                        disabledBackgroundColor: AppConstants.primaryBlue.withOpacity(0.6),
+                                        backgroundColor:
+                                            AppConstants.primaryBlue,
+                                        disabledBackgroundColor: AppConstants
+                                            .primaryBlue
+                                            .withValues(alpha: 0.6),
                                         elevation: 4,
-                                        shadowColor: AppConstants.primaryBlue.withOpacity(0.4),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                        shadowColor: AppConstants.primaryBlue
+                                            .withValues(alpha: 0.4),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(14)),
                                       ),
                                       child: _isLoading
-                                          ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                                          ? const SizedBox(
+                                              height: 22,
+                                              width: 22,
+                                              child: CircularProgressIndicator(
+                                                  color: Colors.white,
+                                                  strokeWidth: 2.5))
                                           : const Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
-                                                Icon(Icons.how_to_reg_rounded, color: Colors.white, size: 20),
+                                                Icon(Icons.how_to_reg_rounded,
+                                                    color: Colors.white,
+                                                    size: 20),
                                                 SizedBox(width: 8),
-                                                Text('DAFTAR AKUN', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.8)),
+                                                Text('DAFTAR AKUN',
+                                                    style: TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.white,
+                                                        letterSpacing: 0.8)),
                                               ],
                                             ),
                                     ),
@@ -1077,7 +1312,10 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Text('Sudah punya akun?', style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                                      Text('Sudah punya akun?',
+                                          style: TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.grey.shade500)),
                                       TextButton(
                                         onPressed: () {
                                           if (Navigator.canPop(context)) {
@@ -1085,14 +1323,20 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                                           } else {
                                             Navigator.pushReplacement(
                                               context,
-                                              FadeSlideRoute(page: LoginScreen()),
+                                              FadeSlideRoute(
+                                                  page: const LoginScreen()),
                                             );
                                           }
                                         },
-                                        style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6)),
+                                        style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6)),
                                         child: const Text(
                                           'Masuk di sini',
-                                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppConstants.primaryBlue),
+                                          style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppConstants.primaryBlue),
                                         ),
                                       ),
                                     ],

@@ -6,7 +6,9 @@ import '../../core/widgets/liquid_bottom_nav_bar.dart';
 import '../orders/create_perminyakan_screen.dart';
 import '../orders/create_kedukaan_screen.dart';
 import '../orders/order_detail_screen.dart';
-import '../chat/chat_screen.dart';
+import '../orders/histori_screen.dart';
+import '../orders/schedule_screen.dart';
+import '../profile/main_menu_screen.dart';
 
 class UmatDashboardView extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -61,6 +63,126 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
         (startDate != null && endDate != null && startDate.isNotEmpty && endDate.isNotEmpty)
             ? '$startDate - $endDate'
             : (startYear != null && endYear != null ? '$startYear - $endYear' : '');
+
+    // ── Histori Tab ──
+    if (_currentNavIndex == 1) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        body: HistoriScreen(
+          orders: widget.orders,
+          userName: userName,
+          onRefresh: widget.onRefresh,
+        ),
+        bottomNavigationBar: LiquidBottomNavBar(
+          selectedIndex: _currentNavIndex,
+          onTabSelected: (index) {
+            setState(() => _currentNavIndex = index);
+          },
+          items: const [
+            LiquidNavItem(
+              icon: Icons.home_outlined,
+              activeIcon: Icons.home_rounded,
+              label: 'Beranda',
+            ),
+            LiquidNavItem(
+              icon: Icons.history_outlined,
+              activeIcon: Icons.history_rounded,
+              label: 'Histori',
+            ),
+            LiquidNavItem(
+              icon: Icons.calendar_today_outlined,
+              activeIcon: Icons.calendar_today_rounded,
+              label: 'Jadwal',
+            ),
+            LiquidNavItem(
+              icon: Icons.menu_outlined,
+              activeIcon: Icons.menu_rounded,
+              label: 'Menu',
+            ),
+          ],
+        ),
+      );
+    }
+
+    // ── Jadwal / Schedule Tab ──
+    if (_currentNavIndex == 2) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        body: ScheduleScreen(
+          orders: widget.orders,
+          userName: userName,
+          onRefresh: widget.onRefresh,
+        ),
+        bottomNavigationBar: LiquidBottomNavBar(
+          selectedIndex: _currentNavIndex,
+          onTabSelected: (index) {
+            setState(() => _currentNavIndex = index);
+          },
+          items: const [
+            LiquidNavItem(
+              icon: Icons.home_outlined,
+              activeIcon: Icons.home_rounded,
+              label: 'Beranda',
+            ),
+            LiquidNavItem(
+              icon: Icons.history_outlined,
+              activeIcon: Icons.history_rounded,
+              label: 'Histori',
+            ),
+            LiquidNavItem(
+              icon: Icons.calendar_today_outlined,
+              activeIcon: Icons.calendar_today_rounded,
+              label: 'Jadwal',
+            ),
+            LiquidNavItem(
+              icon: Icons.menu_outlined,
+              activeIcon: Icons.menu_rounded,
+              label: 'Menu',
+            ),
+          ],
+        ),
+      );
+    }
+
+    // ── Menu Utama Tab ──
+    if (_currentNavIndex == 3) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        body: MainMenuScreen(
+          user: widget.user,
+          onRefresh: widget.onRefresh,
+          onLogout: widget.onLogout,
+        ),
+        bottomNavigationBar: LiquidBottomNavBar(
+          selectedIndex: _currentNavIndex,
+          onTabSelected: (index) {
+            setState(() => _currentNavIndex = index);
+          },
+          items: const [
+            LiquidNavItem(
+              icon: Icons.home_outlined,
+              activeIcon: Icons.home_rounded,
+              label: 'Beranda',
+            ),
+            LiquidNavItem(
+              icon: Icons.history_outlined,
+              activeIcon: Icons.history_rounded,
+              label: 'Histori',
+            ),
+            LiquidNavItem(
+              icon: Icons.calendar_today_outlined,
+              activeIcon: Icons.calendar_today_rounded,
+              label: 'Jadwal',
+            ),
+            LiquidNavItem(
+              icon: Icons.menu_outlined,
+              activeIcon: Icons.menu_rounded,
+              label: 'Menu',
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -362,7 +484,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                     // Horizontal Cards
                     SizedBox(
                       height: 250,
-                      child: widget.orders.isEmpty
+                      child: _displayCardItems.isEmpty
                           ? Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 20),
@@ -370,12 +492,12 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.inbox_rounded,
+                                    Icon(Icons.event_available_rounded,
                                         size: 48,
                                         color: Colors.grey.shade300),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'Belum ada permintaan pelayanan.\nTap "Buat Permintaan" untuk membuat baru.',
+                                      'Tidak ada jadwal pelayanan aktif saat ini.\nJadwal terdahulu dapat dilihat di tab Histori.',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                           color: Colors.grey.shade500,
@@ -428,9 +550,6 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
         selectedIndex: _currentNavIndex,
         onTabSelected: (index) {
           setState(() => _currentNavIndex = index);
-          if (index == 3) {
-            _showMenuBottomSheet();
-          }
         },
         items: const [
           LiquidNavItem(
@@ -458,75 +577,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     );
   }
 
-  void _showMenuBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        final userName =
-            widget.user['fullName'] ?? widget.user['full_name'] ?? 'Umat';
-        final phone =
-            widget.user['phoneNumber'] ?? widget.user['phone_number'] ?? '';
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2)),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const CircleAvatar(
-                    backgroundColor: Color(0xFF1E5399),
-                    child: Icon(Icons.person, color: Colors.white)),
-                title: Text(userName,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(phone),
-              ),
-              const Divider(height: 24),
-              ListTile(
-                leading: const Icon(Icons.add_circle_outline_rounded,
-                    color: Color(0xFF1E5399)),
-                title: const Text('Buat Permintaan Pelayanan'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showServiceSelectionModal();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.refresh_rounded,
-                    color: Color(0xFF1E5399)),
-                title: const Text('Refresh Data Pelayanan'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  widget.onRefresh();
-                },
-              ),
-              ListTile(
-                leading:
-                    const Icon(Icons.logout_rounded, color: Colors.redAccent),
-                title: const Text('Keluar (Logout)',
-                    style: TextStyle(
-                        color: Colors.redAccent,
-                        fontWeight: FontWeight.bold)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  widget.onLogout();
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+
 
   void _showServiceSelectionModal() {
     showModalBottomSheet(
@@ -687,7 +738,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
   List<DashboardCardItem> get _displayCardItems {
     final List<DashboardCardItem> cardList = [];
 
-    for (final order in widget.orders) {
+    for (final order in widget.orders.where((o) => o.isActiveDashboardOrder)) {
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
           String scheduleStr = item.scheduledDate;

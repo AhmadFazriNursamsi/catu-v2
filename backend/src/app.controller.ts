@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Query, OnModuleInit, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Put, Body, Get, Param, Query, OnModuleInit, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -12,7 +12,7 @@ import {
   ApproveUserResponseDto,
   RoleCodeEnum,
 } from './auth.dto';
-import { CreateOrderDto, RespondOrderAssignmentDto, SendChatMessageDto } from './orders.dto';
+import { CreateOrderDto, RespondOrderAssignmentDto, SendChatMessageDto, UpdateUserProfileDto } from './orders.dto';
 
 @ApiTags('Auth & Registration')
 @Controller('auth')
@@ -27,9 +27,27 @@ export class AuthController implements OnModuleInit {
         ADD COLUMN IF NOT EXISTS jabatan_end_year INT,
         ADD COLUMN IF NOT EXISTS jabatan_start_date VARCHAR(20),
         ADD COLUMN IF NOT EXISTS jabatan_end_date VARCHAR(20),
-        ADD COLUMN IF NOT EXISTS is_jabatan_active BOOLEAN DEFAULT FALSE;
+        ADD COLUMN IF NOT EXISTS is_jabatan_active BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS birth_date VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS address TEXT,
+        ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
         ALTER TABLE orders ADD COLUMN IF NOT EXISTS attachment_url TEXT;
+      `);
+
+      for (const val of ['CONFIRMED', 'DONE', 'CLOSE', 'FAIL']) {
+        try {
+          await this.dataSource.query(`ALTER TYPE order_status_enum ADD VALUE IF NOT EXISTS '${val}'`);
+        } catch (_) {}
+      }
+
+      await this.dataSource.query(`
+        UPDATE orders SET status = 'CONFIRMED' WHERE status::text = 'ACCEPTED';
+        UPDATE orders SET status = 'DONE' WHERE status::text = 'SELESAI' OR status::text = 'COMPLETED';
+        UPDATE orders SET status = 'FAIL' WHERE status::text = 'REJECTED';
+        UPDATE orders SET status = 'FAIL' WHERE status::text = 'PENDING' AND (scheduled_date < CURRENT_DATE);
+
+        -- Cleanup existing non-Romo profiles so romo_position is NULL
 
         -- Cleanup existing non-Romo profiles so romo_position is NULL
         UPDATE user_profiles 
@@ -568,12 +586,14 @@ export class AuthController implements OnModuleInit {
 
       // 2. Insert ke user_profiles
       await queryRunner.query(
-        `INSERT INTO user_profiles (user_id, full_name, email, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, pengurus_position, romo_position, jabatan_start_year, jabatan_end_year, jabatan_start_date, jabatan_end_date, is_jabatan_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+        `INSERT INTO user_profiles (user_id, full_name, email, birth_date, address, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, pengurus_position, romo_position, jabatan_start_year, jabatan_end_year, jabatan_start_date, jabatan_end_date, is_jabatan_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
         [
           authUser.id,
           dto.fullName,
           dto.email || null,
+          dto.birthDate || null,
+          dto.address || null,
           dto.keuskupanId || null,
           dto.parokiId || null,
           dto.wilayahId || null,
@@ -667,7 +687,7 @@ export class AuthController implements OnModuleInit {
   async login(@Body() dto: LoginDto) {
     const users = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.password_hash, u.account_status, r.code as role_code, 
-              p.full_name, p.email, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id, kk.provinsi_id,
+              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id, kk.provinsi_id,
               k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, kk.name as kota_name,
               p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
        FROM auth_users u 
@@ -709,6 +729,9 @@ export class AuthController implements OnModuleInit {
         fullName: user.full_name,
         phoneNumber: user.phone_number,
         email: user.email,
+        birthDate: user.birth_date,
+        address: user.address,
+        avatarUrl: user.avatar_url,
         roleCode: user.role_code,
         accountStatus: user.account_status,
         keuskupanId: user.keuskupan_id,
@@ -730,6 +753,169 @@ export class AuthController implements OnModuleInit {
         jabatanEndDate: user.jabatan_end_date,
         isJabatanActive: user.is_jabatan_active !== null ? user.is_jabatan_active : false,
       },
+    };
+  }
+
+  @Get('profile/:userId')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Ambil Detail Profil User Lengkap dari Database' })
+  async getProfile(@Param('userId') userId: string) {
+    const uid = parseInt(userId);
+    if (isNaN(uid)) throw new BadRequestException('User ID tidak valid');
+
+    const users = await this.dataSource.query(
+      `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.role_id, r.code as role_code,
+              p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+              p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id,
+              p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year,
+              p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active,
+              k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name,
+              kk.name as kota_name, prov.name as provinsi_name, prov.id as provinsi_id
+       FROM auth_users u
+       JOIN user_profiles p ON p.user_id = u.id
+       JOIN roles r ON u.role_id = r.id
+       LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
+       LEFT JOIN paroki par ON p.paroki_id = par.id
+       LEFT JOIN wilayah w ON p.wilayah_id = w.id
+       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+       LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
+       LEFT JOIN provinsi prov ON kk.provinsi_id = prov.id
+       WHERE u.id = $1`,
+      [uid],
+    );
+
+    if (!users.length) {
+      throw new BadRequestException('User tidak ditemukan');
+    }
+
+    const user = users[0];
+    return {
+      statusCode: 200,
+      user: {
+        id: user.id,
+        uuid: user.uuid,
+        fullName: user.full_name,
+        phoneNumber: user.phone_number,
+        email: user.email || '',
+        birthDate: user.birth_date || '',
+        address: user.address || '',
+        avatarUrl: user.avatar_url || '',
+        roleCode: user.role_code,
+        accountStatus: user.account_status,
+        keuskupanId: user.keuskupan_id,
+        parokiId: user.paroki_id,
+        wilayahId: user.wilayah_id,
+        lingkunganId: user.lingkungan_id,
+        kabupatenKotaId: user.kabupaten_kota_id,
+        provinsiId: user.provinsi_id,
+        keuskupanName: user.keuskupan_name || '',
+        parokiName: user.paroki_name || '',
+        wilayahName: user.wilayah_name || '',
+        lingkunganName: user.lingkungan_name || '',
+        kabupatenKotaName: user.kota_name || '',
+        provinsiName: user.provinsi_name || '',
+        pengurusPosition: user.pengurus_position,
+        romoPosition: user.romo_position,
+        jabatanStartYear: user.jabatan_start_year,
+        jabatanEndYear: user.jabatan_end_year,
+        jabatanStartDate: user.jabatan_start_date,
+        jabatanEndDate: user.jabatan_end_date,
+        isJabatanActive: user.is_jabatan_active !== null ? user.is_jabatan_active : false,
+      },
+    };
+  }
+
+  @Put('profile/:userId')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Ubah Data Profil User & Domisili Keumatan' })
+  async updateProfile(
+    @Param('userId') userId: string,
+    @Body() dto: UpdateUserProfileDto,
+  ) {
+    const uid = parseInt(userId);
+    if (isNaN(uid)) throw new BadRequestException('User ID tidak valid');
+
+    if (dto.phoneNumber) {
+      await this.dataSource.query(
+        `UPDATE auth_users SET phone_number = $1 WHERE id = $2`,
+        [dto.phoneNumber, uid],
+      );
+    }
+
+    const fields: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (dto.fullName !== undefined) {
+      fields.push(`full_name = $${idx++}`);
+      values.push(dto.fullName);
+    }
+    if (dto.email !== undefined) {
+      fields.push(`email = $${idx++}`);
+      values.push(dto.email);
+    }
+    if (dto.birthDate !== undefined) {
+      fields.push(`birth_date = $${idx++}`);
+      values.push(dto.birthDate);
+    }
+    if (dto.address !== undefined) {
+      fields.push(`address = $${idx++}`);
+      values.push(dto.address);
+    }
+    if (dto.avatarUrl !== undefined) {
+      fields.push(`avatar_url = $${idx++}`);
+      values.push(dto.avatarUrl);
+    }
+    if (dto.keuskupanId !== undefined) {
+      fields.push(`keuskupan_id = $${idx++}`);
+      values.push(dto.keuskupanId);
+    }
+    if (dto.parokiId !== undefined) {
+      fields.push(`paroki_id = $${idx++}`);
+      values.push(dto.parokiId);
+    }
+    if (dto.wilayahId !== undefined) {
+      fields.push(`wilayah_id = $${idx++}`);
+      values.push(dto.wilayahId);
+    }
+    if (dto.lingkunganId !== undefined) {
+      fields.push(`lingkungan_id = $${idx++}`);
+      values.push(dto.lingkunganId);
+    }
+    if (dto.kabupatenKotaId !== undefined) {
+      fields.push(`kabupaten_kota_id = $${idx++}`);
+      values.push(dto.kabupatenKotaId);
+    }
+
+    if (fields.length > 0) {
+      fields.push(`updated_at = NOW()`);
+      values.push(uid);
+      await this.dataSource.query(
+        `UPDATE user_profiles SET ${fields.join(', ')} WHERE user_id = $${idx}`,
+        values,
+      );
+    }
+
+    const updated = await this.dataSource.query(
+      `SELECT u.id, u.phone_number, p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+              p.pengurus_position, u.account_status,
+              k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name,
+              kk.name as kota_name, prov.name as provinsi_name
+       FROM auth_users u
+       JOIN user_profiles p ON p.user_id = u.id
+       LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
+       LEFT JOIN paroki par ON p.paroki_id = par.id
+       LEFT JOIN wilayah w ON p.wilayah_id = w.id
+       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+       LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
+       LEFT JOIN provinsi prov ON kk.provinsi_id = prov.id
+       WHERE u.id = $1`,
+      [uid],
+    );
+
+    return {
+      message: 'Profil pengguna berhasil diperbarui!',
+      user: updated[0] || {},
     };
   }
 
@@ -884,6 +1070,13 @@ export class OrdersController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Mendapatkan Daftar Pelayanan / Monitoring Orders dari Database PostgreSQL' })
   async getOrders(@Query('userId') userId?: string) {
+    // Auto-fail PENDING orders whose scheduled date is past (< CURRENT_DATE)
+    await this.dataSource.query(`
+      UPDATE orders 
+      SET status = 'FAIL' 
+      WHERE status = 'PENDING' AND (scheduled_date::date < CURRENT_DATE)
+    `);
+
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, 
              o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, 
@@ -936,7 +1129,7 @@ export class AssignmentsController {
   @Post(':orderId/respond')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Romo Menerima (Accept) atau Menolak (Decline) Tugas Pelayanan',
+    summary: 'Romo mengubah status pelayanan: CONFIRMED | IN_PROGRESS | DONE | CLOSE | FAIL',
   })
   async respondAssignment(
     @Param('orderId') orderId: string,
@@ -944,26 +1137,50 @@ export class AssignmentsController {
   ) {
     const romoId = 2;
 
-    if (dto.status === 'ACCEPTED') {
-      await this.dataSource.query(`UPDATE orders SET status = 'ACCEPTED' WHERE id = $1`, [orderId]);
+    const validStatuses = ['CONFIRMED', 'IN_PROGRESS', 'DONE', 'CLOSE', 'FAIL'];
+    const newStatus = dto.status === 'ACCEPTED' ? 'CONFIRMED' : dto.status;
 
-      const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
-      if (groups.length > 0) {
-        const groupId = groups[0].id;
+    if (!validStatuses.includes(newStatus) && newStatus !== 'DECLINED') {
+      return { message: 'Status tidak valid', status: newStatus };
+    }
+
+    if (newStatus === 'DECLINED') {
+      return {
+        message: `Romo (ID ${romoId}) menolak tugas pelayanan untuk Order ID ${orderId}`,
+        status: 'DECLINED',
+      };
+    }
+
+    await this.dataSource.query(`UPDATE orders SET status = $1 WHERE id = $2`, [newStatus, orderId]);
+
+    const statusMessages: Record<string, string> = {
+      CONFIRMED: 'Romo Fajar Pr telah mengkonfirmasi kehadiran dan bergabung dalam grup chat.',
+      IN_PROGRESS: 'Romo Fajar Pr sedang menjalankan pelayanan.',
+      DONE: 'Romo Fajar Pr telah menyelesaikan pelayanan. Terima kasih.',
+      CLOSE: 'Romo Fajar Pr menutup pelayanan tanpa penyelesaian.',
+      FAIL: 'Tidak ada Romo yang menerima pelayanan ini hingga melewati tanggal pelayanan.',
+    };
+
+    const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
+    if (groups.length > 0) {
+      const groupId = groups[0].id;
+
+      if (newStatus === 'CONFIRMED') {
         await this.dataSource.query(
           `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'ROMO') ON CONFLICT DO NOTHING`,
           [groupId, romoId],
         );
-        await this.dataSource.query(
-          `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', 'Romo Fajar Pr telah menyetujui pelayanan dan bergabung dalam grup chat.')`,
-          [groupId],
-        );
       }
+
+      await this.dataSource.query(
+        `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
+        [groupId, statusMessages[newStatus] || `Status diubah menjadi ${newStatus}`],
+      );
     }
 
     return {
-      message: `Romo (ID ${romoId}) telah ${dto.status} tugas pelayanan untuk Order ID ${orderId}`,
-      status: dto.status,
+      message: `Order ID ${orderId} status diperbarui menjadi ${newStatus}`,
+      status: newStatus,
     };
   }
 }

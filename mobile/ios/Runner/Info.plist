@@ -81,5 +81,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Aplikasi CATU memerlukan akses ke kamera untuk mengambil foto profil pengguna dan lampiran misa.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Aplikasi CATU memerlukan akses ke galeri foto untuk memilih foto profil pengguna.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Aplikasi CATU memerlukan izin untuk menyimpan foto ke galeri.</string>
 </dict>
 </plist>

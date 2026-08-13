@@ -112,14 +112,74 @@ export class CreateOrderDto {
 }
 
 export class RespondOrderAssignmentDto {
-  @ApiProperty({ example: 'ACCEPTED', enum: ['ACCEPTED', 'DECLINED'], description: 'Respon Romo terhadap tugas' })
-  @IsEnum(['ACCEPTED', 'DECLINED'])
-  status: 'ACCEPTED' | 'DECLINED';
+  @ApiProperty({ 
+    example: 'CONFIRMED', 
+    enum: ['CONFIRMED', 'IN_PROGRESS', 'DONE', 'CLOSE', 'FAIL', 'DECLINED'], 
+    description: 'Status pelayanan: CONFIRMED (terima), IN_PROGRESS (berlangsung), DONE (selesai), CLOSE (ditutup), FAIL (gagal), DECLINED (tolak)' 
+  })
+  @IsEnum(['CONFIRMED', 'IN_PROGRESS', 'DONE', 'CLOSE', 'FAIL', 'DECLINED', 'ACCEPTED'])
+  status: 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CLOSE' | 'FAIL' | 'DECLINED' | 'ACCEPTED';
 
   @ApiPropertyOptional({ example: 'Ada bentrok jadwal misa paroki', description: 'Alasan penolakan dari Romo' })
   @IsString()
   @IsOptional()
   declineReason?: string;
+}
+
+export class UpdateUserProfileDto {
+  @ApiPropertyOptional({ example: 'Kevin Antaratama', description: 'Nama lengkap' })
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+
+  @ApiPropertyOptional({ example: '081234567890', description: 'Nomor Handphone' })
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
+
+  @ApiPropertyOptional({ example: 'kevin@catu.id', description: 'Email' })
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @ApiPropertyOptional({ example: '01/01/1990', description: 'Tanggal Lahir' })
+  @IsOptional()
+  @IsString()
+  birthDate?: string;
+
+  @ApiPropertyOptional({ example: 'Jl. Sutera Utama No. 18', description: 'Alamat' })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiPropertyOptional({ example: 'https://example.com/avatar.jpg', description: 'URL Foto Profil' })
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string;
+
+  @ApiPropertyOptional({ example: 1, description: 'ID Keuskupan' })
+  @IsOptional()
+  keuskupanId?: number;
+
+  @ApiPropertyOptional({ example: 1, description: 'ID Paroki' })
+  @IsOptional()
+  parokiId?: number;
+
+  @ApiPropertyOptional({ example: 1, description: 'ID Wilayah' })
+  @IsOptional()
+  wilayahId?: number;
+
+  @ApiPropertyOptional({ example: 1, description: 'ID Lingkungan' })
+  @IsOptional()
+  lingkunganId?: number;
+
+  @ApiPropertyOptional({ example: 3175, description: 'ID Kabupaten/Kota' })
+  @IsOptional()
+  kabupatenKotaId?: number;
+
+  @ApiPropertyOptional({ example: true, description: 'Kirim notifikasi ke Ketua Lingkungan' })
+  @IsOptional()
+  notifyKetuaLingkungan?: boolean;
 }
 
 export class SendChatMessageDto {

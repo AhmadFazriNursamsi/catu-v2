@@ -1,0 +1,1119 @@
+// CATU — Halaman Menu Utama & Akun (Main Menu Screen)
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import '../../core/services/api_service.dart';
+import 'edit_profile_screen.dart';
+
+class MainMenuScreen extends StatefulWidget {
+  final Map<String, dynamic> user;
+  final VoidCallback onRefresh;
+  final VoidCallback onLogout;
+
+  const MainMenuScreen({
+    Key? key,
+    required this.user,
+    required this.onRefresh,
+    required this.onLogout,
+  }) : super(key: key);
+
+  @override
+  State<MainMenuScreen> createState() => _MainMenuScreenState();
+}
+
+class _MainMenuScreenState extends State<MainMenuScreen>
+    with SingleTickerProviderStateMixin {
+  late Map<String, dynamic> _userData;
+  bool _isAkunExpanded = true;
+  late AnimationController _animController;
+  late Animation<double> _fadeIn;
+
+  @override
+  void initState() {
+    super.initState();
+    _userData = Map<String, dynamic>.from(widget.user);
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _fadeIn = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _animController.forward();
+
+    _fetchFreshUser();
+  }
+
+  Future<void> _fetchFreshUser() async {
+    try {
+      final userId = _userData['id'] ?? _userData['user_id'] ?? 1;
+      final response = await http.get(
+        Uri.parse('${ApiService.baseUrl}/auth/profile/$userId'),
+      );
+      if (response.statusCode == 200) {
+        final resData = jsonDecode(response.body);
+        if (resData['user'] != null && mounted) {
+          setState(() {
+            _userData = Map<String, dynamic>.from(resData['user']);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching fresh user in MainMenuScreen: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  // ── User Data Extractors ──────────────────────────────────────────────────
+  String get _userName =>
+      _userData['fullName'] ?? _userData['full_name'] ?? 'Umat';
+
+  String get _phoneNumber =>
+      _userData['phoneNumber'] ?? _userData['phone_number'] ?? '-';
+
+  String get _email => _userData['email'] ?? 'umat@catu.id';
+
+  String get _pengurusPos =>
+      _userData['pengurusPosition'] ?? _userData['pengurus_position'] ?? '';
+
+  String get _accountStatus =>
+      _userData['accountStatus'] ?? _userData['account_status'] ?? 'APPROVED';
+
+  bool get _isApproved => _accountStatus == 'APPROVED';
+
+  String get _keuskupan =>
+      _userData['keuskupanName'] ?? _userData['keuskupan_name'] ?? 'Keuskupan Agung Jakarta';
+
+  String get _paroki =>
+      _userData['parokiName'] ?? _userData['paroki_name'] ?? 'Paroki Alam Sutera - St. Laurensius';
+
+  String get _lingkungan =>
+      _userData['lingkunganName'] ?? _userData['lingkungan_name'] ?? 'Lingkungan St. Angela Merici';
+
+  String get _positionTitle {
+    if (_pengurusPos == 'KETUA') return 'Umat — Ketua Lingkungan';
+    if (_pengurusPos == 'WAKIL') return 'Umat — Wakil Ketua';
+    if (_pengurusPos == 'SEKRETARIS') return 'Umat — Sekretaris';
+    return 'Umat (Anggota Lingkungan)';
+  }
+
+  String get _periodeText {
+    final start = _userData['jabatanStartDate'] ?? _userData['jabatan_start_date'];
+    final end = _userData['jabatanEndDate'] ?? _userData['jabatan_end_date'];
+    if (start != null && end != null && start.toString().isNotEmpty) {
+      return '$start - $end';
+    }
+    return '2024 - 2027';
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        body: FadeTransition(
+          opacity: _fadeIn,
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // ── Header Bar ──
+              SliverToBoxAdapter(child: _buildHeaderBar()),
+
+              // ── User Profile Header Card ──
+              SliverToBoxAdapter(child: _buildProfileCard()),
+
+              // ── Menu List Container ──
+              SliverToBoxAdapter(child: _buildMenuList()),
+
+              // ── Footer Copyright ──
+              SliverToBoxAdapter(child: _buildFooterInfo()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Header Bar ────────────────────────────────────────────────────────────
+
+  Widget _buildHeaderBar() {
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.fromLTRB(
+          20, MediaQuery.of(context).padding.top + 14, 20, 14),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Menu Utama',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF0F172A),
+                letterSpacing: -0.4,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              widget.onRefresh();
+            },
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.refresh_rounded,
+                  size: 19, color: Color(0xFF334155)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Profile Header Card ────────────────────────────────────────────────────
+
+  Widget _buildProfileCard() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Profile Avatar with Camera Edit Badge
+          Stack(
+            children: [
+              Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF1D4ED8).withValues(alpha: 0.1),
+                  border: Border.all(color: const Color(0xFF1D4ED8), width: 2.5),
+                  image: DecorationImage(
+                    image: _getAvatarImageProvider(),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: _navigateToEditProfile,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1D4ED8),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded,
+                        size: 14, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // User Name
+          Text(
+            _userName,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+              letterSpacing: -0.3,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+
+          // Position Badge
+          Text(
+            _positionTitle,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1D4ED8),
+            ),
+            textAlign: TextAlign.center,
+          ),
+
+          const SizedBox(height: 10),
+
+          // Status & Parish Info Pills Row
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              // Verification Status Pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: _isApproved
+                      ? const Color(0xFF059669).withValues(alpha: 0.1)
+                      : const Color(0xFFD97706).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isApproved
+                          ? Icons.check_circle_rounded
+                          : Icons.hourglass_top_rounded,
+                      size: 12,
+                      color: _isApproved
+                          ? const Color(0xFF059669)
+                          : const Color(0xFFD97706),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _isApproved ? 'Akun Disetujui' : 'Menunggu Verifikasi',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: _isApproved
+                            ? const Color(0xFF059669)
+                            : const Color(0xFFD97706),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Paroki Pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _paroki,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF475569),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // Ubah Profil Pill Button
+          GestureDetector(
+            onTap: _navigateToEditProfile,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1D4ED8).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF1D4ED8).withValues(alpha: 0.3),
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.edit_rounded, size: 14, color: Color(0xFF1D4ED8)),
+                  SizedBox(width: 6),
+                  Text(
+                    'Ubah Profil',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1D4ED8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToEditProfile() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(
+          user: _userData,
+          onSaved: widget.onRefresh,
+        ),
+      ),
+    );
+    _fetchFreshUser();
+  }
+
+  ImageProvider _getAvatarImageProvider() {
+    final avatar = _userData['avatarUrl'] ?? _userData['avatar_url'];
+    if (avatar == null || avatar.toString().isEmpty) {
+      return const AssetImage('assets/images/church_1.jpg');
+    }
+    final urlStr = avatar.toString();
+    if (urlStr.startsWith('data:image')) {
+      try {
+        final base64String = urlStr.split(',').last;
+        return MemoryImage(base64Decode(base64String));
+      } catch (_) {
+        return const AssetImage('assets/images/church_1.jpg');
+      }
+    }
+    if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) {
+      return NetworkImage(urlStr);
+    }
+    if (File(urlStr).existsSync()) {
+      return FileImage(File(urlStr));
+    }
+    return const AssetImage('assets/images/church_1.jpg');
+  }
+
+  // ── Menu List Section ──────────────────────────────────────────────────────
+
+  Widget _buildMenuList() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // ── Section 1: 👤 AKUN (Expandable Accordion) ──
+          _buildAccordionHeader(
+            icon: Icons.account_circle_rounded,
+            title: 'Akun',
+            isExpanded: _isAkunExpanded,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _isAkunExpanded = !_isAkunExpanded);
+            },
+          ),
+
+          if (_isAkunExpanded) ...[
+            _buildSubMenuItem(
+              title: 'Profil Saya',
+              subtitle: 'Data diri, alamat & kontak',
+              onTap: _navigateToEditProfile,
+            ),
+            _buildSubMenuItem(
+              title: 'Verifikasi Data & Jabatan',
+              subtitle: 'Status kepengurusan lingkungan & paroki',
+              onTap: _showVerificationModal,
+            ),
+            _buildSubMenuItem(
+              title: 'Privasi & Keamanan',
+              subtitle: 'Ubah kata sandi & akses',
+              onTap: () => _showToast('Fitur Pengaturan Keamanan Aktif'),
+            ),
+            _buildSubMenuItem(
+              title: 'Akun Tertaut',
+              subtitle: 'WhatsApp & SSO Paroki',
+              onTap: () => _showToast('Nomor WhatsApp aktif dan terhubung'),
+            ),
+            const SizedBox(height: 6),
+          ],
+
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+          // ── Section 2: ⚙️ SETELAN ──
+          _buildMenuItem(
+            icon: Icons.settings_rounded,
+            title: 'Setelan',
+            subtitle: 'Notifikasi, bahasa & tampilan',
+            onTap: _showSettingsModal,
+          ),
+
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+          // ── Section 3: 🎧 PUSAT BANTUAN ──
+          _buildMenuItem(
+            icon: Icons.headset_mic_rounded,
+            title: 'Pusat Bantuan',
+            subtitle: 'Kontak sekretariat paroki & FAQ',
+            onTap: _showHelpModal,
+          ),
+
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+          // ── Section 4: ℹ️ TENTANG CATU ──
+          _buildMenuItem(
+            icon: Icons.info_outline_rounded,
+            title: 'Tentang Catu',
+            subtitle: 'Versi aplikasi v2.4.0 & lisensi',
+            onTap: _showAboutModal,
+          ),
+
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+          // ── Section 5: 🚪 KELUAR ──
+          _buildMenuItem(
+            icon: Icons.logout_rounded,
+            title: 'Keluar',
+            subtitle: 'Keluar dari akun CATU',
+            titleColor: const Color(0xFFDC2626),
+            iconColor: const Color(0xFFDC2626),
+            iconBgColor: const Color(0xFFDC2626).withValues(alpha: 0.08),
+            onTap: _confirmLogout,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Accordion Header ──────────────────────────────────────────────────────
+
+  Widget _buildAccordionHeader({
+    required IconData icon,
+    required String title,
+    required bool isExpanded,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1D4ED8).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 21, color: const Color(0xFF1D4ED8)),
+            ),
+            const SizedBox(width: 14),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+            const Spacer(),
+            AnimatedRotation(
+              turns: isExpanded ? 0.5 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 24,
+                color: Color(0xFF1D4ED8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Main Menu Item ─────────────────────────────────────────────────────────
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    Color titleColor = const Color(0xFF0F172A),
+    Color iconColor = const Color(0xFF1D4ED8),
+    Color? iconBgColor,
+  }) {
+    final bg = iconBgColor ?? const Color(0xFF1D4ED8).withValues(alpha: 0.1);
+
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 20, color: iconColor),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                size: 20, color: Color(0xFFCBD5E1)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Sub Menu Item (Indented under Akun) ───────────────────────────────────
+
+  Widget _buildSubMenuItem({
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(72, 10, 20, 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                size: 18, color: Color(0xFFCBD5E1)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Modals & Dialogs ──────────────────────────────────────────────────────
+
+  void _showProfileModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+              24, 16, 24, MediaQuery.of(ctx).padding.bottom + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Profil Saya',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildDetailRow('Nama Lengkap', _userName),
+              _buildDetailRow('Nomor HP', _phoneNumber),
+              _buildDetailRow('Email', _email),
+              _buildDetailRow('Keuskupan', _keuskupan),
+              _buildDetailRow('Paroki', _paroki),
+              _buildDetailRow('Lingkungan', _lingkungan),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1D4ED8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Tutup',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showVerificationModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+              24, 16, 24, MediaQuery.of(ctx).padding.bottom + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Verifikasi Data & Jabatan',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildDetailRow('Status Akun', _isApproved ? 'Disetujui' : 'Menunggu Verifikasi'),
+              _buildDetailRow('Jabatan Pengurus', _positionTitle),
+              _buildDetailRow('Masa Jabatan', _periodeText),
+              _buildDetailRow('Verifikator', 'Sekretariat Paroki / Dewan Paroki'),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1D4ED8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Tutup',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSettingsModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+              24, 16, 24, MediaQuery.of(ctx).padding.bottom + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Setelan Aplikasi',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildSwitchRow('Notifikasi Pelayanan', true),
+              _buildSwitchRow('Notifikasi Chat Romo', true),
+              _buildDetailRow('Bahasa', 'Bahasa Indonesia'),
+              _buildDetailRow('Tema Aplikasi', 'Terang (Otomatis)'),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1D4ED8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Simpan & Tutup',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showHelpModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+              24, 16, 24, MediaQuery.of(ctx).padding.bottom + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Pusat Bantuan',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.phone_rounded, color: Color(0xFF1D4ED8)),
+                title: const Text('Sekretariat Paroki'),
+                subtitle: const Text('Hubungi via Telepon / WhatsApp'),
+                onTap: () => _showToast('Menghubungi Sekretariat Paroki...'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.help_center_rounded, color: Color(0xFF1D4ED8)),
+                title: const Text('Panduan Pengajuan Pelayanan'),
+                subtitle: const Text('Langkah pengajuan Perminyakan & Kedukaan'),
+                onTap: () => _showToast('Membuka Panduan CATU...'),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1D4ED8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Tutup',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAboutModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+              24, 16, 24, MediaQuery.of(ctx).padding.bottom + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Icon(Icons.church_rounded, size: 48, color: Color(0xFF1D4ED8)),
+              const SizedBox(height: 10),
+              const Text(
+                'CATU Mobile',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Sistem Pelayanan Sakramen Gereja Katolik',
+                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 16),
+              _buildDetailRow('Versi Aplikasi', 'v2.4.0 (Build 108)'),
+              _buildDetailRow('Pengembang', 'Tim Antigravity / CATU Tech'),
+              _buildDetailRow('Hak Cipta', '© 2026 CATU. All Rights Reserved.'),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1D4ED8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Tutup',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmLogout() {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.logout_rounded, color: Color(0xFFDC2626)),
+              SizedBox(width: 10),
+              Text('Konfirmasi Keluar',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            ],
+          ),
+          content: const Text(
+            'Apakah Anda yakin ingin keluar dari akun CATU?',
+            style: TextStyle(fontSize: 14, color: Color(0xFF475569)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Batal',
+                  style: TextStyle(
+                      color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                widget.onLogout();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Ya, Keluar',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ── Sub-widgets ────────────────────────────────────────────────────────────
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+          Flexible(
+            child: Text(
+              value,
+              style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A)),
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSwitchRow(String label, bool value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: const TextStyle(fontSize: 13.5, color: Color(0xFF0F172A))),
+          Switch.adaptive(
+            value: value,
+            activeColor: const Color(0xFF1D4ED8),
+            onChanged: (val) {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooterInfo() {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          const Text(
+            'CATU Mobile v2.4.0',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF94A3B8),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '© 2026 Gereja Katolik. All Rights Reserved.',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade400,
+            ),
+          ),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  void _showToast(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}

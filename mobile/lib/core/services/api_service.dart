@@ -34,10 +34,14 @@ class ApiService {
     required String phoneNumber,
     required String password,
     required String roleCode,
+    String? email,
+    String? birthDate,
+    String? address,
     int? keuskupanId,
     int? parokiId,
     int? wilayahId,
     int? lingkunganId,
+    int? kabupatenKotaId,
     int? ordoId,
     String? pengurusPosition,
     String? romoPosition,
@@ -55,10 +59,14 @@ class ApiService {
         'roleCode': roleCode,
       };
 
+      if (email != null && email.isNotEmpty) payload['email'] = email;
+      if (birthDate != null && birthDate.isNotEmpty) payload['birthDate'] = birthDate;
+      if (address != null && address.isNotEmpty) payload['address'] = address;
       if (keuskupanId != null) payload['keuskupanId'] = keuskupanId;
       if (parokiId != null) payload['parokiId'] = parokiId;
       if (wilayahId != null) payload['wilayahId'] = wilayahId;
       if (lingkunganId != null) payload['lingkunganId'] = lingkunganId;
+      if (kabupatenKotaId != null) payload['kabupatenKotaId'] = kabupatenKotaId;
       if (ordoId != null) payload['ordoId'] = ordoId;
 
       if (pengurusPosition != null && pengurusPosition.isNotEmpty) {
@@ -117,6 +125,47 @@ class ApiService {
   }
 
   // 1d. Dynamic DB Master Data methods
+  static Future<List<Map<String, dynamic>>> getKeuskupan() => getKeuskupanList();
+  static Future<List<Map<String, dynamic>>> getParoki({int? keuskupanId}) => getParokiList(keuskupanId: keuskupanId);
+  static Future<List<Map<String, dynamic>>> getWilayah({int? parokiId}) => getWilayahList(parokiId: parokiId);
+  static Future<List<Map<String, dynamic>>> getLingkungan({int? wilayahId}) => getLingkunganList(wilayahId: wilayahId);
+  static Future<List<Map<String, dynamic>>> getOrdo() => getOrdoList();
+  static Future<List<Map<String, dynamic>>> getProvinsi() => getProvinsiList();
+  static Future<List<Map<String, dynamic>>> getKabupatenKota({int? provinsiId}) => getKabupatenKotaList(provinsiId: provinsiId);
+
+  static Future<List<Map<String, dynamic>>> getProvinsiList() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/auth/provinsi'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return List<Map<String, dynamic>>.from(data);
+      }
+    } catch (e) {
+      print('Error getProvinsiList: $e');
+    }
+    return [
+      {'id': 31, 'name': 'DKI JAKARTA'},
+      {'id': 36, 'name': 'BANTEN'},
+    ];
+  }
+
+  static Future<List<Map<String, dynamic>>> getKabupatenKotaList({int? provinsiId}) async {
+    try {
+      final url = provinsiId != null ? '$baseUrl/auth/kabupaten-kota?provinsiId=$provinsiId' : '$baseUrl/auth/kabupaten-kota';
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return List<Map<String, dynamic>>.from(data);
+      }
+    } catch (e) {
+      print('Error getKabupatenKotaList: $e');
+    }
+    return [
+      {'id': 3175, 'provinsi_id': 31, 'name': 'JAKARTA TIMUR', 'type': 'KOTA'},
+      {'id': 3173, 'provinsi_id': 31, 'name': 'JAKARTA PUSAT', 'type': 'KOTA'},
+    ];
+  }
+
   static Future<List<Map<String, dynamic>>> getKeuskupanList() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/auth/keuskupan'));
@@ -188,44 +237,6 @@ class ApiService {
       {'id': 1001, 'wilayah_id': 101, 'name': 'Lingkungan St. Agnes 1'},
       {'id': 1002, 'wilayah_id': 101, 'name': 'Lingkungan St. Agnes 2'},
       {'id': 1003, 'wilayah_id': 101, 'name': 'Lingkungan St. Bernadette'},
-    ];
-  }
-
-  static Future<List<Map<String, dynamic>>> getProvinsiList() async {
-    try {
-      final response = await http.get(Uri.parse('$baseUrl/auth/provinsi'));
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data);
-      }
-    } catch (e) {
-      print('Error getProvinsiList: $e');
-    }
-    return [
-      {'id': 31, 'name': 'DKI JAKARTA'},
-      {'id': 36, 'name': 'BANTEN'},
-      {'id': 32, 'name': 'JAWA BARAT'},
-      {'id': 33, 'name': 'JAWA TENGAH'},
-      {'id': 35, 'name': 'JAWA TIMUR'},
-    ];
-  }
-
-  static Future<List<Map<String, dynamic>>> getKabupatenKotaList({int? provinsiId}) async {
-    try {
-      final url = provinsiId != null ? '$baseUrl/auth/kabupaten-kota?provinsiId=$provinsiId' : '$baseUrl/auth/kabupaten-kota';
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data);
-      }
-    } catch (e) {
-      print('Error getKabupatenKotaList: $e');
-    }
-    return [
-      {'id': 3175, 'provinsi_id': 31, 'name': 'KOTA JAKARTA TIMUR'},
-      {'id': 3173, 'provinsi_id': 31, 'name': 'KOTA JAKARTA PUSAT'},
-      {'id': 3174, 'provinsi_id': 31, 'name': 'KOTA JAKARTA UTARA'},
-      {'id': 3603, 'provinsi_id': 36, 'name': 'KABUPATEN TANGERANG'},
     ];
   }
 

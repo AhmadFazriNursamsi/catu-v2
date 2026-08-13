@@ -36,6 +36,16 @@ export class RegisterUserDto {
   @IsOptional()
   email?: string;
 
+  @ApiPropertyOptional({ example: '01/01/1990', description: 'Tanggal lahir (DD/MM/YYYY)' })
+  @IsString()
+  @IsOptional()
+  birthDate?: string;
+
+  @ApiPropertyOptional({ example: 'Jl. Sutera Utama No. 18', description: 'Alamat tempat tinggal' })
+  @IsString()
+  @IsOptional()
+  address?: string;
+
   @ApiProperty({ example: 'password123', description: 'Password akun min 6 karakter' })
   @IsString()
   @MinLength(6)
