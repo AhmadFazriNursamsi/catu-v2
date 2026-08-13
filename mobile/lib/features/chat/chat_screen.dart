@@ -160,11 +160,33 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  String _formatDayAndDate(String dateStr) {
+    if (dateStr.isEmpty) return 'Kamis, 13/08/2026';
+    try {
+      final dt = DateTime.parse(dateStr);
+      final days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+      final dayName = days[dt.weekday - 1];
+      final dd = dt.day.toString().padLeft(2, '0');
+      final mm = dt.month.toString().padLeft(2, '0');
+      final yyyy = dt.year.toString();
+      return '$dayName, $dd/$mm/$yyyy';
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
+  String _formatTimeOnly(String timeStr) {
+    if (timeStr.isEmpty) return '13:30';
+    if (timeStr.length >= 5 && timeStr.contains(':')) {
+      return timeStr.substring(0, 5);
+    }
+    return timeStr;
+  }
+
   @override
   Widget build(BuildContext context) {
     final group = widget.groupItem;
     final String mainTitle = group?.displayTitle ?? 'Group Pelayanan';
-    final String serviceDetail = group?.displayServiceDetail ?? 'Detail Pelayanan';
     final String statusText = group?.orderStatus ?? 'CONFIRMED';
 
     return Scaffold(
@@ -185,30 +207,14 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    mainTitle,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0F172A),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    serviceDetail,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              child: Text(
+                mainTitle,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -259,7 +265,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        serviceDetail,
+                        '${_formatDayAndDate(group?.scheduledDate ?? '')} - ${_formatTimeOnly(group?.scheduledTimeStart ?? '')}',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
