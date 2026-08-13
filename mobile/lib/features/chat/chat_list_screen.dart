@@ -314,6 +314,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               groupId: group.groupId,
               orderNumber: group.orderId.toString(),
               userName: _userName,
+              userId: _userId,
               groupItem: group,
             ),
           ),

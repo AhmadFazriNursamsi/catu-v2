@@ -68,6 +68,7 @@ class OrderItem {
 
 class Order {
   final int id;
+  final int? userId;
   final String orderNumber;
   final String categoryName;
   final String urgencyName;
@@ -86,6 +87,7 @@ class Order {
 
   Order({
     required this.id,
+    this.userId,
     required this.orderNumber,
     required this.categoryName,
     required this.urgencyName,
@@ -298,6 +300,9 @@ class Order {
     final rawId = json['id'];
     final parsedId = rawId is int ? rawId : int.tryParse(rawId.toString()) ?? 0;
 
+    final rawUserId = json['user_id'] ?? json['userId'];
+    final parsedUserId = rawUserId is int ? rawUserId : int.tryParse(rawUserId?.toString() ?? '');
+
     // Backend returns scheduled_date as ISO datetime "2026-08-20T00:00:00.000Z"
     String rawDate = json['scheduled_date'] ?? json['scheduledDate'] ?? '';
     if (rawDate.contains('T')) rawDate = rawDate.split('T').first;
@@ -326,6 +331,7 @@ class Order {
 
     return Order(
       id: parsedId,
+      userId: parsedUserId,
       orderNumber: json['order_number'] ?? json['orderNumber'] ?? '',
       categoryName: json['category_name'] ?? json['categoryName'] ?? 'Pelayanan',
       urgencyName: json['urgency_name'] ?? json['urgencyName'] ?? 'Biasa',

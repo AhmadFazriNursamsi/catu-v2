@@ -8,6 +8,7 @@ class ChatScreen extends StatefulWidget {
   final int groupId;
   final String orderNumber;
   final String userName;
+  final int? userId;
   final ChatGroupItem? groupItem;
 
   const ChatScreen({
@@ -15,6 +16,7 @@ class ChatScreen extends StatefulWidget {
     required this.groupId,
     required this.orderNumber,
     required this.userName,
+    this.userId,
     this.groupItem,
   });
 
@@ -115,11 +117,13 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
+    final currentSenderId = widget.userId ?? 1;
+
     _messageController.clear();
     final newMsg = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch,
       chatGroupId: widget.groupId,
-      senderId: 1,
+      senderId: currentSenderId,
       senderName: widget.userName,
       messageType: 'TEXT',
       message: text,
@@ -131,7 +135,12 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     _scrollToBottom();
 
-    await ApiService.sendChatMessage(widget.groupId, 'TEXT', text, senderId: 1);
+    await ApiService.sendChatMessage(
+      widget.groupId,
+      'TEXT',
+      text,
+      senderId: currentSenderId,
+    );
 
     final backendMsgs = await ApiService.getGroupMessages(widget.groupId);
     if (mounted && backendMsgs.isNotEmpty) {
@@ -284,9 +293,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
                       final bool isSystem = msg.messageType == 'SYSTEM_EVENT';
-                      final bool isMe = msg.senderName == widget.userName ||
-                          msg.senderName == 'Umat' ||
-                          (msg.senderId != null && msg.senderId == 1) ||
+                      final currentUserId = widget.userId ?? 1;
+                      final bool isMe = (msg.senderId != null && msg.senderId == currentUserId) ||
+                          msg.senderName == widget.userName ||
                           (!isSystem && msg.senderName == null);
 
                       if (isSystem) {

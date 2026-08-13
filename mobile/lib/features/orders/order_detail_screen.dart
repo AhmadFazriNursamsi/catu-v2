@@ -909,6 +909,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   groupId: order.id,
                   orderNumber: order.orderNumber,
                   userName: widget.userName,
+                  userId: order.userId,
                   groupItem: ChatGroupItem(
                     groupId: order.id,
                     orderId: order.id,
