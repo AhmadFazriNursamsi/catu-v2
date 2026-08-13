@@ -286,14 +286,16 @@ class Order {
   }
 
   /// Belongs to Dashboard (Active Schedule):
-  /// Status is active (PENDING, CONFIRMED, IN_PROGRESS)
+  /// Scheduled date is today or future (>= today) AND status is active (PENDING, CONFIRMED, IN_PROGRESS)
   bool get isActiveDashboardOrder {
     final st = status.toUpperCase();
     if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return false;
+    if (isPastDate) return false;
     return true;
   }
 
   /// Belongs to History (strictly mutually exclusive with Dashboard):
+  /// Scheduled date is smaller than today (< today) OR status is finished (DONE, CLOSE, FAIL)
   bool get isHistoryOrder => !isActiveDashboardOrder;
 
   factory Order.fromJson(Map<String, dynamic> json) {

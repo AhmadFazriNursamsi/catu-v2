@@ -148,7 +148,7 @@ class _HistoriScreenState extends State<HistoriScreen>
   }
 
   List<Order> get _historyBaseOrders {
-    return widget.orders;
+    return widget.orders.where((o) => o.isHistoryOrder).toList();
   }
 
   List<Order> get _filtered {
