@@ -5,6 +5,24 @@ import '../chat/chat_list_screen.dart';
 import '../chat/chat_screen.dart';
 import '../orders/order_detail_screen.dart';
 
+class RomoDashboardCardItem {
+  final Order parentOrder;
+  final String title;
+  final String dateSchedule;
+  final String location;
+  final String penerimaName;
+  final OrderItem? subItem;
+
+  RomoDashboardCardItem({
+    required this.parentOrder,
+    required this.title,
+    required this.dateSchedule,
+    required this.location,
+    required this.penerimaName,
+    this.subItem,
+  });
+}
+
 class RomoDashboardView extends StatefulWidget {
   final Map<String, dynamic> user;
   final List<Order> orders;
@@ -467,13 +485,139 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     );
   }
 
-  Widget _buildTodayScheduleWidget() {
+  bool _isDateBeforeToday(String dateStr) {
+    if (dateStr.isEmpty) return false;
+    try {
+      String cleanStr = dateStr;
+      if (cleanStr.contains('T')) cleanStr = cleanStr.split('T').first;
+      final d = DateTime.parse(cleanStr);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      return DateTime(d.year, d.month, d.day).isBefore(today);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  List<RomoDashboardCardItem> get _displayParishRequestsCardItems {
+    final List<RomoDashboardCardItem> cardList = [];
+
+    for (final order in widget.orders.where((o) => o.isActiveDashboardOrder)) {
+      if (order.items.isNotEmpty) {
+        for (final item in order.items) {
+          if (_isDateBeforeToday(item.scheduledDate)) continue;
+
+          String scheduleStr = item.scheduledDate;
+          if (item.scheduledTimeStart.isNotEmpty) {
+            scheduleStr = '${item.scheduledDate} • ${item.scheduledTimeStart}';
+            if (item.scheduledTimeEnd.isNotEmpty) {
+              scheduleStr += ' - ${item.scheduledTimeEnd} WIB';
+            } else {
+              scheduleStr += ' WIB';
+            }
+          }
+
+          cardList.add(
+            RomoDashboardCardItem(
+              parentOrder: order,
+              title: item.itemName,
+              dateSchedule: scheduleStr,
+              location: item.locationName.isNotEmpty
+                  ? item.locationName
+                  : order.displayAddress,
+              penerimaName: order.penerimaName,
+              subItem: item,
+            ),
+          );
+        }
+      } else {
+        if (_isDateBeforeToday(order.scheduledDate)) continue;
+
+        cardList.add(
+          RomoDashboardCardItem(
+            parentOrder: order,
+            title: order.categoryName,
+            dateSchedule: order.fullScheduleLabel,
+            location: order.displayAddress,
+            penerimaName: order.penerimaName,
+          ),
+        );
+      }
+    }
+
+    cardList.sort((a, b) {
+      final dateA = a.parentOrder.parsedDate ?? DateTime(2099);
+      final dateB = b.parentOrder.parsedDate ?? DateTime(2099);
+      return dateA.compareTo(dateB);
+    });
+
+    return cardList;
+  }
+
+  List<RomoDashboardCardItem> get _displayTodayScheduleCardItems {
     final acceptedOrders = widget.orders.where((o) {
       final st = o.status.toUpperCase();
-      return st == 'CONFIRMED' || st == 'IN_PROGRESS' || st == 'ACCEPTED' || st == 'DONE';
+      return (st == 'CONFIRMED' || st == 'IN_PROGRESS' || st == 'ACCEPTED' || st == 'DONE') && o.isActiveDashboardOrder;
     }).toList();
 
-    if (acceptedOrders.isEmpty) {
+    final List<RomoDashboardCardItem> cardList = [];
+
+    for (final order in acceptedOrders) {
+      if (order.items.isNotEmpty) {
+        for (final item in order.items) {
+          if (_isDateBeforeToday(item.scheduledDate)) continue;
+
+          String scheduleStr = item.scheduledDate;
+          if (item.scheduledTimeStart.isNotEmpty) {
+            scheduleStr = '${item.scheduledDate} • ${item.scheduledTimeStart}';
+            if (item.scheduledTimeEnd.isNotEmpty) {
+              scheduleStr += ' - ${item.scheduledTimeEnd} WIB';
+            } else {
+              scheduleStr += ' WIB';
+            }
+          }
+
+          cardList.add(
+            RomoDashboardCardItem(
+              parentOrder: order,
+              title: item.itemName,
+              dateSchedule: scheduleStr,
+              location: item.locationName.isNotEmpty
+                  ? item.locationName
+                  : order.displayAddress,
+              penerimaName: order.penerimaName,
+              subItem: item,
+            ),
+          );
+        }
+      } else {
+        if (_isDateBeforeToday(order.scheduledDate)) continue;
+
+        cardList.add(
+          RomoDashboardCardItem(
+            parentOrder: order,
+            title: order.categoryName,
+            dateSchedule: order.fullScheduleLabel,
+            location: order.displayAddress,
+            penerimaName: order.penerimaName,
+          ),
+        );
+      }
+    }
+
+    cardList.sort((a, b) {
+      final dateA = a.parentOrder.parsedDate ?? DateTime(2099);
+      final dateB = b.parentOrder.parsedDate ?? DateTime(2099);
+      return dateA.compareTo(dateB);
+    });
+
+    return cardList;
+  }
+
+  Widget _buildTodayScheduleWidget() {
+    final items = _displayTodayScheduleCardItems;
+
+    if (items.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Container(
@@ -503,12 +647,12 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: acceptedOrders.length,
+        itemCount: items.length,
         itemBuilder: (context, index) {
-          final order = acceptedOrders[index];
+          final item = items[index];
           return Padding(
             padding: const EdgeInsets.only(right: 14),
-            child: _buildServiceCardFromOrder(order),
+            child: _buildServiceCardFromCardItem(item),
           );
         },
       ),
@@ -516,7 +660,9 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
   }
 
   Widget _buildParishRequestsWidget() {
-    if (widget.orders.isEmpty) {
+    final items = _displayParishRequestsCardItems;
+
+    if (items.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Container(
@@ -546,19 +692,20 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: widget.orders.length,
+        itemCount: items.length,
         itemBuilder: (context, index) {
-          final order = widget.orders[index];
+          final item = items[index];
           return Padding(
             padding: const EdgeInsets.only(right: 14),
-            child: _buildServiceCardFromOrder(order),
+            child: _buildServiceCardFromCardItem(item),
           );
         },
       ),
     );
   }
 
-  Widget _buildServiceCardFromOrder(Order order) {
+  Widget _buildServiceCardFromCardItem(RomoDashboardCardItem item) {
+    final order = item.parentOrder;
     final bool isConfirmed = order.status.toUpperCase() != 'PENDING';
     final String statusBadge = isConfirmed ? 'Kehadiran Dikonfirmasi' : 'Menunggu Konfirmasi Kehadiran';
 
@@ -585,6 +732,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
             builder: (_) => OrderDetailScreen(
               order: order,
               userName: widget.user['fullName'] ?? widget.user['full_name'] ?? 'Romo',
+              selectedItemTitle: item.title,
               isRomo: true,
               romoId: romoId,
             ),
@@ -597,9 +745,9 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       child: _buildServiceCard(
         statusBadge: statusBadge,
         isConfirmed: isConfirmed,
-        location: order.locationName.isNotEmpty ? order.locationName : order.displayAddress,
-        dateTime: '${order.scheduledDate} • ${order.scheduledTime}',
-        category: order.categoryName,
+        location: item.location.isNotEmpty ? item.location : order.displayAddress,
+        dateTime: item.dateSchedule,
+        category: item.title,
         priorityLabel: order.urgencyName,
         priorityColor: priorityColor,
         priorityIcon: priorityIcon,
@@ -610,6 +758,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
               builder: (_) => OrderDetailScreen(
                 order: order,
                 userName: widget.user['fullName'] ?? widget.user['full_name'] ?? 'Romo',
+                selectedItemTitle: item.title,
                 isRomo: true,
                 romoId: romoId,
               ),
