@@ -1190,16 +1190,57 @@ export class AssignmentsController {
 export class ChatController {
   constructor(@InjectDataSource() private dataSource: DataSource) {}
 
+  private async resolveGroupId(idParam: string): Promise<number> {
+    const num = parseInt(idParam, 10) || 0;
+    if (num <= 0) return 1;
+
+    // 1. Check if chat_groups row exists with id = num or order_id = num
+    const existing = await this.dataSource.query(
+      `SELECT id FROM chat_groups WHERE id = $1 OR order_id = $1 ORDER BY (id = $1) DESC LIMIT 1`,
+      [num],
+    );
+
+    if (existing.length > 0) {
+      return existing[0].id;
+    }
+
+    // 2. If no chat_groups row exists, but an order with id = num exists, auto-create chat_groups for that order
+    const orderCheck = await this.dataSource.query(
+      `SELECT id, category_name FROM orders WHERE id = $1`,
+      [num],
+    );
+
+    if (orderCheck.length > 0) {
+      const order = orderCheck[0];
+      const created = await this.dataSource.query(
+        `INSERT INTO chat_groups (order_id, title, last_message_text)
+         VALUES ($1, $2, $3) RETURNING id`,
+        [order.id, `Group Pelayanan ${order.category_name || 'Umat'}`, 'Grup chat pelayanan telah dibentuk.'],
+      );
+      if (created.length > 0) {
+        await this.dataSource.query(
+          `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
+          [created[0].id, 'Grup chat pelayanan telah otomatis dibentuk oleh sistem.'],
+        );
+        return created[0].id;
+      }
+    }
+
+    return num;
+  }
+
   @Post('groups/:groupId/messages')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Kirim Pesan Chat dalam Group Chat Transaksi (WhatsApp-Style)',
   })
   async sendMessage(
-    @Param('groupId') groupId: string,
+    @Param('groupId') groupIdParam: string,
     @Body() dto: SendChatMessageDto,
   ) {
+    const groupId = await this.resolveGroupId(groupIdParam);
     const senderId = dto.senderId || 1;
+
     const result = await this.dataSource.query(
       `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message, attachment_url)
        VALUES ($1, $2, $3, $4, $5) RETURNING id, chat_group_id, sender_id, message_type, message, attachment_url, created_at`,
@@ -1220,7 +1261,8 @@ export class ChatController {
   @Get('groups/:groupId/messages')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Mendapatkan Riwayat Pesan Chat & Centang Biru Read Receipts dari PostgreSQL' })
-  async getMessages(@Param('groupId') groupId: string) {
+  async getMessages(@Param('groupId') groupIdParam: string) {
+    const groupId = await this.resolveGroupId(groupIdParam);
     return await this.dataSource.query(
       `SELECT m.id, m.chat_group_id, m.sender_id, p.full_name as sender_name, m.message_type, m.message, m.attachment_url, m.created_at
        FROM chat_messages m
@@ -1235,10 +1277,19 @@ export class ChatController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Mendapatkan daftar WhatsApp Group Chat per Pelayanan untuk User' })
   async getUserChatGroups(@Param('userId') userId: string) {
+    // Auto create chat_groups for any order missing a chat group
+    await this.dataSource.query(
+      `INSERT INTO chat_groups (order_id, title, last_message_text)
+       SELECT id, CONCAT('Group Pelayanan ', category_name), 'Grup chat pelayanan aktif'
+       FROM orders
+       WHERE id NOT IN (SELECT order_id FROM chat_groups WHERE order_id IS NOT NULL)`
+    );
+
     const result = await this.dataSource.query(
       `SELECT g.id as group_id, g.order_id, g.title as group_title, g.last_message_text, g.last_message_at,
-              o.title as order_title, o.category as order_category, o.status as order_status,
-              o.scheduled_date, o.scheduled_time_start, o.scheduled_time_end, o.penerima_name,
+              o.category_name as order_title, o.category_name as order_category, o.status as order_status,
+              o.scheduled_date, o.scheduled_time as scheduled_time_start, '' as scheduled_time_end,
+              o.pemohon_name as penerima_name,
               p.full_name as requester_name, p.avatar_url as requester_avatar
        FROM chat_groups g
        JOIN orders o ON g.order_id = o.id
