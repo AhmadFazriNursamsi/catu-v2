@@ -152,7 +152,13 @@ class _HistoriScreenState extends State<HistoriScreen>
   }
 
   List<Order> get _historyBaseOrders {
-    return widget.orders.where((o) => o.isHistoryOrder).toList();
+    return widget.orders.where((o) {
+      if (widget.isRomo) {
+        final st = o.status.toUpperCase();
+        if (st == 'PENDING') return false;
+      }
+      return o.isHistoryOrder;
+    }).toList();
   }
 
   List<Order> get _filtered {
