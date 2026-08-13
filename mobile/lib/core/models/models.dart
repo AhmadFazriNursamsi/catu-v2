@@ -457,8 +457,15 @@ class ChatGroupItem {
     return requesterName.isNotEmpty ? requesterName : 'Umat';
   }
 
-  /// Parse "Misa Detail" or "Jenis Misa" from notes (e.g. Misa Penutupan Peti, Misa Requiem, Misa 40 Hari)
+  /// Parse "Misa Detail" or "Jenis Misa" from notes or orderTitle (e.g. Misa Penutupan Peti, Misa Requiem, Misa 40 Hari)
   String get detailMisaLabel {
+    if (orderTitle.isNotEmpty &&
+        orderTitle != 'Pelayanan' &&
+        orderTitle != 'Misa Kedukaan' &&
+        orderTitle != 'Pelayanan Kedukaan' &&
+        orderTitle.toLowerCase().contains('misa')) {
+      return orderTitle;
+    }
     if (notes.isNotEmpty) {
       final parts = notes.split('|');
       for (final part in parts) {
@@ -467,7 +474,8 @@ class ChatGroupItem {
         if (lower.startsWith('misa:') ||
             lower.startsWith('jenis misa') ||
             lower.startsWith('detail misa') ||
-            lower.startsWith('tipe misa')) {
+            lower.startsWith('tipe misa') ||
+            lower.startsWith('judul misa')) {
           final split = trimmed.split(':');
           if (split.length > 1) {
             final val = split.sublist(1).join(':').trim();
@@ -476,7 +484,7 @@ class ChatGroupItem {
         }
       }
     }
-    return 'Misa Kedukaan';
+    return 'Misa Penutupan Peti';
   }
 
   /// Display Title for List Chat (Line 1)

@@ -454,6 +454,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
     final firstMisa = _misaList.first;
     final notes = [
+      'Misa: ${firstMisa.itemName}',
       'Nama Almarhum: ${_namaMeninggalController.text}',
       'Hubungan: $_selectedHubungan',
       'Tgl Meninggal: ${_tanggalMeninggalController.text}',

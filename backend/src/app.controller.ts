@@ -1340,7 +1340,11 @@ export class ChatController {
                 g.last_message_at,
                 o.created_at
               ) as last_message_at,
-              sc.name as order_title, sc.name as order_category, o.status as order_status,
+              COALESCE(
+                (SELECT item_name FROM order_items oi WHERE oi.order_id = o.id ORDER BY oi.id ASC LIMIT 1),
+                sc.name
+              ) as order_title,
+              sc.name as order_category, o.status as order_status,
               o.scheduled_date, o.scheduled_time as scheduled_time_start, '' as scheduled_time_end,
               o.notes, p.full_name as penerima_name,
               p.full_name as requester_name, p.avatar_url as requester_avatar
