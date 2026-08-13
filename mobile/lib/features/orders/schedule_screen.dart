@@ -109,6 +109,10 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     final List<ScheduleTimelineEntry> entries = [];
 
     for (final order in widget.orders) {
+      if (widget.isRomo) {
+        final st = order.status.toUpperCase();
+        if (st == 'PENDING') continue;
+      }
       if (!order.isActiveDashboardOrder) continue;
 
       if (order.items.isNotEmpty) {
