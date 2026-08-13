@@ -466,78 +466,112 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     final bool canGoBack = Navigator.canPop(context);
 
     return Container(
-      color: Colors.white,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
+        ),
+      ),
       padding: EdgeInsets.fromLTRB(
-          16, MediaQuery.of(context).padding.top + 12, 16, 12),
+        16,
+        MediaQuery.of(context).padding.top + 12,
+        16,
+        14,
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (canGoBack) ...[
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: Color(0xFF0F172A),
-                    size: 16,
-                  ),
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                Navigator.pop(context);
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Color(0xFF0F172A),
+                  size: 16,
                 ),
               ),
             ),
+            const SizedBox(width: 14),
           ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
+                if (widget.showPendingOnly) ...[
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF7ED),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFFFEDD5)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.hourglass_top_rounded, size: 11, color: Color(0xFFEA580C)),
+                            SizedBox(width: 4),
+                            Text(
+                              'Menunggu Konfirmasi',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFEA580C),
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                ],
                 Text(
                   widget.showPendingOnly
                       ? 'Permintaan Pelayanan'
                       : LanguageService.tr('schedule_title'),
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 21,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF0F172A),
-                    letterSpacing: -0.4,
+                    letterSpacing: -0.5,
+                    height: 1.2,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   widget.showPendingOnly
-                      ? 'Daftar permintaan pelayanan paroki yang belum dikonfirmasi.'
+                      ? 'Daftar permintaan pelayanan paroki yang perlu diproses.'
                       : LanguageService.tr('schedule_subtitle'),
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF64748B),
                     fontWeight: FontWeight.w500,
+                    height: 1.3,
                   ),
                 ),
               ],
-            ),
-          ),
-
-          // Refresh Button
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              widget.onRefresh();
-            },
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: const Icon(Icons.refresh_rounded,
-                  size: 20, color: Color(0xFF334155)),
             ),
           ),
         ],
