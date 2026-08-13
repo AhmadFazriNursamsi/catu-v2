@@ -325,41 +325,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
               const SizedBox(height: 14),
 
-              // Horizontal Cards for "Jadwal Pelayanan Hari Ini"
-              SizedBox(
-                height: 230,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  children: [
-                    _buildServiceCard(
-                      statusBadge: 'Kehadiran Dikonfirmasi',
-                      isConfirmed: true,
-                      location: 'GMAHK Jehovah-Jireh BSD',
-                      dateTime: 'Sunday, 6/3/23 - 11:00',
-                      category: 'Acara Keagamaan',
-                      priorityLabel: 'Penting',
-                      priorityColor: Colors.amber.shade800,
-                      priorityIcon: Icons.error_outline_rounded,
-                      userPhoto: null,
-                      onTapChat: () {},
-                    ),
-                    const SizedBox(width: 14),
-                    _buildServiceCard(
-                      statusBadge: 'Kehadiran Dikonfirmasi',
-                      isConfirmed: true,
-                      location: 'GKY BSD',
-                      dateTime: 'Sunday, 5/3/23 - 15:30',
-                      category: 'Acara Keagamaan',
-                      priorityLabel: 'Standar',
-                      priorityColor: Colors.blue.shade700,
-                      priorityIcon: Icons.info_outline_rounded,
-                      userPhoto: null,
-                      onTapChat: () {},
-                    ),
-                  ],
-                ),
-              ),
+              // Horizontal Cards for "Jadwal Pelayanan Hari Ini" (Accepted/Confirmed orders)
+              _buildTodayScheduleWidget(),
 
               const SizedBox(height: 28),
 
@@ -409,67 +376,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
               const SizedBox(height: 14),
 
-              // Horizontal Cards for "Daftar Permintaan Pelayanan"
-              SizedBox(
-                height: 230,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  children: [
-                    _buildServiceCard(
-                      statusBadge: 'Menunggu Konfirmasi Kehadiran',
-                      isConfirmed: false,
-                      location: 'GPPK House of Grace BSD City',
-                      dateTime: 'Sunday, 6/3/23 - 09:30',
-                      category: 'Kategori Permintaan',
-                      priorityLabel: 'Sangat Penting/Butuh Segera',
-                      priorityColor: Colors.red.shade700,
-                      priorityIcon: Icons.error_outline_rounded,
-                      userPhoto: null,
-                      onTapChat: () {},
-                    ),
-                    const SizedBox(width: 14),
-                    _buildServiceCard(
-                      statusBadge: 'Kehadiran Dikonfirmasi',
-                      isConfirmed: true,
-                      location: 'GMAHK Jehovah-Jireh BSD',
-                      dateTime: 'Sunday, 6/3/23 - 11:00',
-                      category: 'Acara Keagamaan',
-                      priorityLabel: 'Penting',
-                      priorityColor: Colors.amber.shade800,
-                      priorityIcon: Icons.error_outline_rounded,
-                      userPhoto: null,
-                      onTapChat: () {},
-                    ),
-                    const SizedBox(width: 14),
-                    _buildServiceCard(
-                      statusBadge: 'Menunggu Konfirmasi Kehadiran',
-                      isConfirmed: false,
-                      location: 'GKY BSD',
-                      dateTime: 'Sunday, 5/3/23 - 13:30',
-                      category: 'Kategori Permintaan',
-                      priorityLabel: 'Penting',
-                      priorityColor: Colors.amber.shade800,
-                      priorityIcon: Icons.error_outline_rounded,
-                      userPhoto: null,
-                      onTapChat: () {},
-                    ),
-                    const SizedBox(width: 14),
-                    _buildServiceCard(
-                      statusBadge: 'Kehadiran Dikonfirmasi',
-                      isConfirmed: true,
-                      location: 'GKY BSD',
-                      dateTime: 'Sunday, 5/3/23 - 15:30',
-                      category: 'Acara Keagamaan',
-                      priorityLabel: 'Standar',
-                      priorityColor: Colors.blue.shade700,
-                      priorityIcon: Icons.info_outline_rounded,
-                      userPhoto: null,
-                      onTapChat: () {},
-                    ),
-                  ],
-                ),
-              ),
+              // Horizontal Cards for "Daftar Permintaan Pelayanan" (All parish orders)
+              _buildParishRequestsWidget(),
             ],
           ),
         ),
@@ -555,6 +463,125 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildTodayScheduleWidget() {
+    final acceptedOrders = widget.orders.where((o) {
+      final st = o.status.toUpperCase();
+      return st == 'CONFIRMED' || st == 'IN_PROGRESS' || st == 'ACCEPTED' || st == 'DONE';
+    }).toList();
+
+    if (acceptedOrders.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.calendar_today_rounded, size: 36, color: Colors.grey.shade400),
+              const SizedBox(height: 8),
+              Text(
+                'Belum ada jadwal pelayanan yang dikonfirmasi.',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 230,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: acceptedOrders.length,
+        itemBuilder: (context, index) {
+          final order = acceptedOrders[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 14),
+            child: _buildServiceCardFromOrder(order),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildParishRequestsWidget() {
+    if (widget.orders.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.inbox_rounded, size: 36, color: Colors.grey.shade400),
+              const SizedBox(height: 8),
+              Text(
+                'Tidak ada permintaan pelayanan di Paroki saat ini.',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 230,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: widget.orders.length,
+        itemBuilder: (context, index) {
+          final order = widget.orders[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 14),
+            child: _buildServiceCardFromOrder(order),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildServiceCardFromOrder(Order order) {
+    final bool isConfirmed = order.status.toUpperCase() != 'PENDING';
+    final String statusBadge = isConfirmed ? 'Kehadiran Dikonfirmasi' : 'Menunggu Konfirmasi Kehadiran';
+
+    Color priorityColor = Colors.blue.shade700;
+    IconData priorityIcon = Icons.info_outline_rounded;
+    final urg = order.urgencyName.toLowerCase();
+    if (urg.contains('darurat') || urg.contains('kritis')) {
+      priorityColor = Colors.red.shade700;
+      priorityIcon = Icons.error_outline_rounded;
+    } else if (urg.contains('penting')) {
+      priorityColor = Colors.amber.shade800;
+      priorityIcon = Icons.error_outline_rounded;
+    }
+
+    return _buildServiceCard(
+      statusBadge: statusBadge,
+      isConfirmed: isConfirmed,
+      location: order.locationName.isNotEmpty ? order.locationName : order.displayAddress,
+      dateTime: '${order.scheduledDate} • ${order.scheduledTime}',
+      category: order.categoryName,
+      priorityLabel: order.urgencyName,
+      priorityColor: priorityColor,
+      priorityIcon: priorityIcon,
+      onTapChat: () {},
     );
   }
 

@@ -1069,20 +1069,18 @@ export class OrdersController {
   @Get()
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Mendapatkan Daftar Pelayanan / Monitoring Orders dari Database PostgreSQL' })
-  async getOrders(@Query('userId') userId?: string) {
-    // Auto-fail PENDING orders whose scheduled date is past (< CURRENT_DATE)
-    await this.dataSource.query(`
-      UPDATE orders 
-      SET status = 'FAIL' 
-      WHERE status = 'PENDING' AND (scheduled_date::date < CURRENT_DATE)
-    `);
-
+  async getOrders(
+    @Query('userId') userId?: string,
+    @Query('parokiId') parokiId?: string,
+    @Query('romoId') romoId?: string,
+  ) {
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, 
              o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, 
              o.attachment_url as "attachmentUrl",
              p.full_name as pemohon_name,
-             k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name
+             k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
+             COALESCE(o.paroki_id, p.paroki_id) as paroki_id
       FROM orders o
       JOIN service_categories sc ON o.service_category_id = sc.id
       JOIN urgency_levels ul ON o.urgency_level_id = ul.id
@@ -1093,16 +1091,23 @@ export class OrdersController {
     `;
 
     let orders: any[];
+    const whereClauses: string[] = [];
+    const queryParams: any[] = [];
+    let paramIdx = 1;
+
     if (userId && !isNaN(parseInt(userId))) {
-      orders = await this.dataSource.query(
-        `${selectQuery} WHERE o.user_id = $1 ORDER BY o.id DESC`,
-        [parseInt(userId)],
-      );
-    } else {
-      orders = await this.dataSource.query(
-        `${selectQuery} ORDER BY o.id DESC`,
-      );
+      whereClauses.push(`o.user_id = $${paramIdx++}`);
+      queryParams.push(parseInt(userId));
+    } else if (parokiId && !isNaN(parseInt(parokiId))) {
+      whereClauses.push(`COALESCE(o.paroki_id, p.paroki_id) = $${paramIdx++}`);
+      queryParams.push(parseInt(parokiId));
     }
+
+    const whereStr = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+    orders = await this.dataSource.query(
+      `${selectQuery} ${whereStr} ORDER BY o.id DESC`,
+      queryParams,
+    );
 
     for (const order of orders) {
       const items = await this.dataSource.query(
