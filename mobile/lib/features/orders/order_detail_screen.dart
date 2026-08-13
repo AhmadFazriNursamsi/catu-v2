@@ -632,11 +632,192 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               bottom: 24,
               child: widget.isRomo && order.status.toUpperCase() == 'PENDING'
                   ? _buildRomoAcceptButtonBar(order)
-                  : _buildFloatingChatButton(order),
+                  : (widget.isRomo && (order.status.toUpperCase() == 'CONFIRMED' || order.status.toUpperCase() == 'IN_PROGRESS')
+                      ? _buildRomoAcceptedBottomActions(order)
+                      : _buildFloatingChatButton(order)),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _completeService(Order order) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 24),
+            SizedBox(width: 10),
+            Text('Selesaikan Pelayanan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Apakah Anda yakin pelayanan ini telah selesai dilaksanakan?',
+          style: TextStyle(fontSize: 14, color: Color(0xFF334155)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Ya, Selesaikan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      final res = await ApiService.respondAssignment(
+        order.id,
+        'DONE',
+        romoId: widget.romoId,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message'] ?? 'Pelayanan telah selesai dilaksanakan. Terima kasih atas pelayanan Anda!'),
+            backgroundColor: const Color(0xFF059669),
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menyelesaikan pelayanan: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Widget _buildRomoAcceptedBottomActions(Order order) {
+    return Row(
+      children: [
+        // Chat Button (Left)
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppConstants.primaryBlue.withValues(alpha: 0.25),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: AppConstants.primaryBlue,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatScreen(
+                        groupId: order.id,
+                        orderNumber: order.orderNumber,
+                        userName: widget.userName,
+                        userId: order.userId,
+                        groupItem: ChatGroupItem(
+                          groupId: order.id,
+                          orderId: order.id,
+                          groupTitle: 'Group Pelayanan ${order.categoryName}',
+                          orderTitle: order.categoryName,
+                          orderCategory: order.categoryName,
+                          orderStatus: order.status,
+                          scheduledDate: order.scheduledDate,
+                          scheduledTimeStart: order.jamMulaiLabel,
+                          scheduledTimeEnd: order.jamSelesaiLabel,
+                          penerimaName: order.penerimaName,
+                          requesterName: widget.userName,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Diskusi Chat',
+                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Complete Service Button (Right)
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF059669).withValues(alpha: 0.25),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: const Color(0xFF059669),
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: _isSubmitting ? null : () => _completeService(order),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Selesaikan',
+                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
