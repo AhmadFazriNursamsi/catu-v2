@@ -53,11 +53,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final msgs = await ApiService.getGroupMessages(widget.groupId);
     if (mounted) {
       setState(() {
-        if (msgs.isNotEmpty) {
-          _messages = msgs;
-        } else if (_messages.isEmpty) {
-          _messages = _buildInitialDemoMessages();
-        }
+        _messages = msgs;
         _isLoading = false;
       });
       _scrollToBottom();
@@ -286,7 +282,24 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
+                : _messages.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.chat_bubble_outline_rounded,
+                                size: 48, color: Colors.grey.shade300),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Belum ada pesan obrolan.\nKetik pesan di bawah untuk memulai diskusi.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontSize: 13, color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: _messages.length,

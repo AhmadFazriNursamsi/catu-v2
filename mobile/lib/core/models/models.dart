@@ -373,10 +373,19 @@ class ChatMessage {
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    final rawId = json['id'];
+    final parsedId = rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '') ?? 0;
+
+    final rawGId = json['chat_group_id'] ?? json['chatGroupId'];
+    final parsedGId = rawGId is int ? rawGId : int.tryParse(rawGId?.toString() ?? '') ?? 0;
+
+    final rawSId = json['sender_id'] ?? json['senderId'];
+    final parsedSId = rawSId is int ? rawSId : int.tryParse(rawSId?.toString() ?? '');
+
     return ChatMessage(
-      id: json['id'] ?? 0,
-      chatGroupId: json['chat_group_id'] ?? json['chatGroupId'] ?? 0,
-      senderId: json['sender_id'] ?? json['senderId'],
+      id: parsedId,
+      chatGroupId: parsedGId,
+      senderId: parsedSId,
       senderName: json['sender_name'] ?? json['senderName'],
       messageType: json['message_type'] ?? json['messageType'] ?? 'TEXT',
       message: json['message'] ?? '',
@@ -422,9 +431,18 @@ class ChatGroupItem {
   });
 
   factory ChatGroupItem.fromJson(Map<String, dynamic> json) {
+    final rawGId = json['group_id'] ?? json['groupId'] ?? json['id'];
+    final parsedGId = rawGId is int ? rawGId : int.tryParse(rawGId?.toString() ?? '') ?? 0;
+
+    final rawOId = json['order_id'] ?? json['orderId'];
+    final parsedOId = rawOId is int ? rawOId : int.tryParse(rawOId?.toString() ?? '') ?? 0;
+
+    final rawUnread = json['unread_count'] ?? json['unreadCount'];
+    final parsedUnread = rawUnread is int ? rawUnread : int.tryParse(rawUnread?.toString() ?? '') ?? 0;
+
     return ChatGroupItem(
-      groupId: json['group_id'] ?? json['groupId'] ?? json['id'] ?? 0,
-      orderId: json['order_id'] ?? json['orderId'] ?? 0,
+      groupId: parsedGId,
+      orderId: parsedOId,
       groupTitle: json['group_title'] ?? json['groupTitle'] ?? json['title'] ?? 'Group Pelayanan',
       lastMessageText: json['last_message_text'] ?? json['lastMessageText'],
       lastMessageAt: json['last_message_at'] ?? json['lastMessageAt'],
@@ -437,7 +455,7 @@ class ChatGroupItem {
       penerimaName: json['penerima_name'] ?? json['penerimaName'] ?? 'Umat',
       requesterName: json['requester_name'] ?? json['requesterName'] ?? 'Nama Umat',
       requesterAvatar: json['requester_avatar'] ?? json['requesterAvatar'],
-      unreadCount: json['unread_count'] ?? json['unreadCount'] ?? 0,
+      unreadCount: parsedUnread,
     );
   }
 }
