@@ -173,10 +173,20 @@ class _HistoriScreenState extends State<HistoriScreen>
         // 1. Romo History ONLY contains services accepted by Romo (NOT PENDING)
         if (st == 'PENDING') return false;
 
-        // 2. Finished statuses (DONE, CLOSE, FAIL) always belong to History
-        if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return true;
+        // 2. If acceptedRomoId is present, Romo must be the one who accepted it!
+        if (o.acceptedRomoId != null && widget.romoId != null) {
+          if (o.acceptedRomoId != widget.romoId) return false;
+        }
 
-        // 3. Active accepted status (CONFIRMED, IN_PROGRESS) ONLY belongs to History
+        // 3. For FAIL orders, ONLY show if Romo actually accepted it (otherwise it failed unaccepted)
+        if (st == 'FAIL') {
+          return o.acceptedRomoId != null && o.acceptedRomoId == widget.romoId;
+        }
+
+        // 4. Completed / Closed statuses (DONE, CLOSE) belong to History
+        if (st == 'DONE' || st == 'CLOSE') return true;
+
+        // 5. Active accepted status (CONFIRMED, IN_PROGRESS) ONLY belongs to History
         //    if its scheduled date has PASSED (< today)
         final bool mainDatePassed = _isDateBeforeToday(o.scheduledDate);
         final bool hasPastSubItems = o.items.any((item) => _isDateBeforeToday(item.scheduledDate));
