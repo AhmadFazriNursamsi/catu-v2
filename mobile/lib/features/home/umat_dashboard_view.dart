@@ -702,12 +702,28 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     return Colors.blue.shade600;
   }
 
+  bool _isDateBeforeToday(String dateStr) {
+    if (dateStr.isEmpty) return false;
+    try {
+      String cleanStr = dateStr;
+      if (cleanStr.contains('T')) cleanStr = cleanStr.split('T').first;
+      final d = DateTime.parse(cleanStr);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      return DateTime(d.year, d.month, d.day).isBefore(today);
+    } catch (_) {
+      return false;
+    }
+  }
+
   List<DashboardCardItem> get _displayCardItems {
     final List<DashboardCardItem> cardList = [];
 
     for (final order in widget.orders.where((o) => o.isActiveDashboardOrder)) {
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
+          if (_isDateBeforeToday(item.scheduledDate)) continue;
+
           String scheduleStr = item.scheduledDate;
           if (item.scheduledTimeStart.isNotEmpty) {
             scheduleStr = '${item.scheduledDate} • ${item.scheduledTimeStart}';
@@ -731,6 +747,8 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
           );
         }
       } else {
+        if (_isDateBeforeToday(order.scheduledDate)) continue;
+
         cardList.add(
           DashboardCardItem(
             parentOrder: order,
