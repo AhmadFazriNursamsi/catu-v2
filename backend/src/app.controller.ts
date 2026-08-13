@@ -1229,6 +1229,30 @@ export class ChatController {
       [groupId],
     );
   }
+
+  @Get('user/:userId/groups')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Mendapatkan daftar WhatsApp Group Chat per Pelayanan untuk User' })
+  async getUserChatGroups(@Param('userId') userId: string) {
+    const result = await this.dataSource.query(
+      `SELECT g.id as group_id, g.order_id, g.title as group_title, g.last_message_text, g.last_message_at,
+              o.title as order_title, o.category as order_category, o.status as order_status,
+              o.scheduled_date, o.scheduled_time_start, o.scheduled_time_end, o.penerima_name,
+              p.full_name as requester_name, p.avatar_url as requester_avatar
+       FROM chat_groups g
+       JOIN orders o ON g.order_id = o.id
+       LEFT JOIN user_profiles p ON o.user_id = p.user_id
+       ORDER BY COALESCE(g.last_message_at, o.created_at) DESC, g.id DESC`
+    );
+    return result;
+  }
+
+  @Get('groups')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Mendapatkan seluruh daftar Group Chat Pelayanan' })
+  async getAllChatGroups() {
+    return await this.getUserChatGroups('1');
+  }
 }
 
 @ApiTags('Testing & Quality Assurance')

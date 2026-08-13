@@ -372,4 +372,20 @@ class ApiService {
       return {'message': 'Gagal mengirim pesan chat'};
     }
   }
+
+  // 7. Fetch User Chat Groups
+  static Future<List<ChatGroupItem>> getChatGroups(int userId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/chat/user/$userId/groups'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (data.isNotEmpty) {
+          return data.map((json) => ChatGroupItem.fromJson(json)).toList();
+        }
+      }
+    } catch (e) {
+      print('Error getChatGroups: $e');
+    }
+    return [];
+  }
 }

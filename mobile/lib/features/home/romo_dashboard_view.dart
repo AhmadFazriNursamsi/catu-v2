@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/models/models.dart';
 import '../../core/widgets/liquid_bottom_nav_bar.dart';
+import '../chat/chat_list_screen.dart';
+import '../chat/chat_screen.dart';
 
 class RomoDashboardView extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -158,7 +160,17 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.mail_outline_rounded, color: Color(0xFF1E5399), size: 26),
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ChatListScreen(
+                                    user: widget.user,
+                                    orders: widget.orders,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                           Positioned(
                             top: 6,

@@ -376,3 +376,59 @@ class ChatMessage {
     );
   }
 }
+
+class ChatGroupItem {
+  final int groupId;
+  final int orderId;
+  final String groupTitle;
+  final String? lastMessageText;
+  final String? lastMessageAt;
+  final String orderTitle;
+  final String orderCategory;
+  final String orderStatus;
+  final String scheduledDate;
+  final String scheduledTimeStart;
+  final String scheduledTimeEnd;
+  final String penerimaName;
+  final String requesterName;
+  final String? requesterAvatar;
+  final int unreadCount;
+
+  ChatGroupItem({
+    required this.groupId,
+    required this.orderId,
+    required this.groupTitle,
+    this.lastMessageText,
+    this.lastMessageAt,
+    required this.orderTitle,
+    required this.orderCategory,
+    required this.orderStatus,
+    required this.scheduledDate,
+    required this.scheduledTimeStart,
+    required this.scheduledTimeEnd,
+    required this.penerimaName,
+    required this.requesterName,
+    this.requesterAvatar,
+    this.unreadCount = 0,
+  });
+
+  factory ChatGroupItem.fromJson(Map<String, dynamic> json) {
+    return ChatGroupItem(
+      groupId: json['group_id'] ?? json['groupId'] ?? json['id'] ?? 0,
+      orderId: json['order_id'] ?? json['orderId'] ?? 0,
+      groupTitle: json['group_title'] ?? json['groupTitle'] ?? json['title'] ?? 'Group Pelayanan',
+      lastMessageText: json['last_message_text'] ?? json['lastMessageText'],
+      lastMessageAt: json['last_message_at'] ?? json['lastMessageAt'],
+      orderTitle: json['order_title'] ?? json['orderTitle'] ?? json['title'] ?? 'Pelayanan',
+      orderCategory: json['order_category'] ?? json['orderCategory'] ?? json['category'] ?? 'Permintaan Pelayanan',
+      orderStatus: json['order_status'] ?? json['orderStatus'] ?? json['status'] ?? 'CONFIRMED',
+      scheduledDate: json['scheduled_date'] ?? json['scheduledDate'] ?? '',
+      scheduledTimeStart: json['scheduled_time_start'] ?? json['scheduledTimeStart'] ?? '08:00',
+      scheduledTimeEnd: json['scheduled_time_end'] ?? json['scheduledTimeEnd'] ?? '09:00',
+      penerimaName: json['penerima_name'] ?? json['penerimaName'] ?? 'Umat',
+      requesterName: json['requester_name'] ?? json['requesterName'] ?? 'Nama Umat',
+      requesterAvatar: json['requester_avatar'] ?? json['requesterAvatar'],
+      unreadCount: json['unread_count'] ?? json['unreadCount'] ?? 0,
+    );
+  }
+}

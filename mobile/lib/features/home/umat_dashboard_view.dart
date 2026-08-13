@@ -10,6 +10,7 @@ import '../orders/order_detail_screen.dart';
 import '../orders/histori_screen.dart';
 import '../orders/schedule_screen.dart';
 import '../profile/main_menu_screen.dart';
+import '../chat/chat_list_screen.dart';
 
 List<LiquidNavItem> _buildNavItems() => [
       LiquidNavItem(
@@ -308,7 +309,17 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                           IconButton(
                             icon: const Icon(Icons.mail_outline_rounded,
                                 color: Color(0xFF1E5399), size: 26),
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ChatListScreen(
+                                    user: widget.user,
+                                    orders: widget.orders,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                           Positioned(
                             top: 6,
