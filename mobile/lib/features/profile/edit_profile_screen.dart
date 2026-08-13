@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/language_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -637,9 +638,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text(
-            'Ubah Profil',
-            style: TextStyle(
+          title: Text(
+            LanguageService.tr('edit_profile'),
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
               color: Color(0xFF0F172A),
@@ -658,7 +659,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
               const SizedBox(height: 24),
 
-              _buildSectionTitle('INFORMASI PRIBADI', Icons.person_outline_rounded),
+              _buildSectionTitle(LanguageService.tr('personal_info'), Icons.person_outline_rounded),
               const SizedBox(height: 12),
 
               Row(
@@ -666,7 +667,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Expanded(
                     child: _buildTextField(
                       controller: _firstNameController,
-                      label: 'Nama Depan',
+                      label: LanguageService.tr('first_name'),
                       hint: 'Kevin',
                       icon: Icons.person_rounded,
                     ),
@@ -675,7 +676,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Expanded(
                     child: _buildTextField(
                       controller: _lastNameController,
-                      label: 'Nama Belakang',
+                      label: LanguageService.tr('last_name'),
                       hint: 'Antaratama',
                     ),
                   ),
@@ -688,7 +689,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 child: AbsorbPointer(
                   child: _buildTextField(
                     controller: _birthDateController,
-                    label: 'Tanggal Lahir',
+                    label: LanguageService.tr('birth_date'),
                     hint: 'DD/MM/YYYY',
                     icon: Icons.calendar_month_rounded,
                     suffixIcon: Icons.calendar_today_rounded,
@@ -699,7 +700,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
               _buildTextField(
                 controller: _phoneController,
-                label: 'Nomor Handphone (WhatsApp)',
+                label: LanguageService.tr('phone_number'),
                 hint: '081234567890',
                 icon: Icons.phone_android_rounded,
                 keyboardType: TextInputType.phone,
@@ -708,7 +709,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
               _buildTextField(
                 controller: _emailController,
-                label: 'Email',
+                label: LanguageService.tr('email'),
                 hint: 'kevin@catu.id',
                 icon: Icons.email_rounded,
                 keyboardType: TextInputType.emailAddress,
@@ -716,11 +717,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
               const SizedBox(height: 24),
 
-              _buildSectionTitle('DATA KEUMATAN & GEREJA', Icons.church_rounded),
+              _buildSectionTitle(LanguageService.tr('church_data'), Icons.church_rounded),
               const SizedBox(height: 12),
 
               _buildDropdownField(
-                label: 'Peran / Status',
+                label: LanguageService.tr('role'),
                 value: _selectedRole,
                 items: ['Umat', 'Pengurus Lingkungan', 'Romo Paroki'],
                 onChanged: (val) => setState(() => _selectedRole = val!),
@@ -729,7 +730,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 14),
 
               _buildDropdownField(
-                label: 'Keuskupan',
+                label: LanguageService.tr('keuskupan'),
                 value: _selectedKeuskupan,
                 items: _keuskupanList,
                 onChanged: (val) => setState(() => _selectedKeuskupan = val!),
@@ -738,7 +739,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 14),
 
               _buildDropdownField(
-                label: 'Paroki',
+                label: LanguageService.tr('paroki'),
                 value: _selectedParoki,
                 items: _parokiList,
                 onChanged: (val) => setState(() => _selectedParoki = val!),
@@ -747,7 +748,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 14),
 
               _buildDropdownField(
-                label: 'Wilayah',
+                label: LanguageService.tr('wilayah'),
                 value: _selectedWilayah,
                 items: _wilayahList,
                 onChanged: (val) => setState(() => _selectedWilayah = val!),
@@ -756,7 +757,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 14),
 
               _buildDropdownField(
-                label: 'Lingkungan',
+                label: LanguageService.tr('lingkungan'),
                 value: _selectedLingkungan,
                 items: _lingkunganList,
                 onChanged: (val) => setState(() => _selectedLingkungan = val!),
@@ -765,12 +766,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
               const SizedBox(height: 24),
 
-              _buildSectionTitle('ALAMAT TEMPAT TINGGAL', Icons.home_rounded),
+              _buildSectionTitle(LanguageService.tr('address_info'), Icons.home_rounded),
               const SizedBox(height: 12),
 
               _buildTextField(
                 controller: _addressController,
-                label: 'Alamat Jalan / Rumah',
+                label: LanguageService.tr('address'),
                 hint: 'Jl. Sutera Utama No. 18',
                 icon: Icons.place_rounded,
                 maxLines: 2,
@@ -829,14 +830,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       child: CircularProgressIndicator(
                           color: Colors.white, strokeWidth: 2.5),
                     )
-                  : const Row(
+                  : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.save_rounded, color: Colors.white, size: 20),
-                        SizedBox(width: 8),
+                        const Icon(Icons.save_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
                         Text(
-                          'Simpan Perubahan',
-                          style: TextStyle(
+                          LanguageService.tr('save_changes'),
+                          style: const TextStyle(
                             fontSize: 15.5,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,

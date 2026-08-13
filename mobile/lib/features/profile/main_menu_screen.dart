@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../../core/services/api_service.dart';
+import '../../core/services/language_service.dart';
 import 'edit_profile_screen.dart';
 
 class MainMenuScreen extends StatefulWidget {
@@ -39,6 +40,13 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   void initState() {
     super.initState();
     _userData = Map<String, dynamic>.from(widget.user);
+    if (LanguageService.currentLanguage.value == 'en') {
+      _selectedLanguage = 'English (US)';
+    } else if (LanguageService.currentLanguage.value == 'la') {
+      _selectedLanguage = 'Lingua Latina';
+    } else {
+      _selectedLanguage = 'Bahasa Indonesia';
+    }
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -894,9 +902,9 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   void _showLanguagePickerModal(StateSetter parentSetModalState) {
     HapticFeedback.mediumImpact();
     final languages = [
-      {'name': 'Bahasa Indonesia', 'flag': '🇮🇩', 'subtitle': 'Bahasa utama'},
-      {'name': 'English (US)', 'flag': '🇺🇸', 'subtitle': 'International English'},
-      {'name': 'Lingua Latina', 'flag': '🇻🇦', 'subtitle': 'Vatican Latin'},
+      {'name': 'Bahasa Indonesia', 'code': 'id', 'flag': '🇮🇩', 'subtitle': 'Bahasa utama'},
+      {'name': 'English (US)', 'code': 'en', 'flag': '🇺🇸', 'subtitle': 'International English'},
+      {'name': 'Lingua Latina', 'code': 'la', 'flag': '🇻🇦', 'subtitle': 'Vatican Latin'},
     ];
 
     showModalBottomSheet(
@@ -925,9 +933,9 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Pilih Bahasa / Language',
-                style: TextStyle(
+              Text(
+                LanguageService.tr('language'),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF0F172A),
@@ -985,16 +993,18 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                             color: Color(0xFF94A3B8), size: 20),
                     onTap: () {
                       HapticFeedback.selectionClick();
+                      final code = lang['code']!;
+                      LanguageService.setLanguage(code);
                       setState(() {
                         _selectedLanguage = lang['name']!;
                       });
                       parentSetModalState(() {});
                       Navigator.pop(ctx);
-                      _showToast('🌐 Bahasa diubah ke ${lang['name']}');
+                      _showToast('🌐 ${LanguageService.tr("language")} -> ${lang["name"]}');
                     },
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         );

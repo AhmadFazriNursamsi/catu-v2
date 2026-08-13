@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../core/models/models.dart';
+import '../../core/services/language_service.dart';
 import '../../core/widgets/liquid_bottom_nav_bar.dart';
 import '../orders/create_perminyakan_screen.dart';
 import '../orders/create_kedukaan_screen.dart';
@@ -9,6 +10,29 @@ import '../orders/order_detail_screen.dart';
 import '../orders/histori_screen.dart';
 import '../orders/schedule_screen.dart';
 import '../profile/main_menu_screen.dart';
+
+List<LiquidNavItem> _buildNavItems() => [
+      LiquidNavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: LanguageService.tr('nav_home'),
+      ),
+      LiquidNavItem(
+        icon: Icons.history_outlined,
+        activeIcon: Icons.history_rounded,
+        label: LanguageService.tr('nav_history'),
+      ),
+      LiquidNavItem(
+        icon: Icons.calendar_today_outlined,
+        activeIcon: Icons.calendar_today_rounded,
+        label: LanguageService.tr('nav_schedule'),
+      ),
+      LiquidNavItem(
+        icon: Icons.menu_outlined,
+        activeIcon: Icons.menu_rounded,
+        label: LanguageService.tr('nav_profile'),
+      ),
+    ];
 
 class UmatDashboardView extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -78,28 +102,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
           onTabSelected: (index) {
             setState(() => _currentNavIndex = index);
           },
-          items: const [
-            LiquidNavItem(
-              icon: Icons.home_outlined,
-              activeIcon: Icons.home_rounded,
-              label: 'Beranda',
-            ),
-            LiquidNavItem(
-              icon: Icons.history_outlined,
-              activeIcon: Icons.history_rounded,
-              label: 'Histori',
-            ),
-            LiquidNavItem(
-              icon: Icons.calendar_today_outlined,
-              activeIcon: Icons.calendar_today_rounded,
-              label: 'Jadwal',
-            ),
-            LiquidNavItem(
-              icon: Icons.menu_outlined,
-              activeIcon: Icons.menu_rounded,
-              label: 'Menu',
-            ),
-          ],
+          items: _buildNavItems(),
         ),
       );
     }
@@ -118,28 +121,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
           onTabSelected: (index) {
             setState(() => _currentNavIndex = index);
           },
-          items: const [
-            LiquidNavItem(
-              icon: Icons.home_outlined,
-              activeIcon: Icons.home_rounded,
-              label: 'Beranda',
-            ),
-            LiquidNavItem(
-              icon: Icons.history_outlined,
-              activeIcon: Icons.history_rounded,
-              label: 'Histori',
-            ),
-            LiquidNavItem(
-              icon: Icons.calendar_today_outlined,
-              activeIcon: Icons.calendar_today_rounded,
-              label: 'Jadwal',
-            ),
-            LiquidNavItem(
-              icon: Icons.menu_outlined,
-              activeIcon: Icons.menu_rounded,
-              label: 'Menu',
-            ),
-          ],
+          items: _buildNavItems(),
         ),
       );
     }
@@ -158,28 +140,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
           onTabSelected: (index) {
             setState(() => _currentNavIndex = index);
           },
-          items: const [
-            LiquidNavItem(
-              icon: Icons.home_outlined,
-              activeIcon: Icons.home_rounded,
-              label: 'Beranda',
-            ),
-            LiquidNavItem(
-              icon: Icons.history_outlined,
-              activeIcon: Icons.history_rounded,
-              label: 'Histori',
-            ),
-            LiquidNavItem(
-              icon: Icons.calendar_today_outlined,
-              activeIcon: Icons.calendar_today_rounded,
-              label: 'Jadwal',
-            ),
-            LiquidNavItem(
-              icon: Icons.menu_outlined,
-              activeIcon: Icons.menu_rounded,
-              label: 'Menu',
-            ),
-          ],
+          items: _buildNavItems(),
         ),
       );
     }
@@ -551,28 +512,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
         onTabSelected: (index) {
           setState(() => _currentNavIndex = index);
         },
-        items: const [
-          LiquidNavItem(
-            icon: Icons.home_outlined,
-            activeIcon: Icons.home_rounded,
-            label: 'Beranda',
-          ),
-          LiquidNavItem(
-            icon: Icons.history_outlined,
-            activeIcon: Icons.history_rounded,
-            label: 'Histori',
-          ),
-          LiquidNavItem(
-            icon: Icons.calendar_today_outlined,
-            activeIcon: Icons.calendar_today_rounded,
-            label: 'Jadwal',
-          ),
-          LiquidNavItem(
-            icon: Icons.menu_outlined,
-            activeIcon: Icons.menu_rounded,
-            label: 'Menu',
-          ),
-        ],
+        items: _buildNavItems(),
       ),
     );
   }
