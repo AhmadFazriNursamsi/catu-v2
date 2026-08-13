@@ -514,9 +514,17 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   String _formatTimestamp(String raw) {
-    if (raw.length >= 16 && raw.contains('T')) {
-      return raw.substring(11, 16);
+    if (raw.isEmpty) return '15:30';
+    try {
+      final dt = DateTime.parse(raw).toLocal();
+      final hh = dt.hour.toString().padLeft(2, '0');
+      final mm = dt.minute.toString().padLeft(2, '0');
+      return '$hh:$mm';
+    } catch (_) {
+      if (raw.length >= 16 && raw.contains('T')) {
+        return raw.substring(11, 16);
+      }
+      return '15:30';
     }
-    return '23:59';
   }
 }

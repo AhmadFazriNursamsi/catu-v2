@@ -504,26 +504,26 @@ class ChatGroupItem {
     return '$orderCategory • $dateStr - $timeStr';
   }
 
-  /// Formatted Last Message Time (HH:mm format, e.g. 15:30)
+  /// Formatted Last Message Time (HH:mm format in local device time)
   String get formattedLastTime {
     if (lastMessageAt == null || lastMessageAt!.isEmpty) {
       return '15:30';
     }
     final raw = lastMessageAt!;
-    if (raw.contains('T')) {
-      final parts = raw.split('T');
-      if (parts.length > 1 && parts[1].length >= 5) {
-        return parts[1].substring(0, 5);
+    try {
+      final dt = DateTime.parse(raw).toLocal();
+      final hh = dt.hour.toString().padLeft(2, '0');
+      final mm = dt.minute.toString().padLeft(2, '0');
+      return '$hh:$mm';
+    } catch (_) {
+      if (raw.contains('T')) {
+        final parts = raw.split('T');
+        if (parts.length > 1 && parts[1].length >= 5) {
+          return parts[1].substring(0, 5);
+        }
       }
-    } else if (raw.contains(' ')) {
-      final parts = raw.split(' ');
-      if (parts.length > 1 && parts[1].length >= 5) {
-        return parts[1].substring(0, 5);
-      }
-    } else if (raw.length >= 5 && raw.contains(':')) {
-      return raw.substring(0, 5);
+      return raw;
     }
-    return raw;
   }
 
   /// Display text for last message preview

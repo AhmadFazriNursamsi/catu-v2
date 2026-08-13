@@ -1206,7 +1206,10 @@ export class ChatController {
 
     // 2. If no chat_groups row exists, but an order with id = num exists, auto-create chat_groups for that order
     const orderCheck = await this.dataSource.query(
-      `SELECT id, category_name FROM orders WHERE id = $1`,
+      `SELECT o.id, sc.name as category_name
+       FROM orders o
+       JOIN service_categories sc ON o.service_category_id = sc.id
+       WHERE o.id = $1`,
       [num],
     );
 
@@ -1280,15 +1283,16 @@ export class ChatController {
     // Auto create chat_groups for any order missing a chat group
     await this.dataSource.query(
       `INSERT INTO chat_groups (order_id, title, last_message_text)
-       SELECT id, CONCAT('Group Pelayanan ', category_name), 'Grup chat pelayanan aktif'
-       FROM orders
-       WHERE id NOT IN (SELECT order_id FROM chat_groups WHERE order_id IS NOT NULL)`
+       SELECT o.id, CONCAT('Group Pelayanan ', sc.name), 'Grup chat pelayanan aktif'
+       FROM orders o
+       JOIN service_categories sc ON o.service_category_id = sc.id
+       WHERE o.id NOT IN (SELECT order_id FROM chat_groups WHERE order_id IS NOT NULL)`
     );
 
     const result = await this.dataSource.query(
       `SELECT g.id as group_id, g.order_id, g.title as group_title,
               COALESCE(
-                (SELECT message FROM chat_messages m WHERE m.chat_group_id = g.id ORDER BY m.id DESC LIMIT 1),
+                (SELECT message FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1),
                 g.last_message_text,
                 'Grup chat pelayanan aktif'
               ) as last_message_text,
@@ -1297,12 +1301,13 @@ export class ChatController {
                 g.last_message_at,
                 o.created_at
               ) as last_message_at,
-              o.category_name as order_title, o.category_name as order_category, o.status as order_status,
+              sc.name as order_title, sc.name as order_category, o.status as order_status,
               o.scheduled_date, o.scheduled_time as scheduled_time_start, '' as scheduled_time_end,
-              o.notes, o.pemohon_name as penerima_name,
+              o.notes, p.full_name as penerima_name,
               p.full_name as requester_name, p.avatar_url as requester_avatar
        FROM chat_groups g
        JOIN orders o ON g.order_id = o.id
+       JOIN service_categories sc ON o.service_category_id = sc.id
        LEFT JOIN user_profiles p ON o.user_id = p.user_id
        ORDER BY COALESCE(g.last_message_at, o.created_at) DESC, g.id DESC`
     );
