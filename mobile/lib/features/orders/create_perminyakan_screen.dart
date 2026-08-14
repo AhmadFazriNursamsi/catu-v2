@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../widgets/searchable_select_field.dart';
 import '../../core/services/language_service.dart';
 
@@ -445,6 +446,15 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     );
 
     if (isSuccess) {
+      // 🔔 Trigger notification for Romo Ordo
+      final orderId = res['id']?.toString() ?? res['orderId']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
+      final umatName = widget.user?['fullName'] ?? widget.user?['full_name'] ?? 'Umat';
+      await NotificationService.notifyNewRequest(
+        orderId: orderId,
+        umatName: umatName,
+        categoryName: 'Perminyakan',
+        targetRole: 'ROMO_ORDO',
+      );
       Navigator.pop(context);
     }
   }

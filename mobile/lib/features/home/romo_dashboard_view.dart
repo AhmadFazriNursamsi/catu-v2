@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/widgets/liquid_bottom_nav_bar.dart';
 import '../chat/chat_list_screen.dart';
 import '../chat/chat_screen.dart';
@@ -7,6 +9,7 @@ import '../orders/histori_screen.dart';
 import '../orders/order_detail_screen.dart';
 import '../orders/schedule_screen.dart';
 import '../profile/main_menu_screen.dart';
+import '../notifications/notification_screen.dart';
 
 class RomoDashboardCardItem {
   final Order parentOrder;
@@ -46,6 +49,36 @@ class RomoDashboardView extends StatefulWidget {
 
 class _RomoDashboardViewState extends State<RomoDashboardView> {
   int _currentNavIndex = 0;
+  int _unreadNotifCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshUnreadCount();
+  }
+
+  Future<void> _refreshUnreadCount() async {
+    final role = _romoRole;
+    final count = await NotificationService.unreadCount(role);
+    if (mounted) setState(() => _unreadNotifCount = count);
+  }
+
+  String get _romoRole {
+    final rawRole = widget.user['roleCode'] ?? widget.user['role_code'] ?? '';
+    if (rawRole.toString().toUpperCase().contains('PAROKI')) return 'ROMO_PAROKI';
+    return 'ROMO_ORDO';
+  }
+
+  Future<void> _openNotifications() async {
+    HapticFeedback.selectionClick();
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NotificationScreen(role: _romoRole),
+      ),
+    );
+    _refreshUnreadCount();
+  }
 
   List<LiquidNavItem> _buildNavItems() {
     return const [
@@ -238,31 +271,32 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                   ),
                   Row(
                     children: [
-                      // Bell Notification Icon with Badge '1'
+                      // Bell Notification Icon with dynamic badge
                       Stack(
                         clipBehavior: Clip.none,
                         children: [
                           IconButton(
                             icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1E5399), size: 26),
-                            onPressed: () {},
+                            onPressed: _openNotifications,
                           ),
-                          Positioned(
-                            top: 6,
-                            right: 6,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Colors.redAccent,
-                                shape: BoxShape.circle,
-                              ),
-                              constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                              child: const Text(
-                                '1',
-                                style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
-                                textAlign: TextAlign.center,
+                          if (_unreadNotifCount > 0)
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.redAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+                                child: Text(
+                                  _unreadNotifCount > 99 ? '99+' : '$_unreadNotifCount',
+                                  style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                       const SizedBox(width: 4),

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/services/language_service.dart';
 import '../chat/chat_screen.dart';
 
@@ -761,6 +762,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         if (widget.romoId != null) {
           order.acceptedRomoId = widget.romoId;
         }
+        // 🔔 Notify Umat that service is completed
+        await NotificationService.notifyServiceCompleted(
+          orderId: order.id.toString(),
+          categoryName: order.categoryName,
+          penerimaName: order.penerimaName,
+          targetRole: 'UMAT',
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(res['message'] ?? 'Pelayanan telah selesai dilaksanakan. Terima kasih atas pelayanan Anda!'),
@@ -916,6 +924,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           order.acceptedRomoId = widget.romoId;
           order.acceptedRomoName = widget.userName;
         }
+        // 🔔 Notify Umat that Romo accepted
+        await NotificationService.notifyRomoResponse(
+          orderId: order.id.toString(),
+          romoName: widget.userName,
+          categoryName: order.categoryName,
+          accepted: true,
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(res['message'] ?? 'Pelayanan berhasil diterima! Anda telah bergabung ke grup chat.'),
