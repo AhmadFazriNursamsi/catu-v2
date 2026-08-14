@@ -1303,10 +1303,17 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
   Widget _buildScheduleCard(ScheduleTimelineEntry entry) {
     final order = entry.parentOrder;
-    final bool isItemAccepted = entry.item?.acceptedRomoId != null || order.acceptedRomoId != null;
-    final String effectiveStatus = isItemAccepted
-        ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
-        : order.status;
+    final bool isSubItemAccepted = entry.item != null
+        ? (entry.item!.acceptedRomoId != null || entry.item!.status.toUpperCase() == 'ACCEPTED' || entry.item!.status.toUpperCase() == 'CONFIRMED' || entry.item!.status.toUpperCase() == 'DONE')
+        : (order.acceptedRomoId != null && order.status.toUpperCase() != 'PENDING');
+
+    final String effectiveStatus = entry.item != null
+        ? (isSubItemAccepted
+            ? (entry.item!.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
+            : 'PENDING')
+        : (isSubItemAccepted
+            ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
+            : order.status.toUpperCase());
     final statusColor = _statusColor(effectiveStatus);
     final statusLabel = _statusLabel(effectiveStatus);
     final statusIcon = _statusIcon(effectiveStatus);

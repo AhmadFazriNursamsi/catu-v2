@@ -751,6 +751,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                   ? item.locationName
                   : order.displayAddress,
               penerimaName: order.penerimaName,
+              subItem: item,
             ),
           );
         }
@@ -766,6 +767,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
             dateSchedule: order.fullScheduleLabel,
             location: order.displayAddress,
             penerimaName: order.penerimaName,
+            subItem: null,
           ),
         );
       }
@@ -785,7 +787,18 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
   // ── Redesigned Premium Service Card (Umat) ──
   Widget _buildServiceCard(DashboardCardItem item) {
     final order = item.parentOrder;
-    final st = order.status.toUpperCase();
+    final bool isSubItemAccepted = item.subItem != null
+        ? (item.subItem!.acceptedRomoId != null || item.subItem!.status.toUpperCase() == 'ACCEPTED' || item.subItem!.status.toUpperCase() == 'CONFIRMED' || item.subItem!.status.toUpperCase() == 'DONE')
+        : (order.acceptedRomoId != null && order.status.toUpperCase() != 'PENDING');
+
+    final String st = item.subItem != null
+        ? (isSubItemAccepted
+            ? (item.subItem!.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
+            : 'PENDING')
+        : (isSubItemAccepted
+            ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
+            : order.status.toUpperCase());
+
     final isKedukaan = order.categoryName.toLowerCase().contains('kedukaan');
     final urgencyColor = _urgencyColor(order.urgencyName);
     final statusLabel = _statusLabel(st);
@@ -806,9 +819,9 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
       statusIcon = Icons.hourglass_empty_rounded;
     }
 
-    final String romoName = (order.acceptedRomoName != null && order.acceptedRomoName!.isNotEmpty)
-        ? order.acceptedRomoName!
-        : '';
+    final String romoName = (item.subItem?.acceptedRomoName != null && item.subItem!.acceptedRomoName!.isNotEmpty)
+        ? item.subItem!.acceptedRomoName!
+        : ((order.acceptedRomoName != null && order.acceptedRomoName!.isNotEmpty) ? order.acceptedRomoName! : '');
 
     return Container(
       width: 250,
@@ -1077,6 +1090,7 @@ class DashboardCardItem {
   final String dateSchedule;
   final String location;
   final String penerimaName;
+  final OrderItem? subItem;
 
   DashboardCardItem({
     required this.parentOrder,
@@ -1084,5 +1098,6 @@ class DashboardCardItem {
     required this.dateSchedule,
     required this.location,
     required this.penerimaName,
+    this.subItem,
   });
 }

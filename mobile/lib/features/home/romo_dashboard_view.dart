@@ -887,10 +887,17 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
   Widget _buildServiceCardFromCardItem(RomoDashboardCardItem item) {
     final order = item.parentOrder;
-    final bool isItemAccepted = item.subItem?.acceptedRomoId != null || order.acceptedRomoId != null;
-    final String effectiveStatus = isItemAccepted
-        ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
-        : order.status;
+    final bool isSubItemAccepted = item.subItem != null
+        ? (item.subItem!.acceptedRomoId != null || item.subItem!.status.toUpperCase() == 'ACCEPTED' || item.subItem!.status.toUpperCase() == 'CONFIRMED' || item.subItem!.status.toUpperCase() == 'DONE')
+        : (order.acceptedRomoId != null && order.status.toUpperCase() != 'PENDING');
+
+    final String effectiveStatus = item.subItem != null
+        ? (isSubItemAccepted
+            ? (item.subItem!.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
+            : 'PENDING')
+        : (isSubItemAccepted
+            ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
+            : order.status.toUpperCase());
 
     final statusColor = _statusColor(effectiveStatus);
     final statusLabel = _statusLabel(effectiveStatus);
