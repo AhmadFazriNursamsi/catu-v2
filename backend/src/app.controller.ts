@@ -1197,7 +1197,10 @@ export class AssignmentsController {
       };
     }
 
-    await this.dataSource.query(`UPDATE orders SET status = $1 WHERE id = $2`, [newStatus, orderId]);
+    await this.dataSource.query(
+      `UPDATE orders SET status = $1, accepted_romo_id = COALESCE($2, accepted_romo_id) WHERE id = $3`,
+      [newStatus, romoId, orderId],
+    );
 
     const romoProf = await this.dataSource.query(
       `SELECT full_name FROM user_profiles WHERE user_id = $1`,

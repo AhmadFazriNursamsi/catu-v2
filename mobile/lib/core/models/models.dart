@@ -71,11 +71,11 @@ class OrderItem {
 class Order {
   final int id;
   final int? userId;
-  final int? acceptedRomoId;
+  int? acceptedRomoId;
   final String orderNumber;
   final String categoryName;
   final String urgencyName;
-  final String status;
+  String status;
   final String scheduledDate;
   final String scheduledTime;
   final String locationName;

@@ -121,9 +121,13 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       _userData['romoPosition'] ?? _userData['romo_position'] ?? '';
 
   String get _positionTitle {
-    if (_roleCode.startsWith('ROMO')) {
-      if (_romoPos == 'KETUA_ROMO') return 'Romo — Pastor Kepala';
-      return 'Romo — Pastor Rekan';
+    final code = _roleCode.toUpperCase();
+    if (code == 'ROMO_ORDO') {
+      return 'Romo Ordo';
+    }
+    if (code == 'ROMO_PAROKI' || code.startsWith('ROMO')) {
+      if (_romoPos == 'KETUA_ROMO') return 'Romo Paroki — Pastor Kepala';
+      return 'Romo Paroki — Pastor Rekan';
     }
     if (_pengurusPos == 'KETUA') return 'Umat — Ketua Lingkungan';
     if (_pengurusPos == 'WAKIL') return 'Umat — Wakil Ketua';

@@ -480,6 +480,9 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                         );
                         if (refreshed == true) {
                           widget.onRefresh();
+                          if (mounted) {
+                            setState(() {});
+                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -587,10 +590,29 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     }
   }
 
+  bool _isDateToday(String dateStr) {
+    if (dateStr.isEmpty) return false;
+    try {
+      String cleanStr = dateStr;
+      if (cleanStr.contains('T')) cleanStr = cleanStr.split('T').first;
+      final d = DateTime.parse(cleanStr);
+      final now = DateTime.now();
+      return d.year == now.year && d.month == now.month && d.day == now.day;
+    } catch (_) {
+      return false;
+    }
+  }
+
   List<RomoDashboardCardItem> get _displayParishRequestsCardItems {
     final List<RomoDashboardCardItem> cardList = [];
 
-    for (final order in widget.orders.where((o) => o.isActiveDashboardOrder)) {
+    // ONLY PENDING orders (Exclude CONFIRMED / ACCEPTED / IN_PROGRESS / DONE)
+    final pendingOrders = widget.orders.where((o) {
+      final st = o.status.toUpperCase();
+      return st == 'PENDING' && o.isActiveDashboardOrder;
+    }).toList();
+
+    for (final order in pendingOrders) {
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
           if (_isDateBeforeToday(item.scheduledDate)) continue;
@@ -639,7 +661,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       return dateA.compareTo(dateB);
     });
 
-    return cardList;
+    // Limit to max 5 items
+    return cardList.take(5).toList();
   }
 
   List<RomoDashboardCardItem> get _displayTodayScheduleCardItems {
@@ -653,7 +676,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     for (final order in acceptedOrders) {
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
-          if (_isDateBeforeToday(item.scheduledDate)) continue;
+          // ONLY display items scheduled for TODAY!
+          if (!_isDateToday(item.scheduledDate)) continue;
 
           String scheduleStr = item.scheduledDate;
           if (item.scheduledTimeStart.isNotEmpty) {
@@ -679,7 +703,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           );
         }
       } else {
-        if (_isDateBeforeToday(order.scheduledDate)) continue;
+        // ONLY display orders scheduled for TODAY!
+        if (!_isDateToday(order.scheduledDate)) continue;
 
         cardList.add(
           RomoDashboardCardItem(
@@ -699,7 +724,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       return dateA.compareTo(dateB);
     });
 
-    return cardList;
+    // Limit to max 5 items
+    return cardList.take(5).toList();
   }
 
   Widget _buildTodayScheduleWidget() {
@@ -828,6 +854,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         );
         if (refreshed == true) {
           widget.onRefresh();
+          if (mounted) setState(() {});
         }
       },
       child: _buildServiceCard(
@@ -854,6 +881,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           );
           if (refreshed == true) {
             widget.onRefresh();
+            if (mounted) setState(() {});
           }
         },
       ),

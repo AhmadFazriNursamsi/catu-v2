@@ -685,6 +685,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         romoId: widget.romoId,
       );
       if (mounted) {
+        order.status = 'DONE';
+        if (widget.romoId != null) {
+          order.acceptedRomoId = widget.romoId;
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(res['message'] ?? 'Pelayanan telah selesai dilaksanakan. Terima kasih atas pelayanan Anda!'),
@@ -830,6 +834,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         romoId: widget.romoId,
       );
       if (mounted) {
+        order.status = 'CONFIRMED';
+        if (widget.romoId != null) {
+          order.acceptedRomoId = widget.romoId;
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(res['message'] ?? 'Pelayanan berhasil diterima! Anda telah bergabung ke grup chat.'),

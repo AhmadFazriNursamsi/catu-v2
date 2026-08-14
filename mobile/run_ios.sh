@@ -10,6 +10,10 @@ BUNDLE_ID="com.example.catuMobile"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 IOS_DIR="$PROJECT_DIR/ios"
 
+echo "🗑️ Step 0: Uninstalling old app from simulator..."
+xcrun simctl uninstall "$SIMULATOR_ID" "$BUNDLE_ID" 2>/dev/null || true
+xcrun simctl uninstall "$SIMULATOR_ID" "com.example.myApp" 2>/dev/null || true
+
 echo "🔨 Step 1: flutter pub get..."
 cd "$PROJECT_DIR" && flutter pub get
 
@@ -36,17 +40,19 @@ open -a Simulator
 sleep 2
 
 echo ""
-echo "🚀 Step 4: Install & Launch app..."
-APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData/Runner-*/Build/Products/Debug-iphonesimulator -name "Runner.app" 2>/dev/null | head -1)
+echo "🚀 Step 4: Install & Launch fresh app..."
+APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData/Runner-*/Build/Products/Debug-iphonesimulator -name "Runner.app" 2>/dev/null | xargs ls -td 2>/dev/null | head -1)
 
-if [ -z "$APP_PATH" ]; then
+if [ -z "$APP_PATH" ] || [ ! -d "$APP_PATH" ]; then
   echo "❌ Runner.app tidak ditemukan!"
   exit 1
 fi
 
+echo "   Installing binary from: $APP_PATH"
 xcrun simctl install "$SIMULATOR_ID" "$APP_PATH"
 xcrun simctl launch "$SIMULATOR_ID" "$BUNDLE_ID"
 
 echo ""
 echo "✅ CATU berhasil berjalan di iPhone 17 Pro Simulator!"
 echo "   Bundle ID: $BUNDLE_ID"
+

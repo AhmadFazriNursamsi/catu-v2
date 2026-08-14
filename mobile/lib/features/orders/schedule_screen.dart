@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
 import 'order_detail_screen.dart';
 import '../../core/services/language_service.dart';
+import '../../core/services/api_service.dart';
 
 /// Individual schedule item entry for exact date & time timeline precision
 class ScheduleTimelineEntry {
@@ -70,6 +71,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   String _sortBy = 'TERDEKAT';
   String _searchQuery = '';
 
+  late List<Order> _localOrders;
+
   late AnimationController _animController;
   late Animation<double> _fadeIn;
 
@@ -77,6 +80,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   void initState() {
     super.initState();
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
+    _localOrders = List.from(widget.orders);
     final now = DateTime.now();
     _selectedMonth = DateTime(now.year, now.month, 1);
     // Default select TODAY for crisp, intuitive schedule viewing
@@ -89,6 +93,32 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     );
     _fadeIn = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
+  }
+
+  @override
+  void didUpdateWidget(ScheduleScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.orders != oldWidget.orders) {
+      _localOrders = List.from(widget.orders);
+    }
+  }
+
+  Future<void> _refreshLocalOrders() async {
+    try {
+      final fetched = await ApiService.getOrders(
+        parokiId: 10,
+        romoId: widget.romoId,
+      );
+      if (mounted && fetched.isNotEmpty) {
+        setState(() {
+          _localOrders = fetched;
+        });
+      } else if (mounted) {
+        setState(() {});
+      }
+    } catch (_) {
+      if (mounted) setState(() {});
+    }
   }
 
   void _onLanguageChanged() {
@@ -110,7 +140,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     final today = DateTime(now.year, now.month, now.day);
     final List<ScheduleTimelineEntry> entries = [];
 
-    for (final order in widget.orders) {
+    for (final order in _localOrders) {
       if (widget.isRomo) {
         final st = order.status.toUpperCase();
         if (widget.showPendingOnly) {
@@ -1268,7 +1298,18 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             ),
           );
           if (refreshed == true) {
+            order.status = 'CONFIRMED';
+            if (widget.romoId != null) {
+              order.acceptedRomoId = widget.romoId;
+            }
+            if (widget.showPendingOnly) {
+              _localOrders.removeWhere((o) => o.id == order.id);
+            }
+            if (mounted) {
+              setState(() {});
+            }
             widget.onRefresh();
+            _refreshLocalOrders();
           }
         },
         child: Container(

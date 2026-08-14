@@ -149,6 +149,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  bool get _isRomo {
+    final code = (widget.user['roleCode'] ?? widget.user['role_code'] ?? widget.user['role'] ?? '').toString().toUpperCase();
+    return code.startsWith('ROMO') || _selectedRole.contains('Romo');
+  }
+
   void _initDataFromUserMap(Map<String, dynamic> data) {
     final fullName = data['fullName'] ?? data['full_name'] ?? '';
     final parts = fullName.toString().trim().split(' ');
@@ -167,6 +172,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final avatar = data['avatarUrl'] ?? data['avatar_url'];
     if (avatar != null && avatar.toString().isNotEmpty) {
       _avatarUrl = avatar.toString();
+    }
+
+    final rawRoleCode = (data['roleCode'] ?? data['role_code'] ?? data['role'] ?? '').toString().toUpperCase();
+    if (rawRoleCode == 'ROMO_PAROKI') {
+      _selectedRole = 'Romo Paroki';
+    } else if (rawRoleCode == 'ROMO_ORDO') {
+      _selectedRole = 'Romo Ordo';
+    } else if (rawRoleCode == 'PENGURUS_LINGKUNGAN') {
+      _selectedRole = 'Pengurus Lingkungan';
+    } else if (rawRoleCode == 'UMAT') {
+      _selectedRole = 'Umat';
+    } else {
+      final roleStr = (data['roleName'] ?? data['role_name'] ?? data['role'] ?? '').toString();
+      if (roleStr.isNotEmpty) {
+        _selectedRole = roleStr;
+      }
     }
 
     final rawProvId = data['provinsiId'] ?? data['provinsi_id'];
@@ -729,7 +750,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _buildDropdownField(
                 label: LanguageService.tr('role'),
                 value: _selectedRole,
-                items: ['Umat', 'Pengurus Lingkungan', 'Romo Paroki'],
+                items: ['Umat', 'Pengurus Lingkungan', 'Romo Paroki', 'Romo Ordo'],
                 onChanged: (val) => setState(() => _selectedRole = val!),
                 icon: Icons.badge_rounded,
               ),
@@ -751,24 +772,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 onChanged: (val) => setState(() => _selectedParoki = val!),
                 icon: Icons.location_city_rounded,
               ),
-              const SizedBox(height: 14),
 
-              _buildDropdownField(
-                label: LanguageService.tr('wilayah'),
-                value: _selectedWilayah,
-                items: _wilayahList,
-                onChanged: (val) => setState(() => _selectedWilayah = val!),
-                icon: Icons.map_rounded,
-              ),
-              const SizedBox(height: 14),
-
-              _buildDropdownField(
-                label: LanguageService.tr('lingkungan'),
-                value: _selectedLingkungan,
-                items: _lingkunganList,
-                onChanged: (val) => setState(() => _selectedLingkungan = val!),
-                icon: Icons.groups_rounded,
-              ),
+              if (!_isRomo) ...[
+                const SizedBox(height: 14),
+                _buildDropdownField(
+                  label: LanguageService.tr('wilayah'),
+                  value: _selectedWilayah,
+                  items: _wilayahList,
+                  onChanged: (val) => setState(() => _selectedWilayah = val!),
+                  icon: Icons.map_rounded,
+                ),
+                const SizedBox(height: 14),
+                _buildDropdownField(
+                  label: LanguageService.tr('lingkungan'),
+                  value: _selectedLingkungan,
+                  items: _lingkunganList,
+                  onChanged: (val) => setState(() => _selectedLingkungan = val!),
+                  icon: Icons.groups_rounded,
+                ),
+              ],
 
               const SizedBox(height: 24),
 
