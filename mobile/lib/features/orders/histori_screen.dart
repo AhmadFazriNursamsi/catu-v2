@@ -25,6 +25,17 @@ class HistoriScreen extends StatefulWidget {
   State<HistoriScreen> createState() => _HistoriScreenState();
 }
 
+class HistoriEntryItem {
+  final Order parentOrder;
+  final OrderItem? subItem;
+
+  HistoriEntryItem({required this.parentOrder, this.subItem});
+
+  String get effectiveStatus => subItem != null
+      ? subItem!.status.toUpperCase()
+      : parentOrder.status.toUpperCase();
+}
+
 class _HistoriScreenState extends State<HistoriScreen>
     with SingleTickerProviderStateMixin {
   // ── State ────────────────────────────────────────────────────────────────────
@@ -52,23 +63,16 @@ class _HistoriScreenState extends State<HistoriScreen>
   @override
   void initState() {
     super.initState();
-    LanguageService.currentLanguage.addListener(_onLanguageChanged);
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 400),
     );
-    _fadeIn =
-        CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _fadeIn = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
-  }
-
-  void _onLanguageChanged() {
-    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _animController.dispose();
     _searchController.dispose();
     _searchFocus.dispose();
@@ -79,64 +83,68 @@ class _HistoriScreenState extends State<HistoriScreen>
 
   Color _statusColor(String status) {
     switch (status.toUpperCase()) {
-      case 'CONFIRMED':
-        return const Color(0xFF0891B2);   // cyan — dikonfirmasi
-      case 'IN_PROGRESS':
-        return const Color(0xFF7C3AED);   // ungu — berlangsung
-      case 'DONE':
-        return const Color(0xFF059669);   // hijau — selesai
-      case 'CLOSE':
-        return const Color(0xFF92400E);   // coklat tua — ditutup
-      case 'FAIL':
-        return const Color(0xFFDC2626);   // merah — gagal
       case 'PENDING':
+        return const Color(0xFFD97706);
+      case 'ACCEPTED':
+      case 'CONFIRMED':
+        return const Color(0xFF059669);
+      case 'IN_PROGRESS':
+        return const Color(0xFF1D4ED8);
+      case 'DONE':
+        return const Color(0xFF2563EB);
+      case 'FAIL':
+      case 'DECLINED':
+      case 'REJECTED':
+        return const Color(0xFFDC2626);
       default:
-        return const Color(0xFFD97706);   // oranye — menunggu
+        return const Color(0xFF64748B);
     }
   }
 
   String _statusLabel(String status) {
     switch (status.toUpperCase()) {
       case 'PENDING':
-        return LanguageService.tr('status_pending');
+        return 'Menunggu Konfirmasi';
+      case 'ACCEPTED':
       case 'CONFIRMED':
-        return 'Kehadiran Dikonfirmasi';
+        return 'Telah Dikonfirmasi';
       case 'IN_PROGRESS':
-        return LanguageService.tr('status_in_progress');
+        return 'Sedang Berlangsung';
       case 'DONE':
-        return LanguageService.tr('status_done');
-      case 'CLOSE':
-        return 'Ditutup';
+        return 'Telah Selesai';
       case 'FAIL':
-        return 'Gagal';
+        return 'Gagal / Batal';
+      case 'DECLINED':
+      case 'REJECTED':
+        return 'Ditolak';
       default:
-        return LanguageService.tr('status_pending');
+        return status;
     }
   }
 
   IconData _statusIcon(String status) {
     switch (status.toUpperCase()) {
-      case 'CONFIRMED':
-        return Icons.how_to_reg_rounded;
-      case 'IN_PROGRESS':
-        return Icons.timelapse_rounded;
-      case 'DONE':
-        return Icons.check_circle_rounded;
-      case 'CLOSE':
-        return Icons.block_rounded;
-      case 'FAIL':
-        return Icons.cancel_rounded;
       case 'PENDING':
+        return Icons.hourglass_empty_rounded;
+      case 'ACCEPTED':
+      case 'CONFIRMED':
+        return Icons.check_circle_outline_rounded;
+      case 'IN_PROGRESS':
+        return Icons.directions_run_rounded;
+      case 'DONE':
+        return Icons.task_alt_rounded;
+      case 'FAIL':
+      case 'DECLINED':
+      case 'REJECTED':
+        return Icons.cancel_outlined;
       default:
-        return Icons.schedule_rounded;
+        return Icons.info_outline_rounded;
     }
   }
 
-
-
-  Color _urgencyColor(String urgency) {
-    final u = urgency.toLowerCase();
-    if (u.contains('darurat') || u.contains('kritis') || u.contains('sangat')) {
+  Color _urgencyColor(String urgencyName) {
+    final u = urgencyName.toLowerCase();
+    if (u.contains('darurat') || u.contains('sangat')) {
       return const Color(0xFFDC2626);
     }
     if (u.contains('penting')) return const Color(0xFFD97706);
@@ -165,57 +173,66 @@ class _HistoriScreenState extends State<HistoriScreen>
     }
   }
 
-  List<Order> get _historyBaseOrders {
-    return widget.orders.where((o) {
+  List<HistoriEntryItem> get _historyBaseEntries {
+    final List<HistoriEntryItem> entries = [];
+
+    for (final o in widget.orders) {
       final st = o.status.toUpperCase();
 
       if (widget.isRomo) {
         if (o.items.isNotEmpty) {
-          // Include if ANY sub-item accepted by THIS Romo is DONE, CLOSE, FAIL, or past date!
-          return o.items.any((item) =>
-              (widget.romoId == null || item.acceptedRomoId == widget.romoId) &&
-              item.acceptedRomoId != null &&
-              (item.status.toUpperCase() == 'DONE' ||
-                  item.status.toUpperCase() == 'CLOSE' ||
-                  item.status.toUpperCase() == 'FAIL' ||
-                  _isDateBeforeToday(item.scheduledDate)));
+          for (final item in o.items) {
+            final itemSt = item.status.toUpperCase();
+            if (widget.romoId != null && item.acceptedRomoId != widget.romoId) continue;
+            if (item.acceptedRomoId == null) continue;
+
+            if (itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL' || _isDateBeforeToday(item.scheduledDate)) {
+              entries.add(HistoriEntryItem(parentOrder: o, subItem: item));
+            }
+          }
+        } else {
+          if (st == 'PENDING') continue;
+          if (widget.romoId != null && o.acceptedRomoId != widget.romoId) continue;
+          if (o.acceptedRomoId == null) continue;
+
+          if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL' || _isDateBeforeToday(o.scheduledDate)) {
+            entries.add(HistoriEntryItem(parentOrder: o, subItem: null));
+          }
         }
-
-        if (st == 'PENDING') return false;
-
-        // Romo MUST be the one who accepted this order!
-        if (widget.romoId != null) {
-          if (o.acceptedRomoId != widget.romoId) return false;
-        } else if (o.acceptedRomoId == null) {
-          return false;
+      } else {
+        if (o.items.isNotEmpty) {
+          for (final item in o.items) {
+            final itemSt = item.status.toUpperCase();
+            if (itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL' || _isDateBeforeToday(item.scheduledDate)) {
+              entries.add(HistoriEntryItem(parentOrder: o, subItem: item));
+            }
+          }
+        } else if (o.isHistoryOrder) {
+          entries.add(HistoriEntryItem(parentOrder: o, subItem: null));
         }
-
-        if (st == 'FAIL') return true;
-        if (st == 'DONE' || st == 'CLOSE') return true;
-
-        final bool mainDatePassed = _isDateBeforeToday(o.scheduledDate);
-        return mainDatePassed;
       }
+    }
 
-      return o.isHistoryOrder;
-    }).toList();
+    return entries;
   }
 
-  List<Order> get _filtered {
-    List<Order> result = _historyBaseOrders;
+  List<HistoriEntryItem> get _filtered {
+    List<HistoriEntryItem> result = _historyBaseEntries;
 
     // Filter by status
     if (_filterStatus != 'SEMUA') {
-      result =
-          result.where((o) => o.status.toUpperCase() == _filterStatus).toList();
+      result = result.where((e) => e.effectiveStatus == _filterStatus).toList();
     }
 
     // Filter by search
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
-      result = result.where((o) {
+      result = result.where((e) {
+        final o = e.parentOrder;
+        final subName = e.subItem?.itemName ?? '';
         return o.penerimaName.toLowerCase().contains(q) ||
             o.categoryName.toLowerCase().contains(q) ||
+            subName.toLowerCase().contains(q) ||
             o.displayAddress.toLowerCase().contains(q) ||
             o.orderNumber.toLowerCase().contains(q);
       }).toList();
@@ -223,11 +240,19 @@ class _HistoriScreenState extends State<HistoriScreen>
 
     // Sort
     if (_sortBy == 'TERBARU') {
-      result.sort((a, b) => b.id.compareTo(a.id));
+      result.sort((a, b) {
+        final idA = a.subItem?.id ?? a.parentOrder.id;
+        final idB = b.subItem?.id ?? b.parentOrder.id;
+        return idB.compareTo(idA);
+      });
     } else if (_sortBy == 'TERLAMA') {
-      result.sort((a, b) => a.id.compareTo(b.id));
+      result.sort((a, b) {
+        final idA = a.subItem?.id ?? a.parentOrder.id;
+        final idB = b.subItem?.id ?? b.parentOrder.id;
+        return idA.compareTo(idB);
+      });
     } else if (_sortBy == 'STATUS') {
-      result.sort((a, b) => a.status.compareTo(b.status));
+      result.sort((a, b) => a.effectiveStatus.compareTo(b.effectiveStatus));
     }
 
     return result;
@@ -236,19 +261,19 @@ class _HistoriScreenState extends State<HistoriScreen>
   // ── Summary counts ──────────────────────────────────────────────────────────
 
   Map<String, int> get _summaryCounts {
-    final all = _historyBaseOrders;
+    final all = _historyBaseEntries;
     return {
       'total': all.length,
       'pending': all
-          .where((o) => o.status.toUpperCase() == 'PENDING')
+          .where((e) => e.effectiveStatus == 'PENDING')
           .length,
       'berlangsung': all
-          .where((o) =>
-              o.status.toUpperCase() == 'CONFIRMED' ||
-              o.status.toUpperCase() == 'IN_PROGRESS')
+          .where((e) =>
+              e.effectiveStatus == 'CONFIRMED' ||
+              e.effectiveStatus == 'IN_PROGRESS')
           .length,
       'selesai': all
-          .where((o) => o.status.toUpperCase() == 'DONE' || o.status.toUpperCase() == 'FAIL' || o.status.toUpperCase() == 'CLOSE')
+          .where((e) => e.effectiveStatus == 'DONE' || e.effectiveStatus == 'FAIL' || e.effectiveStatus == 'CLOSE')
           .length,
     };
   }
@@ -726,17 +751,11 @@ class _HistoriScreenState extends State<HistoriScreen>
 
   // ── Order Card ──────────────────────────────────────────────────────────────
 
-  Widget _buildOrderCard(Order order, int index) {
-    OrderItem? displayItem;
-    if (order.items.isNotEmpty) {
-      displayItem = order.items.firstWhere(
-        (i) => (widget.romoId == null || i.acceptedRomoId == widget.romoId) &&
-            (i.status.toUpperCase() == 'DONE' || i.status.toUpperCase() == 'CLOSE' || i.status.toUpperCase() == 'FAIL' || _isDateBeforeToday(i.scheduledDate)),
-        orElse: () => order.items.first,
-      );
-    }
+  Widget _buildOrderCard(HistoriEntryItem entry, int index) {
+    final order = entry.parentOrder;
+    final displayItem = entry.subItem;
 
-    final String effectiveStatus = displayItem != null ? displayItem.status : order.status;
+    final String effectiveStatus = entry.effectiveStatus;
     final statusColor = _statusColor(effectiveStatus);
     final statusLabel = _statusLabel(effectiveStatus);
     final statusIcon = _statusIcon(effectiveStatus);
@@ -773,8 +792,7 @@ class _HistoriScreenState extends State<HistoriScreen>
           builder: (_) => OrderDetailScreen(
             order: order,
             userName: widget.userName,
-            selectedItemTitle:
-                order.items.isNotEmpty ? order.items.first.itemName : null,
+            selectedItemTitle: displayItem?.itemName,
             isRomo: widget.isRomo,
             romoId: widget.romoId,
           ),
