@@ -849,57 +849,72 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                       ),
                     ),
                   ),
-                  // Category Badge (top-left)
+                  // Category & Status Badges Row (top)
                   Positioned(
                     top: 10,
                     left: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isKedukaan ? const Color(0xFF1E1B4B).withValues(alpha: 0.9) : const Color(0xFF1E3A8A).withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isKedukaan ? const Color(0xFFD4AF37) : Colors.white.withValues(alpha: 0.3),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Text(
-                        isKedukaan ? '✝ MISA KEDUKAAN' : '🕯️ PERMINYAKAN',
-                        style: TextStyle(
-                          color: isKedukaan ? const Color(0xFFF5D77D) : Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Status pill (top-right)
-                  Positioned(
-                    top: 10,
                     right: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(statusIcon, color: Colors.white, size: 10),
-                          const SizedBox(width: 4),
-                          Text(
-                            statusLabel,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isKedukaan
+                                  ? const Color(0xFF1E1B4B).withValues(alpha: 0.9)
+                                  : const Color(0xFF1E3A8A).withValues(alpha: 0.9),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isKedukaan
+                                    ? const Color(0xFFD4AF37)
+                                    : Colors.white.withValues(alpha: 0.3),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              isKedukaan ? '✝ MISA KEDUKAAN' : '🕯️ PERMINYAKAN',
+                              style: TextStyle(
+                                color: isKedukaan ? const Color(0xFFF5D77D) : Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.4,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(statusIcon, color: Colors.white, size: 10),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    statusLabel,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 

@@ -359,43 +359,61 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
   Color _statusColor(String status) {
     switch (status.toUpperCase()) {
+      case 'ACCEPTED':
       case 'CONFIRMED':
-        return const Color(0xFF0891B2); // cyan
+        return const Color(0xFF059669);
       case 'IN_PROGRESS':
-        return const Color(0xFF7C3AED); // ungu
+        return const Color(0xFF1D4ED8);
+      case 'DONE':
+        return const Color(0xFF2563EB);
+      case 'REJECTED':
+      case 'FAIL':
+        return const Color(0xFFDC2626);
       case 'PENDING':
       default:
-        return const Color(0xFFD97706); // oranye
+        return const Color(0xFFD97706);
     }
   }
 
   String _statusLabel(String status) {
     switch (status.toUpperCase()) {
+      case 'ACCEPTED':
       case 'CONFIRMED':
-        return 'Kehadiran Dikonfirmasi';
+        return 'Telah Dikonfirmasi';
       case 'IN_PROGRESS':
-        return 'Berlangsung';
+        return 'Sedang Berlangsung';
+      case 'DONE':
+        return 'Telah Selesai';
+      case 'REJECTED':
+      case 'FAIL':
+        return 'Ditolak / Gagal';
       case 'PENDING':
       default:
-        return LanguageService.tr('status_pending');
+        return 'Menunggu Konfirmasi';
     }
   }
 
   IconData _statusIcon(String status) {
     switch (status.toUpperCase()) {
+      case 'ACCEPTED':
       case 'CONFIRMED':
-        return Icons.how_to_reg_rounded;
+        return Icons.check_circle_rounded;
       case 'IN_PROGRESS':
-        return Icons.timelapse_rounded;
+        return Icons.directions_run_rounded;
+      case 'DONE':
+        return Icons.task_alt_rounded;
+      case 'REJECTED':
+      case 'FAIL':
+        return Icons.cancel_rounded;
       case 'PENDING':
       default:
-        return Icons.schedule_rounded;
+        return Icons.hourglass_empty_rounded;
     }
   }
 
   Color _urgencyColor(String urgency) {
     final u = urgency.toLowerCase();
-    if (u.contains('darurat') || u.contains('kritis')) {
+    if (u.contains('darurat') || u.contains('kritis') || u.contains('sangat')) {
       return const Color(0xFFDC2626);
     }
     if (u.contains('penting')) return const Color(0xFFD97706);
@@ -1293,13 +1311,13 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     final statusLabel = _statusLabel(effectiveStatus);
     final statusIcon = _statusIcon(effectiveStatus);
     final urgencyColor = _urgencyColor(order.urgencyName);
-    final emoji = _categoryEmoji(entry.categoryName);
 
-    final bool isKedukaan =
-        entry.categoryName.toLowerCase().contains('kedukaan');
+    final bool isKedukaan = entry.categoryName.toLowerCase().contains('kedukaan');
     final String cardTitle = entry.title;
-    final String cardSubtitle =
-        isKedukaan ? order.penerimaName : entry.categoryName;
+    final String cardSubtitle = isKedukaan ? 'Alm. ${order.penerimaName}' : 'Penerima: ${order.penerimaName}';
+    final String romoName = (entry.item?.acceptedRomoName != null && entry.item!.acceptedRomoName!.isNotEmpty)
+        ? entry.item!.acceptedRomoName!
+        : ((order.acceptedRomoName != null && order.acceptedRomoName!.isNotEmpty) ? order.acceptedRomoName! : '');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -1339,143 +1357,135 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 18,
+                offset: const Offset(0, 5),
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Banner Image Header ──
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-                child: SizedBox(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Banner Image Header ──
+                SizedBox(
                   height: 125,
                   child: Stack(
-                    fit: StackFit.expand,
                     children: [
-                      Image.asset(
-                        'assets/images/church_1.jpg',
-                        fit: BoxFit.cover,
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.15),
-                              Colors.black.withValues(alpha: 0.75),
-                            ],
-                          ),
+                      Positioned.fill(
+                        child: Image.asset(
+                          'assets/images/church_1.jpg',
+                          fit: BoxFit.cover,
                         ),
                       ),
-
-                      // Status Badge pill top-right
-                      Positioned(
-                        top: 10,
-                        right: 10,
+                      Positioned.fill(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 9, vertical: 4.5),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.92),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 6,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(statusIcon, size: 12, color: statusColor),
-                              const SizedBox(width: 4),
-                              Text(
-                                statusLabel,
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: statusColor,
-                                ),
-                              ),
-                            ],
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.black.withValues(alpha: 0.1),
+                                Colors.black.withValues(alpha: 0.8),
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
                           ),
                         ),
                       ),
 
-                      // Category Emoji Badge top-left
+                      // Category & Status Badges Row (top)
                       Positioned(
                         top: 10,
                         left: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            emoji,
-                            style: const TextStyle(fontSize: 16),
-                          ),
+                        right: 10,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isKedukaan
+                                      ? const Color(0xFF1E1B4B).withValues(alpha: 0.9)
+                                      : const Color(0xFF1E3A8A).withValues(alpha: 0.9),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: isKedukaan
+                                        ? const Color(0xFFD4AF37)
+                                        : Colors.white.withValues(alpha: 0.3),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  isKedukaan ? '✝ MISA KEDUKAAN' : '🕯️ PERMINYAKAN',
+                                  style: TextStyle(
+                                    color: isKedukaan ? const Color(0xFFF5D77D) : Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.4,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(statusIcon, color: Colors.white, size: 10),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        statusLabel,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
 
                       // Location & Schedule Overlay on Banner Bottom
                       Positioned(
-                        bottom: 10,
-                        left: 12,
-                        right: 12,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        bottom: 8,
+                        left: 10,
+                        right: 10,
+                        child: Row(
                           children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.place_rounded,
-                                    size: 13, color: Colors.white),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    entry.locationStr,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      shadows: [
-                                        Shadow(
-                                            blurRadius: 4,
-                                            color: Colors.black54),
-                                      ],
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                            const Icon(Icons.location_on_rounded, color: Colors.white, size: 12),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                entry.locationStr,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  shadows: [
+                                    Shadow(blurRadius: 4, color: Colors.black54, offset: Offset(0, 1)),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                const Icon(Icons.schedule_rounded,
-                                    size: 13, color: Colors.white70),
-                                const SizedBox(width: 4),
-                                Text(
-                                  entry.scheduledTimeStr,
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
@@ -1483,108 +1493,157 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                     ],
                   ),
                 ),
-              ),
 
-              // ── Card Body ──
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      cardTitle,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
-                        letterSpacing: -0.2,
-                        height: 1.25,
+                // ── Urgency accent strip ──
+                Container(height: 3, color: urgencyColor),
+
+                // ── Card Body ──
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        cardTitle,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
+                      const SizedBox(height: 3),
 
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            cardSubtitle,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF64748B),
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                      Text(
+                        cardSubtitle,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: isKedukaan ? const Color(0xFF7C3AED) : const Color(0xFF64748B),
                         ),
-                        const SizedBox(width: 8),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      // Romo Info Badge (if assigned)
+                      if (romoName.isNotEmpty) ...[
+                        const SizedBox(height: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                           decoration: BoxDecoration(
-                            color: urgencyColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            order.urgencyName,
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                              color: urgencyColor,
+                            color: const Color(0xFF059669).withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF059669).withValues(alpha: 0.2),
+                              width: 0.8,
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 10),
-                    Container(height: 1, color: const Color(0xFFF1F5F9)),
-                    const SizedBox(height: 8),
-
-                    Row(
-                      children: [
-                        Text(
-                          '#${order.orderNumber}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF94A3B8),
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1D4ED8),
-                            borderRadius: BorderRadius.circular(9),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.visibility_rounded,
-                                  size: 12, color: Colors.white),
-                              const SizedBox(width: 5),
-                              Text(
-                                LanguageService.tr('view_detail'),
-                                style: const TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
+                              const Icon(Icons.verified_user_rounded, size: 12, color: Color(0xFF059669)),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  romoName,
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF059669),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ],
-                    ),
-                  ],
+
+                      const SizedBox(height: 8),
+
+                      // Date + Start Time + urgency pill
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_today_outlined, size: 11, color: Color(0xFF94A3B8)),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              entry.scheduledTimeStr,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Color(0xFF64748B),
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: urgencyColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              order.urgencyName,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: urgencyColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Container(height: 1, color: const Color(0xFFF1F5F9)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Text(
+                            '#${order.orderNumber}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF94A3B8),
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1D4ED8),
+                              borderRadius: BorderRadius.circular(9),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.visibility_rounded,
+                                    size: 12, color: Colors.white),
+                                const SizedBox(width: 5),
+                                Text(
+                                  LanguageService.tr('view_detail'),
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
