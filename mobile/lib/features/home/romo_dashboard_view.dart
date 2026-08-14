@@ -825,21 +825,84 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     );
   }
 
+  Color _statusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'ACCEPTED':
+      case 'CONFIRMED':
+        return const Color(0xFF059669);
+      case 'DONE':
+        return const Color(0xFF059669);
+      case 'REJECTED':
+      case 'FAIL':
+      case 'CLOSE':
+        return const Color(0xFFDC2626);
+      case 'PENDING':
+      default:
+        return const Color(0xFFD97706);
+    }
+  }
+
+  String _statusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'ACCEPTED':
+      case 'CONFIRMED':
+        return 'Telah Dikonfirmasi';
+      case 'DONE':
+        return 'Telah Selesai';
+      case 'REJECTED':
+      case 'FAIL':
+      case 'CLOSE':
+        return 'Batal / Gagal';
+      case 'PENDING':
+      default:
+        return 'Menunggu Konfirmasi';
+    }
+  }
+
+  IconData _statusIcon(String status) {
+    switch (status.toUpperCase()) {
+      case 'ACCEPTED':
+      case 'CONFIRMED':
+      case 'DONE':
+        return Icons.check_circle_rounded;
+      case 'REJECTED':
+      case 'FAIL':
+      case 'CLOSE':
+        return Icons.cancel_rounded;
+      case 'PENDING':
+      default:
+        return Icons.hourglass_bottom_rounded;
+    }
+  }
+
+  Color _urgencyColor(String urgencyName) {
+    final lower = urgencyName.toLowerCase();
+    if (lower.contains('darurat') || lower.contains('kritis') || lower.contains('segera')) {
+      return const Color(0xFFDC2626);
+    } else if (lower.contains('penting') || lower.contains('tinggi')) {
+      return const Color(0xFFD97706);
+    }
+    return const Color(0xFF2563EB);
+  }
+
   Widget _buildServiceCardFromCardItem(RomoDashboardCardItem item) {
     final order = item.parentOrder;
-    final bool isConfirmed = order.status.toUpperCase() != 'PENDING';
-    final String statusBadge = isConfirmed ? 'Kehadiran Dikonfirmasi' : 'Menunggu Konfirmasi Kehadiran';
+    final bool isItemAccepted = item.subItem?.acceptedRomoId != null || order.acceptedRomoId != null;
+    final String effectiveStatus = isItemAccepted
+        ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
+        : order.status;
 
-    Color priorityColor = Colors.blue.shade700;
-    IconData priorityIcon = Icons.info_outline_rounded;
-    final urg = order.urgencyName.toLowerCase();
-    if (urg.contains('darurat') || urg.contains('kritis')) {
-      priorityColor = Colors.red.shade700;
-      priorityIcon = Icons.error_outline_rounded;
-    } else if (urg.contains('penting')) {
-      priorityColor = Colors.amber.shade800;
-      priorityIcon = Icons.error_outline_rounded;
-    }
+    final statusColor = _statusColor(effectiveStatus);
+    final statusLabel = _statusLabel(effectiveStatus);
+    final statusIcon = _statusIcon(effectiveStatus);
+    final urgencyColor = _urgencyColor(order.urgencyName);
+
+    final bool isKedukaan = item.title.toLowerCase().contains('kedukaan') || order.categoryName.toLowerCase().contains('kedukaan');
+    final String cardTitle = item.title;
+    final String cardSubtitle = isKedukaan ? 'Alm. ${order.penerimaName}' : 'Penerima: ${order.penerimaName}';
+    final String romoName = (item.subItem?.acceptedRomoName != null && item.subItem!.acceptedRomoName!.isNotEmpty)
+        ? item.subItem!.acceptedRomoName!
+        : ((order.acceptedRomoName != null && order.acceptedRomoName!.isNotEmpty) ? order.acceptedRomoName! : '');
 
     final int? romoId = widget.user['id'] != null
         ? int.tryParse(widget.user['id'].toString())
@@ -864,245 +927,257 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           if (mounted) setState(() {});
         }
       },
-      child: _buildServiceCard(
-        statusBadge: statusBadge,
-        isConfirmed: isConfirmed,
-        location: item.location.isNotEmpty ? item.location : order.displayAddress,
-        dateTime: item.dateSchedule,
-        category: item.title,
-        priorityLabel: order.urgencyName,
-        priorityColor: priorityColor,
-        priorityIcon: priorityIcon,
-        onTapChat: () async {
-          final bool? refreshed = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => OrderDetailScreen(
-                order: order,
-                userName: widget.user['fullName'] ?? widget.user['full_name'] ?? 'Romo',
-                selectedItemTitle: item.title,
-                isRomo: true,
-                romoId: romoId,
-              ),
+      child: Container(
+        width: 250,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 18,
+              offset: const Offset(0, 5),
             ),
-          );
-          if (refreshed == true) {
-            widget.onRefresh();
-            if (mounted) setState(() {});
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildServiceCard({
-    required String statusBadge,
-    required bool isConfirmed,
-    required String location,
-    required String dateTime,
-    required String category,
-    required String priorityLabel,
-    required Color priorityColor,
-    required IconData priorityIcon,
-    String? userPhoto,
-    required VoidCallback onTapChat,
-  }) {
-    return Container(
-      width: 230,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.07),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image Stack Container with Gradient & Badges
-            SizedBox(
-              height: 135,
-              child: Stack(
-                children: [
-                  // Church Background Image
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/images/church_1.jpg',
-                      fit: BoxFit.cover,
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Banner Image Header ──
+              SizedBox(
+                height: 125,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Image.asset(
+                        'assets/images/church_1.jpg',
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
-                  // Dark Gradient Overlay for Text Legibility
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.black.withOpacity(0.0),
-                            Colors.black.withOpacity(0.75),
-                          ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withValues(alpha: 0.1),
+                              Colors.black.withValues(alpha: 0.8),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                  // Top Left Status Badge (White Pill with Icon)
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    right: 44,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                    // Category & Status Badges Row (top)
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      right: 10,
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: isKedukaan
+                                    ? const Color(0xFF1E1B4B).withValues(alpha: 0.9)
+                                    : const Color(0xFF1E3A8A).withValues(alpha: 0.9),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: isKedukaan
+                                      ? const Color(0xFFD4AF37)
+                                      : Colors.white.withValues(alpha: 0.3),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                isKedukaan ? '✝ MISA KEDUKAAN' : '🕯️ PERMINYAKAN',
+                                style: TextStyle(
+                                  color: isKedukaan ? const Color(0xFFF5D77D) : Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.4,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: statusColor,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(statusIcon, color: Colors.white, size: 10),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      statusLabel,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Location / Address (bottom of image)
+                    Positioned(
+                      bottom: 8,
+                      left: 10,
+                      right: 10,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.location_on_rounded, color: Colors.white, size: 12),
+                          const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              statusBadge,
+                              item.location.isNotEmpty ? item.location : order.displayAddress,
                               style: const TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF1E293B),
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                shadows: [
+                                  Shadow(blurRadius: 4, color: Colors.black54, offset: Offset(0, 1)),
+                                ],
                               ),
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            isConfirmed ? Icons.check_box_rounded : Icons.hourglass_bottom_rounded,
-                            size: 14,
-                            color: isConfirmed ? Colors.teal : Colors.amber.shade800,
-                          ),
                         ],
                       ),
                     ),
-                  ),
-
-                  // Top Right User Avatar Badge
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: Container(
-                      width: 26,
-                      height: 26,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        isConfirmed ? Icons.person_rounded : Icons.person_outline_rounded,
-                        size: 16,
-                        color: isConfirmed ? Colors.teal : Colors.amber.shade800,
-                      ),
-                    ),
-                  ),
-
-                  // Bottom Text Overlay (Location & Time)
-                  Positioned(
-                    bottom: 8,
-                    left: 10,
-                    right: 10,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on_outlined, color: Colors.white, size: 12),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                location,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            const Icon(Icons.calendar_today_outlined, color: Colors.white70, size: 11),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                dateTime,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            // Bottom White Area: Category & Priority
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    category,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1E293B),
-                      height: 1.25,
+              // ── Urgency accent strip ──
+              Container(height: 3, color: urgencyColor),
+
+              // ── Card body ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      cardTitle,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(priorityIcon, size: 14, color: priorityColor),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          priorityLabel,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: priorityColor,
+                    const SizedBox(height: 3),
+
+                    Text(
+                      cardSubtitle,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: isKedukaan ? const Color(0xFF7C3AED) : const Color(0xFF64748B),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    if (romoName.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669).withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFF059669).withValues(alpha: 0.2),
+                            width: 0.8,
                           ),
-                          overflow: TextOverflow.ellipsis,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.verified_user_rounded, size: 12, color: Color(0xFF059669)),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                romoName,
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF059669),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                ],
+
+                    const SizedBox(height: 8),
+
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today_outlined, size: 11, color: Color(0xFF94A3B8)),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            item.dateSchedule,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: urgencyColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Text(
+                            order.urgencyName,
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: urgencyColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
