@@ -685,21 +685,27 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
   String _statusLabel(String status) {
     switch (status.toUpperCase()) {
       case 'ACCEPTED':
-        return 'Dikonfirmasi';
-      case 'PENDING':
-        return 'Menunggu';
+      case 'CONFIRMED':
+        return 'Telah Dikonfirmasi';
+      case 'IN_PROGRESS':
+        return 'Sedang Berlangsung';
+      case 'DONE':
+        return 'Telah Selesai';
       case 'REJECTED':
-        return 'Ditolak';
+      case 'DECLINED':
+      case 'FAIL':
+        return 'Ditolak / Gagal';
+      case 'PENDING':
       default:
-        return status;
+        return 'Menunggu Konfirmasi';
     }
   }
 
   Color _urgencyColor(String urgency) {
     final u = urgency.toLowerCase();
-    if (u.contains('darurat') || u.contains('kritis')) return Colors.red.shade700;
-    if (u.contains('penting')) return Colors.amber.shade700;
-    return Colors.blue.shade600;
+    if (u.contains('darurat') || u.contains('kritis') || u.contains('sangat')) return const Color(0xFFDC2626);
+    if (u.contains('penting')) return const Color(0xFFD97706);
+    return const Color(0xFF1D4ED8);
   }
 
   bool _isDateBeforeToday(String dateStr) {
@@ -772,49 +778,55 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     return cardList.take(5).toList();
   }
 
-  // ── Redesigned Service Card ──
+  // ── Redesigned Premium Service Card (Umat) ──
   Widget _buildServiceCard(DashboardCardItem item) {
     final order = item.parentOrder;
-    final isConfirmed = order.status.toUpperCase() == 'ACCEPTED';
+    final st = order.status.toUpperCase();
+    final isKedukaan = order.categoryName.toLowerCase().contains('kedukaan');
     final urgencyColor = _urgencyColor(order.urgencyName);
-    final statusLabel = _statusLabel(order.status);
+    final statusLabel = _statusLabel(st);
 
-    Color accentColor;
-    if (order.status.toUpperCase() == 'ACCEPTED') {
-      accentColor = Colors.teal;
-    } else if (order.status.toUpperCase() == 'REJECTED') {
-      accentColor = Colors.red.shade700;
+    Color statusColor;
+    IconData statusIcon;
+    if (st == 'ACCEPTED' || st == 'CONFIRMED') {
+      statusColor = const Color(0xFF059669);
+      statusIcon = Icons.check_circle_rounded;
+    } else if (st == 'DONE') {
+      statusColor = const Color(0xFF2563EB);
+      statusIcon = Icons.task_alt_rounded;
+    } else if (st == 'REJECTED' || st == 'FAIL') {
+      statusColor = const Color(0xFFDC2626);
+      statusIcon = Icons.cancel_rounded;
     } else {
-      accentColor = const Color(0xFF1E5399);
+      statusColor = const Color(0xFFD97706);
+      statusIcon = Icons.hourglass_empty_rounded;
     }
 
+    final String romoName = (order.acceptedRomoName != null && order.acceptedRomoName!.isNotEmpty)
+        ? order.acceptedRomoName!
+        : '';
+
     return Container(
-      width: 230,
+      width: 250,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: accentColor.withOpacity(0.13),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 18,
-            spreadRadius: 1,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Image Header ──
             SizedBox(
-              height: 118,
+              height: 120,
               child: Stack(
                 children: [
                   Positioned.fill(
@@ -828,8 +840,8 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Colors.black.withOpacity(0.0),
-                            Colors.black.withOpacity(0.75),
+                            Colors.black.withValues(alpha: 0.1),
+                            Colors.black.withValues(alpha: 0.8),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -837,40 +849,60 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                       ),
                     ),
                   ),
-                  // Status pill (top-left)
+                  // Category Badge (top-left)
                   Positioned(
                     top: 10,
                     left: 10,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: accentColor,
-                        borderRadius: BorderRadius.circular(20),
+                        color: isKedukaan ? const Color(0xFF1E1B4B).withValues(alpha: 0.9) : const Color(0xFF1E3A8A).withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isKedukaan ? const Color(0xFFD4AF37) : Colors.white.withValues(alpha: 0.3),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        isKedukaan ? '✝ MISA KEDUKAAN' : '🕯️ PERMINYAKAN',
+                        style: TextStyle(
+                          color: isKedukaan ? const Color(0xFFF5D77D) : Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Status pill (top-right)
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            isConfirmed
-                                ? Icons.check_circle_rounded
-                                : Icons.hourglass_bottom_rounded,
-                            color: Colors.white,
-                            size: 10,
-                          ),
+                          Icon(statusIcon, color: Colors.white, size: 10),
                           const SizedBox(width: 4),
                           Text(
                             statusLabel,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 9,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
+
                   // Location / Address (bottom of image)
                   Positioned(
                     bottom: 8,
@@ -878,8 +910,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                     right: 10,
                     child: Row(
                       children: [
-                        const Icon(Icons.location_on_rounded,
-                            color: Colors.white, size: 12),
+                        const Icon(Icons.location_on_rounded, color: Colors.white, size: 12),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -889,11 +920,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                               shadows: [
-                                Shadow(
-                                  blurRadius: 4,
-                                  color: Colors.black45,
-                                  offset: Offset(0, 1),
-                                ),
+                                Shadow(blurRadius: 4, color: Colors.black54, offset: Offset(0, 1)),
                               ],
                             ),
                             maxLines: 1,
@@ -916,76 +943,75 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Category / Item Misa Name badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 7, vertical: 2.5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E5399).withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      item.title,
-                      style: const TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1E5399),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  // Nama penerima sakramen — main title
+                  // Title: item name
                   Text(
-                    item.penerimaName,
+                    item.title,
                     style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
                       color: Color(0xFF0F172A),
-                      height: 1.2,
+                      letterSpacing: -0.2,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 5),
-                  // Gender + Usia
-                  if (order.genderLabel.isNotEmpty || order.usiaLabel.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 5),
+                  const SizedBox(height: 3),
+
+                  // Subtitle: Penerima name
+                  Text(
+                    isKedukaan
+                        ? 'Alm. ${item.penerimaName}'
+                        : 'Penerima: ${item.penerimaName}',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: isKedukaan ? const Color(0xFF7C3AED) : const Color(0xFF64748B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  // Romo Info Badge (if assigned)
+                  if (romoName.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF059669).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFF059669).withValues(alpha: 0.2),
+                          width: 0.8,
+                        ),
+                      ),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (order.genderLabel.isNotEmpty) ...[
-                            const Icon(Icons.person_outline_rounded,
-                                size: 12, color: Color(0xFF64748B)),
-                            const SizedBox(width: 3),
-                            Text(
-                              order.genderLabel,
+                          const Icon(Icons.verified_user_rounded, size: 12, color: Color(0xFF059669)),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              romoName,
                               style: const TextStyle(
-                                  fontSize: 10.5, color: Color(0xFF64748B)),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF059669),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                          if (order.genderLabel.isNotEmpty &&
-                              order.usiaLabel.isNotEmpty)
-                            const SizedBox(width: 8),
-                          if (order.usiaLabel.isNotEmpty) ...[
-                            const Icon(Icons.cake_outlined,
-                                size: 12, color: Color(0xFF64748B)),
-                            const SizedBox(width: 3),
-                            Text(
-                              order.usiaLabel,
-                              style: const TextStyle(
-                                  fontSize: 10.5, color: Color(0xFF64748B)),
-                            ),
-                          ],
+                          ),
                         ],
                       ),
                     ),
+                  ],
+
+                  const SizedBox(height: 8),
+
                   // Date + Start Time + urgency pill
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today_outlined,
-                          size: 11, color: Color(0xFF94A3B8)),
+                      const Icon(Icons.calendar_today_outlined, size: 11, color: Color(0xFF94A3B8)),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
@@ -1000,10 +1026,9 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                       ),
                       const SizedBox(width: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: urgencyColor.withOpacity(0.12),
+                          color: urgencyColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(5),
                         ),
                         child: Text(
