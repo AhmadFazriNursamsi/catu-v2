@@ -1081,7 +1081,8 @@ export class OrdersController {
              p.full_name as pemohon_name,
              k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
              COALESCE(o.paroki_id, p.paroki_id) as paroki_id,
-             (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND cgm.role_in_group = 'ROMO_PAROKI' LIMIT 1) as "acceptedRomoId"
+             COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO') LIMIT 1)) as "acceptedRomoId",
+             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO') LIMIT 1)) LIMIT 1) as "acceptedRomoName"
       FROM orders o
       JOIN service_categories sc ON o.service_category_id = sc.id
       JOIN urgency_levels ul ON o.urgency_level_id = ul.id
@@ -1137,7 +1138,9 @@ export class OrdersController {
              o.attachment_url as "attachmentUrl",
              p.full_name as pemohon_name,
              k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
-             o.user_id
+             o.user_id,
+             COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO') LIMIT 1)) as "acceptedRomoId",
+             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO') LIMIT 1)) LIMIT 1) as "acceptedRomoName"
       FROM orders o
       JOIN service_categories sc ON o.service_category_id = sc.id
       JOIN urgency_levels ul ON o.urgency_level_id = ul.id

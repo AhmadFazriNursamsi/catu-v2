@@ -72,6 +72,7 @@ class Order {
   final int id;
   final int? userId;
   int? acceptedRomoId;
+  String? acceptedRomoName;
   final String orderNumber;
   final String categoryName;
   final String urgencyName;
@@ -92,6 +93,7 @@ class Order {
     required this.id,
     this.userId,
     this.acceptedRomoId,
+    this.acceptedRomoName,
     required this.orderNumber,
     required this.categoryName,
     required this.urgencyName,
@@ -326,11 +328,13 @@ class Order {
 
     final rawAcceptedRomo = json['acceptedRomoId'] ?? json['accepted_romo_id'];
     final int? parsedAcceptedRomoId = rawAcceptedRomo != null ? int.tryParse(rawAcceptedRomo.toString()) : null;
+    final String? parsedAcceptedRomoName = json['acceptedRomoName'] ?? json['accepted_romo_name'];
 
     return Order(
       id: parsedId,
       userId: parsedUserId,
       acceptedRomoId: parsedAcceptedRomoId,
+      acceptedRomoName: parsedAcceptedRomoName,
       orderNumber: json['order_number'] ?? json['orderNumber'] ?? '',
       categoryName: json['category_name'] ?? json['categoryName'] ?? 'Pelayanan',
       urgencyName: json['urgency_name'] ?? json['urgencyName'] ?? 'Biasa',

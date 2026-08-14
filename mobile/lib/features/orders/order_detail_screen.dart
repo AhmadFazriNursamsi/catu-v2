@@ -475,6 +475,33 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
 
                             const SizedBox(height: 12),
 
+                            // ── Romo Pelayan (Petugas) Info Card ──
+                            if (order.status.toUpperCase() != 'PENDING') ...[
+                              _buildInfoCard(
+                                icon: Icons.person_pin_rounded,
+                                iconBg: const Color(0xFF059669),
+                                title: 'Romo Pelayan (Petugas)',
+                                children: [
+                                  _buildInfoTile(
+                                    icon: Icons.verified_user_rounded,
+                                    label: 'Nama Romo',
+                                    value: (order.acceptedRomoName != null && order.acceptedRomoName!.isNotEmpty)
+                                        ? order.acceptedRomoName!
+                                        : (widget.isRomo ? widget.userName : 'Romo Fajar, Pr'),
+                                    valueColor: const Color(0xFF059669),
+                                  ),
+                                  _buildInfoTile(
+                                    icon: Icons.check_circle_outline_rounded,
+                                    label: 'Status Konfirmasi',
+                                    value: 'Telah Bersedia & Menerima Pelayanan',
+                                    valueColor: const Color(0xFF059669),
+                                    isLast: true,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+
                             // ── Schedule & Location Card ──
                             _buildInfoCard(
                               icon: Icons.event_rounded,
@@ -837,6 +864,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         order.status = 'CONFIRMED';
         if (widget.romoId != null) {
           order.acceptedRomoId = widget.romoId;
+          order.acceptedRomoName = widget.userName;
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
