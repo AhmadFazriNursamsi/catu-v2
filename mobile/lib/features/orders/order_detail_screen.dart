@@ -365,13 +365,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   @override
   Widget build(BuildContext context) {
     final order = widget.order;
-    final statusColor = _getStatusColor(order.status);
-    final statusLabel = _getStatusLabel(order.status);
-    final statusIcon = _getStatusIcon(order.status);
-    final urgencyColor = _getUrgencyColor(order.urgencyName);
-    final bool isKedukaan =
-        order.categoryName.toLowerCase().contains('kedukaan');
-
     OrderItem? targetItem;
     if (widget.selectedItemTitle != null && order.items.isNotEmpty) {
       for (final item in order.items) {
@@ -393,6 +386,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               order.jamSelesaiLabel.isNotEmpty ? order.jamSelesaiLabel : 'Selesai',
           locationName: order.displayAddress,
         );
+
+    final bool isItemAccepted = displayItem.acceptedRomoId != null || order.acceptedRomoId != null;
+    final String effectiveStatus = isItemAccepted
+        ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
+        : order.status;
+
+    final statusColor = _getStatusColor(effectiveStatus);
+    final statusLabel = _getStatusLabel(effectiveStatus);
+    final statusIcon = _getStatusIcon(effectiveStatus);
+    final urgencyColor = _getUrgencyColor(order.urgencyName);
+    final bool isKedukaan =
+        order.categoryName.toLowerCase().contains('kedukaan');
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -479,7 +484,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             const SizedBox(height: 12),
 
                             // ── Romo yang Bertugas Info Card ──
-                            if (order.status.toUpperCase() != 'PENDING') ...[
+                            if (isItemAccepted) ...[
                               _buildInfoCard(
                                 icon: Icons.person_pin_rounded,
                                 iconBg: const Color(0xFF059669),
@@ -488,9 +493,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                   _buildInfoTile(
                                     icon: Icons.verified_user_rounded,
                                     label: 'Romo / Pastor',
-                                    value: (order.acceptedRomoName != null && order.acceptedRomoName!.isNotEmpty)
-                                        ? order.acceptedRomoName!
-                                        : (widget.isRomo ? widget.userName : 'Romo Fajar, Pr'),
+                                    value: (displayItem.acceptedRomoName != null && displayItem.acceptedRomoName!.isNotEmpty)
+                                        ? displayItem.acceptedRomoName!
+                                        : ((order.acceptedRomoName != null && order.acceptedRomoName!.isNotEmpty)
+                                            ? order.acceptedRomoName!
+                                            : (widget.isRomo ? widget.userName : 'Romo')),
                                     valueColor: const Color(0xFF059669),
                                   ),
                                   _buildInfoTile(

@@ -140,19 +140,23 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     final List<ScheduleTimelineEntry> entries = [];
 
     for (final order in _localOrders) {
-      if (widget.isRomo) {
-        final st = order.status.toUpperCase();
-        if (widget.showPendingOnly) {
-          if (st != 'PENDING') continue;
-        } else {
-          if (st == 'PENDING') continue;
-          if (widget.romoId != null && order.acceptedRomoId != widget.romoId) continue;
-        }
-      }
       if (!order.isActiveDashboardOrder) continue;
+      final st = order.status.toUpperCase();
+      if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') continue;
 
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
+          if (widget.isRomo) {
+            if (widget.showPendingOnly) {
+              // Permintaan Masuk: Only show unaccepted items
+              if (item.acceptedRomoId != null) continue;
+            } else {
+              // Jadwal Dikonfirmasi: Only show items accepted by THIS Romo
+              if (widget.romoId != null && item.acceptedRomoId != widget.romoId) continue;
+              if (item.acceptedRomoId == null) continue;
+            }
+          }
+
           DateTime? itemDate;
           if (item.scheduledDate.isNotEmpty) {
             try {
@@ -194,6 +198,15 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           );
         }
       } else {
+        if (widget.isRomo) {
+          if (widget.showPendingOnly) {
+            if (st != 'PENDING' || order.acceptedRomoId != null) continue;
+          } else {
+            if (widget.romoId != null && order.acceptedRomoId != widget.romoId) continue;
+            if (order.acceptedRomoId == null) continue;
+          }
+        }
+
         final orderDate = order.parsedDate;
         if (orderDate != null &&
             DateTime(orderDate.year, orderDate.month, orderDate.day)
@@ -1268,9 +1281,13 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
   Widget _buildScheduleCard(ScheduleTimelineEntry entry) {
     final order = entry.parentOrder;
-    final statusColor = _statusColor(order.status);
-    final statusLabel = _statusLabel(order.status);
-    final statusIcon = _statusIcon(order.status);
+    final bool isItemAccepted = entry.item?.acceptedRomoId != null || order.acceptedRomoId != null;
+    final String effectiveStatus = isItemAccepted
+        ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
+        : order.status;
+    final statusColor = _statusColor(effectiveStatus);
+    final statusLabel = _statusLabel(effectiveStatus);
+    final statusIcon = _statusIcon(effectiveStatus);
     final urgencyColor = _urgencyColor(order.urgencyName);
     final emoji = _categoryEmoji(entry.categoryName);
 
