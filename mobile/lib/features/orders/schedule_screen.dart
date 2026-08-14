@@ -1322,9 +1322,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     final bool isKedukaan = entry.categoryName.toLowerCase().contains('kedukaan');
     final String cardTitle = entry.title;
     final String cardSubtitle = isKedukaan ? 'Alm. ${order.penerimaName}' : 'Penerima: ${order.penerimaName}';
-    final String romoName = (entry.item?.acceptedRomoName != null && entry.item!.acceptedRomoName!.isNotEmpty)
-        ? entry.item!.acceptedRomoName!
-        : ((order.acceptedRomoName != null && order.acceptedRomoName!.isNotEmpty) ? order.acceptedRomoName! : '');
+    final String romoName = entry.item != null
+        ? (entry.item!.acceptedRomoName ?? '')
+        : (order.acceptedRomoName ?? '');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),

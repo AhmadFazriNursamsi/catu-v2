@@ -819,9 +819,9 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
       statusIcon = Icons.hourglass_empty_rounded;
     }
 
-    final String romoName = (item.subItem?.acceptedRomoName != null && item.subItem!.acceptedRomoName!.isNotEmpty)
-        ? item.subItem!.acceptedRomoName!
-        : ((order.acceptedRomoName != null && order.acceptedRomoName!.isNotEmpty) ? order.acceptedRomoName! : '');
+    final String romoName = item.subItem != null
+        ? (item.subItem!.acceptedRomoName ?? '')
+        : (order.acceptedRomoName ?? '');
 
     return Container(
       width: 250,

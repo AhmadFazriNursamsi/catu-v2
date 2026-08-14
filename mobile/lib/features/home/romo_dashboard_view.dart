@@ -907,9 +907,9 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     final bool isKedukaan = item.title.toLowerCase().contains('kedukaan') || order.categoryName.toLowerCase().contains('kedukaan');
     final String cardTitle = item.title;
     final String cardSubtitle = isKedukaan ? 'Alm. ${order.penerimaName}' : 'Penerima: ${order.penerimaName}';
-    final String romoName = (item.subItem?.acceptedRomoName != null && item.subItem!.acceptedRomoName!.isNotEmpty)
-        ? item.subItem!.acceptedRomoName!
-        : ((order.acceptedRomoName != null && order.acceptedRomoName!.isNotEmpty) ? order.acceptedRomoName! : '');
+    final String romoName = item.subItem != null
+        ? (item.subItem!.acceptedRomoName ?? '')
+        : (order.acceptedRomoName ?? '');
 
     final int? romoId = widget.user['id'] != null
         ? int.tryParse(widget.user['id'].toString())
