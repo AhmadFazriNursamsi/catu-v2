@@ -360,6 +360,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     );
   }
 
+  bool _isDateBeforeToday(String dateStr) {
+    if (dateStr.isEmpty) return false;
+    try {
+      String cleanStr = dateStr;
+      if (cleanStr.contains('T')) cleanStr = cleanStr.split('T').first;
+      final d = DateTime.parse(cleanStr);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      return DateTime(d.year, d.month, d.day).isBefore(today);
+    } catch (_) {
+      return false;
+    }
+  }
+
   // ── Build ────────────────────────────────────────────────────────────────────
 
   @override
@@ -391,11 +405,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         ? (displayItem.acceptedRomoId != null)
         : (order.acceptedRomoId != null || order.status.toUpperCase() != 'PENDING');
 
-    final String effectiveStatus = order.items.isNotEmpty
+    final bool isRomoAccepted = displayItem.acceptedRomoId != null || order.acceptedRomoId != null;
+    final bool datePassed = _isDateBeforeToday(displayItem.scheduledDate) || _isDateBeforeToday(order.scheduledDate);
+
+    String rawStatus = order.items.isNotEmpty
         ? displayItem.status.toUpperCase()
         : (isItemAccepted
             ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
             : order.status.toUpperCase());
+
+    if (!isRomoAccepted && rawStatus != 'DONE' && rawStatus != 'CLOSE' && rawStatus != 'FAIL' && datePassed) {
+      rawStatus = 'FAIL';
+    }
+
+    final String effectiveStatus = rawStatus;
 
     final statusColor = _getStatusColor(effectiveStatus);
     final statusLabel = _getStatusLabel(effectiveStatus);

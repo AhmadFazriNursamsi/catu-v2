@@ -31,9 +31,41 @@ class HistoriEntryItem {
 
   HistoriEntryItem({required this.parentOrder, this.subItem});
 
-  String get effectiveStatus => subItem != null
-      ? subItem!.status.toUpperCase()
-      : parentOrder.status.toUpperCase();
+  static bool _isDatePassed(String dateStr) {
+    if (dateStr.isEmpty) return false;
+    try {
+      String cleanStr = dateStr;
+      if (cleanStr.contains('T')) cleanStr = cleanStr.split('T').first;
+      final d = DateTime.parse(cleanStr);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      return DateTime(d.year, d.month, d.day).isBefore(today);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  String get effectiveStatus {
+    if (subItem != null) {
+      final st = subItem!.status.toUpperCase();
+      if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
+      final bool romoAccepted = subItem!.acceptedRomoId != null || parentOrder.acceptedRomoId != null;
+      final bool datePassed = _isDatePassed(subItem!.scheduledDate) || _isDatePassed(parentOrder.scheduledDate);
+      if (!romoAccepted && datePassed) {
+        return 'FAIL';
+      }
+      return st;
+    } else {
+      final st = parentOrder.status.toUpperCase();
+      if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
+      final bool romoAccepted = parentOrder.acceptedRomoId != null;
+      final bool datePassed = _isDatePassed(parentOrder.scheduledDate);
+      if (!romoAccepted && datePassed) {
+        return 'FAIL';
+      }
+      return st;
+    }
+  }
 }
 
 class _HistoriScreenState extends State<HistoriScreen>
