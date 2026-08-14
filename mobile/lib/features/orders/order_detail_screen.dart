@@ -968,6 +968,150 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
 
   Widget _buildTitleCard(OrderItem displayItem, Order order, Color statusColor,
       String statusLabel, IconData statusIcon) {
+    final bool isKedukaan = order.categoryName.toLowerCase().contains('kedukaan');
+
+    if (isKedukaan) {
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFD4AF37).withValues(alpha: 0.45),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0F172A).withValues(alpha: 0.25),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Color(0xFFF5D77D),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayItem.itemName,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.3,
+                          height: 1.25,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Intensi Misa: Almarhum/ah ${order.penerimaName}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFFCBD5E1),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Status badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.4),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(statusIcon, size: 13, color: statusColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        statusLabel,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          color: statusColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Divider(color: Colors.white.withValues(alpha: 0.12), height: 1),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: const Text(
+                    '✝ MISA KEDUKAAN',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFFF5D77D),
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'Wafat: ${order.tanggalMeninggalLabel}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
