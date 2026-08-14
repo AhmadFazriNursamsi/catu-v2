@@ -252,13 +252,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
           Expanded(
             child: Row(
               children: [
-                const Text(
-                  'Pemberitahuan',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
-                    letterSpacing: -0.5,
+                const Flexible(
+                  child: Text(
+                    'Pemberitahuan',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 if (unread > 0) ...[
@@ -565,14 +569,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
               }
             },
             child: Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Icon Avatar
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: accent.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
@@ -581,9 +585,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         width: 1.5,
                       ),
                     ),
-                    child: Icon(icon, color: accent, size: 22),
+                    child: Icon(icon, color: accent, size: 20),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
 
                   // Content
                   Expanded(
@@ -602,17 +606,21 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   color: const Color(0xFF0F172A),
                                   letterSpacing: -0.1,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (!item.isRead)
+                            if (!item.isRead) ...[
+                              const SizedBox(width: 6),
                               Container(
-                                width: 8,
-                                height: 8,
+                                width: 7,
+                                height: 7,
                                 decoration: BoxDecoration(
                                   color: accent,
                                   shape: BoxShape.circle,
                                 ),
                               ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -623,11 +631,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           style: const TextStyle(
                             fontSize: 12.5,
                             color: Color(0xFF475569),
-                            height: 1.4,
+                            height: 1.35,
                             fontWeight: FontWeight.w400,
                           ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
+                          softWrap: true,
                         ),
                         const SizedBox(height: 8),
 
@@ -635,40 +642,35 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         Row(
                           children: [
                             if (item.categoryName != null) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: accent.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  item.categoryName!.toLowerCase().contains('kedukaan')
-                                      ? '✝ ${item.itemTitle ?? 'Misa Kedukaan'}'
-                                      : '🕯️ Sakramen Perminyakan',
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: accent,
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: accent.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  child: Text(
+                                    item.categoryName!.toLowerCase().contains('kedukaan')
+                                        ? '✝ ${item.itemTitle ?? 'Misa Kedukaan'}'
+                                        : '🕯️ Sakramen Perminyakan',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: accent,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                             ],
                             Text(
                               item.timeAgo,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 10.5,
                                 color: accent,
                                 fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const Spacer(),
-                            // Swipe hint
-                            Text(
-                              '← geser hapus',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey.shade400,
                               ),
                             ),
                           ],
@@ -679,19 +681,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
                   // Right-side Checkbox (Matching Reference Design)
                   Container(
-                    width: 22,
-                    height: 22,
-                    margin: const EdgeInsets.only(left: 10, top: 2),
+                    width: 20,
+                    height: 20,
+                    margin: const EdgeInsets.only(left: 8, top: 2),
                     decoration: BoxDecoration(
                       color: item.isRead ? Colors.transparent : Colors.white,
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: item.isRead ? const Color(0xFF94A3B8) : const Color(0xFF1E3A8A),
+                        color: item.isRead ? const Color(0xFFCBD5E1) : const Color(0xFF1E3A8A),
                         width: 1.5,
                       ),
                     ),
                     child: item.isRead
-                        ? const Icon(Icons.check_rounded, size: 16, color: Color(0xFF64748B))
+                        ? const Icon(Icons.check_rounded, size: 14, color: Color(0xFF64748B))
                         : null,
                   ),
                 ],
