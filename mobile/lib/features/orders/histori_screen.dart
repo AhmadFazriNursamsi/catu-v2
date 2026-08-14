@@ -178,6 +178,7 @@ class _HistoriScreenState extends State<HistoriScreen>
 
     for (final o in widget.orders) {
       final st = o.status.toUpperCase();
+      final bool isParentDone = st == 'DONE' || st == 'CLOSE' || st == 'FAIL' || _isDateBeforeToday(o.scheduledDate);
 
       if (widget.isRomo) {
         if (o.items.isNotEmpty) {
@@ -186,7 +187,7 @@ class _HistoriScreenState extends State<HistoriScreen>
             if (widget.romoId != null && item.acceptedRomoId != widget.romoId) continue;
             if (item.acceptedRomoId == null) continue;
 
-            if (itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL' || _isDateBeforeToday(item.scheduledDate)) {
+            if (isParentDone || itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL' || _isDateBeforeToday(item.scheduledDate)) {
               entries.add(HistoriEntryItem(parentOrder: o, subItem: item));
             }
           }
@@ -195,20 +196,23 @@ class _HistoriScreenState extends State<HistoriScreen>
           if (widget.romoId != null && o.acceptedRomoId != widget.romoId) continue;
           if (o.acceptedRomoId == null) continue;
 
-          if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL' || _isDateBeforeToday(o.scheduledDate)) {
+          if (isParentDone) {
             entries.add(HistoriEntryItem(parentOrder: o, subItem: null));
           }
         }
       } else {
+        // Umat / Parishioner
         if (o.items.isNotEmpty) {
           for (final item in o.items) {
             final itemSt = item.status.toUpperCase();
-            if (itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL' || _isDateBeforeToday(item.scheduledDate)) {
+            if (isParentDone || itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL' || _isDateBeforeToday(item.scheduledDate)) {
               entries.add(HistoriEntryItem(parentOrder: o, subItem: item));
             }
           }
-        } else if (o.isHistoryOrder) {
-          entries.add(HistoriEntryItem(parentOrder: o, subItem: null));
+        } else {
+          if (isParentDone || o.isHistoryOrder) {
+            entries.add(HistoriEntryItem(parentOrder: o, subItem: null));
+          }
         }
       }
     }
