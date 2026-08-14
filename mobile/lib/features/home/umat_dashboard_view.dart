@@ -728,6 +728,8 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     for (final order in widget.orders.where((o) => o.isActiveDashboardOrder)) {
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
+          final itemSt = item.status.toUpperCase();
+          if (itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL') continue;
           if (_isDateBeforeToday(item.scheduledDate)) continue;
 
           String scheduleStr = item.scheduledDate;
@@ -753,6 +755,8 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
           );
         }
       } else {
+        final st = order.status.toUpperCase();
+        if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') continue;
         if (_isDateBeforeToday(order.scheduledDate)) continue;
 
         cardList.add(
