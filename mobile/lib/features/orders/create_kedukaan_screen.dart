@@ -37,8 +37,8 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
   // Selections
   String _selectedHubungan = 'Anak';
-  String _selectedUrgensi = 'Standar';
-  String _selectedJenisMisa = 'Misa Tutup Peti';
+  String? _selectedUrgensi; // Tanpa default, wajib dipilih pengguna
+  String _selectedJenisMisa = 'Misa Malam Kembang';
   String _waktuMeninggal = '14:00';
   String _jamMulaiMisa = '18:00';
   String _jamAkhirMisa = '19:30';
@@ -123,20 +123,16 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
   ];
 
   static const _urgensiOptions = [
-    'Standar',
+    'Biasa',
     'Penting',
-    'Sangat Penting / Butuh Segera',
+    'Darurat / Kritis',
   ];
 
   static const _jenisMisaOptions = [
-    'Misa Tutup Peti',
-    'Misa Pelepasan / Requiem',
-    'Misa Pemakaman / Penutupan',
-    'Misa Malam Ke-3',
-    'Misa Malam Ke-7',
-    'Misa 40 Hari',
-    'Misa 100 Hari',
-    'Misa 1 Tahun',
+    'Misa Malam Kembang',
+    'Misa Pelepasan / Misa Pemakaman',
+    'Misa Penutupan Peti',
+    'Misa Requiem / Misa Arwah',
   ];
 
   @override
@@ -416,15 +412,19 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     );
   }
 
-  int _urgensiToId(String label) {
-    if (label.contains('Sangat')) return 3;
-    if (label.contains('Penting')) return 2;
+  int _urgensiToId(String? label) {
+    if (label == null) return 1;
+    final u = label.toLowerCase();
+    if (u.contains('darurat') || u.contains('kritis') || u.contains('sangat')) return 3;
+    if (u.contains('penting')) return 2;
     return 1;
   }
 
-  Color _getUrgensiColor(String label) {
-    if (label.contains('Sangat')) return Colors.red.shade700;
-    if (label.contains('Penting')) return Colors.amber.shade800;
+  Color _getUrgensiColor(String? label) {
+    if (label == null) return const Color(0xFF64748B);
+    final u = label.toLowerCase();
+    if (u.contains('darurat') || u.contains('kritis') || u.contains('sangat')) return Colors.red.shade700;
+    if (u.contains('penting')) return Colors.amber.shade800;
     return Colors.blue.shade700;
   }
 
@@ -432,6 +432,11 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     setState(() {
       _autovalidateMode = AutovalidateMode.onUserInteraction;
     });
+
+    if (_selectedUrgensi == null || _selectedUrgensi!.isEmpty) {
+      _showError('Harap pilih jenis urgensi pelayanan.');
+      return;
+    }
 
     if (!_formKey.currentState!.validate()) {
       _showError(LanguageService.tr('error_form_incomplete'));
@@ -657,7 +662,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                         _buildDropdownField<String>(
                           value: _selectedUrgensi,
                           label: 'Jenis Urgensi',
-                          hint: 'Jenis Urgensi',
+                          hint: 'Pilih Jenis Urgensi',
                           prefixIcon: Icons.warning_amber_rounded,
                           items: _urgensiOptions,
                           itemLabel: (e) => e,
