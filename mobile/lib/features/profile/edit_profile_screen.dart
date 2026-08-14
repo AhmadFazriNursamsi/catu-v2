@@ -96,22 +96,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
   }
 
+  void _syncSelectedOrdo() {
+    if (_ordoList.isEmpty) return;
+
+    if (_selectedOrdoId != null) {
+      final match = _ordoList.firstWhere(
+        (e) => e['id'].toString() == _selectedOrdoId.toString(),
+        orElse: () => _ordoList.first,
+      );
+      _selectedOrdoId = int.tryParse(match['id'].toString());
+      _selectedOrdoName = '${match['code']} — ${match['name']}';
+    } else if (_selectedOrdoName.isNotEmpty) {
+      final match = _ordoList.firstWhere(
+        (e) => e['name'].toString().toLowerCase().contains(_selectedOrdoName.toLowerCase()) ||
+               '${e['code']} — ${e['name']}'.toLowerCase() == _selectedOrdoName.toLowerCase(),
+        orElse: () => _ordoList.first,
+      );
+      _selectedOrdoId = int.tryParse(match['id'].toString());
+      _selectedOrdoName = '${match['code']} — ${match['name']}';
+    } else {
+      _selectedOrdoId = int.tryParse(_ordoList.first['id'].toString());
+      _selectedOrdoName = '${_ordoList.first['code']} — ${_ordoList.first['name']}';
+    }
+  }
+
   Future<void> _loadOrdoList() async {
     try {
       final ordos = await ApiService.getOrdo();
       if (mounted && ordos.isNotEmpty) {
         setState(() {
           _ordoList = ordos;
-          if (_selectedOrdoId == null) {
-            _selectedOrdoId = int.tryParse(ordos.first['id'].toString());
-            _selectedOrdoName = '${ordos.first['code']} — ${ordos.first['name']}';
-          } else {
-            final match = ordos.firstWhere(
-              (e) => e['id'].toString() == _selectedOrdoId.toString(),
-              orElse: () => ordos.first,
-            );
-            _selectedOrdoName = '${match['code']} — ${match['name']}';
-          }
+          _syncSelectedOrdo();
         });
       }
     } catch (e) {
@@ -232,6 +247,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (rawOrdoName != null && rawOrdoName.toString().isNotEmpty) {
       _selectedOrdoName = rawOrdoName.toString();
     }
+
+    _syncSelectedOrdo();
 
     final rawProvId = data['provinsiId'] ?? data['provinsi_id'];
     if (rawProvId != null) {
@@ -645,8 +662,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               .trim();
       final url = Uri.parse('${ApiService.baseUrl}/auth/profile/$userId');
 
+      _syncSelectedOrdo();
       final roleCode = _roleToCode(_selectedRole);
-      final body = {
+      final body = <String, dynamic>{
         'fullName': fullName,
         'phoneNumber': _phoneController.text.trim(),
         'email': _emailController.text.trim(),
@@ -656,8 +674,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'roleCode': roleCode,
         'kabupatenKotaId': _selectedKabupatenKotaId,
         'notifyKetuaLingkungan': _notifyKetuaLingkungan,
-        if (_selectedRole == 'Romo Ordo' && _selectedOrdoId != null) 'ordoId': _selectedOrdoId,
       };
+
+      if (_isRomoOrdo && _selectedOrdoId != null) {
+        body['ordoId'] = _selectedOrdoId;
+      }
 
       final response = await http.put(
         url,
@@ -1335,10 +1356,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             _selectedOrdoName = val;
             if (_ordoList.isNotEmpty) {
               final match = _ordoList.firstWhere(
-                (e) => '${e['code']} — ${e['name']}' == val,
+                (e) => '${e['code']} — ${e['name']}' == val || e['name'] == val,
                 orElse: () => _ordoList.first,
               );
               _selectedOrdoId = int.tryParse(match['id'].toString());
+            } else {
+              if (val.contains('SJ')) _selectedOrdoId = 2;
+              else if (val.contains('OFM')) _selectedOrdoId = 3;
+              else if (val.contains('MSC')) _selectedOrdoId = 4;
+              else if (val.contains('CSsR')) _selectedOrdoId = 5;
+              else _selectedOrdoId = 1;
             }
           });
         }
