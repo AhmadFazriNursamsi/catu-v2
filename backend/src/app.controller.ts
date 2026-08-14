@@ -32,7 +32,7 @@ export class AuthController implements OnModuleInit {
         ADD COLUMN IF NOT EXISTS address TEXT,
         ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
-        ALTER TABLE orders ADD COLUMN IF NOT EXISTS attachment_url TEXT;
+        ALTER TABLE orders ADD COLUMN IF NOT EXISTS attachment_url TEXT, ADD COLUMN IF NOT EXISTS accepted_romo_id INT;
       `);
 
       for (const val of ['CONFIRMED', 'DONE', 'CLOSE', 'FAIL']) {
