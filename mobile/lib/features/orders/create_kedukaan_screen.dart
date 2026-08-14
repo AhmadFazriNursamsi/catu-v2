@@ -362,6 +362,39 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     }
   }
 
+  DateTime? _parseDateTime(String dateStr, String timeStr) {
+    try {
+      int year, month, day;
+      if (dateStr.contains('/')) {
+        final parts = dateStr.split('/');
+        if (parts.length < 3) return null;
+        day = int.parse(parts[0]);
+        month = int.parse(parts[1]);
+        year = int.parse(parts[2]);
+      } else if (dateStr.contains('-')) {
+        final parts = dateStr.split('-');
+        if (parts.length < 3) return null;
+        year = int.parse(parts[0]);
+        month = int.parse(parts[1]);
+        day = int.parse(parts[2]);
+      } else {
+        return null;
+      }
+
+      int hour = 0;
+      int minute = 0;
+      if (timeStr.contains(':')) {
+        final tParts = timeStr.split(':');
+        hour = int.parse(tParts[0]);
+        minute = int.parse(tParts[1]);
+      }
+
+      return DateTime(year, month, day, hour, minute);
+    } catch (_) {
+      return null;
+    }
+  }
+
   void _addMisaItem() {
     if (_tanggalMisaController.text.isEmpty) {
       _showError('Tanggal misa wajib diisi.');
@@ -369,6 +402,15 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     }
     if (_alamatMisaController.text.trim().isEmpty) {
       _showError('Alamat lokasi misa wajib diisi.');
+      return;
+    }
+
+    final now = DateTime.now();
+
+    // Validasi: Tanggal & Waktu Misa tidak boleh lebih kecil dari sekarang
+    final dtMisa = _parseDateTime(_tanggalMisaController.text, _jamMulaiMisa);
+    if (dtMisa != null && dtMisa.isBefore(now)) {
+      _showError('Tanggal dan waktu misa tidak boleh lebih kecil dari waktu sekarang.');
       return;
     }
 
@@ -443,6 +485,24 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
       return;
     }
 
+    final now = DateTime.now();
+
+    // Validasi 1: Waktu meninggal tidak boleh lebih besar dari waktu sekarang jika tanggal meninggal sama dengan tanggal sekarang
+    final dtMeninggal = _parseDateTime(_tanggalMeninggalController.text, _waktuMeninggal);
+    if (dtMeninggal != null) {
+      final isToday = dtMeninggal.year == now.year &&
+          dtMeninggal.month == now.month &&
+          dtMeninggal.day == now.day;
+      if (isToday && dtMeninggal.isAfter(now)) {
+        _showError('Waktu meninggal tidak boleh lebih besar dari waktu sekarang.');
+        return;
+      }
+      if (dtMeninggal.isAfter(now)) {
+        _showError('Tanggal dan waktu meninggal tidak boleh lebih besar dari waktu sekarang.');
+        return;
+      }
+    }
+
     // Auto-add current configured Misa item if list is empty but inputs are filled
     if (_misaList.isEmpty) {
       if (_alamatMisaController.text.trim().isNotEmpty) {
@@ -453,6 +513,15 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     if (_misaList.isEmpty) {
       _showError('Harap tambahkan minimal 1 Jadwal Pelayanan Misa Kedukaan.');
       return;
+    }
+
+    // Validasi 2: Tanggal dan waktu misa tidak boleh lebih kecil dari waktu sekarang
+    for (final item in _misaList) {
+      final dtItem = _parseDateTime(item.scheduledDate, item.scheduledTimeStart);
+      if (dtItem != null && dtItem.isBefore(now)) {
+        _showError('Tanggal dan waktu misa "${item.itemName}" tidak boleh lebih kecil dari waktu sekarang.');
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
