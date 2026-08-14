@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
+import '../../core/services/api_service.dart';
 import '../../core/services/notification_service.dart';
 import '../orders/order_detail_screen.dart';
 
@@ -496,29 +497,54 @@ class _NotificationScreenState extends State<NotificationScreen> {
               HapticFeedback.selectionClick();
               await NotificationService.markRead(item.id);
               if (mounted) setState(() => item.isRead = true);
-              // Navigate to order detail if orderId is present
-              if (item.orderId != null && mounted) {
-                final orderId = int.tryParse(item.orderId!);
-                if (orderId != null) {
-                  final Order? matchedOrder = widget.orders.cast<Order?>().firstWhere(
-                    (o) => o?.id == orderId,
-                    orElse: () => null,
+
+              // Navigate to order detail — fetch fresh from backend
+              if (item.orderId == null || !mounted) return;
+              final orderId = int.tryParse(item.orderId!);
+              if (orderId == null) return;
+
+              // Show loading dialog
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF1E3A8A)),
+                ),
+              );
+
+              final Order? order = await ApiService.getOrderById(orderId);
+
+              // Dismiss loading
+              if (mounted) Navigator.of(context).pop();
+
+              if (order == null) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Detail pelayanan tidak ditemukan.'),
+                      backgroundColor: Colors.red.shade700,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      margin: const EdgeInsets.all(16),
+                    ),
                   );
-                  if (matchedOrder != null && mounted) {
-                    final userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Pengguna';
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => OrderDetailScreen(
-                          order: matchedOrder,
-                          userName: userName,
-                          isRomo: widget.isRomo,
-                          romoId: widget.romoId,
-                        ),
-                      ),
-                    );
-                  }
                 }
+                return;
+              }
+
+              if (mounted) {
+                final userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Pengguna';
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OrderDetailScreen(
+                      order: order,
+                      userName: userName,
+                      isRomo: widget.isRomo,
+                      romoId: widget.romoId,
+                    ),
+                  ),
+                );
               }
             },
             child: Padding(
