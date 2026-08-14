@@ -1300,10 +1300,24 @@ export class AssignmentsController {
         `UPDATE order_items SET accepted_romo_id = $1 WHERE id = $2 AND order_id = $3`,
         [romoId, itemId, orderId],
       );
-      await this.dataSource.query(
-        `UPDATE orders SET status = CASE WHEN status = 'PENDING' THEN 'CONFIRMED' ELSE status END WHERE id = $1`,
+
+      const unaccepted = await this.dataSource.query(
+        `SELECT COUNT(*) as count FROM order_items WHERE order_id = $1 AND accepted_romo_id IS NULL`,
         [orderId],
       );
+
+      const unacceptedCount = parseInt(unaccepted[0].count, 10);
+      if (unacceptedCount === 0) {
+        await this.dataSource.query(
+          `UPDATE orders SET status = 'CONFIRMED' WHERE id = $1`,
+          [orderId],
+        );
+      } else {
+        await this.dataSource.query(
+          `UPDATE orders SET status = 'PENDING' WHERE id = $1`,
+          [orderId],
+        );
+      }
     } else {
       await this.dataSource.query(
         `UPDATE orders SET status = $1, accepted_romo_id = COALESCE($2, accepted_romo_id) WHERE id = $3`,

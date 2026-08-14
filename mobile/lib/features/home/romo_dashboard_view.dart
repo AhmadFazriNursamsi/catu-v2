@@ -606,15 +606,15 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
   List<RomoDashboardCardItem> get _displayParishRequestsCardItems {
     final List<RomoDashboardCardItem> cardList = [];
 
-    // ONLY PENDING orders (Exclude CONFIRMED / ACCEPTED / IN_PROGRESS / DONE)
-    final pendingOrders = widget.orders.where((o) {
-      final st = o.status.toUpperCase();
-      return st == 'PENDING' && o.isActiveDashboardOrder;
-    }).toList();
+    for (final order in widget.orders) {
+      if (!order.isActiveDashboardOrder) continue;
+      final st = order.status.toUpperCase();
+      if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') continue;
 
-    for (final order in pendingOrders) {
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
+          // EXCLUDE items that are already accepted by ANY Romo!
+          if (item.acceptedRomoId != null) continue;
           if (_isDateBeforeToday(item.scheduledDate)) continue;
 
           String scheduleStr = item.scheduledDate;
@@ -641,6 +641,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           );
         }
       } else {
+        if (st != 'PENDING' || order.acceptedRomoId != null) continue;
         if (_isDateBeforeToday(order.scheduledDate)) continue;
 
         cardList.add(
@@ -670,18 +671,15 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         ? int.tryParse(widget.user['id'].toString())
         : (widget.user['userId'] != null ? int.tryParse(widget.user['userId'].toString()) : null);
 
-    final acceptedOrders = widget.orders.where((o) {
-      final st = o.status.toUpperCase();
-      final bool isAcceptedByThisRomo = romoId != null && o.acceptedRomoId == romoId;
-      return isAcceptedByThisRomo && (st == 'CONFIRMED' || st == 'IN_PROGRESS' || st == 'ACCEPTED' || st == 'DONE') && o.isActiveDashboardOrder;
-    }).toList();
-
     final List<RomoDashboardCardItem> cardList = [];
 
-    for (final order in acceptedOrders) {
+    for (final order in widget.orders) {
+      if (!order.isActiveDashboardOrder) continue;
+
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
-          // ONLY display items scheduled for TODAY!
+          // ONLY display items accepted by THIS Romo!
+          if (romoId == null || item.acceptedRomoId != romoId) continue;
           if (!_isDateToday(item.scheduledDate)) continue;
 
           String scheduleStr = item.scheduledDate;
@@ -708,7 +706,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           );
         }
       } else {
-        // ONLY display orders scheduled for TODAY!
+        if (romoId == null || order.acceptedRomoId != romoId) continue;
         if (!_isDateToday(order.scheduledDate)) continue;
 
         cardList.add(
