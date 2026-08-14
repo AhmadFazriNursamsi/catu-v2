@@ -680,7 +680,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         for (final item in order.items) {
           // ONLY display items accepted by THIS Romo!
           if (romoId == null || item.acceptedRomoId != romoId) continue;
-          if (!_isDateToday(item.scheduledDate)) continue;
+          if (_isDateBeforeToday(item.scheduledDate)) continue;
 
           String scheduleStr = item.scheduledDate;
           if (item.scheduledTimeStart.isNotEmpty) {
@@ -707,7 +707,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         }
       } else {
         if (romoId == null || order.acceptedRomoId != romoId) continue;
-        if (!_isDateToday(order.scheduledDate)) continue;
+        if (_isDateBeforeToday(order.scheduledDate)) continue;
 
         cardList.add(
           RomoDashboardCardItem(

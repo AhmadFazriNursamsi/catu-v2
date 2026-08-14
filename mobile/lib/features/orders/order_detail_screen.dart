@@ -387,7 +387,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           locationName: order.displayAddress,
         );
 
-    final bool isItemAccepted = displayItem.acceptedRomoId != null || order.acceptedRomoId != null;
+    final bool isItemAccepted = order.items.isNotEmpty
+        ? (displayItem.acceptedRomoId != null)
+        : (order.acceptedRomoId != null || order.status.toUpperCase() != 'PENDING');
+
     final String effectiveStatus = isItemAccepted
         ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
         : order.status;
@@ -456,8 +459,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -667,9 +669,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               left: 16,
               right: 16,
               bottom: 24,
-              child: widget.isRomo && (displayItem.acceptedRomoId == null || displayItem.acceptedRomoId != widget.romoId)
+              child: widget.isRomo && !isItemAccepted
                   ? _buildRomoAcceptButtonBar(order, displayItem)
-                  : (widget.isRomo && (order.status.toUpperCase() == 'CONFIRMED' || order.status.toUpperCase() == 'IN_PROGRESS')
+                  : (widget.isRomo && (isItemAccepted || order.status.toUpperCase() == 'CONFIRMED' || order.status.toUpperCase() == 'IN_PROGRESS')
                       ? _buildRomoAcceptedBottomActions(order)
                       : _buildFloatingChatButton(order)),
             ),
