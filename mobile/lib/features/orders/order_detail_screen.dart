@@ -672,7 +672,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               child: widget.isRomo && !isItemAccepted
                   ? _buildRomoAcceptButtonBar(order, displayItem)
                   : (widget.isRomo && (isItemAccepted || order.status.toUpperCase() == 'CONFIRMED' || order.status.toUpperCase() == 'IN_PROGRESS')
-                      ? _buildRomoAcceptedBottomActions(order)
+                      ? _buildRomoAcceptedBottomActions(order, displayItem: displayItem)
                       : _buildFloatingChatButton(order)),
             ),
           ],
@@ -681,7 +681,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     );
   }
 
-  Future<void> _completeService(Order order) async {
+  Future<void> _completeService(Order order, {OrderItem? targetItem}) async {
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -722,9 +722,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         order.id,
         'DONE',
         romoId: widget.romoId,
+        itemId: targetItem?.id,
       );
       if (mounted) {
-        order.status = 'DONE';
+        if (targetItem != null) {
+          targetItem.status = 'DONE';
+          if (order.items.isNotEmpty && order.items.every((i) => i.status.toUpperCase() == 'DONE')) {
+            order.status = 'DONE';
+          }
+        } else {
+          order.status = 'DONE';
+        }
         if (widget.romoId != null) {
           order.acceptedRomoId = widget.romoId;
         }
@@ -750,7 +758,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     }
   }
 
-  Widget _buildRomoAcceptedBottomActions(Order order) {
+  Widget _buildRomoAcceptedBottomActions(Order order, {OrderItem? displayItem}) {
     return Row(
       children: [
         // Chat Button (Left)
@@ -835,7 +843,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               borderRadius: BorderRadius.circular(16),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
-                onTap: _isSubmitting ? null : () => _completeService(order),
+                onTap: _isSubmitting ? null : () => _completeService(order, targetItem: displayItem),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   child: Row(
