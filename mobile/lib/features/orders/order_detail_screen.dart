@@ -121,8 +121,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   }
 
   Color _getUrgencyColor(String urgency) {
-    if (urgency.toLowerCase().contains('sangat')) return const Color(0xFFDC2626);
-    if (urgency.toLowerCase().contains('penting')) return const Color(0xFFD97706);
+    final u = urgency.toLowerCase();
+    if (u.contains('darurat') || u.contains('kritis') || u.contains('sangat')) {
+      return const Color(0xFFDC2626);
+    }
+    if (u.contains('penting')) return const Color(0xFFD97706);
     return const Color(0xFF1D4ED8);
   }
 

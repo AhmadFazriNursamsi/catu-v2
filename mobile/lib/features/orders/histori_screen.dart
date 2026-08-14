@@ -136,7 +136,7 @@ class _HistoriScreenState extends State<HistoriScreen>
 
   Color _urgencyColor(String urgency) {
     final u = urgency.toLowerCase();
-    if (u.contains('sangat') || u.contains('darurat')) {
+    if (u.contains('darurat') || u.contains('kritis') || u.contains('sangat')) {
       return const Color(0xFFDC2626);
     }
     if (u.contains('penting')) return const Color(0xFFD97706);

@@ -440,7 +440,7 @@ class ChatGroupItem {
   /// Urgency Level Icon Data
   IconData get urgencyIcon {
     final lower = urgencyName.toLowerCase();
-    if (lower.contains('sangat penting') || lower.contains('darurat') || lower.contains('emergency') || lower.contains('tinggi')) {
+    if (lower.contains('darurat') || lower.contains('kritis') || lower.contains('sangat') || lower.contains('tinggi') || lower.contains('emergency')) {
       return Icons.error_outline_rounded;
     } else if (lower.contains('penting') || lower.contains('urgent') || lower.contains('sedang')) {
       return Icons.warning_amber_rounded;
@@ -451,7 +451,7 @@ class ChatGroupItem {
   /// Urgency Level Color
   Color get urgencyColor {
     final lower = urgencyName.toLowerCase();
-    if (lower.contains('sangat penting') || lower.contains('darurat') || lower.contains('emergency') || lower.contains('tinggi')) {
+    if (lower.contains('darurat') || lower.contains('kritis') || lower.contains('sangat') || lower.contains('tinggi') || lower.contains('emergency')) {
       return const Color(0xFFEF4444); // Red
     } else if (lower.contains('penting') || lower.contains('urgent') || lower.contains('sedang')) {
       return const Color(0xFFF59E0B); // Amber / Orange
