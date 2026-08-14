@@ -907,7 +907,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           borderRadius: BorderRadius.circular(20),
           onTap: _isSubmitting ? null : () => _acceptService(order),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -931,30 +931,34 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                         ),
                       ),
                 const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Text(
-                      'Terima Pelayanan',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.2,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Text(
+                        'Terima Pelayanan',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.2,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'Konfirmasi Kehadiran & Masuk Grup Chat',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                      Text(
+                        'Konfirmasi Kehadiran & Masuk Grup Chat',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
               ],
             ),
