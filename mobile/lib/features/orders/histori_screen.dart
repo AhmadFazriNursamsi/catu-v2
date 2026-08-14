@@ -170,7 +170,17 @@ class _HistoriScreenState extends State<HistoriScreen>
       final st = o.status.toUpperCase();
 
       if (widget.isRomo) {
-        // 1. Romo History ONLY contains services accepted by THIS Romo!
+        if (o.items.isNotEmpty) {
+          // Include if ANY sub-item accepted by THIS Romo is DONE, CLOSE, FAIL, or past date!
+          return o.items.any((item) =>
+              (widget.romoId == null || item.acceptedRomoId == widget.romoId) &&
+              item.acceptedRomoId != null &&
+              (item.status.toUpperCase() == 'DONE' ||
+                  item.status.toUpperCase() == 'CLOSE' ||
+                  item.status.toUpperCase() == 'FAIL' ||
+                  _isDateBeforeToday(item.scheduledDate)));
+        }
+
         if (st == 'PENDING') return false;
 
         // Romo MUST be the one who accepted this order!
@@ -180,20 +190,11 @@ class _HistoriScreenState extends State<HistoriScreen>
           return false;
         }
 
-        // For FAIL orders, ONLY show if Romo actually accepted it
-        if (st == 'FAIL') {
-          return o.acceptedRomoId != null && o.acceptedRomoId == widget.romoId;
-        }
-
-        // Completed / Closed statuses (DONE, CLOSE) belong to History
+        if (st == 'FAIL') return true;
         if (st == 'DONE' || st == 'CLOSE') return true;
 
-        // Active accepted status (CONFIRMED, IN_PROGRESS) ONLY belongs to History
-        // if its scheduled date has PASSED (< today)
         final bool mainDatePassed = _isDateBeforeToday(o.scheduledDate);
-        final bool hasPastSubItems = o.items.any((item) => _isDateBeforeToday(item.scheduledDate));
-
-        return mainDatePassed || hasPastSubItems;
+        return mainDatePassed;
       }
 
       return o.isHistoryOrder;
@@ -726,34 +727,43 @@ class _HistoriScreenState extends State<HistoriScreen>
   // ── Order Card ──────────────────────────────────────────────────────────────
 
   Widget _buildOrderCard(Order order, int index) {
-    final statusColor = _statusColor(order.status);
-    final statusLabel = _statusLabel(order.status);
-    final statusIcon = _statusIcon(order.status);
+    OrderItem? displayItem;
+    if (order.items.isNotEmpty) {
+      displayItem = order.items.firstWhere(
+        (i) => (widget.romoId == null || i.acceptedRomoId == widget.romoId) &&
+            (i.status.toUpperCase() == 'DONE' || i.status.toUpperCase() == 'CLOSE' || i.status.toUpperCase() == 'FAIL' || _isDateBeforeToday(i.scheduledDate)),
+        orElse: () => order.items.first,
+      );
+    }
+
+    final String effectiveStatus = displayItem != null ? displayItem.status : order.status;
+    final statusColor = _statusColor(effectiveStatus);
+    final statusLabel = _statusLabel(effectiveStatus);
+    final statusIcon = _statusIcon(effectiveStatus);
     final urgencyColor = _urgencyColor(order.urgencyName);
     final emoji = _categoryShortIcon(order.categoryName);
 
     String scheduleStr = order.fullScheduleLabel;
     String locationStr = order.displayAddress;
-    if (order.items.isNotEmpty) {
-      final item = order.items.first;
-      locationStr = item.locationName.isNotEmpty ? item.locationName : locationStr;
-      String t = item.scheduledDate;
-      if (item.scheduledTimeStart.isNotEmpty) {
-        t += ' · ${item.scheduledTimeStart}';
-        if (item.scheduledTimeEnd.isNotEmpty) t += '–${item.scheduledTimeEnd} WIB';
+    if (displayItem != null) {
+      locationStr = displayItem.locationName.isNotEmpty ? displayItem.locationName : locationStr;
+      String t = displayItem.scheduledDate;
+      if (displayItem.scheduledTimeStart.isNotEmpty) {
+        t += ' · ${displayItem.scheduledTimeStart}';
+        if (displayItem.scheduledTimeEnd.isNotEmpty) t += '–${displayItem.scheduledTimeEnd} WIB';
       }
       scheduleStr = t;
     }
 
     final bool isKedukaan = order.categoryName.toLowerCase().contains('kedukaan');
-    final String cardTitle = isKedukaan && order.items.isNotEmpty
-        ? order.items.first.itemName
-        : order.penerimaName;
+    final String cardTitle = displayItem != null
+        ? displayItem.itemName
+        : (isKedukaan ? order.penerimaName : order.categoryName);
     final String cardSubtitle = isKedukaan ? order.penerimaName : order.categoryName;
-    final bool showDetail = order.status.toUpperCase() == 'DONE' ||
-        order.status.toUpperCase() == 'CLOSE' ||
-        order.status.toUpperCase() == 'FAIL' ||
-        order.status.toUpperCase() == 'CONFIRMED';
+    final bool showDetail = effectiveStatus.toUpperCase() == 'DONE' ||
+        effectiveStatus.toUpperCase() == 'CLOSE' ||
+        effectiveStatus.toUpperCase() == 'FAIL' ||
+        effectiveStatus.toUpperCase() == 'CONFIRMED';
 
     void goToDetail() async {
       HapticFeedback.lightImpact();
