@@ -764,7 +764,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     }
 
     return SizedBox(
-      height: 230,
+      height: 255,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -809,7 +809,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     }
 
     return SizedBox(
-      height: 230,
+      height: 255,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),

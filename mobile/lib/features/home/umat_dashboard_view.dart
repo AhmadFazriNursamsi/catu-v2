@@ -471,7 +471,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
 
                     // Horizontal Cards
                     SizedBox(
-                      height: 250,
+                      height: 255,
                       child: _displayCardItems.isEmpty
                           ? Padding(
                               padding:
