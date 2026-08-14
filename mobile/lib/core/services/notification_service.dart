@@ -256,16 +256,17 @@ class NotificationService {
     int? kabupatenKotaId,
   }) async {
     final isKedukaan = categoryName.toLowerCase().contains('kedukaan');
-    final serviceLabel = isKedukaan ? 'Misa Kedukaan' : 'Perminyakan';
-    final suffix = misaItemName != null ? ' ($misaItemName)' : '';
+    final servicePhrase = isKedukaan
+        ? (misaItemName != null && misaItemName.isNotEmpty ? misaItemName : 'Misa Kedukaan')
+        : 'Sakramen Perminyakan';
     final locationPhrase = targetRole == 'ROMO_PAROKI'
         ? 'paroki anda'
         : 'kota anda';
     final uniqueId = await _uniqueId('new_${targetRole.toLowerCase()}_${orderId}_${itemIndex ?? 0}');
     await add(NotificationItem(
       id: uniqueId,
-      title: 'Permintaan Pelayanan Baru',
-      body: 'Umat yang berada di $locationPhrase telah membuat sebuah permintaan pelayanan Sakramen $serviceLabel dengan nama umat $umatName$suffix',
+      title: isKedukaan ? servicePhrase : 'Permintaan Pelayanan Sakramen Perminyakan',
+      body: 'Umat yang berada di $locationPhrase telah membuat sebuah permintaan pelayanan $servicePhrase dengan nama umat $umatName',
       type: 'NEW_REQUEST',
       role: targetRole,
       createdAt: DateTime.now(),
@@ -286,14 +287,15 @@ class NotificationService {
     String? misaItemName,
   }) async {
     final isKedukaan = categoryName.toLowerCase().contains('kedukaan');
-    final serviceLabel = isKedukaan ? 'Misa Kedukaan' : 'Perminyakan';
+    final servicePhrase = isKedukaan
+        ? (misaItemName != null && misaItemName.isNotEmpty ? misaItemName : 'Misa Kedukaan')
+        : 'Sakramen Perminyakan';
     final action = accepted ? 'mengkonfirmasi' : 'menolak';
-    final suffix = misaItemName != null ? ' ($misaItemName)' : '';
     final uniqueId = await _uniqueId('romo_${orderId}');
     await add(NotificationItem(
       id: uniqueId,
-      title: accepted ? 'Pelayanan Dikonfirmasi ✓' : 'Pelayanan Ditolak',
-      body: 'Romo $romoName telah $action permintaan pelayanan $serviceLabel$suffix Anda.',
+      title: accepted ? '$servicePhrase Dikonfirmasi ✓' : '$servicePhrase Ditolak',
+      body: 'Romo $romoName telah $action permintaan pelayanan $servicePhrase Anda.',
       type: accepted ? 'ROMO_ACCEPTED' : 'ROMO_DECLINED',
       role: 'UMAT',
       createdAt: DateTime.now(),
@@ -312,13 +314,14 @@ class NotificationService {
     String? misaItemName,
   }) async {
     final isKedukaan = categoryName.toLowerCase().contains('kedukaan');
-    final serviceLabel = isKedukaan ? 'Misa Kedukaan' : 'Perminyakan';
-    final suffix = misaItemName != null ? ' ($misaItemName)' : '';
+    final servicePhrase = isKedukaan
+        ? (misaItemName != null && misaItemName.isNotEmpty ? misaItemName : 'Misa Kedukaan')
+        : 'Sakramen Perminyakan';
     final uniqueId = await _uniqueId('done_${orderId}');
     await add(NotificationItem(
       id: uniqueId,
-      title: 'Pelayanan Selesai ✓',
-      body: 'Pelayanan $serviceLabel$suffix untuk $penerimaName telah selesai dilaksanakan.',
+      title: '$servicePhrase Selesai ✓',
+      body: 'Pelayanan $servicePhrase untuk $penerimaName telah selesai dilaksanakan.',
       type: 'STATUS_UPDATE',
       role: targetRole,
       createdAt: DateTime.now(),

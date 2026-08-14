@@ -69,12 +69,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _isLoading = false;
       });
     }
-    // Mark all as read after viewing
-    await NotificationService.markAllRead(
-      widget.role,
-      parokiId: _parokiId,
-      kabupatenKotaId: _kabupatenKotaId,
-    );
   }
 
   List<NotificationItem> get _filteredItems {
@@ -649,8 +643,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 ),
                                 child: Text(
                                   item.categoryName!.toLowerCase().contains('kedukaan')
-                                      ? '✝ Misa Kedukaan'
-                                      : '🕯️ Perminyakan',
+                                      ? '✝ ${item.itemTitle ?? 'Misa Kedukaan'}'
+                                      : '🕯️ Sakramen Perminyakan',
                                   style: TextStyle(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w700,
@@ -681,6 +675,24 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         ),
                       ],
                     ),
+                  ),
+
+                  // Right-side Checkbox (Matching Reference Design)
+                  Container(
+                    width: 22,
+                    height: 22,
+                    margin: const EdgeInsets.only(left: 10, top: 2),
+                    decoration: BoxDecoration(
+                      color: item.isRead ? Colors.transparent : Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: item.isRead ? const Color(0xFF94A3B8) : const Color(0xFF1E3A8A),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: item.isRead
+                        ? const Icon(Icons.check_rounded, size: 16, color: Color(0xFF64748B))
+                        : null,
                   ),
                 ],
               ),
