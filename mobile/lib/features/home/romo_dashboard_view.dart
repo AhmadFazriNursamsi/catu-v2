@@ -71,10 +71,20 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
   Future<void> _openNotifications() async {
     HapticFeedback.selectionClick();
+    final role = _romoRole;
+    final romoId = widget.user['id'] != null
+        ? int.tryParse(widget.user['id'].toString())
+        : (widget.user['userId'] != null ? int.tryParse(widget.user['userId'].toString()) : null);
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => NotificationScreen(role: _romoRole),
+        builder: (_) => NotificationScreen(
+          role: role,
+          orders: widget.orders,
+          user: widget.user,
+          isRomo: true,
+          romoId: romoId,
+        ),
       ),
     );
     _refreshUnreadCount();

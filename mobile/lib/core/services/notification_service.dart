@@ -179,19 +179,31 @@ class NotificationService {
 
   // ─── Factory Helpers ──────────────────────────────────────────────────────
 
-  /// Called when Umat creates a new service order
+  /// Generate a unique notification ID using an atomic counter
+  static Future<String> _uniqueId(String prefix) async {
+    final prefs = await SharedPreferences.getInstance();
+    final counter = (prefs.getInt('notif_counter_v1') ?? 0) + 1;
+    await prefs.setInt('notif_counter_v1', counter);
+    return '${prefix}_${counter}_${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  /// Called when Umat creates a new service order — generates 1 notif per misa item
   static Future<void> notifyNewRequest({
     required String orderId,
     required String umatName,
     required String categoryName,
-    required String targetRole, // 'ROMO_ORDO' or 'ROMO_PAROKI'
+    required String targetRole,
+    String? misaItemName, // optional: per-item misa name
+    int? itemIndex,        // optional: index for uniqueness
   }) async {
     final isKedukaan = categoryName.toLowerCase().contains('kedukaan');
     final serviceLabel = isKedukaan ? 'Misa Kedukaan' : 'Perminyakan';
+    final suffix = misaItemName != null ? ' ($misaItemName)' : '';
+    final uniqueId = await _uniqueId('new_${orderId}_${itemIndex ?? 0}');
     await add(NotificationItem(
-      id: 'new_${orderId}_${DateTime.now().millisecondsSinceEpoch}',
+      id: uniqueId,
       title: 'Permintaan Pelayanan Baru',
-      body: 'Umat yang berada di kota anda telah membuat sebuah permintaan pelayanan Sakramen $serviceLabel dengan nama umat $umatName',
+      body: 'Umat yang berada di kota anda telah membuat sebuah permintaan pelayanan Sakramen $serviceLabel dengan nama umat $umatName$suffix',
       type: 'NEW_REQUEST',
       role: targetRole,
       createdAt: DateTime.now(),

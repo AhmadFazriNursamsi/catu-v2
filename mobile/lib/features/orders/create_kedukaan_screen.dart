@@ -604,15 +604,19 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     );
 
     if (isSuccess) {
-      // 🔔 Trigger notification for Romo Ordo
+      // 🔔 Trigger 1 notification per misa item for Romo Ordo
       final orderId = res['id']?.toString() ?? res['orderId']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
       final umatName = widget.user?['fullName'] ?? widget.user?['full_name'] ?? 'Umat';
-      await NotificationService.notifyNewRequest(
-        orderId: orderId,
-        umatName: umatName,
-        categoryName: 'Misa Kedukaan',
-        targetRole: 'ROMO_ORDO',
-      );
+      for (int i = 0; i < _misaList.length; i++) {
+        await NotificationService.notifyNewRequest(
+          orderId: orderId,
+          umatName: umatName,
+          categoryName: 'Misa Kedukaan',
+          targetRole: 'ROMO_ORDO',
+          misaItemName: _misaList[i].itemName,
+          itemIndex: i,
+        );
+      }
       Navigator.pop(context);
     }
   }

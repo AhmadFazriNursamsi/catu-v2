@@ -81,7 +81,12 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const NotificationScreen(role: 'UMAT'),
+        builder: (_) => NotificationScreen(
+          role: 'UMAT',
+          orders: widget.orders,
+          user: widget.user,
+          isRomo: false,
+        ),
       ),
     );
     _refreshUnreadCount();

@@ -1,11 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/models/models.dart';
 import '../../core/services/notification_service.dart';
+import '../orders/order_detail_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   final String role; // 'UMAT', 'ROMO_ORDO', 'ROMO_PAROKI', 'PENGURUS'
+  final List<Order> orders;
+  final Map<String, dynamic> user;
+  final bool isRomo;
+  final int? romoId;
 
-  const NotificationScreen({super.key, required this.role});
+  const NotificationScreen({
+    super.key,
+    required this.role,
+    required this.orders,
+    required this.user,
+    this.isRomo = false,
+    this.romoId,
+  });
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -482,7 +495,31 @@ class _NotificationScreenState extends State<NotificationScreen> {
             onTap: () async {
               HapticFeedback.selectionClick();
               await NotificationService.markRead(item.id);
-              setState(() => item.isRead = true);
+              if (mounted) setState(() => item.isRead = true);
+              // Navigate to order detail if orderId is present
+              if (item.orderId != null && mounted) {
+                final orderId = int.tryParse(item.orderId!);
+                if (orderId != null) {
+                  final Order? matchedOrder = widget.orders.cast<Order?>().firstWhere(
+                    (o) => o?.id == orderId,
+                    orElse: () => null,
+                  );
+                  if (matchedOrder != null && mounted) {
+                    final userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Pengguna';
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => OrderDetailScreen(
+                          order: matchedOrder,
+                          userName: userName,
+                          isRomo: widget.isRomo,
+                          romoId: widget.romoId,
+                        ),
+                      ),
+                    );
+                  }
+                }
+              }
             },
             child: Padding(
               padding: const EdgeInsets.all(14),
