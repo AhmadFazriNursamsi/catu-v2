@@ -1207,7 +1207,7 @@ export class OrdersController {
       const items = await this.dataSource.query(
         `SELECT id, item_name as "itemName", scheduled_date as "scheduledDate", 
                 scheduled_time_start as "scheduledTimeStart", scheduled_time_end as "scheduledTimeEnd", 
-                location_name as "locationName", accepted_romo_id as "acceptedRomoId",
+                location_name as "locationName", COALESCE(status, 'PENDING') as status, accepted_romo_id as "acceptedRomoId",
                 (SELECT full_name FROM user_profiles WHERE user_id = accepted_romo_id) as "acceptedRomoName"
          FROM order_items 
          WHERE order_id = $1 
@@ -1249,7 +1249,7 @@ export class OrdersController {
       const items = await this.dataSource.query(
         `SELECT id, item_name as "itemName", scheduled_date as "scheduledDate", 
                 scheduled_time_start as "scheduledTimeStart", scheduled_time_end as "scheduledTimeEnd", 
-                location_name as "locationName", accepted_romo_id as "acceptedRomoId",
+                location_name as "locationName", COALESCE(status, 'PENDING') as status, accepted_romo_id as "acceptedRomoId",
                 (SELECT full_name FROM user_profiles WHERE user_id = accepted_romo_id) as "acceptedRomoName"
          FROM order_items 
          WHERE order_id = $1 
@@ -1296,18 +1296,32 @@ export class AssignmentsController {
     }
 
     if (itemId) {
-      await this.dataSource.query(
-        `UPDATE order_items SET accepted_romo_id = $1 WHERE id = $2 AND order_id = $3`,
-        [romoId, itemId, orderId],
-      );
+      if (newStatus === 'CONFIRMED') {
+        await this.dataSource.query(
+          `UPDATE order_items SET status = $1, accepted_romo_id = COALESCE($2, accepted_romo_id) WHERE id = $3 AND order_id = $4`,
+          [newStatus, romoId, itemId, orderId],
+        );
+      } else {
+        await this.dataSource.query(
+          `UPDATE order_items SET status = $1 WHERE id = $2 AND order_id = $3`,
+          [newStatus, itemId, orderId],
+        );
+      }
 
-      const unaccepted = await this.dataSource.query(
-        `SELECT COUNT(*) as count FROM order_items WHERE order_id = $1 AND accepted_romo_id IS NULL`,
+      const allItems = await this.dataSource.query(
+        `SELECT status FROM order_items WHERE order_id = $1`,
         [orderId],
       );
 
-      const unacceptedCount = parseInt(unaccepted[0].count, 10);
-      if (unacceptedCount === 0) {
+      const allDone = allItems.length > 0 && allItems.every((i: any) => i.status === 'DONE');
+      const anyActive = allItems.some((i: any) => i.status === 'CONFIRMED' || i.status === 'IN_PROGRESS');
+
+      if (allDone) {
+        await this.dataSource.query(
+          `UPDATE orders SET status = 'DONE' WHERE id = $1`,
+          [orderId],
+        );
+      } else if (anyActive) {
         await this.dataSource.query(
           `UPDATE orders SET status = 'CONFIRMED' WHERE id = $1`,
           [orderId],
@@ -1324,8 +1338,8 @@ export class AssignmentsController {
         [newStatus, romoId, orderId],
       );
       await this.dataSource.query(
-        `UPDATE order_items SET accepted_romo_id = $1 WHERE order_id = $2 AND accepted_romo_id IS NULL`,
-        [romoId, orderId],
+        `UPDATE order_items SET status = $1, accepted_romo_id = COALESCE($2, accepted_romo_id) WHERE order_id = $3`,
+        [newStatus, romoId, orderId],
       );
     }
 

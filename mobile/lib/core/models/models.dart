@@ -30,6 +30,7 @@ class OrderItem {
   final String scheduledTimeStart;
   final String scheduledTimeEnd;
   final String locationName;
+  String status;
   int? acceptedRomoId;
   String? acceptedRomoName;
 
@@ -40,6 +41,7 @@ class OrderItem {
     required this.scheduledTimeStart,
     required this.scheduledTimeEnd,
     required this.locationName,
+    this.status = 'PENDING',
     this.acceptedRomoId,
     this.acceptedRomoName,
   });
@@ -64,6 +66,7 @@ class OrderItem {
       scheduledTimeStart: start,
       scheduledTimeEnd: end,
       locationName: json['locationName'] ?? json['location_name'] ?? '',
+      status: (json['status'] ?? 'PENDING').toString().toUpperCase(),
       acceptedRomoId: rawRomoId != null ? int.tryParse(rawRomoId.toString()) : null,
       acceptedRomoName: json['acceptedRomoName'] ?? json['accepted_romo_name'],
     );

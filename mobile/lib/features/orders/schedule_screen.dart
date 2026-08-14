@@ -142,18 +142,22 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     for (final order in _localOrders) {
       if (!order.isActiveDashboardOrder) continue;
       final st = order.status.toUpperCase();
-      if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') continue;
+      if (st == 'CLOSE' || st == 'FAIL') continue;
 
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
+          final itemSt = item.status.toUpperCase();
+          if (itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL') continue;
+
           if (widget.isRomo) {
             if (widget.showPendingOnly) {
-              // Permintaan Masuk: Only show unaccepted items
-              if (item.acceptedRomoId != null) continue;
+              // Permintaan Masuk: Only show unaccepted items with status PENDING
+              if (item.acceptedRomoId != null || itemSt != 'PENDING') continue;
             } else {
-              // Jadwal Dikonfirmasi: Only show items accepted by THIS Romo
+              // Jadwal Dikonfirmasi: Only show items accepted by THIS Romo with CONFIRMED/IN_PROGRESS status
               if (widget.romoId != null && item.acceptedRomoId != widget.romoId) continue;
               if (item.acceptedRomoId == null) continue;
+              if (itemSt != 'CONFIRMED' && itemSt != 'IN_PROGRESS' && itemSt != 'ACCEPTED') continue;
             }
           }
 
