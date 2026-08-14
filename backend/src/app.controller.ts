@@ -1138,6 +1138,7 @@ export class OrdersController {
     @Query('userId') userId?: string,
     @Query('parokiId') parokiId?: string,
     @Query('romoId') romoId?: string,
+    @Query('kabupatenKotaId') kabupatenKotaId?: string,
   ) {
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, 
@@ -1146,8 +1147,9 @@ export class OrdersController {
              p.full_name as pemohon_name,
              k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
              COALESCE(o.paroki_id, p.paroki_id) as paroki_id,
-             COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO') LIMIT 1)) as "acceptedRomoId",
-             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO') LIMIT 1)) LIMIT 1) as "acceptedRomoName"
+             COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id,
+             COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) as "acceptedRomoId",
+             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) LIMIT 1) as "acceptedRomoName"
       FROM orders o
       JOIN service_categories sc ON o.service_category_id = sc.id
       JOIN urgency_levels ul ON o.urgency_level_id = ul.id
@@ -1165,9 +1167,34 @@ export class OrdersController {
     if (userId && !isNaN(parseInt(userId))) {
       whereClauses.push(`o.user_id = $${paramIdx++}`);
       queryParams.push(parseInt(userId));
+    } else if (kabupatenKotaId && !isNaN(parseInt(kabupatenKotaId))) {
+      whereClauses.push(`COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++}`);
+      queryParams.push(parseInt(kabupatenKotaId));
     } else if (parokiId && !isNaN(parseInt(parokiId))) {
       whereClauses.push(`COALESCE(o.paroki_id, p.paroki_id) = $${paramIdx++}`);
       queryParams.push(parseInt(parokiId));
+    } else if (romoId && !isNaN(parseInt(romoId))) {
+      const romoRes = await this.dataSource.query(
+        `SELECT r.code as role_code, p.kabupaten_kota_id, p.paroki_id
+         FROM auth_users u
+         JOIN user_profiles p ON p.user_id = u.id
+         JOIN roles r ON u.role_id = r.id
+         WHERE u.id = $1`,
+        [parseInt(romoId)],
+      );
+      if (romoRes.length > 0) {
+        const romo = romoRes[0];
+        if (romo.role_code === 'ROMO_ORDO' && romo.kabupaten_kota_id) {
+          whereClauses.push(`COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++}`);
+          queryParams.push(romo.kabupaten_kota_id);
+        } else if (romo.paroki_id) {
+          whereClauses.push(`COALESCE(o.paroki_id, p.paroki_id) = $${paramIdx++}`);
+          queryParams.push(romo.paroki_id);
+        } else if (romo.kabupaten_kota_id) {
+          whereClauses.push(`COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++}`);
+          queryParams.push(romo.kabupaten_kota_id);
+        }
+      }
     }
 
     const whereStr = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';

@@ -64,17 +64,21 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-      final String roleCode = _currentUserMap['roleCode'] ??
+      final String roleCode = (_currentUserMap['roleCode'] ??
           _currentUserMap['role_code'] ??
           _currentUserMap['role'] ??
-          'UMAT';
+          'UMAT').toString().toUpperCase();
 
       final rawParoki = _currentUserMap['parokiId'] ?? _currentUserMap['paroki_id'];
       final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
 
+      final rawKota = _currentUserMap['kabupatenKotaId'] ?? _currentUserMap['kabupaten_kota_id'];
+      final int? kabupatenKotaId = rawKota != null ? int.tryParse(rawKota.toString()) : null;
+
       final orders = await ApiService.getOrders(
         userId: roleCode.startsWith('ROMO') ? null : userId,
-        parokiId: roleCode.startsWith('ROMO') ? parokiId : null,
+        parokiId: roleCode == 'ROMO_ORDO' ? null : (roleCode.startsWith('ROMO') ? parokiId : null),
+        kabupatenKotaId: roleCode == 'ROMO_ORDO' ? kabupatenKotaId : null,
         romoId: roleCode.startsWith('ROMO') ? userId : null,
       );
 
