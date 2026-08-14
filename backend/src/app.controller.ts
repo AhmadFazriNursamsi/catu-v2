@@ -842,6 +842,14 @@ export class AuthController implements OnModuleInit {
       );
     }
 
+    if (dto.roleCode || (dto as any).role_code) {
+      const targetRole = dto.roleCode || (dto as any).role_code;
+      const roleRes = await this.dataSource.query(`SELECT id FROM roles WHERE code = $1`, [targetRole]);
+      if (roleRes.length > 0) {
+        await this.dataSource.query(`UPDATE auth_users SET role_id = $1 WHERE id = $2`, [roleRes[0].id, uid]);
+      }
+    }
+
     const fields: string[] = [];
     const values: any[] = [];
     let idx = 1;
@@ -886,6 +894,10 @@ export class AuthController implements OnModuleInit {
       fields.push(`kabupaten_kota_id = $${idx++}`);
       values.push(dto.kabupatenKotaId);
     }
+    if (dto.ordoId !== undefined || (dto as any).ordo_id !== undefined) {
+      fields.push(`ordo_id = $${idx++}`);
+      values.push(dto.ordoId ?? (dto as any).ordo_id);
+    }
 
     if (fields.length > 0) {
       fields.push(`updated_at = NOW()`);
@@ -897,12 +909,17 @@ export class AuthController implements OnModuleInit {
     }
 
     const updated = await this.dataSource.query(
-      `SELECT u.id, u.phone_number, p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
-              p.pengurus_position, u.account_status,
+      `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.role_id, r.code as role_code,
+              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.ordo_id, ord.name as ordo_name,
+              p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id,
+              p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year,
+              p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active,
               k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name,
-              kk.name as kota_name, prov.name as provinsi_name
+              kk.name as kota_name, prov.name as provinsi_name, prov.id as provinsi_id
        FROM auth_users u
        JOIN user_profiles p ON p.user_id = u.id
+       JOIN roles r ON u.role_id = r.id
+       LEFT JOIN ordo ord ON p.ordo_id = ord.id
        LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
        LEFT JOIN paroki par ON p.paroki_id = par.id
        LEFT JOIN wilayah w ON p.wilayah_id = w.id
@@ -913,9 +930,37 @@ export class AuthController implements OnModuleInit {
       [uid],
     );
 
+    const uObj = updated[0] ? {
+      id: updated[0].id,
+      uuid: updated[0].uuid,
+      fullName: updated[0].full_name,
+      phoneNumber: updated[0].phone_number,
+      email: updated[0].email || '',
+      birthDate: updated[0].birth_date || '',
+      address: updated[0].address || '',
+      avatarUrl: updated[0].avatar_url || '',
+      roleCode: updated[0].role_code,
+      accountStatus: updated[0].account_status,
+      ordoId: updated[0].ordo_id,
+      ordoName: updated[0].ordo_name || '',
+      keuskupanId: updated[0].keuskupan_id,
+      parokiId: updated[0].paroki_id,
+      wilayahId: updated[0].wilayah_id,
+      lingkunganId: updated[0].lingkungan_id,
+      kabupatenKotaId: updated[0].kabupaten_kota_id,
+      provinsiId: updated[0].provinsi_id,
+      keuskupanName: updated[0].keuskupan_name || '',
+      parokiName: updated[0].paroki_name || '',
+      wilayahName: updated[0].wilayah_name || '',
+      lingkunganName: updated[0].lingkungan_name || '',
+      kabupatenKotaName: updated[0].kota_name || '',
+      provinsiName: updated[0].provinsi_name || '',
+    } : {};
+
     return {
+      statusCode: 200,
       message: 'Profil pengguna berhasil diperbarui!',
-      user: updated[0] || {},
+      user: uObj,
     };
   }
 

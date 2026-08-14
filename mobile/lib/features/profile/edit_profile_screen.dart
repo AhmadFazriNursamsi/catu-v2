@@ -42,6 +42,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   int? _selectedProvinsiId;
   int? _selectedKabupatenKotaId;
 
+  List<Map<String, dynamic>> _ordoList = [];
+  int? _selectedOrdoId;
+  String _selectedOrdoName = 'SJ — Serikat Yesus';
+
   bool _notifyKetuaLingkungan = true;
   bool _isSaving = false;
 
@@ -87,8 +91,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     _initDataFromUserMap(widget.user);
     _loadDynamicProvinsiKota();
+    _loadOrdoList();
     _fetchProfileFromBackend();
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
+  }
+
+  Future<void> _loadOrdoList() async {
+    try {
+      final ordos = await ApiService.getOrdo();
+      if (mounted && ordos.isNotEmpty) {
+        setState(() {
+          _ordoList = ordos;
+          if (_selectedOrdoId == null) {
+            _selectedOrdoId = int.tryParse(ordos.first['id'].toString());
+            _selectedOrdoName = '${ordos.first['code']} — ${ordos.first['name']}';
+          } else {
+            final match = ordos.firstWhere(
+              (e) => e['id'].toString() == _selectedOrdoId.toString(),
+              orElse: () => ordos.first,
+            );
+            _selectedOrdoName = '${match['code']} — ${match['name']}';
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading Ordo list: $e');
+    }
   }
 
   void _onLanguageChanged() {
@@ -154,6 +182,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return code.startsWith('ROMO') || _selectedRole.contains('Romo');
   }
 
+  bool get _isRomoOrdo {
+    final code = (widget.user['roleCode'] ?? widget.user['role_code'] ?? widget.user['role'] ?? '').toString().toUpperCase();
+    return code == 'ROMO_ORDO' || _selectedRole == 'Romo Ordo';
+  }
+
   void _initDataFromUserMap(Map<String, dynamic> data) {
     final fullName = data['fullName'] ?? data['full_name'] ?? '';
     final parts = fullName.toString().trim().split(' ');
@@ -188,6 +221,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (roleStr.isNotEmpty) {
         _selectedRole = roleStr;
       }
+    }
+
+    final rawOrdoId = data['ordoId'] ?? data['ordo_id'];
+    if (rawOrdoId != null) {
+      _selectedOrdoId = int.tryParse(rawOrdoId.toString());
+    }
+
+    final rawOrdoName = data['ordoName'] ?? data['ordo_name'];
+    if (rawOrdoName != null && rawOrdoName.toString().isNotEmpty) {
+      _selectedOrdoName = rawOrdoName.toString();
     }
 
     final rawProvId = data['provinsiId'] ?? data['provinsi_id'];
@@ -584,6 +627,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  String _roleToCode(String role) {
+    if (role == 'Romo Ordo') return 'ROMO_ORDO';
+    if (role == 'Romo Paroki') return 'ROMO_PAROKI';
+    if (role == 'Pengurus Lingkungan') return 'PENGURUS_LINGKUNGAN';
+    return 'UMAT';
+  }
+
   void _handleSave() async {
     HapticFeedback.mediumImpact();
     setState(() => _isSaving = true);
@@ -595,6 +645,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               .trim();
       final url = Uri.parse('${ApiService.baseUrl}/auth/profile/$userId');
 
+      final roleCode = _roleToCode(_selectedRole);
       final body = {
         'fullName': fullName,
         'phoneNumber': _phoneController.text.trim(),
@@ -602,15 +653,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'birthDate': _birthDateController.text.trim(),
         'address': _addressController.text.trim(),
         'avatarUrl': _avatarUrl,
+        'roleCode': roleCode,
         'kabupatenKotaId': _selectedKabupatenKotaId,
         'notifyKetuaLingkungan': _notifyKetuaLingkungan,
+        if (_selectedRole == 'Romo Ordo' && _selectedOrdoId != null) 'ordoId': _selectedOrdoId,
       };
 
-      await http.put(
+      final response = await http.put(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
+
+      if (response.statusCode == 200) {
+        final resData = jsonDecode(response.body);
+        if (resData['user'] != null && resData['user'] is Map) {
+          final Map<String, dynamic> updated = Map<String, dynamic>.from(resData['user']);
+          widget.user.addAll(updated);
+          widget.user['roleCode'] = roleCode;
+          widget.user['role_code'] = roleCode;
+          if (_selectedOrdoId != null) widget.user['ordoId'] = _selectedOrdoId;
+        }
+      }
     } catch (e) {
       debugPrint('Error updating profile to backend: $e');
     }
@@ -756,22 +820,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 14),
 
-              _buildDropdownField(
-                label: LanguageService.tr('keuskupan'),
-                value: _selectedKeuskupan,
-                items: _keuskupanList,
-                onChanged: (val) => setState(() => _selectedKeuskupan = val!),
-                icon: Icons.account_balance_rounded,
-              ),
-              const SizedBox(height: 14),
-
-              _buildDropdownField(
-                label: LanguageService.tr('paroki'),
-                value: _selectedParoki,
-                items: _parokiList,
-                onChanged: (val) => setState(() => _selectedParoki = val!),
-                icon: Icons.location_city_rounded,
-              ),
+              if (_isRomoOrdo) ...[
+                _buildOrdoDropdownTile(),
+              ] else ...[
+                _buildDropdownField(
+                  label: LanguageService.tr('keuskupan'),
+                  value: _selectedKeuskupan,
+                  items: _keuskupanList,
+                  onChanged: (val) => setState(() => _selectedKeuskupan = val!),
+                  icon: Icons.account_balance_rounded,
+                ),
+                const SizedBox(height: 14),
+                _buildDropdownField(
+                  label: LanguageService.tr('paroki'),
+                  value: _selectedParoki,
+                  items: _parokiList,
+                  onChanged: (val) => setState(() => _selectedParoki = val!),
+                  icon: Icons.location_city_rounded,
+                ),
+              ],
 
               if (!_isRomo) ...[
                 const SizedBox(height: 14),
@@ -1239,6 +1306,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildOrdoDropdownTile() {
+    final displayItems = _ordoList.isNotEmpty
+        ? _ordoList.map((e) => '${e['code']} — ${e['name']}').toList()
+        : [
+            'SJ — Serikat Yesus',
+            'OFM — Ordo Fratrum Minorum',
+            'O.Carm — Ordo Carmelitarum',
+            'SVD — Societas Verbi Divini',
+            'MSF — Missionarii a Sacra Familia',
+            'CSsR — Congregatio Sanctissimi Redemptoris',
+          ];
+
+    if (!displayItems.contains(_selectedOrdoName)) {
+      displayItems.insert(0, _selectedOrdoName);
+    }
+
+    return _buildDropdownField(
+      label: 'Ordo / Tarekat',
+      value: _selectedOrdoName,
+      items: displayItems,
+      onChanged: (val) {
+        if (val != null) {
+          setState(() {
+            _selectedOrdoName = val;
+            if (_ordoList.isNotEmpty) {
+              final match = _ordoList.firstWhere(
+                (e) => '${e['code']} — ${e['name']}' == val,
+                orElse: () => _ordoList.first,
+              );
+              _selectedOrdoId = int.tryParse(match['id'].toString());
+            }
+          });
+        }
+      },
+      icon: Icons.auto_awesome_rounded,
     );
   }
 }

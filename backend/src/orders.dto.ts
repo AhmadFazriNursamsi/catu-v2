@@ -162,6 +162,16 @@ export class UpdateUserProfileDto {
   @IsString()
   avatarUrl?: string;
 
+  @ApiPropertyOptional({ example: 'ROMO_ORDO', description: 'Role Code (UMAT, ROMO_PAROKI, ROMO_ORDO, PENGURUS_LINGKUNGAN)' })
+  @IsOptional()
+  @IsString()
+  roleCode?: string;
+
+  @ApiPropertyOptional({ example: 2, description: 'ID Ordo / Kongregasi' })
+  @IsOptional()
+  @IsNumber()
+  ordoId?: number;
+
   @ApiPropertyOptional({ example: 1, description: 'ID Keuskupan' })
   @IsOptional()
   keuskupanId?: number;
