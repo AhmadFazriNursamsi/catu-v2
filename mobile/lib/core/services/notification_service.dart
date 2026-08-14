@@ -11,6 +11,7 @@ class NotificationItem {
   bool isRead;
   final String? orderId;
   final String? categoryName; // 'Misa Kedukaan' or 'Perminyakan'
+  final String? itemTitle; // Specific misa name e.g. 'Misa Tutup Peti'
 
   NotificationItem({
     required this.id,
@@ -22,6 +23,7 @@ class NotificationItem {
     this.isRead = false,
     this.orderId,
     this.categoryName,
+    this.itemTitle,
   });
 
   Map<String, dynamic> toJson() => {
@@ -34,6 +36,7 @@ class NotificationItem {
         'isRead': isRead,
         'orderId': orderId,
         'categoryName': categoryName,
+        'itemTitle': itemTitle,
       };
 
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
@@ -47,6 +50,7 @@ class NotificationItem {
       isRead: json['isRead'] ?? false,
       orderId: json['orderId'],
       categoryName: json['categoryName'],
+      itemTitle: json['itemTitle'],
     );
   }
 
@@ -209,6 +213,7 @@ class NotificationService {
       createdAt: DateTime.now(),
       orderId: orderId,
       categoryName: categoryName,
+      itemTitle: misaItemName,
     ));
   }
 
@@ -218,19 +223,23 @@ class NotificationService {
     required String romoName,
     required String categoryName,
     required bool accepted,
+    String? misaItemName,
   }) async {
     final isKedukaan = categoryName.toLowerCase().contains('kedukaan');
     final serviceLabel = isKedukaan ? 'Misa Kedukaan' : 'Perminyakan';
     final action = accepted ? 'mengkonfirmasi' : 'menolak';
+    final suffix = misaItemName != null ? ' ($misaItemName)' : '';
+    final uniqueId = await _uniqueId('romo_${orderId}');
     await add(NotificationItem(
-      id: 'romo_${orderId}_${DateTime.now().millisecondsSinceEpoch}',
+      id: uniqueId,
       title: accepted ? 'Pelayanan Dikonfirmasi ✓' : 'Pelayanan Ditolak',
-      body: 'Romo $romoName telah $action permintaan pelayanan $serviceLabel Anda.',
+      body: 'Romo $romoName telah $action permintaan pelayanan $serviceLabel$suffix Anda.',
       type: accepted ? 'ROMO_ACCEPTED' : 'ROMO_DECLINED',
       role: 'UMAT',
       createdAt: DateTime.now(),
       orderId: orderId,
       categoryName: categoryName,
+      itemTitle: misaItemName,
     ));
   }
 
@@ -240,18 +249,22 @@ class NotificationService {
     required String categoryName,
     required String penerimaName,
     required String targetRole,
+    String? misaItemName,
   }) async {
     final isKedukaan = categoryName.toLowerCase().contains('kedukaan');
     final serviceLabel = isKedukaan ? 'Misa Kedukaan' : 'Perminyakan';
+    final suffix = misaItemName != null ? ' ($misaItemName)' : '';
+    final uniqueId = await _uniqueId('done_${orderId}');
     await add(NotificationItem(
-      id: 'done_${orderId}_${DateTime.now().millisecondsSinceEpoch}',
+      id: uniqueId,
       title: 'Pelayanan Selesai ✓',
-      body: 'Pelayanan $serviceLabel untuk $penerimaName telah selesai dilaksanakan.',
+      body: 'Pelayanan $serviceLabel$suffix untuk $penerimaName telah selesai dilaksanakan.',
       type: 'STATUS_UPDATE',
       role: targetRole,
       createdAt: DateTime.now(),
       orderId: orderId,
       categoryName: categoryName,
+      itemTitle: misaItemName,
     ));
   }
 }

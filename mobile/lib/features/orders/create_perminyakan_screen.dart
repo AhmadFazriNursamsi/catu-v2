@@ -447,7 +447,10 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
 
     if (isSuccess) {
       // 🔔 Trigger notification for Romo Ordo
-      final orderId = res['id']?.toString() ?? res['orderId']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
+      final dynamic rawOrderId = res['order'] != null
+          ? res['order']['id']
+          : (res['id'] ?? res['orderId']);
+      final String orderId = rawOrderId?.toString() ?? '';
       final umatName = widget.user?['fullName'] ?? widget.user?['full_name'] ?? 'Umat';
       await NotificationService.notifyNewRequest(
         orderId: orderId,

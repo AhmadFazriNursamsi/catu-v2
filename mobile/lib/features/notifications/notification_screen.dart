@@ -540,6 +540,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     builder: (_) => OrderDetailScreen(
                       order: order,
                       userName: userName,
+                      selectedItemTitle: item.itemTitle,
                       isRomo: widget.isRomo,
                       romoId: widget.romoId,
                     ),

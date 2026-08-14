@@ -768,6 +768,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           categoryName: order.categoryName,
           penerimaName: order.penerimaName,
           targetRole: 'UMAT',
+          misaItemName: targetItem?.itemName,
         );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -930,6 +931,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           romoName: widget.userName,
           categoryName: order.categoryName,
           accepted: true,
+          misaItemName: targetItem?.itemName,
         );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
