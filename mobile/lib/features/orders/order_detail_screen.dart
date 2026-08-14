@@ -475,16 +475,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
 
                             const SizedBox(height: 12),
 
-                            // ── Romo Pelayan (Petugas) Info Card ──
+                            // ── Romo yang Bertugas Info Card ──
                             if (order.status.toUpperCase() != 'PENDING') ...[
                               _buildInfoCard(
                                 icon: Icons.person_pin_rounded,
                                 iconBg: const Color(0xFF059669),
-                                title: 'Romo Pelayan (Petugas)',
+                                title: 'Romo yang Bertugas',
                                 children: [
                                   _buildInfoTile(
                                     icon: Icons.verified_user_rounded,
-                                    label: 'Nama Romo',
+                                    label: 'Romo / Pastor',
                                     value: (order.acceptedRomoName != null && order.acceptedRomoName!.isNotEmpty)
                                         ? order.acceptedRomoName!
                                         : (widget.isRomo ? widget.userName : 'Romo Fajar, Pr'),
@@ -493,7 +493,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                   _buildInfoTile(
                                     icon: Icons.check_circle_outline_rounded,
                                     label: 'Status Konfirmasi',
-                                    value: 'Telah Bersedia & Menerima Pelayanan',
+                                    value: 'Telah Mengonfirmasi Kehadiran',
                                     valueColor: const Color(0xFF059669),
                                     isLast: true,
                                   ),
