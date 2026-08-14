@@ -106,7 +106,6 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   Future<void> _refreshLocalOrders() async {
     try {
       final fetched = await ApiService.getOrders(
-        parokiId: 10,
         romoId: widget.romoId,
       );
       if (mounted && fetched.isNotEmpty) {
@@ -147,6 +146,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           if (st != 'PENDING') continue;
         } else {
           if (st == 'PENDING') continue;
+          if (widget.romoId != null && order.acceptedRomoId != widget.romoId) continue;
         }
       }
       if (!order.isActiveDashboardOrder) continue;

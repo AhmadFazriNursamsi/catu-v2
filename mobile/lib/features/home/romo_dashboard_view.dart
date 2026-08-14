@@ -666,9 +666,14 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
   }
 
   List<RomoDashboardCardItem> get _displayTodayScheduleCardItems {
+    final int? romoId = widget.user['id'] != null
+        ? int.tryParse(widget.user['id'].toString())
+        : (widget.user['userId'] != null ? int.tryParse(widget.user['userId'].toString()) : null);
+
     final acceptedOrders = widget.orders.where((o) {
       final st = o.status.toUpperCase();
-      return (st == 'CONFIRMED' || st == 'IN_PROGRESS' || st == 'ACCEPTED' || st == 'DONE') && o.isActiveDashboardOrder;
+      final bool isAcceptedByThisRomo = romoId != null && o.acceptedRomoId == romoId;
+      return isAcceptedByThisRomo && (st == 'CONFIRMED' || st == 'IN_PROGRESS' || st == 'ACCEPTED' || st == 'DONE') && o.isActiveDashboardOrder;
     }).toList();
 
     final List<RomoDashboardCardItem> cardList = [];

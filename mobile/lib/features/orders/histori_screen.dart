@@ -170,24 +170,26 @@ class _HistoriScreenState extends State<HistoriScreen>
       final st = o.status.toUpperCase();
 
       if (widget.isRomo) {
-        // 1. Romo History ONLY contains services accepted by Romo (NOT PENDING)
+        // 1. Romo History ONLY contains services accepted by THIS Romo!
         if (st == 'PENDING') return false;
 
-        // 2. If acceptedRomoId is present, Romo must be the one who accepted it!
-        if (o.acceptedRomoId != null && widget.romoId != null) {
+        // Romo MUST be the one who accepted this order!
+        if (widget.romoId != null) {
           if (o.acceptedRomoId != widget.romoId) return false;
+        } else if (o.acceptedRomoId == null) {
+          return false;
         }
 
-        // 3. For FAIL orders, ONLY show if Romo actually accepted it (otherwise it failed unaccepted)
+        // For FAIL orders, ONLY show if Romo actually accepted it
         if (st == 'FAIL') {
           return o.acceptedRomoId != null && o.acceptedRomoId == widget.romoId;
         }
 
-        // 4. Completed / Closed statuses (DONE, CLOSE) belong to History
+        // Completed / Closed statuses (DONE, CLOSE) belong to History
         if (st == 'DONE' || st == 'CLOSE') return true;
 
-        // 5. Active accepted status (CONFIRMED, IN_PROGRESS) ONLY belongs to History
-        //    if its scheduled date has PASSED (< today)
+        // Active accepted status (CONFIRMED, IN_PROGRESS) ONLY belongs to History
+        // if its scheduled date has PASSED (< today)
         final bool mainDatePassed = _isDateBeforeToday(o.scheduledDate);
         final bool hasPastSubItems = o.items.any((item) => _isDateBeforeToday(item.scheduledDate));
 
