@@ -984,58 +984,65 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
                       displayItem.itemName,
                       style: const TextStyle(
-                        fontSize: 21,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF0F172A),
-                        letterSpacing: -0.5,
-                        height: 1.2,
+                        letterSpacing: -0.4,
+                        height: 1.25,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      order.categoryName,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Status badge
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(statusIcon, size: 14, color: statusColor),
+                        const SizedBox(width: 5),
+                        Text(
+                          statusLabel,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: statusColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              // Status badge
+              const SizedBox(height: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFF1D4ED8).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(statusIcon, size: 14, color: statusColor),
-                    const SizedBox(width: 5),
-                    Text(
-                      statusLabel,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: statusColor,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  order.categoryName,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF1D4ED8),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
