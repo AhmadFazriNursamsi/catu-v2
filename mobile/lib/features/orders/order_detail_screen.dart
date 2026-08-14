@@ -391,9 +391,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         ? (displayItem.acceptedRomoId != null)
         : (order.acceptedRomoId != null || order.status.toUpperCase() != 'PENDING');
 
-    final String effectiveStatus = isItemAccepted
-        ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
-        : order.status;
+    final String effectiveStatus = order.items.isNotEmpty
+        ? displayItem.status.toUpperCase()
+        : (isItemAccepted
+            ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
+            : order.status.toUpperCase());
 
     final statusColor = _getStatusColor(effectiveStatus);
     final statusLabel = _getStatusLabel(effectiveStatus);
@@ -505,7 +507,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                   _buildInfoTile(
                                     icon: Icons.check_circle_outline_rounded,
                                     label: 'Status Konfirmasi',
-                                    value: 'Telah Mengonfirmasi Kehadiran',
+                                    value: effectiveStatus == 'DONE' ? 'Telah Selesai Dilaksanakan' : 'Telah Mengonfirmasi Kehadiran',
                                     valueColor: const Color(0xFF059669),
                                     isLast: true,
                                   ),
@@ -671,7 +673,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               bottom: 24,
               child: widget.isRomo && !isItemAccepted
                   ? _buildRomoAcceptButtonBar(order, displayItem)
-                  : (widget.isRomo && (isItemAccepted || order.status.toUpperCase() == 'CONFIRMED' || order.status.toUpperCase() == 'IN_PROGRESS')
+                  : (widget.isRomo && (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS')
                       ? _buildRomoAcceptedBottomActions(order, displayItem: displayItem)
                       : _buildFloatingChatButton(order)),
             ),

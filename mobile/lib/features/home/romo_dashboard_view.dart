@@ -678,8 +678,10 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
-          // ONLY display items accepted by THIS Romo!
+          // ONLY display items accepted by THIS Romo that are NOT yet DONE!
           if (romoId == null || item.acceptedRomoId != romoId) continue;
+          final itemSt = item.status.toUpperCase();
+          if (itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL') continue;
           if (_isDateBeforeToday(item.scheduledDate)) continue;
 
           String scheduleStr = item.scheduledDate;
@@ -707,6 +709,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         }
       } else {
         if (romoId == null || order.acceptedRomoId != romoId) continue;
+        final st = order.status.toUpperCase();
+        if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') continue;
         if (_isDateBeforeToday(order.scheduledDate)) continue;
 
         cardList.add(
