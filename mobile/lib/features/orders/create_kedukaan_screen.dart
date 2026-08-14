@@ -414,6 +414,15 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
       return;
     }
 
+    // Validasi: Misa tidak boleh double / duplikat dalam 1 pelayanan kedukaan
+    final bool isDuplicate = _misaList.any(
+      (existing) => existing.itemName.trim().toLowerCase() == _selectedJenisMisa.trim().toLowerCase(),
+    );
+    if (isDuplicate) {
+      _showError('Jenis misa "$_selectedJenisMisa" sudah ditambahkan. Misa tidak boleh dipilih lebih dari sekali dalam 1 pelayanan kedukaan.');
+      return;
+    }
+
     // Parse Jam Mulai & Jam Akhir Misa
     final startParts = _jamMulaiMisa.split(':');
     final endParts = _jamAkhirMisa.split(':');
@@ -441,6 +450,14 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     setState(() {
       _misaList.add(item);
       _alamatMisaController.clear();
+
+      // Auto-switch dropdown to next available unselected mass option if possible
+      final availableOptions = _jenisMisaOptions.where((opt) =>
+          !_misaList.any((m) => m.itemName.trim().toLowerCase() == opt.trim().toLowerCase())
+      ).toList();
+      if (availableOptions.isNotEmpty) {
+        _selectedJenisMisa = availableOptions.first;
+      }
     });
 
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -865,7 +882,9 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                           hint: LanguageService.tr('select_mass'),
                           prefixIcon: Icons.sanitizer_rounded,
                           items: _jenisMisaOptions,
-                          itemLabel: (e) => e,
+                          itemLabel: (e) => _misaList.any((m) => m.itemName.trim().toLowerCase() == e.trim().toLowerCase())
+                              ? '$e (Sudah Ditambahkan)'
+                              : e,
                           onChanged: (v) {
                             if (v != null) setState(() => _selectedJenisMisa = v);
                           },
