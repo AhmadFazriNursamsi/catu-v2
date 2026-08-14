@@ -34,6 +34,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  int? get _parokiId {
+    final raw = widget.user['parokiId'] ?? widget.user['paroki_id'];
+    return raw != null ? int.tryParse(raw.toString()) : null;
+  }
+
+  int? get _kabupatenKotaId {
+    final raw = widget.user['kabupatenKotaId'] ?? widget.user['kabupaten_kota_id'];
+    return raw != null ? int.tryParse(raw.toString()) : null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -48,7 +58,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Future<void> _loadNotifications() async {
     setState(() => _isLoading = true);
-    final items = await NotificationService.getForRole(widget.role);
+    final items = await NotificationService.getForRole(
+      widget.role,
+      parokiId: _parokiId,
+      kabupatenKotaId: _kabupatenKotaId,
+    );
     if (mounted) {
       setState(() {
         _allItems = items;
@@ -56,7 +70,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
       });
     }
     // Mark all as read after viewing
-    await NotificationService.markAllRead(widget.role);
+    await NotificationService.markAllRead(
+      widget.role,
+      parokiId: _parokiId,
+      kabupatenKotaId: _kabupatenKotaId,
+    );
   }
 
   List<NotificationItem> get _filteredItems {
@@ -125,7 +143,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
       ),
     );
     if (confirmed == true) {
-      await NotificationService.deleteAll(widget.role);
+      await NotificationService.deleteAll(
+        widget.role,
+        parokiId: _parokiId,
+        kabupatenKotaId: _kabupatenKotaId,
+      );
       setState(() => _allItems.clear());
     }
   }

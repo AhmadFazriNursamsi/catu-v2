@@ -604,13 +604,22 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     );
 
     if (isSuccess) {
-      // 🔔 Trigger 1 notification per misa item for Romo Ordo
       final dynamic rawOrderId = res['order'] != null
           ? res['order']['id']
           : (res['id'] ?? res['orderId']);
       final String orderId = rawOrderId?.toString() ?? '';
       final umatName = widget.user?['fullName'] ?? widget.user?['full_name'] ?? 'Umat';
+
+      final userParokiRaw = widget.user?['parokiId'] ?? widget.user?['paroki_id'];
+      final int? userParokiId = userParokiRaw != null ? int.tryParse(userParokiRaw.toString()) : null;
+      final effectiveParokiId = _isSameParish ? userParokiId : _selectedParokiId;
+
+      final userKabRaw = widget.user?['kabupatenKotaId'] ?? widget.user?['kabupaten_kota_id'];
+      final int? userKabupatenId = userKabRaw != null ? int.tryParse(userKabRaw.toString()) : null;
+      final effectiveKabupatenId = _isSameParish ? userKabupatenId : _selectedKabupatenKotaId;
+
       for (int i = 0; i < _misaList.length; i++) {
+        // 🔔 1. Notif Romo Ordo (berdasarkan Kabupaten / Kota)
         await NotificationService.notifyNewRequest(
           orderId: orderId,
           umatName: umatName,
@@ -618,6 +627,20 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
           targetRole: 'ROMO_ORDO',
           misaItemName: _misaList[i].itemName,
           itemIndex: i,
+          parokiId: effectiveParokiId,
+          kabupatenKotaId: effectiveKabupatenId,
+        );
+
+        // 🔔 2. Notif Romo Paroki (berdasarkan Paroki)
+        await NotificationService.notifyNewRequest(
+          orderId: orderId,
+          umatName: umatName,
+          categoryName: 'Misa Kedukaan',
+          targetRole: 'ROMO_PAROKI',
+          misaItemName: _misaList[i].itemName,
+          itemIndex: i,
+          parokiId: effectiveParokiId,
+          kabupatenKotaId: effectiveKabupatenId,
         );
       }
       Navigator.pop(context);

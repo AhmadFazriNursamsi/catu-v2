@@ -12,6 +12,8 @@ class NotificationItem {
   final String? orderId;
   final String? categoryName; // 'Misa Kedukaan' or 'Perminyakan'
   final String? itemTitle; // Specific misa name e.g. 'Misa Tutup Peti'
+  final int? parokiId;
+  final int? kabupatenKotaId;
 
   NotificationItem({
     required this.id,
@@ -24,6 +26,8 @@ class NotificationItem {
     this.orderId,
     this.categoryName,
     this.itemTitle,
+    this.parokiId,
+    this.kabupatenKotaId,
   });
 
   Map<String, dynamic> toJson() => {
@@ -37,6 +41,8 @@ class NotificationItem {
         'orderId': orderId,
         'categoryName': categoryName,
         'itemTitle': itemTitle,
+        'parokiId': parokiId,
+        'kabupatenKotaId': kabupatenKotaId,
       };
 
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
@@ -51,6 +57,8 @@ class NotificationItem {
       orderId: json['orderId'],
       categoryName: json['categoryName'],
       itemTitle: json['itemTitle'],
+      parokiId: json['parokiId'] != null ? int.tryParse(json['parokiId'].toString()) : null,
+      kabupatenKotaId: json['kabupatenKotaId'] != null ? int.tryParse(json['kabupatenKotaId'].toString()) : null,
     );
   }
 
@@ -90,17 +98,38 @@ class NotificationService {
     return items;
   }
 
-  // ─── Get For Role ─────────────────────────────────────────────────────────
+  // ─── Get For Role (with location filtering) ────────────────────────────────
 
-  static Future<List<NotificationItem>> getForRole(String role) async {
+  static Future<List<NotificationItem>> getForRole(
+    String role, {
+    int? parokiId,
+    int? kabupatenKotaId,
+  }) async {
     final all = await getAll();
-    return all.where((n) => n.role == role).toList();
+    return all.where((n) {
+      if (n.role != role) return false;
+      if (role == 'ROMO_PAROKI' && parokiId != null && n.parokiId != null) {
+        return n.parokiId == parokiId;
+      }
+      if (role == 'ROMO_ORDO' && kabupatenKotaId != null && n.kabupatenKotaId != null) {
+        return n.kabupatenKotaId == kabupatenKotaId;
+      }
+      return true;
+    }).toList();
   }
 
   // ─── Unread Count ─────────────────────────────────────────────────────────
 
-  static Future<int> unreadCount(String role) async {
-    final items = await getForRole(role);
+  static Future<int> unreadCount(
+    String role, {
+    int? parokiId,
+    int? kabupatenKotaId,
+  }) async {
+    final items = await getForRole(
+      role,
+      parokiId: parokiId,
+      kabupatenKotaId: kabupatenKotaId,
+    );
     return items.where((n) => !n.isRead).length;
   }
 
@@ -134,13 +163,25 @@ class NotificationService {
 
   // ─── Mark All Read For Role ───────────────────────────────────────────────
 
-  static Future<void> markAllRead(String role) async {
+  static Future<void> markAllRead(
+    String role, {
+    int? parokiId,
+    int? kabupatenKotaId,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_key) ?? [];
     final updated = raw.map((s) {
       try {
         final map = jsonDecode(s) as Map<String, dynamic>;
-        if (map['role'] == role) map['isRead'] = true;
+        if (map['role'] == role) {
+          if (role == 'ROMO_PAROKI' && parokiId != null && map['parokiId'] != null) {
+            if (map['parokiId'] == parokiId) map['isRead'] = true;
+          } else if (role == 'ROMO_ORDO' && kabupatenKotaId != null && map['kabupatenKotaId'] != null) {
+            if (map['kabupatenKotaId'] == kabupatenKotaId) map['isRead'] = true;
+          } else {
+            map['isRead'] = true;
+          }
+        }
         return jsonEncode(map);
       } catch (_) {
         return s;
@@ -167,13 +208,25 @@ class NotificationService {
 
   // ─── Delete All For Role ──────────────────────────────────────────────────
 
-  static Future<void> deleteAll(String role) async {
+  static Future<void> deleteAll(
+    String role, {
+    int? parokiId,
+    int? kabupatenKotaId,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_key) ?? [];
     final updated = raw.where((s) {
       try {
         final map = jsonDecode(s) as Map<String, dynamic>;
-        return map['role'] != role;
+        if (map['role'] == role) {
+          if (role == 'ROMO_PAROKI' && parokiId != null && map['parokiId'] != null) {
+            return map['parokiId'] != parokiId;
+          } else if (role == 'ROMO_ORDO' && kabupatenKotaId != null && map['kabupatenKotaId'] != null) {
+            return map['kabupatenKotaId'] != kabupatenKotaId;
+          }
+          return false;
+        }
+        return true;
       } catch (_) {
         return true;
       }
@@ -196,24 +249,31 @@ class NotificationService {
     required String orderId,
     required String umatName,
     required String categoryName,
-    required String targetRole,
+    required String targetRole, // 'ROMO_ORDO' or 'ROMO_PAROKI'
     String? misaItemName, // optional: per-item misa name
     int? itemIndex,        // optional: index for uniqueness
+    int? parokiId,
+    int? kabupatenKotaId,
   }) async {
     final isKedukaan = categoryName.toLowerCase().contains('kedukaan');
     final serviceLabel = isKedukaan ? 'Misa Kedukaan' : 'Perminyakan';
     final suffix = misaItemName != null ? ' ($misaItemName)' : '';
-    final uniqueId = await _uniqueId('new_${orderId}_${itemIndex ?? 0}');
+    final locationPhrase = targetRole == 'ROMO_PAROKI'
+        ? 'paroki anda'
+        : 'kota anda';
+    final uniqueId = await _uniqueId('new_${targetRole.toLowerCase()}_${orderId}_${itemIndex ?? 0}');
     await add(NotificationItem(
       id: uniqueId,
       title: 'Permintaan Pelayanan Baru',
-      body: 'Umat yang berada di kota anda telah membuat sebuah permintaan pelayanan Sakramen $serviceLabel dengan nama umat $umatName$suffix',
+      body: 'Umat yang berada di $locationPhrase telah membuat sebuah permintaan pelayanan Sakramen $serviceLabel dengan nama umat $umatName$suffix',
       type: 'NEW_REQUEST',
       role: targetRole,
       createdAt: DateTime.now(),
       orderId: orderId,
       categoryName: categoryName,
       itemTitle: misaItemName,
+      parokiId: parokiId,
+      kabupatenKotaId: kabupatenKotaId,
     ));
   }
 

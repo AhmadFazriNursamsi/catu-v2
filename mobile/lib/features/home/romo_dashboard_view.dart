@@ -59,7 +59,17 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
   Future<void> _refreshUnreadCount() async {
     final role = _romoRole;
-    final count = await NotificationService.unreadCount(role);
+    final rawParoki = widget.user['parokiId'] ?? widget.user['paroki_id'];
+    final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
+
+    final rawKota = widget.user['kabupatenKotaId'] ?? widget.user['kabupaten_kota_id'];
+    final int? kabupatenKotaId = rawKota != null ? int.tryParse(rawKota.toString()) : null;
+
+    final count = await NotificationService.unreadCount(
+      role,
+      parokiId: parokiId,
+      kabupatenKotaId: kabupatenKotaId,
+    );
     if (mounted) setState(() => _unreadNotifCount = count);
   }
 
