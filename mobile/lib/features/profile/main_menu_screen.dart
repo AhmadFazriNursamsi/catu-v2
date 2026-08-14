@@ -117,13 +117,19 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   String get _roleCode =>
       _userData['roleCode'] ?? _userData['role_code'] ?? _userData['role'] ?? 'UMAT';
 
+  String get _ordoName {
+    final name = _userData['ordoName'] ?? _userData['ordo_name'];
+    if (name != null && name.toString().isNotEmpty) return name.toString();
+    return 'Serikat Yesus (SJ)';
+  }
+
   String get _romoPos =>
       _userData['romoPosition'] ?? _userData['romo_position'] ?? '';
 
   String get _positionTitle {
     final code = _roleCode.toUpperCase();
     if (code == 'ROMO_ORDO') {
-      return 'Romo Ordo';
+      return 'Romo Ordo — $_ordoName';
     }
     if (code == 'ROMO_PAROKI' || code.startsWith('ROMO')) {
       if (_romoPos == 'KETUA_ROMO') return 'Romo Paroki — Pastor Kepala';
@@ -350,7 +356,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  _paroki,
+                  _roleCode.toUpperCase() == 'ROMO_ORDO' ? _ordoName : _paroki,
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,

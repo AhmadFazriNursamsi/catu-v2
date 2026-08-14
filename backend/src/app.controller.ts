@@ -48,14 +48,21 @@ export class AuthController implements OnModuleInit {
         UPDATE orders SET status = 'FAIL' WHERE status::text = 'PENDING' AND (scheduled_date < CURRENT_DATE);
 
         -- Cleanup existing non-Romo profiles so romo_position is NULL
-
-        -- Cleanup existing non-Romo profiles so romo_position is NULL
         UPDATE user_profiles 
         SET romo_position = NULL 
         WHERE user_id IN (
           SELECT u.id FROM auth_users u 
           JOIN roles r ON u.role_id = r.id 
           WHERE r.code NOT LIKE 'ROMO%'
+        );
+
+        -- Cleanup existing Romo Ordo profiles so keuskupan_id, paroki_id, etc. are NULL
+        UPDATE user_profiles 
+        SET keuskupan_id = NULL, paroki_id = NULL, wilayah_id = NULL, lingkungan_id = NULL 
+        WHERE user_id IN (
+          SELECT u.id FROM auth_users u 
+          JOIN roles r ON u.role_id = r.id 
+          WHERE r.code = 'ROMO_ORDO'
         );
 
         -- Cleanup active flag for non-leadership positions (ordinary Umat & ordinary Romo)
@@ -765,7 +772,7 @@ export class AuthController implements OnModuleInit {
 
     const users = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.role_id, r.code as role_code,
-              p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.ordo_id, ord.name as ordo_name,
               p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id,
               p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year,
               p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active,
@@ -774,6 +781,7 @@ export class AuthController implements OnModuleInit {
        FROM auth_users u
        JOIN user_profiles p ON p.user_id = u.id
        JOIN roles r ON u.role_id = r.id
+       LEFT JOIN ordo ord ON p.ordo_id = ord.id
        LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
        LEFT JOIN paroki par ON p.paroki_id = par.id
        LEFT JOIN wilayah w ON p.wilayah_id = w.id
@@ -802,16 +810,18 @@ export class AuthController implements OnModuleInit {
         avatarUrl: user.avatar_url || '',
         roleCode: user.role_code,
         accountStatus: user.account_status,
-        keuskupanId: user.keuskupan_id,
-        parokiId: user.paroki_id,
-        wilayahId: user.wilayah_id,
-        lingkunganId: user.lingkungan_id,
+        ordoId: user.ordo_id,
+        ordoName: user.ordo_name || '',
+        keuskupanId: user.role_code === 'ROMO_ORDO' ? null : user.keuskupan_id,
+        parokiId: user.role_code === 'ROMO_ORDO' ? null : user.paroki_id,
+        wilayahId: user.role_code === 'ROMO_ORDO' ? null : user.wilayah_id,
+        lingkunganId: user.role_code === 'ROMO_ORDO' ? null : user.lingkungan_id,
         kabupatenKotaId: user.kabupaten_kota_id,
         provinsiId: user.provinsi_id,
-        keuskupanName: user.keuskupan_name || '',
-        parokiName: user.paroki_name || '',
-        wilayahName: user.wilayah_name || '',
-        lingkunganName: user.lingkungan_name || '',
+        keuskupanName: user.role_code === 'ROMO_ORDO' ? '' : (user.keuskupan_name || ''),
+        parokiName: user.role_code === 'ROMO_ORDO' ? '' : (user.paroki_name || ''),
+        wilayahName: user.role_code === 'ROMO_ORDO' ? '' : (user.wilayah_name || ''),
+        lingkunganName: user.role_code === 'ROMO_ORDO' ? '' : (user.lingkungan_name || ''),
         kabupatenKotaName: user.kota_name || '',
         provinsiName: user.provinsi_name || '',
         pengurusPosition: user.pengurus_position,
@@ -850,6 +860,12 @@ export class AuthController implements OnModuleInit {
       }
     }
 
+    const userRoleRes = await this.dataSource.query(
+      `SELECT r.code FROM auth_users u JOIN roles r ON u.role_id = r.id WHERE u.id = $1`,
+      [uid],
+    );
+    const activeRoleCode = dto.roleCode || (userRoleRes[0] ? userRoleRes[0].code : '');
+
     const fields: string[] = [];
     const values: any[] = [];
     let idx = 1;
@@ -874,21 +890,25 @@ export class AuthController implements OnModuleInit {
       fields.push(`avatar_url = $${idx++}`);
       values.push(dto.avatarUrl);
     }
-    if (dto.keuskupanId !== undefined) {
-      fields.push(`keuskupan_id = $${idx++}`);
-      values.push(dto.keuskupanId);
-    }
-    if (dto.parokiId !== undefined) {
-      fields.push(`paroki_id = $${idx++}`);
-      values.push(dto.parokiId);
-    }
-    if (dto.wilayahId !== undefined) {
-      fields.push(`wilayah_id = $${idx++}`);
-      values.push(dto.wilayahId);
-    }
-    if (dto.lingkunganId !== undefined) {
-      fields.push(`lingkungan_id = $${idx++}`);
-      values.push(dto.lingkunganId);
+    if (activeRoleCode === 'ROMO_ORDO') {
+      fields.push(`keuskupan_id = NULL`, `paroki_id = NULL`, `wilayah_id = NULL`, `lingkungan_id = NULL`);
+    } else {
+      if (dto.keuskupanId !== undefined) {
+        fields.push(`keuskupan_id = $${idx++}`);
+        values.push(dto.keuskupanId);
+      }
+      if (dto.parokiId !== undefined) {
+        fields.push(`paroki_id = $${idx++}`);
+        values.push(dto.parokiId);
+      }
+      if (dto.wilayahId !== undefined) {
+        fields.push(`wilayah_id = $${idx++}`);
+        values.push(dto.wilayahId);
+      }
+      if (dto.lingkunganId !== undefined) {
+        fields.push(`lingkungan_id = $${idx++}`);
+        values.push(dto.lingkunganId);
+      }
     }
     if (dto.kabupatenKotaId !== undefined) {
       fields.push(`kabupaten_kota_id = $${idx++}`);
