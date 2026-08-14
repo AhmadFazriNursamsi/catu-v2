@@ -24,18 +24,24 @@ class ServiceCategory {
 }
 
 class OrderItem {
+  final int? id;
   final String itemName;
   final String scheduledDate;
   final String scheduledTimeStart;
   final String scheduledTimeEnd;
   final String locationName;
+  int? acceptedRomoId;
+  String? acceptedRomoName;
 
   OrderItem({
+    this.id,
     required this.itemName,
     required this.scheduledDate,
     required this.scheduledTimeStart,
     required this.scheduledTimeEnd,
     required this.locationName,
+    this.acceptedRomoId,
+    this.acceptedRomoName,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
@@ -48,22 +54,31 @@ class OrderItem {
     String end = json['scheduledTimeEnd'] ?? json['scheduled_time_end'] ?? '';
     if (end.length >= 5) end = end.substring(0, 5);
 
+    final rawItemId = json['id'];
+    final rawRomoId = json['acceptedRomoId'] ?? json['accepted_romo_id'];
+
     return OrderItem(
+      id: rawItemId != null ? int.tryParse(rawItemId.toString()) : null,
       itemName: json['itemName'] ?? json['item_name'] ?? 'Misa Kedukaan',
       scheduledDate: rawDate,
       scheduledTimeStart: start,
       scheduledTimeEnd: end,
       locationName: json['locationName'] ?? json['location_name'] ?? '',
+      acceptedRomoId: rawRomoId != null ? int.tryParse(rawRomoId.toString()) : null,
+      acceptedRomoName: json['acceptedRomoName'] ?? json['accepted_romo_name'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      if (id != null) 'id': id,
       'itemName': itemName,
       'scheduledDate': scheduledDate,
       'scheduledTimeStart': scheduledTimeStart,
       'scheduledTimeEnd': scheduledTimeEnd,
       'locationName': locationName,
+      if (acceptedRomoId != null) 'acceptedRomoId': acceptedRomoId,
+      if (acceptedRomoName != null) 'acceptedRomoName': acceptedRomoName,
     };
   }
 }

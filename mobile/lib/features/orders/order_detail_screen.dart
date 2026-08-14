@@ -660,8 +660,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               left: 16,
               right: 16,
               bottom: 24,
-              child: widget.isRomo && order.status.toUpperCase() == 'PENDING'
-                  ? _buildRomoAcceptButtonBar(order)
+              child: widget.isRomo && (displayItem.acceptedRomoId == null || displayItem.acceptedRomoId != widget.romoId)
+                  ? _buildRomoAcceptButtonBar(order, displayItem)
                   : (widget.isRomo && (order.status.toUpperCase() == 'CONFIRMED' || order.status.toUpperCase() == 'IN_PROGRESS')
                       ? _buildRomoAcceptedBottomActions(order)
                       : _buildFloatingChatButton(order)),
@@ -855,16 +855,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     );
   }
 
-  Future<void> _acceptService(Order order) async {
+  Future<void> _acceptService(Order order, {OrderItem? targetItem}) async {
     setState(() => _isSubmitting = true);
     try {
       final res = await ApiService.respondAssignment(
         order.id,
         'CONFIRMED',
         romoId: widget.romoId,
+        itemId: targetItem?.id,
       );
       if (mounted) {
         order.status = 'CONFIRMED';
+        if (targetItem != null && widget.romoId != null) {
+          targetItem.acceptedRomoId = widget.romoId;
+          targetItem.acceptedRomoName = widget.userName;
+        }
         if (widget.romoId != null) {
           order.acceptedRomoId = widget.romoId;
           order.acceptedRomoName = widget.userName;
@@ -891,7 +896,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     }
   }
 
-  Widget _buildRomoAcceptButtonBar(Order order) {
+  Widget _buildRomoAcceptButtonBar(Order order, OrderItem displayItem) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
@@ -908,7 +913,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: _isSubmitting ? null : () => _acceptService(order),
+          onTap: _isSubmitting ? null : () => _acceptService(order, targetItem: displayItem),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
             child: Row(
@@ -938,17 +943,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
+                    children: [
                       Text(
-                        'Terima Pelayanan',
-                        style: TextStyle(
+                        'Terima ${displayItem.itemName}',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.2,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      Text(
+                      const Text(
                         'Konfirmasi Kehadiran & Masuk Grup Chat',
                         style: TextStyle(
                           color: Colors.white70,

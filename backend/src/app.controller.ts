@@ -1207,7 +1207,8 @@ export class OrdersController {
       const items = await this.dataSource.query(
         `SELECT id, item_name as "itemName", scheduled_date as "scheduledDate", 
                 scheduled_time_start as "scheduledTimeStart", scheduled_time_end as "scheduledTimeEnd", 
-                location_name as "locationName"
+                location_name as "locationName", accepted_romo_id as "acceptedRomoId",
+                (SELECT full_name FROM user_profiles WHERE user_id = accepted_romo_id) as "acceptedRomoName"
          FROM order_items 
          WHERE order_id = $1 
          ORDER BY id ASC`,
@@ -1231,8 +1232,8 @@ export class OrdersController {
              p.full_name as pemohon_name,
              k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
              o.user_id,
-             COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO') LIMIT 1)) as "acceptedRomoId",
-             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO') LIMIT 1)) LIMIT 1) as "acceptedRomoName"
+             COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) as "acceptedRomoId",
+             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) LIMIT 1) as "acceptedRomoName"
       FROM orders o
       JOIN service_categories sc ON o.service_category_id = sc.id
       JOIN urgency_levels ul ON o.urgency_level_id = ul.id
@@ -1248,7 +1249,8 @@ export class OrdersController {
       const items = await this.dataSource.query(
         `SELECT id, item_name as "itemName", scheduled_date as "scheduledDate", 
                 scheduled_time_start as "scheduledTimeStart", scheduled_time_end as "scheduledTimeEnd", 
-                location_name as "locationName"
+                location_name as "locationName", accepted_romo_id as "acceptedRomoId",
+                (SELECT full_name FROM user_profiles WHERE user_id = accepted_romo_id) as "acceptedRomoName"
          FROM order_items 
          WHERE order_id = $1 
          ORDER BY id ASC`,
@@ -1277,6 +1279,7 @@ export class AssignmentsController {
   ) {
     const orderId = parseInt(orderIdParam, 10) || 0;
     const romoId = dto.romoId ? dto.romoId : 2;
+    const itemId = (dto as any).itemId || (dto as any).item_id;
 
     const validStatuses = ['CONFIRMED', 'IN_PROGRESS', 'DONE', 'CLOSE', 'FAIL'];
     const newStatus = dto.status === 'ACCEPTED' ? 'CONFIRMED' : dto.status;
@@ -1292,10 +1295,25 @@ export class AssignmentsController {
       };
     }
 
-    await this.dataSource.query(
-      `UPDATE orders SET status = $1, accepted_romo_id = COALESCE($2, accepted_romo_id) WHERE id = $3`,
-      [newStatus, romoId, orderId],
-    );
+    if (itemId) {
+      await this.dataSource.query(
+        `UPDATE order_items SET accepted_romo_id = $1 WHERE id = $2 AND order_id = $3`,
+        [romoId, itemId, orderId],
+      );
+      await this.dataSource.query(
+        `UPDATE orders SET status = CASE WHEN status = 'PENDING' THEN 'CONFIRMED' ELSE status END WHERE id = $1`,
+        [orderId],
+      );
+    } else {
+      await this.dataSource.query(
+        `UPDATE orders SET status = $1, accepted_romo_id = COALESCE($2, accepted_romo_id) WHERE id = $3`,
+        [newStatus, romoId, orderId],
+      );
+      await this.dataSource.query(
+        `UPDATE order_items SET accepted_romo_id = $1 WHERE order_id = $2 AND accepted_romo_id IS NULL`,
+        [romoId, orderId],
+      );
+    }
 
     const romoProf = await this.dataSource.query(
       `SELECT full_name FROM user_profiles WHERE user_id = $1`,

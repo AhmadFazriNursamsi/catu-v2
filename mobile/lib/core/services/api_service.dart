@@ -355,10 +355,11 @@ class ApiService {
   }
 
   // 4. Romo Respond Assignment (ACCEPT / DECLINE)
-  static Future<Map<String, dynamic>> respondAssignment(int orderId, String status, {int? romoId}) async {
+  static Future<Map<String, dynamic>> respondAssignment(int orderId, String status, {int? romoId, int? itemId}) async {
     try {
       final body = <String, dynamic>{'status': status};
       if (romoId != null) body['romoId'] = romoId;
+      if (itemId != null) body['itemId'] = itemId;
       final response = await http.post(
         Uri.parse('$baseUrl/assignments/$orderId/respond'),
         headers: {'Content-Type': 'application/json'},

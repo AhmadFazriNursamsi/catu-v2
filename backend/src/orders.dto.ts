@@ -125,6 +125,11 @@ export class RespondOrderAssignmentDto {
   @IsOptional()
   romoId?: number;
 
+  @ApiPropertyOptional({ example: 10, description: 'ID sub-item Misa specific yang diterima' })
+  @IsNumber()
+  @IsOptional()
+  itemId?: number;
+
   @ApiPropertyOptional({ example: 'Ada bentrok jadwal misa paroki', description: 'Alasan penolakan dari Romo' })
   @IsString()
   @IsOptional()
