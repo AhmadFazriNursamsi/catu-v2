@@ -248,3 +248,39 @@ export class ApproveUserResponseDto {
   @ApiProperty({ example: '2026-08-11T13:32:00.000Z' })
   approvedAt: string;
 }
+
+export class RequestResetOtpDto {
+  @ApiProperty({ example: '6281234567890', description: 'Nomor WhatsApp terdaftar' })
+  @IsString()
+  @IsNotEmpty()
+  phoneNumber: string;
+}
+
+export class VerifyResetOtpDto {
+  @ApiProperty({ example: '6281234567890', description: 'Nomor WhatsApp terdaftar' })
+  @IsString()
+  @IsNotEmpty()
+  phoneNumber: string;
+
+  @ApiProperty({ example: '123456', description: 'Kode OTP 6-digit' })
+  @IsString()
+  @IsNotEmpty()
+  otpCode: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty({ example: '6281234567890', description: 'Nomor WhatsApp terdaftar' })
+  @IsString()
+  @IsNotEmpty()
+  phoneNumber: string;
+
+  @ApiProperty({ example: '123456', description: 'Kode OTP 6-digit verifikasi' })
+  @IsString()
+  @IsNotEmpty()
+  otpCode: string;
+
+  @ApiProperty({ example: 'newPassword123', description: 'Kata Sandi Baru' })
+  @IsString()
+  @IsNotEmpty()
+  newPassword: string;
+}

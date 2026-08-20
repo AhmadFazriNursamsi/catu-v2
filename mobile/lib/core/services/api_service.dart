@@ -37,6 +37,62 @@ class ApiService {
     }
   }
 
+  // 1a. Forgot Password: Request OTP
+  static Future<Map<String, dynamic>> requestForgotPasswordOtp(String phoneNumber) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/forgot-password/request-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'phoneNumber': phoneNumber}),
+      ).timeout(const Duration(seconds: 10));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'statusCode': 500, 'message': 'Gagal menghubungi server: $e'};
+    }
+  }
+
+  // 1a-2. Forgot Password: Verify OTP
+  static Future<Map<String, dynamic>> verifyForgotPasswordOtp(String phoneNumber, String otpCode) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/forgot-password/verify-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'phoneNumber': phoneNumber,
+          'otpCode': otpCode,
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'statusCode': 500, 'message': 'Gagal menghubungi server: $e'};
+    }
+  }
+
+  // 1a-3. Forgot Password: Reset Password
+  static Future<Map<String, dynamic>> resetPassword({
+    required String phoneNumber,
+    required String otpCode,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/forgot-password/reset'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'phoneNumber': phoneNumber,
+          'otpCode': otpCode,
+          'newPassword': newPassword,
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'statusCode': 500, 'message': 'Gagal menghubungi server: $e'};
+    }
+  }
+
   // 1b. Auth Register
   static Future<Map<String, dynamic>> register({
     required String fullName,

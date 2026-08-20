@@ -5,6 +5,7 @@ import '../../core/services/api_service.dart';
 import '../../core/utils/fade_slide_route.dart';
 import '../home/home_screen.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 import '../../core/services/language_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -381,7 +382,35 @@ class _LoginScreenState extends State<LoginScreen>
                                       return null;
                                     },
                                   ),
-                                  const SizedBox(height: 28),
+                                  const SizedBox(height: 8),
+
+                                  // Lupa Kata Sandi Link
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton(
+                                      onPressed: () {
+                                        HapticFeedback.lightImpact();
+                                        Navigator.push(
+                                          context,
+                                          FadeSlideRoute(page: const ForgotPasswordScreen()),
+                                        );
+                                      },
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      child: const Text(
+                                        'Lupa kata sandi?',
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppConstants.primaryBlue,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
 
                                   // Tombol Masuk
                                   SizedBox(

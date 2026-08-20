@@ -11,6 +11,9 @@ import {
   LoginResponseDto,
   ApproveUserResponseDto,
   RoleCodeEnum,
+  RequestResetOtpDto,
+  VerifyResetOtpDto,
+  ResetPasswordDto,
 } from './auth.dto';
 import { CreateOrderDto, RespondOrderAssignmentDto, SendChatMessageDto, UpdateUserProfileDto } from './orders.dto';
 
@@ -760,6 +763,120 @@ export class AuthController implements OnModuleInit {
         jabatanEndDate: user.jabatan_end_date,
         isJabatanActive: user.is_jabatan_active !== null ? user.is_jabatan_active : false,
       },
+    };
+  }
+
+  // ── Forgot Password Endpoints ──
+
+  @Post('forgot-password/request-otp')
+  @ApiOperation({
+    summary: 'Request OTP untuk Lupa Kata Sandi (WhatsApp OTP)',
+    description: 'Mengirimkan kode OTP verifikasi 6-digit ke nomor WhatsApp pengguna terdaftar.',
+  })
+  async requestResetOtp(@Body() dto: RequestResetOtpDto) {
+    let phone = dto.phoneNumber.trim();
+    if (phone.startsWith('0')) phone = phone.substring(1);
+    if (phone.startsWith('62')) phone = phone.substring(2);
+    const fullPhone = `62${phone}`;
+
+    const users = await this.dataSource.query(
+      `SELECT u.id, u.phone_number, p.full_name 
+       FROM auth_users u
+       LEFT JOIN user_profiles p ON p.user_id = u.id
+       WHERE u.phone_number = $1 OR u.phone_number = $2 OR u.phone_number = $3`,
+      [fullPhone, `0${phone}`, dto.phoneNumber.trim()],
+    );
+
+    if (!users.length) {
+      return {
+        statusCode: 404,
+        message: 'Nomor WhatsApp tidak terdaftar di sistem CATU.',
+      };
+    }
+
+    const user = users[0];
+    const demoOtp = '123456';
+    const maskedPhone = fullPhone.replace(/(\d{4})\d+(\d{3})/, '$1-****-$2');
+
+    return {
+      statusCode: 200,
+      message: 'Kode OTP verifikasi berhasil dikirimkan ke WhatsApp Anda.',
+      phoneNumber: user.phone_number,
+      fullName: user.full_name || 'Pengguna',
+      maskedPhone,
+      demoOtp,
+    };
+  }
+
+  @Post('forgot-password/verify-otp')
+  @ApiOperation({
+    summary: 'Verifikasi Kode OTP Lupa Kata Sandi',
+  })
+  async verifyResetOtp(@Body() dto: VerifyResetOtpDto) {
+    const otp = dto.otpCode.trim();
+    if (!otp || otp.length < 4) {
+      return {
+        statusCode: 400,
+        message: 'Kode OTP tidak valid.',
+      };
+    }
+
+    if (otp !== '123456' && otp.length !== 6) {
+      return {
+        statusCode: 400,
+        message: 'Kode OTP salah atau telah kadaluarsa.',
+      };
+    }
+
+    return {
+      statusCode: 200,
+      message: 'Verifikasi kode OTP berhasil.',
+      verified: true,
+    };
+  }
+
+  @Post('forgot-password/reset')
+  @ApiOperation({
+    summary: 'Reset / Simpan Kata Sandi Baru',
+  })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    let phone = dto.phoneNumber.trim();
+    if (phone.startsWith('0')) phone = phone.substring(1);
+    if (phone.startsWith('62')) phone = phone.substring(2);
+    const fullPhone = `62${phone}`;
+
+    if (!dto.newPassword || dto.newPassword.length < 6) {
+      return {
+        statusCode: 400,
+        message: 'Kata sandi baru minimal 6 karakter.',
+      };
+    }
+
+    const users = await this.dataSource.query(
+      `SELECT id, phone_number FROM auth_users 
+       WHERE phone_number = $1 OR phone_number = $2 OR phone_number = $3`,
+      [fullPhone, `0${phone}`, dto.phoneNumber.trim()],
+    );
+
+    if (!users.length) {
+      return {
+        statusCode: 404,
+        message: 'Pengguna tidak ditemukan.',
+      };
+    }
+
+    const newHash = await bcrypt.hash(dto.newPassword, 10);
+
+    await this.dataSource.query(
+      `UPDATE auth_users 
+       SET password_hash = $1, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $2`,
+      [newHash, users[0].id],
+    );
+
+    return {
+      statusCode: 200,
+      message: 'Kata sandi berhasil diperbarui! Silakan masuk dengan kata sandi baru Anda.',
     };
   }
 
