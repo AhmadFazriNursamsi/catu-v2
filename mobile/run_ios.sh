@@ -17,7 +17,9 @@ xcrun simctl uninstall "$SIMULATOR_ID" "com.example.myApp" 2>/dev/null || true
 echo "🏷️ Step 0.5: Auto-updating app version & build timestamp..."
 BUILD_TS=$(date +"%Y%m%d.%H%M%S")
 VERSION_STRING="v2.5.0-build.$BUILD_TS"
+LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "10.0.10.48")
 echo "   Build Version: $VERSION_STRING"
+echo "   Local API IP : $LOCAL_IP (Port 3005)"
 
 cat <<EOF > "$PROJECT_DIR/lib/core/constants/app_constants.dart"
 import 'package:flutter/material.dart';
@@ -25,7 +27,7 @@ import 'package:flutter/material.dart';
 class AppConstants {
   static const String appName = 'CATU Pelayanan';
   static const String appVersion = '$VERSION_STRING';
-  static const String apiBaseUrl = 'http://10.0.10.130:3005'; // NestJS Local Server (Docker Port 3005)
+  static const String apiBaseUrl = 'http://$LOCAL_IP:3005'; // NestJS Local Server (Docker Port 3005)
   
   // Custom HSL Colors
   static const Color primaryBlue = Color(0xFF1E3A8A); // Deep Catholic Church Blue
