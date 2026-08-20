@@ -1,10 +1,19 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../constants/app_constants.dart';
 import '../models/models.dart';
 
 class ApiService {
-  static const String baseUrl = AppConstants.apiBaseUrl;
+  static String get baseUrl {
+    if (kIsWeb) {
+      final host = Uri.base.host;
+      if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
+        return 'http://$host:3005';
+      }
+    }
+    return AppConstants.apiBaseUrl;
+  }
 
   // 1. Auth Login
   static Future<Map<String, dynamic>> login(String phoneNumber, String password) async {
@@ -16,15 +25,15 @@ class ApiService {
           'phoneNumber': phoneNumber,
           'password': password,
         }),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
       } else {
-        return {'statusCode': response.statusCode, 'message': 'Gagal Login'};
+        return {'statusCode': response.statusCode, 'message': 'Gagal Login: ${response.body}'};
       }
     } catch (e) {
-      return {'statusCode': 500, 'message': 'Koneksi ke backend NestJS gagal'};
+      return {'statusCode': 500, 'message': 'Koneksi ke backend ($baseUrl) gagal: $e'};
     }
   }
 
