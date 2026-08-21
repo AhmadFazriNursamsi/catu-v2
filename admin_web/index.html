@@ -2675,16 +2675,13 @@
       const modal = state.activeMasterModal;
       if (!modal) return;
 
-      state.isSavingMaster = true;
-      state.masterModalError = '';
-      renderApp();
+      const { type, mode, data } = modal;
+      let endpoint = '';
+      let method = mode === 'CREATE' ? 'POST' : 'PUT';
+      let payload = {};
 
       try {
-        const { type, mode, data } = modal;
-        let endpoint = '';
-        let method = mode === 'CREATE' ? 'POST' : 'PUT';
-        let payload = {};
-
+        // 1. Read DOM inputs FIRST before any renderApp call
         if (type === 'keuskupan') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/keuskupan` : `${API_BASE}/master/keuskupan/${data.id}`;
           const nameVal = document.getElementById('masterNameInput')?.value?.trim();
@@ -2692,6 +2689,8 @@
           if (!nameVal) throw new Error('Nama Keuskupan wajib diisi');
           payload = { name: nameVal };
           if (codeVal) payload.code = codeVal;
+          modal.data.name = nameVal;
+          modal.data.code = codeVal;
         } else if (type === 'paroki') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/paroki` : `${API_BASE}/master/paroki/${data.id}`;
           const keuskupanIdVal = parseInt(document.getElementById('masterKeuskupanIdInput')?.value);
@@ -2701,6 +2700,9 @@
           if (!nameVal) throw new Error('Nama Paroki wajib diisi');
           payload = { keuskupanId: keuskupanIdVal, name: nameVal };
           if (addressVal) payload.address = addressVal;
+          modal.data.keuskupan_id = keuskupanIdVal;
+          modal.data.name = nameVal;
+          modal.data.address = addressVal;
         } else if (type === 'wilayah') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/wilayah` : `${API_BASE}/master/wilayah/${data.id}`;
           const parokiIdVal = parseInt(document.getElementById('masterParokiIdInput')?.value);
@@ -2708,6 +2710,8 @@
           if (!parokiIdVal || isNaN(parokiIdVal)) throw new Error('Silakan pilih Paroki terlebih dahulu');
           if (!nameVal) throw new Error('Nama Wilayah wajib diisi');
           payload = { parokiId: parokiIdVal, name: nameVal };
+          modal.data.paroki_id = parokiIdVal;
+          modal.data.name = nameVal;
         } else if (type === 'lingkungan') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/lingkungan` : `${API_BASE}/master/lingkungan/${data.id}`;
           const wilayahIdVal = parseInt(document.getElementById('masterWilayahIdInput')?.value);
@@ -2715,6 +2719,8 @@
           if (!wilayahIdVal || isNaN(wilayahIdVal)) throw new Error('Silakan pilih Wilayah terlebih dahulu');
           if (!nameVal) throw new Error('Nama Lingkungan wajib diisi');
           payload = { wilayahId: wilayahIdVal, name: nameVal };
+          modal.data.wilayah_id = wilayahIdVal;
+          modal.data.name = nameVal;
         } else if (type === 'ordo') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/ordo` : `${API_BASE}/master/ordo/${data.id}`;
           const nameVal = document.getElementById('masterNameInput')?.value?.trim();
@@ -2724,19 +2730,34 @@
           payload = { name: nameVal };
           if (codeVal) payload.code = codeVal;
           if (addressVal) payload.address = addressVal;
+          modal.data.name = nameVal;
+          modal.data.code = codeVal;
+          modal.data.address = addressVal;
         } else if (type === 'services') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/service-categories` : `${API_BASE}/master/service-categories/${data.id}`;
           const nameVal = document.getElementById('masterNameInput')?.value?.trim();
           const descVal = document.getElementById('masterDescInput')?.value?.trim();
+          const isUrgent = document.getElementById('masterIsUrgentInput')?.checked || false;
+          const isActive = document.getElementById('masterIsActiveInput')?.checked !== false;
           if (!nameVal) throw new Error('Nama Sakramen / Pelayanan wajib diisi');
           payload = {
             name: nameVal,
-            isUrgentByDefault: document.getElementById('masterIsUrgentInput')?.checked || false,
-            isActive: document.getElementById('masterIsActiveInput')?.checked !== false
+            isUrgentByDefault: isUrgent,
+            isActive: isActive
           };
           if (descVal) payload.description = descVal;
+          modal.data.name = nameVal;
+          modal.data.description = descVal;
+          modal.data.is_urgent_by_default = isUrgent;
+          modal.data.is_active = isActive;
         }
 
+        // 2. Now set loading state and render spinner
+        state.isSavingMaster = true;
+        state.masterModalError = '';
+        renderApp();
+
+        // 3. Send request to backend
         const res = await fetch(endpoint, {
           method: method,
           headers: { 'Content-Type': 'application/json' },
