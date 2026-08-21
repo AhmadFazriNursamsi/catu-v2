@@ -93,6 +93,120 @@ class ApiService {
     }
   }
 
+  // ── Admin Dashboard API Methods ──
+
+  static Future<Map<String, dynamic>> getAdminAnalytics() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/auth/admin/analytics')).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      print('Error getAdminAnalytics: $e');
+    }
+    return {'statusCode': 500, 'orders': {}, 'users': {}, 'categories': []};
+  }
+
+  static Future<List<Map<String, dynamic>>> getAdminUsers({String? role, String? status, String? search}) async {
+    try {
+      final queryParams = <String, String>{};
+      if (role != null && role.isNotEmpty) queryParams['role'] = role;
+      if (status != null && status.isNotEmpty) queryParams['status'] = status;
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+
+      final uri = Uri.parse('$baseUrl/auth/admin/users').replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['users'] is List) {
+          return List<Map<String, dynamic>>.from(data['users']);
+        }
+      }
+    } catch (e) {
+      print('Error getAdminUsers: $e');
+    }
+    return [];
+  }
+
+  static Future<Map<String, dynamic>> updateAdminUserStatus(int userId, String status, {bool? isJabatanActive}) async {
+    try {
+      final body = <String, dynamic>{'status': status};
+      if (isJabatanActive != null) body['isJabatanActive'] = isJabatanActive;
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/auth/admin/users/$userId/status'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 10));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'statusCode': 500, 'message': 'Gagal update status: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateAdminUserRole(int userId, String roleCode) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/auth/admin/users/$userId/role'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'roleCode': roleCode}),
+      ).timeout(const Duration(seconds: 10));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'statusCode': 500, 'message': 'Gagal update role: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> approveRegistration({
+    required int targetUserId,
+    required String action,
+    String? rejectionReason,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/approve-registration'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'targetUserId': targetUserId,
+          'action': action,
+          if (rejectionReason != null) 'rejectionReason': rejectionReason,
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'statusCode': 500, 'message': 'Gagal memproses persetujuan: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateAdminOrderStatus(int orderId, String status) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/auth/admin/orders/$orderId/status'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'status': status}),
+      ).timeout(const Duration(seconds: 10));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'statusCode': 500, 'message': 'Gagal update status order: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> runUnitTests() async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/test-runner/run-unit-tests')).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      print('Error runUnitTests: $e');
+    }
+    return {'statusCode': 500, 'message': 'Gagal menjalankan unit tests'};
+  }
+
   // 1b. Auth Register
   static Future<Map<String, dynamic>> register({
     required String fullName,

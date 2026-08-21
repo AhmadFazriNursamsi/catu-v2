@@ -1138,6 +1138,182 @@ export class AuthController implements OnModuleInit {
       approvedAt: new Date().toISOString(),
     };
   }
+
+  // ── Admin Dashboard Endpoints ──
+
+  @Get('admin/analytics')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Ringkasan Metrik Dashboard Admin CATU' })
+  async getAdminAnalytics() {
+    const totalOrdersRes = await this.dataSource.query(`
+      SELECT 
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE status::text = 'PENDING') as pending,
+        COUNT(*) FILTER (WHERE status::text = 'CONFIRMED' OR status::text = 'ACCEPTED' OR status::text = 'IN_PROGRESS') as confirmed,
+        COUNT(*) FILTER (WHERE status::text = 'DONE' OR status::text = 'SELESAI' OR status::text = 'COMPLETED') as done,
+        COUNT(*) FILTER (WHERE status::text = 'FAIL' OR status::text = 'REJECTED' OR status::text = 'CANCELLED') as fail
+      FROM orders
+    `);
+
+    const categoriesRes = await this.dataSource.query(`
+      SELECT sc.name, COUNT(o.id) as count
+      FROM service_categories sc
+      LEFT JOIN orders o ON o.service_category_id = sc.id
+      GROUP BY sc.name
+    `);
+
+    const usersRes = await this.dataSource.query(`
+      SELECT 
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE u.account_status = 'PENDING_APPROVAL') as pending_approvals,
+        COUNT(*) FILTER (WHERE r.code = 'UMAT') as total_umat,
+        COUNT(*) FILTER (WHERE r.code = 'ROMO_PAROKI') as total_romo_paroki,
+        COUNT(*) FILTER (WHERE r.code = 'ROMO_ORDO') as total_romo_ordo,
+        COUNT(*) FILTER (WHERE r.code = 'PENGURUS_LINGKUNGAN') as total_pengurus,
+        COUNT(*) FILTER (WHERE r.code = 'ADMIN') as total_admin
+      FROM auth_users u
+      JOIN roles r ON u.role_id = r.id
+    `);
+
+    const recentOrders = await this.dataSource.query(`
+      SELECT o.id, o.order_number, sc.name as category_name, o.status, p.full_name as pemohon_name, o.created_at
+      FROM orders o
+      JOIN service_categories sc ON o.service_category_id = sc.id
+      JOIN user_profiles p ON o.user_id = p.user_id
+      ORDER BY o.id DESC LIMIT 5
+    `);
+
+    const recentUsers = await this.dataSource.query(`
+      SELECT u.id, u.phone_number, r.code as role_code, r.name as role_name, p.full_name, u.account_status, u.created_at
+      FROM auth_users u
+      JOIN roles r ON u.role_id = r.id
+      LEFT JOIN user_profiles p ON p.user_id = u.id
+      ORDER BY u.id DESC LIMIT 5
+    `);
+
+    return {
+      statusCode: 200,
+      orders: totalOrdersRes[0] || {},
+      users: usersRes[0] || {},
+      categories: categoriesRes || [],
+      recentOrders: recentOrders || [],
+      recentUsers: recentUsers || [],
+    };
+  }
+
+  @Get('admin/users')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Daftar Semua Pengguna untuk Manajemen Admin' })
+  async getAdminUsers(
+    @Query('role') role?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    let query = `
+      SELECT u.id, u.uuid, u.phone_number, u.account_status, u.is_active, u.created_at,
+             r.id as role_id, r.code as role_code, r.name as role_name,
+             p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+             p.keuskupan_id, k.name as keuskupan_name,
+             p.paroki_id, par.name as paroki_name,
+             p.wilayah_id, w.name as wilayah_name,
+             p.lingkungan_id, l.name as lingkungan_name,
+             p.kabupaten_kota_id, kk.name as kota_name,
+             p.ordo_id, ord.name as ordo_name,
+             p.pengurus_position, p.romo_position
+      FROM auth_users u
+      JOIN roles r ON u.role_id = r.id
+      LEFT JOIN user_profiles p ON p.user_id = u.id
+      LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
+      LEFT JOIN paroki par ON p.paroki_id = par.id
+      LEFT JOIN wilayah w ON p.wilayah_id = w.id
+      LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+      LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
+      LEFT JOIN ordo ord ON p.ordo_id = ord.id
+    `;
+
+    const whereClauses: string[] = [];
+    const params: any[] = [];
+    let pIdx = 1;
+
+    if (role && role !== 'ALL') {
+      whereClauses.push(`r.code = $${pIdx++}`);
+      params.push(role);
+    }
+    if (status && status !== 'ALL') {
+      whereClauses.push(`u.account_status = $${pIdx++}`);
+      params.push(status);
+    }
+    if (search && search.trim().length > 0) {
+      whereClauses.push(`(p.full_name ILIKE $${pIdx} OR u.phone_number ILIKE $${pIdx} OR par.name ILIKE $${pIdx})`);
+      params.push(`%${search.trim()}%`);
+      pIdx++;
+    }
+
+    if (whereClauses.length > 0) {
+      query += ` WHERE ${whereClauses.join(' AND ')}`;
+    }
+    query += ` ORDER BY u.id DESC`;
+
+    const users = await this.dataSource.query(query, params);
+    return {
+      statusCode: 200,
+      total: users.length,
+      users,
+    };
+  }
+
+  @Put('admin/users/:userId/status')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update Status Akun Pengguna oleh Admin' })
+  async updateAdminUserStatus(
+    @Param('userId') userId: string,
+    @Body() body: { status: string; isJabatanActive?: boolean },
+  ) {
+    const uid = parseInt(userId);
+    await this.dataSource.query(
+      `UPDATE auth_users SET account_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+      [body.status, uid],
+    );
+    if (body.isJabatanActive !== undefined) {
+      await this.dataSource.query(
+        `UPDATE user_profiles SET is_jabatan_active = $1 WHERE user_id = $2`,
+        [body.isJabatanActive, uid],
+      );
+    }
+    return { statusCode: 200, message: `Status akun user ID ${uid} berhasil diubah menjadi ${body.status}` };
+  }
+
+  @Put('admin/users/:userId/role')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update Role Pengguna oleh Admin' })
+  async updateAdminUserRole(
+    @Param('userId') userId: string,
+    @Body() body: { roleCode: string },
+  ) {
+    const uid = parseInt(userId);
+    const roleRes = await this.dataSource.query(`SELECT id FROM roles WHERE code = $1`, [body.roleCode]);
+    if (!roleRes.length) throw new BadRequestException('Role tidak valid');
+    await this.dataSource.query(
+      `UPDATE auth_users SET role_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+      [roleRes[0].id, uid],
+    );
+    return { statusCode: 200, message: `Role user ID ${uid} berhasil diubah menjadi ${body.roleCode}` };
+  }
+
+  @Put('admin/orders/:orderId/status')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update Status Pelayanan oleh Admin' })
+  async updateAdminOrderStatus(
+    @Param('orderId') orderId: string,
+    @Body() body: { status: string },
+  ) {
+    const oid = parseInt(orderId);
+    await this.dataSource.query(
+      `UPDATE orders SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+      [body.status, oid],
+    );
+    return { statusCode: 200, message: `Status order #${oid} berhasil diubah menjadi ${body.status}` };
+  }
 }
 
 @ApiTags('Orders & Pelayanan')

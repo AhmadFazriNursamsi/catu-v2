@@ -9,6 +9,7 @@ import '../../core/utils/fade_slide_route.dart';
 import '../auth/login_screen.dart';
 import 'romo_dashboard_view.dart';
 import 'umat_dashboard_view.dart';
+import '../admin/admin_dashboard_view.dart';
 
 class HomeScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -100,6 +101,20 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (roleCode == 'ADMIN' || roleCode.contains('ADMIN')) {
+      return AdminDashboardView(
+        user: _currentUserMap,
+        orders: _orders,
+        onRefresh: _loadOrders,
+        onLogout: () {
+          Navigator.pushReplacement(
+            context,
+            FadeSlideRoute(page: const LoginScreen()),
+          );
+        },
       );
     }
 
