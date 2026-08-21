@@ -34,6 +34,8 @@ import {
   UpdateServiceCategoryDto,
   CreateRoleDto,
   UpdateRoleDto,
+  CreatePositionDto,
+  UpdatePositionDto,
 } from './orders.dto';
 
 @ApiTags('Auth & Registration')
@@ -66,6 +68,7 @@ export class AuthController implements OnModuleInit {
         SELECT setval('lingkungan_id_seq', (SELECT COALESCE(MAX(id), 1) FROM lingkungan));
         SELECT setval('ordo_id_seq', (SELECT COALESCE(MAX(id), 1) FROM ordo));
         SELECT setval('service_categories_id_seq', (SELECT COALESCE(MAX(id), 1) FROM service_categories));
+        SELECT setval('master_positions_id_seq', (SELECT COALESCE(MAX(id), 1) FROM master_positions));
       `);
 
       for (const val of ['CONFIRMED', 'DONE', 'CLOSE', 'FAIL']) {
@@ -102,7 +105,7 @@ export class AuthController implements OnModuleInit {
         UPDATE user_profiles 
         SET is_jabatan_active = NULL 
         WHERE pengurus_position IS NULL 
-          AND (romo_position IS NULL OR romo_position != 'KETUA_ROMO');
+          AND (romo_position IS NULL OR romo_position NOT IN ('Kepala Romo Paroki', 'Ketua Romo Ordo', 'KETUA_ROMO'));
 
         -- Create master tables if not exist
         CREATE TABLE IF NOT EXISTS keuskupan (id INT PRIMARY KEY, name VARCHAR(255) NOT NULL);
@@ -110,6 +113,27 @@ export class AuthController implements OnModuleInit {
         CREATE TABLE IF NOT EXISTS wilayah (id INT PRIMARY KEY, paroki_id INT, name VARCHAR(255) NOT NULL);
         CREATE TABLE IF NOT EXISTS lingkungan (id INT PRIMARY KEY, wilayah_id INT, name VARCHAR(255) NOT NULL);
         CREATE TABLE IF NOT EXISTS ordo (id INT PRIMARY KEY, code VARCHAR(50) NOT NULL, name VARCHAR(255) NOT NULL);
+        CREATE TABLE IF NOT EXISTS master_positions (
+          id SERIAL PRIMARY KEY,
+          category VARCHAR(50) NOT NULL,
+          code VARCHAR(50) NOT NULL UNIQUE,
+          name VARCHAR(100) NOT NULL,
+          is_lead BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        INSERT INTO master_positions (category, code, name, is_lead) VALUES 
+          ('PENGURUS_LINGKUNGAN', 'KETUA_LINGKUNGAN', 'Ketua Lingkungan', TRUE),
+          ('PENGURUS_LINGKUNGAN', 'WAKIL_KETUA', 'Wakil Ketua', FALSE),
+          ('PENGURUS_LINGKUNGAN', 'SEKRETARIS', 'Sekretaris', FALSE),
+          ('ROMO_PAROKI', 'KEPALA_ROMO_PAROKI', 'Kepala Romo Paroki', TRUE),
+          ('ROMO_PAROKI', 'ROMO_PAROKI', 'Romo Paroki', FALSE),
+          ('ROMO_ORDO', 'KETUA_ROMO_ORDO', 'Ketua Romo Ordo', TRUE),
+          ('ROMO_ORDO', 'ROMO_ORDO', 'Romo Ordo', FALSE)
+        ON CONFLICT (code) DO UPDATE SET 
+          category = EXCLUDED.category,
+          name = EXCLUDED.name,
+          is_lead = EXCLUDED.is_lead;
 
         -- Seed user keuskupan data
         INSERT INTO keuskupan (id, name) VALUES 
@@ -2625,6 +2649,80 @@ export class MasterDataController {
     await this.dataSource.query('DELETE FROM roles WHERE id = $1', [id]);
     return { success: true, message: 'Jenis Role berhasil dihapus' };
   }
+
+  // 8. POSITIONS (JABATAN & STRUKTUR PENGURUS / ROMO)
+  @Get('positions')
+  @ApiOperation({ summary: 'Daftar Semua Jabatan / Posisi dari Database' })
+  async getAllPositions(@Query('category') category?: string) {
+    let query = `
+      SELECT mp.id, mp.category, mp.code, mp.name, mp.is_lead, mp.created_at,
+        COUNT(DISTINCT p.id)::int as total_pejabat
+      FROM master_positions mp
+      LEFT JOIN user_profiles p ON (p.pengurus_position = mp.name OR p.romo_position = mp.name)
+    `;
+    const params: any[] = [];
+    if (category) {
+      query += ` WHERE mp.category = $1`;
+      params.push(category);
+    }
+    query += ` GROUP BY mp.id ORDER BY mp.id ASC`;
+    return await this.dataSource.query(query, params);
+  }
+
+  @Post('positions')
+  @ApiOperation({ summary: 'Tambah Jabatan / Posisi Baru ke Database' })
+  async createPosition(@Body() dto: CreatePositionDto) {
+    if (!dto.name || !dto.name.trim()) throw new BadRequestException('Nama Jabatan tidak boleh kosong');
+    if (!dto.code || !dto.code.trim()) throw new BadRequestException('Kode Jabatan tidak boleh kosong');
+    if (!dto.category) throw new BadRequestException('Kategori Jabatan wajib dipilih');
+    const code = dto.code.trim().toUpperCase().replace(/\s+/g, '_');
+    const existing = await this.dataSource.query('SELECT id FROM master_positions WHERE code = $1', [code]);
+    if (existing.length > 0) throw new BadRequestException(`Kode Jabatan "${code}" sudah terdaftar`);
+    const res = await this.dataSource.query(
+      `INSERT INTO master_positions (category, code, name, is_lead) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [dto.category, code, dto.name.trim(), dto.isLead ?? false]
+    );
+    return { success: true, message: 'Jabatan berhasil ditambahkan', data: res[0] };
+  }
+
+  @Put('positions/:id')
+  @ApiOperation({ summary: 'Update Data Jabatan / Posisi di Database' })
+  async updatePosition(@Param('id') id: number, @Body() dto: UpdatePositionDto) {
+    const existing = await this.dataSource.query('SELECT * FROM master_positions WHERE id = $1', [id]);
+    if (!existing.length) throw new BadRequestException('Jabatan tidak ditemukan');
+    const category = dto.category !== undefined ? dto.category : existing[0].category;
+    const name = dto.name !== undefined ? dto.name.trim() : existing[0].name;
+    let code = existing[0].code;
+    if (dto.code !== undefined && dto.code.trim()) {
+      code = dto.code.trim().toUpperCase().replace(/\s+/g, '_');
+      const duplicate = await this.dataSource.query('SELECT id FROM master_positions WHERE code = $1 AND id != $2', [code, id]);
+      if (duplicate.length > 0) throw new BadRequestException(`Kode Jabatan "${code}" sudah digunakan`);
+    }
+    const isLead = dto.isLead !== undefined ? dto.isLead : existing[0].is_lead;
+    const res = await this.dataSource.query(
+      `UPDATE master_positions SET category = $1, code = $2, name = $3, is_lead = $4 WHERE id = $5 RETURNING *`,
+      [category, code, name, isLead, id]
+    );
+    return { success: true, message: 'Jabatan berhasil diperbarui', data: res[0] };
+  }
+
+  @Delete('positions/:id')
+  @ApiOperation({ summary: 'Hapus Jabatan / Posisi dari Database' })
+  async deletePosition(@Param('id') id: number) {
+    const existing = await this.dataSource.query('SELECT * FROM master_positions WHERE id = $1', [id]);
+    if (!existing.length) throw new BadRequestException('Jabatan tidak ditemukan');
+    const posName = existing[0].name;
+    const userCount = await this.dataSource.query(
+      'SELECT COUNT(*)::int as count FROM user_profiles WHERE pengurus_position = $1 OR romo_position = $1',
+      [posName]
+    );
+    if (userCount[0]?.count > 0) {
+      throw new BadRequestException(`Tidak dapat menghapus Jabatan "${posName}" karena masih digunakan oleh ${userCount[0].count} pengguna.`);
+    }
+    await this.dataSource.query('DELETE FROM master_positions WHERE id = $1', [id]);
+    return { success: true, message: 'Jabatan berhasil dihapus' };
+  }
 }
+
 
 

@@ -104,6 +104,7 @@
       lingkungan: [],
       ordo: [],
       roles: [],
+      positions: [],
       masterSubTab: 'paroki',
       masterSearch: '',
       masterFilterKeuskupanId: '',
@@ -983,28 +984,36 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                ${list.map(u => `
-                  <tr class="hover:bg-slate-50/80 transition">
-                    <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Romo Paroki'}</td>
-                    <td class="px-6 py-4 font-bold text-blue-950">${u.paroki_name || '-'}</td>
-                    <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px]">${u.romo_position || 'Pastor Rekan'}</span></td>
-                    <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
-                    <td class="px-6 py-4 text-right">
-                      <div class="inline-flex items-center justify-end space-x-2">
-                        <button onclick="openEditUserModal('${u.id}')"
-                          class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
-                          <i data-lucide="edit" class="w-3.5 h-3.5"></i>
-                          <span>Edit</span>
-                        </button>
-                        <button onclick="viewUserProfileModal('${u.id}')"
-                          class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
-                          <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                          <span>Detail</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                `).join('')}
+                ${list.map(u => {
+                  const isLead = (u.romo_position || '').toLowerCase().includes('kepala');
+                  return `
+                    <tr class="hover:bg-slate-50/80 transition">
+                      <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Romo Paroki'}</td>
+                      <td class="px-6 py-4 font-bold text-blue-950">${u.paroki_name || '-'}</td>
+                      <td class="px-6 py-4">
+                        <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg ${isLead ? 'bg-amber-50 text-amber-900 border border-amber-300 font-black shadow-2xs' : 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold'} text-[11px]">
+                          <i data-lucide="${isLead ? 'crown' : 'award'}" class="w-3.5 h-3.5 ${isLead ? 'text-amber-600' : 'text-emerald-600'}"></i>
+                          <span>${u.romo_position || 'Romo Paroki'}</span>
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
+                      <td class="px-6 py-4 text-right">
+                        <div class="inline-flex items-center justify-end space-x-2">
+                          <button onclick="openEditUserModal('${u.id}')"
+                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
+                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                            <span>Edit</span>
+                          </button>
+                          <button onclick="viewUserProfileModal('${u.id}')"
+                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                            <span>Detail</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
               </tbody>
             </table>
           </div>
@@ -1041,32 +1050,42 @@
                 <tr>
                   <th class="px-6 py-3.5">NAMA ROMO</th>
                   <th class="px-6 py-3.5">ORDO</th>
+                  <th class="px-6 py-3.5">JABATAN STRUKTUR</th>
                   <th class="px-6 py-3.5">NO. WHATSAPP</th>
                   <th class="px-6 py-3.5 text-right">AKSI</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                ${list.map(u => `
-                  <tr class="hover:bg-slate-50/80 transition">
-                    <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Romo Ordo'}</td>
-                    <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-200 font-bold text-[11px]">${u.ordo_name || 'Ordo Religius'}</span></td>
-                    <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
-                    <td class="px-6 py-4 text-right">
-                      <div class="inline-flex items-center justify-end space-x-2">
-                        <button onclick="openEditUserModal('${u.id}')"
-                          class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
-                          <i data-lucide="edit" class="w-3.5 h-3.5"></i>
-                          <span>Edit</span>
-                        </button>
-                        <button onclick="viewUserProfileModal('${u.id}')"
-                          class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
-                          <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                          <span>Detail</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                `).join('')}
+                ${list.map(u => {
+                  const isLead = (u.romo_position || '').toLowerCase().includes('ketua');
+                  return `
+                    <tr class="hover:bg-slate-50/80 transition">
+                      <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Romo Ordo'}</td>
+                      <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-200 font-bold text-[11px]">${u.ordo_name || 'Ordo Religius'}</span></td>
+                      <td class="px-6 py-4">
+                        <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg ${isLead ? 'bg-amber-50 text-amber-900 border border-amber-300 font-black shadow-2xs' : 'bg-slate-100 text-slate-700 border border-slate-200 font-bold'} text-[11px]">
+                          <i data-lucide="${isLead ? 'crown' : 'award'}" class="w-3.5 h-3.5 ${isLead ? 'text-amber-600' : 'text-slate-500'}"></i>
+                          <span>${u.romo_position || 'Romo Ordo'}</span>
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
+                      <td class="px-6 py-4 text-right">
+                        <div class="inline-flex items-center justify-end space-x-2">
+                          <button onclick="openEditUserModal('${u.id}')"
+                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
+                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                            <span>Edit</span>
+                          </button>
+                          <button onclick="viewUserProfileModal('${u.id}')"
+                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                            <span>Detail</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
               </tbody>
             </table>
           </div>
@@ -1171,6 +1190,7 @@
         if (s === 'ordo') return 'Ordo / Kongregasi';
         if (s === 'services') return 'Kategori Pelayanan';
         if (s === 'roles') return 'Jenis User / Peran Pengguna';
+        if (s === 'positions') return 'Jabatan & Struktur Pengurus / Romo';
         return s;
       };
 
@@ -1182,6 +1202,7 @@
         if (s === 'ordo') return 'cross';
         if (s === 'services') return 'clipboard-list';
         if (s === 'roles') return 'shield-check';
+        if (s === 'positions') return 'award';
         return 'database';
       };
 
@@ -1196,7 +1217,8 @@
               { id: 'lingkungan', icon: 'home', label: 'Lingkungan', color: 'text-cyan-600' },
               { id: 'ordo', icon: 'cross', label: 'Ordo / Kongregasi', count: state.ordo?.length, color: 'text-purple-600' },
               { id: 'services', icon: 'clipboard-list', label: 'Kategori Pelayanan', count: state.serviceCategories?.length, color: 'text-amber-600' },
-              { id: 'roles', icon: 'shield-check', label: 'Jenis User / Role', count: state.roles?.length, color: 'text-rose-600' }
+              { id: 'roles', icon: 'shield-check', label: 'Jenis User / Role', count: state.roles?.length, color: 'text-rose-600' },
+              { id: 'positions', icon: 'award', label: 'Jabatan & Struktur', count: state.positions?.length, color: 'text-amber-600' }
             ].map(tab => {
               const active = sub === tab.id;
               return `
@@ -1390,6 +1412,14 @@
           <th class="py-4 px-5">NAMA PERAN / JENIS USER</th>
           <th class="py-4 px-5 text-center">TOTAL PENGGUNA TERHUBUNG</th>
           <th class="py-4 px-5">TIPE AKSES</th>
+        `;
+      } else if (sub === 'positions') {
+        return `
+          <th class="py-4 px-5">KODE JABATAN</th>
+          <th class="py-4 px-5">NAMA JABATAN</th>
+          <th class="py-4 px-5">KATEGORI STRUKTUR</th>
+          <th class="py-4 px-5 text-center">STATUS PIMPINAN</th>
+          <th class="py-4 px-5 text-center">TOTAL PEJABAT AKTIF</th>
         `;
       }
       return '';
@@ -1651,6 +1681,43 @@
           <td class="py-4 px-5">
             <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-extrabold ${item.code === 'ADMIN' ? 'text-amber-900 bg-amber-50 border border-amber-200' : 'text-slate-700 bg-slate-100 border border-slate-200'}">
               <span>${item.code === 'ADMIN' ? '🛡️ Portal Administrator Web' : '📱 Aplikasi Mobile CATU'}</span>
+            </span>
+          </td>
+        `;
+      } else if (sub === 'positions') {
+        const catBadge = item.category === 'PENGURUS_LINGKUNGAN'
+          ? '<span class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-900 border border-indigo-200 font-extrabold text-[11px]">🏘️ Pengurus Lingkungan</span>'
+          : item.category === 'ROMO_PAROKI'
+          ? '<span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 font-extrabold text-[11px]">⛪ Romo Paroki</span>'
+          : '<span class="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-900 border border-purple-200 font-extrabold text-[11px]">✝️ Romo Ordo</span>';
+        return `
+          <td class="py-4 px-5">
+            <span class="px-2.5 py-1 rounded-xl bg-slate-900 text-amber-300 font-mono font-black text-xs border border-slate-800 shadow-2xs">
+              ${item.code || '-'}
+            </span>
+          </td>
+          <td class="py-4 px-5 font-black text-slate-900 text-xs">
+            <div class="flex items-center space-x-2.5">
+              <div class="w-8 h-8 rounded-xl ${item.is_lead ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-700 border border-slate-200'} flex items-center justify-center font-bold shadow-xs">
+                <i data-lucide="${item.is_lead ? 'crown' : 'award'}" class="w-4 h-4 text-amber-700"></i>
+              </div>
+              <div>
+                <p class="font-extrabold text-slate-900 text-xs">${item.name || '-'}</p>
+                <p class="text-[10px] text-slate-400 font-semibold">${item.is_lead ? 'Pimpinan / Ketua Utama' : 'Struktur Anggota'}</p>
+              </div>
+            </div>
+          </td>
+          <td class="py-4 px-5">
+            ${catBadge}
+          </td>
+          <td class="py-4 px-5 text-center">
+            <span class="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-black ${item.is_lead ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs' : 'bg-slate-100 text-slate-600 border border-slate-200'}">
+              <span>${item.is_lead ? '👑 KETUA / KEPALA' : 'ANGGOTA'}</span>
+            </span>
+          </td>
+          <td class="py-4 px-5 text-center">
+            <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-black ${(item.total_pejabat || 0) > 0 ? 'bg-blue-50 text-blue-900 border border-blue-200 shadow-2xs' : 'bg-slate-100 text-slate-500'}">
+              <span>👥 ${item.total_pejabat || 0} Pejabat</span>
             </span>
           </td>
         `;
@@ -1931,6 +1998,33 @@
             <label class="block font-extrabold text-slate-700 mb-1.5">Nama Peran / Jenis Pengguna *</label>
             <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Petugas Liturgi Gereja"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
+          </div>
+        `;
+      } else if (type === 'positions') {
+        return `
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Kategori Struktur Jabatan *</label>
+            <select id="masterCategoryInput" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
+              <option value="PENGURUS_LINGKUNGAN" ${data.category === 'PENGURUS_LINGKUNGAN' ? 'selected' : ''}>🏘️ Pengurus Lingkungan (Ketua, Wakil, Sekretaris)</option>
+              <option value="ROMO_PAROKI" ${data.category === 'ROMO_PAROKI' ? 'selected' : ''}>⛪ Romo Paroki (Kepala Romo, Romo Paroki)</option>
+              <option value="ROMO_ORDO" ${data.category === 'ROMO_ORDO' ? 'selected' : ''}>✝️ Romo Ordo (Ketua Romo Ordo, Romo Ordo)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Kode Jabatan (Singkatan Unik) *</label>
+            <input type="text" id="masterCodeInput" required value="${data.code || ''}" placeholder="misal: KETUA_LINGKUNGAN, KEPALA_ROMO_PAROKI, SEKRETARIS"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs uppercase" />
+          </div>
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Nama Jabatan Resmi *</label>
+            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Ketua Lingkungan, Kepala Romo Paroki, Sekretaris"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
+          </div>
+          <div class="pt-1">
+            <label class="flex items-center space-x-2 p-3 bg-amber-50/70 rounded-xl border border-amber-200 cursor-pointer">
+              <input type="checkbox" id="masterIsLeadInput" ${data.is_lead ? 'checked' : ''} class="w-4 h-4 rounded text-amber-600 focus:ring-amber-500" />
+              <span class="font-extrabold text-amber-950 text-xs">👑 Jabatan Pimpinan / Ketua Utama (Ketua / Kepala)</span>
+            </label>
           </div>
         `;
       }
@@ -2667,13 +2761,11 @@
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan</label>
+                        <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pengurus *</label>
                         <select id="editPengurusPosition" class="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl font-black text-indigo-950 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs">
-                          <option value="Ketua Lingkungan" ${u.pengurus_position === 'Ketua Lingkungan' ? 'selected' : ''}>Ketua Lingkungan</option>
+                          <option value="Ketua Lingkungan" ${u.pengurus_position === 'Ketua Lingkungan' ? 'selected' : ''}>Ketua Lingkungan (Pimpinan)</option>
                           <option value="Wakil Ketua" ${u.pengurus_position === 'Wakil Ketua' ? 'selected' : ''}>Wakil Ketua</option>
                           <option value="Sekretaris" ${u.pengurus_position === 'Sekretaris' ? 'selected' : ''}>Sekretaris</option>
-                          <option value="Bendahara" ${u.pengurus_position === 'Bendahara' ? 'selected' : ''}>Bendahara</option>
-                          <option value="Seksi Liturgi" ${u.pengurus_position === 'Seksi Liturgi' ? 'selected' : ''}>Seksi Liturgi</option>
                         </select>
                       </div>
                       <div>
@@ -2695,11 +2787,26 @@
                       4. Posisi Pastoral Romo Paroki
                     </h4>
                     <div>
-                      <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pastoral</label>
+                      <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pastoral *</label>
                       <select id="editRomoPosition" class="w-full px-3.5 py-2.5 bg-white border border-emerald-200 rounded-xl font-black text-emerald-950 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs">
-                        <option value="Pastor Kepala Paroki" ${u.romo_position === 'Pastor Kepala Paroki' ? 'selected' : ''}>Pastor Kepala Paroki</option>
-                        <option value="Pastor Rekan" ${u.romo_position === 'Pastor Rekan' ? 'selected' : ''}>Pastor Rekan</option>
-                        <option value="Vikaris Paroki" ${u.romo_position === 'Vikaris Paroki' ? 'selected' : ''}>Vikaris Paroki</option>
+                        <option value="Kepala Romo Paroki" ${u.romo_position === 'Kepala Romo Paroki' ? 'selected' : ''}>Kepala Romo Paroki (Pimpinan Paroki)</option>
+                        <option value="Romo Paroki" ${u.romo_position === 'Romo Paroki' || !u.romo_position ? 'selected' : ''}>Romo Paroki (Pastor Rekan)</option>
+                      </select>
+                    </div>
+                  </div>
+                ` : ''}
+
+                ${roleCode === 'ROMO_ORDO' ? `
+                  <div class="bg-purple-50/80 p-5 rounded-2xl border border-purple-200/80 space-y-4 shadow-xs">
+                    <h4 class="font-extrabold text-purple-950 flex items-center text-xs pb-1 border-b border-purple-200/60">
+                      <i data-lucide="cross" class="w-4 h-4 mr-1.5 text-purple-700"></i>
+                      4. Posisi Struktur Romo Ordo
+                    </h4>
+                    <div>
+                      <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan di Ordo / Kongregasi *</label>
+                      <select id="editRomoOrdoPosition" class="w-full px-3.5 py-2.5 bg-white border border-purple-200 rounded-xl font-black text-purple-950 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-xs">
+                        <option value="Ketua Romo Ordo" ${u.romo_position === 'Ketua Romo Ordo' ? 'selected' : ''}>Ketua Romo Ordo (Pimpinan / Provinsial)</option>
+                        <option value="Romo Ordo" ${u.romo_position === 'Romo Ordo' || !u.romo_position ? 'selected' : ''}>Romo Ordo (Imam Anggota)</option>
                       </select>
                     </div>
                   </div>
@@ -2905,7 +3012,20 @@
                   </p>
                   <div class="bg-white p-3 rounded-xl border border-emerald-100/80">
                     <p class="text-[10px] font-bold text-slate-400 uppercase">Posisi Pastoral</p>
-                    <p class="font-extrabold text-emerald-950 mt-0.5 text-xs">${u.romo_position || 'Pastor Rekan'}</p>
+                    <p class="font-extrabold text-emerald-950 mt-0.5 text-xs">${u.romo_position || 'Romo Paroki'}</p>
+                  </div>
+                </div>
+              ` : ''}
+
+              ${uRoleCode === 'ROMO_ORDO' ? `
+                <div class="bg-purple-50/50 rounded-2xl p-4 border border-purple-100 space-y-2.5">
+                  <p class="font-extrabold text-purple-950 text-xs flex items-center">
+                    <i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-purple-700"></i>
+                    Detail Jabatan di Ordo Religius
+                  </p>
+                  <div class="bg-white p-3 rounded-xl border border-purple-100/80">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Posisi di Ordo</p>
+                    <p class="font-extrabold text-purple-950 mt-0.5 text-xs">${u.romo_position || 'Romo Ordo'}</p>
                   </div>
                 </div>
               ` : ''}
@@ -2973,6 +3093,7 @@
           fetch(`${API_BASE}/master/ordo`),
           fetch(`${API_BASE}/master/service-categories`),
           fetch(`${API_BASE}/master/roles`),
+          fetch(`${API_BASE}/master/positions`),
         ]);
 
         state.analytics = await anRes.json();
@@ -2987,6 +3108,7 @@
         state.ordo = await oRes.json();
         state.serviceCategories = await scRes.json();
         state.roles = await (await fetch(`${API_BASE}/master/roles`)).json();
+        state.positions = await (await fetch(`${API_BASE}/master/positions`)).json();
 
         // Also fetch initial master list for active subtab
         await loadMasterData(state.masterSubTab || 'paroki');
@@ -3025,6 +3147,8 @@
           url = `${API_BASE}/master/service-categories`;
         } else if (tab === 'roles') {
           url = `${API_BASE}/master/roles`;
+        } else if (tab === 'positions') {
+          url = `${API_BASE}/master/positions`;
         }
 
         const res = await fetch(url);
@@ -3037,6 +3161,7 @@
         if (tab === 'ordo') state.ordo = state.masterDataList;
         if (tab === 'services') state.serviceCategories = state.masterDataList;
         if (tab === 'roles') state.roles = state.masterDataList;
+        if (tab === 'positions') state.positions = state.masterDataList;
       } catch (err) {
         console.error('Error loading master data:', err);
       } finally {
@@ -3272,6 +3397,20 @@
           payload = { code: codeVal, name: nameVal };
           modal.data.code = codeVal;
           modal.data.name = nameVal;
+        } else if (type === 'positions') {
+          endpoint = mode === 'CREATE' ? `${API_BASE}/master/positions` : `${API_BASE}/master/positions/${data.id}`;
+          const categoryVal = document.getElementById('masterCategoryInput')?.value;
+          const codeVal = document.getElementById('masterCodeInput')?.value?.trim().toUpperCase().replace(/\s+/g, '_');
+          const nameVal = document.getElementById('masterNameInput')?.value?.trim();
+          const isLeadVal = document.getElementById('masterIsLeadInput')?.checked || false;
+          if (!categoryVal) throw new Error('Kategori Struktur Jabatan wajib dipilih');
+          if (!codeVal) throw new Error('Kode Jabatan wajib diisi');
+          if (!nameVal) throw new Error('Nama Jabatan wajib diisi');
+          payload = { category: categoryVal, code: codeVal, name: nameVal, isLead: isLeadVal };
+          modal.data.category = categoryVal;
+          modal.data.code = codeVal;
+          modal.data.name = nameVal;
+          modal.data.is_lead = isLeadVal;
         }
 
         // 2. Now set loading state and render spinner
@@ -3297,18 +3436,20 @@
 
         // Also refresh global lookups
         try {
-          const [kRes, pRes, oRes, scRes, rRes] = await Promise.all([
+          const [kRes, pRes, oRes, scRes, rRes, posRes] = await Promise.all([
             fetch(`${API_BASE}/master/keuskupan`),
             fetch(`${API_BASE}/master/paroki`),
             fetch(`${API_BASE}/master/ordo`),
             fetch(`${API_BASE}/master/service-categories`),
             fetch(`${API_BASE}/master/roles`),
+            fetch(`${API_BASE}/master/positions`),
           ]);
           state.keuskupan = await kRes.json();
           state.paroki = await pRes.json();
           state.ordo = await oRes.json();
           state.serviceCategories = await scRes.json();
           state.roles = await rRes.json();
+          state.positions = await posRes.json();
         } catch (_) {}
         renderApp();
       } catch (err) {
@@ -3342,6 +3483,7 @@
       else if (del.type === 'ordo') endpoint = `${API_BASE}/master/ordo/${del.id}`;
       else if (del.type === 'services') endpoint = `${API_BASE}/master/service-categories/${del.id}`;
       else if (del.type === 'roles') endpoint = `${API_BASE}/master/roles/${del.id}`;
+      else if (del.type === 'positions') endpoint = `${API_BASE}/master/positions/${del.id}`;
 
       try {
         const res = await fetch(endpoint, { method: 'DELETE' });
@@ -3394,6 +3536,8 @@
       if (pp) u.pengurus_position = pp.value;
       const rp = document.getElementById('editRomoPosition');
       if (rp) u.romo_position = rp.value;
+      const rop = document.getElementById('editRomoOrdoPosition');
+      if (rop) u.romo_position = rop.value;
       const sy = document.getElementById('editJabatanStartYear');
       if (sy) u.jabatan_start_year = sy.value ? parseInt(sy.value) : null;
       const ey = document.getElementById('editJabatanEndYear');

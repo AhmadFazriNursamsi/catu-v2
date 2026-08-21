@@ -462,3 +462,48 @@ export class UpdateRoleDto {
   name?: string;
 }
 
+export class CreatePositionDto {
+  @ApiProperty({ example: 'PENGURUS_LINGKUNGAN', enum: ['PENGURUS_LINGKUNGAN', 'ROMO_PAROKI', 'ROMO_ORDO'] })
+  @IsString()
+  @IsNotEmpty()
+  category: string;
+
+  @ApiProperty({ example: 'KETUA_LINGKUNGAN' })
+  @IsString()
+  @IsNotEmpty()
+  code: string;
+
+  @ApiProperty({ example: 'Ketua Lingkungan' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  isLead?: boolean;
+}
+
+export class UpdatePositionDto {
+  @ApiPropertyOptional({ example: 'PENGURUS_LINGKUNGAN', enum: ['PENGURUS_LINGKUNGAN', 'ROMO_PAROKI', 'ROMO_ORDO'] })
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @ApiPropertyOptional({ example: 'KETUA_LINGKUNGAN' })
+  @IsString()
+  @IsOptional()
+  code?: string;
+
+  @ApiPropertyOptional({ example: 'Ketua Lingkungan' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  isLead?: boolean;
+}
+
+
