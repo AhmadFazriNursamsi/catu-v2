@@ -24,10 +24,55 @@
     }
     .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    
+    /* Agentation Highlight Box */
+    #agentation-inspector-box {
+      position: fixed;
+      pointer-events: none;
+      border: 2px dashed #f59e0b;
+      background-color: rgba(245, 158, 11, 0.12);
+      border-radius: 6px;
+      z-index: 9990;
+      transition: all 0.05s ease;
+      display: none;
+    }
+    #agentation-inspector-label {
+      position: absolute;
+      top: -24px;
+      left: 0;
+      background: #0f172a;
+      color: #f59e0b;
+      font-size: 10px;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .agentation-pin {
+      position: absolute;
+      z-index: 9995;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      animation: pinPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes pinPop {
+      0% { transform: translate(-50%, -50%) scale(0); }
+      80% { transform: translate(-50%, -50%) scale(1.15); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
   </style>
 </head>
 <body class="h-full text-slate-800 antialiased">
   <div id="app" class="h-full"></div>
+
+  <!-- Agentation Inspector Highlight Box -->
+  <div id="agentation-inspector-box">
+    <div id="agentation-inspector-label">element</div>
+  </div>
+
+  <!-- Agentation Pins Layer Container -->
+  <div id="agentation-pins-layer" class="fixed inset-0 pointer-events-none z-[9992]"></div>
 
   <script>
     // Config & State
@@ -36,6 +81,12 @@
     try {
       rawStoredUser = JSON.parse(localStorage.getItem('catu_admin_user') || 'null');
     } catch(e) { rawStoredUser = null; }
+
+    // Load persisted Agentation annotations
+    let rawStoredAnnotations = [];
+    try {
+      rawStoredAnnotations = JSON.parse(localStorage.getItem('catu_agentation_annotations') || '[]');
+    } catch(e) { rawStoredAnnotations = []; }
 
     const state = {
       currentUser: (rawStoredUser && (rawStoredUser.roleCode === 'ADMIN' || rawStoredUser.role_code === 'ADMIN')) ? rawStoredUser : null,
@@ -72,6 +123,17 @@
       activeUserProfile: null,
       activeEditUser: null,
       isSavingProfile: false,
+
+      // 🎯 Agentation Visual Feedback System State
+      agentation: {
+        enabled: false,
+        expanded: false,
+        showDrawer: false,
+        annotations: rawStoredAnnotations,
+        pendingPin: null, // { x, y, selector, tag, text }
+        activePinId: null,
+        selectedCategory: 'BUG', // BUG, POLISH, FEATURE, UX
+      }
     };
 
     // Render Main App Dispatcher
@@ -87,6 +149,7 @@
       try {
         lucide.createIcons();
       } catch(e) {}
+      renderAgentationPins();
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -293,9 +356,10 @@
       const activePengurusCount = state.users.filter(u => (u.role_code || u.roleCode) === 'PENGURUS_LINGKUNGAN' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const activeRomoParokiCount = state.users.filter(u => (u.role_code || u.roleCode) === 'ROMO_PAROKI' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const activeRomoOrdoCount = state.users.filter(u => (u.role_code || u.roleCode) === 'ROMO_ORDO' && (u.account_status || u.accountStatus) === 'APPROVED').length;
+      const activeAnnotationsCount = state.agentation.annotations.filter(a => !a.resolved).length;
 
       return `
-        <div class="h-full flex">
+        <div class="h-full flex relative">
           <!-- Sidebar Nav (Left) -->
           <div class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between flex-shrink-0">
             <div class="overflow-y-auto custom-scrollbar">
@@ -343,7 +407,19 @@
               </nav>
             </div>
 
-            <div class="p-4 border-t border-slate-800">
+            <div class="p-4 border-t border-slate-800 space-y-2">
+              <!-- Agentation Quick Launch Button in Sidebar -->
+              <button onclick="toggleAgentationMode()"
+                class="w-full py-2.5 px-3 rounded-xl ${state.agentation.enabled ? 'bg-amber-500 text-slate-950 font-black ring-2 ring-amber-300' : 'bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold'} text-xs flex items-center justify-between transition shadow">
+                <div class="flex items-center space-x-2">
+                  <i data-lucide="scan" class="w-4 h-4"></i>
+                  <span>🎯 Agentation UI</span>
+                </div>
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] ${state.agentation.enabled ? 'bg-slate-900 text-amber-400' : 'bg-amber-500/20 text-amber-400'} font-black">
+                  ${activeAnnotationsCount}
+                </span>
+              </button>
+
               <button id="logoutBtn" class="w-full py-2.5 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold flex items-center space-x-2 transition">
                 <i data-lucide="log-out" class="w-4 h-4"></i>
                 <span>Keluar Akun Admin</span>
@@ -361,9 +437,18 @@
               </div>
 
               <div class="flex items-center space-x-4">
+                <!-- Agentation Status Badge -->
+                <button onclick="toggleAgentationMode()"
+                  class="flex items-center px-3 py-1.5 rounded-full text-xs font-bold transition ${
+                    state.agentation.enabled ? 'bg-amber-500 text-slate-950 ring-2 ring-amber-300' : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'
+                  }">
+                  <span class="w-2 h-2 rounded-full ${state.agentation.enabled ? 'bg-slate-950 animate-ping' : 'bg-amber-500'} mr-2"></span>
+                  ${state.agentation.enabled ? '🎯 Agentation Active (Klik Elemen UI)' : '🎯 Mode Revisi UI'}
+                </button>
+
                 <div class="flex items-center px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800">
                   <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-2"></span>
-                  Backend Online (Port 3005)
+                  Backend Online
                 </div>
 
                 <button id="refreshBtn" class="p-2 text-slate-600 hover:text-blue-950 rounded-lg hover:bg-slate-100 transition" title="Segarkan Data">
@@ -383,16 +468,21 @@
             </header>
 
             <!-- Scrollable Tab Content -->
-            <main class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            <main class="flex-1 overflow-y-auto p-8 custom-scrollbar relative" id="main-content-scroll">
               ${renderActiveTab()}
             </main>
           </div>
         </div>
 
+        <!-- 🎯 AGENTATION FLOATING TOOLBAR -->
+        ${renderAgentationToolbar()}
+
+        <!-- Modals -->
         ${state.activeOrderDetail ? renderOrderDetailModal() : ''}
         ${state.activeChatOrder ? renderChatModal() : ''}
         ${state.activeUserProfile ? renderUserProfileModal() : ''}
         ${state.activeEditUser ? renderEditUserModal() : ''}
+        ${state.agentation.pendingPin ? renderAgentationPendingDialog() : ''}
       `;
     }
 
@@ -1317,7 +1407,378 @@
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // 4. INTERACTIVE EDIT USER PROFILE MODAL
+    // 4. 🎯 AGENTATION VISUAL FEEDBACK & UI INSPECTOR TOOLBAR
+    // ══════════════════════════════════════════════════════════════════════════
+    function renderAgentationToolbar() {
+      const pinsCount = state.agentation.annotations.filter(a => !a.resolved).length;
+      const isExpanded = state.agentation.expanded;
+
+      return `
+        <div data-feedback-toolbar class="fixed bottom-5 right-6 z-[9999] font-sans flex flex-col items-end">
+          <!-- Main Collapsible Panel -->
+          ${isExpanded ? `
+            <div class="mb-3 w-80 bg-slate-900 text-white rounded-2xl p-4 shadow-2xl border border-slate-700 space-y-3.5 backdrop-blur-md bg-opacity-95">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <div class="flex items-center space-x-2">
+                  <div class="w-6 h-6 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs">
+                    🎯
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-extrabold text-white">Agentation Inspector</h4>
+                    <p class="text-[10px] text-amber-400">Visual UI Revision Toolbar</p>
+                  </div>
+                </div>
+                <button onclick="state.agentation.expanded = false; renderApp();" class="text-slate-400 hover:text-white p-1">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <!-- Mode Toggle -->
+              <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/80 border border-slate-700">
+                <div>
+                  <p class="text-xs font-bold text-slate-200">Mode Inspeksi UI</p>
+                  <p class="text-[10px] text-slate-400">${state.agentation.enabled ? 'Hover & Klik elemen mana saja' : 'Non-aktif'}</p>
+                </div>
+                <button onclick="toggleAgentationMode()"
+                  class="px-3 py-1.5 rounded-lg text-xs font-black transition ${
+                    state.agentation.enabled ? 'bg-amber-500 text-slate-950 shadow-lg' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }">
+                  ${state.agentation.enabled ? 'AKTIF (ON)' : 'MATIKAN (OFF)'}
+                </button>
+              </div>
+
+              <!-- Tag Category Selector -->
+              <div>
+                <label class="block text-[10.5px] font-bold text-slate-400 mb-1.5">Kategori Revisi Default:</label>
+                <div class="grid grid-cols-2 gap-1.5 text-[10px] font-bold">
+                  <button onclick="state.agentation.selectedCategory = 'BUG'; renderApp();"
+                    class="py-1 px-2 rounded-lg border flex items-center space-x-1.5 ${state.agentation.selectedCategory === 'BUG' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-slate-800 border-slate-700 text-slate-400'}">
+                    <span>🔴</span><span>Bug / Masalah UI</span>
+                  </button>
+                  <button onclick="state.agentation.selectedCategory = 'POLISH'; renderApp();"
+                    class="py-1 px-2 rounded-lg border flex items-center space-x-1.5 ${state.agentation.selectedCategory === 'POLISH' ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'bg-slate-800 border-slate-700 text-slate-400'}">
+                    <span>🟡</span><span>Polish / Tipografi</span>
+                  </button>
+                  <button onclick="state.agentation.selectedCategory = 'FEATURE'; renderApp();"
+                    class="py-1 px-2 rounded-lg border flex items-center space-x-1.5 ${state.agentation.selectedCategory === 'FEATURE' ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-slate-800 border-slate-700 text-slate-400'}">
+                    <span>🔵</span><span>Konten & Fitur</span>
+                  </button>
+                  <button onclick="state.agentation.selectedCategory = 'UX'; renderApp();"
+                    class="py-1 px-2 rounded-lg border flex items-center space-x-1.5 ${state.agentation.selectedCategory === 'UX' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}">
+                    <span>🟢</span><span>Alur / UX Flow</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Summary & Actions -->
+              <div class="pt-2 border-t border-slate-800 space-y-2">
+                <div class="flex items-center justify-between text-xs font-semibold">
+                  <span class="text-slate-400">Total Pin Aktif:</span>
+                  <span class="font-bold text-amber-400">${pinsCount} Catatan</span>
+                </div>
+
+                <button onclick="copyAgentationPromptToClipboard()"
+                  class="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow transition">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                  <span>📋 Salin Prompt Revisi untuk AI</span>
+                </button>
+
+                <div class="flex items-center space-x-2">
+                  <button onclick="state.agentation.showDrawer = !state.agentation.showDrawer; renderApp();"
+                    class="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] flex items-center justify-center space-x-1.5 transition">
+                    <i data-lucide="list" class="w-3 h-3"></i>
+                    <span>${state.agentation.showDrawer ? 'Tutup List' : 'Lihat Semua (' + pinsCount + ')'}</span>
+                  </button>
+                  <button onclick="clearAllAgentationPins()"
+                    class="py-1.5 px-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-[11px] transition">
+                    Hapus Semua
+                  </button>
+                </div>
+              </div>
+
+              <!-- Drawer List inside Tooltip -->
+              ${state.agentation.showDrawer ? `
+                <div class="border-t border-slate-800 pt-2.5 max-h-48 overflow-y-auto space-y-2 custom-scrollbar text-[11px]">
+                  ${state.agentation.annotations.length === 0 ? `
+                    <p class="text-center text-slate-500 py-3">Belum ada pin revisi. Aktifkan mode dan klik elemen mana saja di halaman ini.</p>
+                  ` : state.agentation.annotations.map((a, idx) => `
+                    <div class="p-2 rounded-lg bg-slate-800/80 border border-slate-700 flex items-start justify-between space-x-2">
+                      <div>
+                        <div class="flex items-center space-x-1.5">
+                          <span class="px-1.5 py-0.2 rounded font-black text-[9px] ${
+                            a.category === 'BUG' ? 'bg-red-500 text-white' :
+                            a.category === 'POLISH' ? 'bg-amber-500 text-slate-950' :
+                            a.category === 'FEATURE' ? 'bg-blue-500 text-white' : 'bg-emerald-500 text-white'
+                          }">#${idx + 1} ${a.category}</span>
+                          <span class="text-slate-400 font-mono text-[9.5px] truncate max-w-[140px]">${a.elementTag || 'elem'}</span>
+                        </div>
+                        <p class="mt-1 text-slate-200 font-medium">${a.note}</p>
+                      </div>
+                      <button onclick="deleteAgentationPin('${a.id}')" class="text-slate-400 hover:text-red-400 p-1">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
+
+          <!-- Floating Trigger Toggle Button -->
+          <button onclick="state.agentation.expanded = !state.agentation.expanded; renderApp();"
+            class="toggleContent flex items-center space-x-2.5 px-4 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs shadow-2xl border-2 ${
+              state.agentation.enabled ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-slate-700'
+            } transition transform hover:scale-105 active:scale-95">
+            <span class="text-base">🎯</span>
+            <span>Agentation</span>
+            ${pinsCount > 0 ? `
+              <span class="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10.5px]">
+                ${pinsCount}
+              </span>
+            ` : ''}
+          </button>
+        </div>
+      `;
+    }
+
+    // ── Pending Annotation Dialog (Dropped Pin Form) ──
+    function renderAgentationPendingDialog() {
+      const p = state.agentation.pendingPin;
+      if (!p) return '';
+
+      return `
+        <div class="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-300 space-y-4 font-sans text-xs">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs">🎯</span>
+                <div>
+                  <h4 class="font-extrabold text-slate-900 text-sm">Tambah Catatan Revisi UI</h4>
+                  <p class="text-[10px] text-slate-500 font-mono truncate max-w-[280px]">${p.selector}</p>
+                </div>
+              </div>
+              <button onclick="state.agentation.pendingPin = null; renderApp();" class="p-1 text-slate-400 hover:bg-slate-100 rounded-lg">
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+            <form onsubmit="saveAgentationPin(event)" class="space-y-3">
+              <!-- Element target preview -->
+              <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                <p class="text-[10px] font-bold text-slate-500">Elemen Terpilih:</p>
+                <p class="font-bold text-blue-950 text-xs mt-0.5">${p.tag.toUpperCase()}: <span class="font-normal text-slate-700">"${(p.text || 'Elemen visual').substring(0, 60)}"</span></p>
+              </div>
+
+              <!-- Category -->
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Tipe / Kategori Revisi:</label>
+                <select id="pinCategoryInput" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900">
+                  <option value="BUG" ${state.agentation.selectedCategory === 'BUG' ? 'selected' : ''}>🔴 Bug / Masalah Fungsional / Tampilan Rusak</option>
+                  <option value="POLISH" ${state.agentation.selectedCategory === 'POLISH' ? 'selected' : ''}>🟡 Desain, Tipografi & Warna</option>
+                  <option value="FEATURE" ${state.agentation.selectedCategory === 'FEATURE' ? 'selected' : ''}>🔵 Tambah / Ubah Fitur & Data</option>
+                  <option value="UX" ${state.agentation.selectedCategory === 'UX' ? 'selected' : ''}>🟢 Alur / UX Flow & Interaksi</option>
+                </select>
+              </div>
+
+              <!-- Note -->
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Apa yang perlu diperbaiki / diubah? *</label>
+                <textarea id="pinNoteInput" rows="3" required placeholder="Contoh: Ubah warna tombol menjadi lebih kontras, tambahkan margin atas 12px, atau perbaiki teks label..."
+                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"></textarea>
+              </div>
+
+              <div class="pt-2 flex items-center justify-end space-x-2">
+                <button type="button" onclick="state.agentation.pendingPin = null; renderApp();" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">Batal</button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow-lg shadow-amber-500/20">
+                  ✓ Tambahkan Pin Revisi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Render Numbered Pins Overlay on Screen ──
+    function renderAgentationPins() {
+      const layer = document.getElementById('agentation-pins-layer');
+      if (!layer) return;
+
+      const currentPins = state.agentation.annotations.filter(a => a.pageTab === state.currentTab && !a.resolved);
+      layer.innerHTML = currentPins.map((a, idx) => {
+        const bg = a.category === 'BUG' ? 'bg-red-600' :
+                   a.category === 'POLISH' ? 'bg-amber-500' :
+                   a.category === 'FEATURE' ? 'bg-blue-600' : 'bg-emerald-600';
+        const txt = a.category === 'POLISH' ? 'text-slate-950' : 'text-white';
+
+        return `
+          <div class="agentation-pin pointer-events-auto" style="left: ${a.x}px; top: ${a.y}px;"
+               onclick="showAgentationPinDetail('${a.id}')"
+               title="${a.category}: ${a.note}">
+            <div class="relative group">
+              <div class="w-7 h-7 rounded-full ${bg} ${txt} font-black text-xs flex items-center justify-center shadow-2xl border-2 border-white ring-2 ring-black/20">
+                ${idx + 1}
+              </div>
+              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-slate-900 text-white text-[10px] p-2 rounded-xl shadow-xl z-50 pointer-events-none">
+                <p class="font-bold text-amber-400">${a.category}</p>
+                <p class="mt-0.5 text-slate-200">${a.note}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ── Agentation Action Handlers ──
+    function toggleAgentationMode() {
+      state.agentation.enabled = !state.agentation.enabled;
+      if (state.agentation.enabled) {
+        state.agentation.expanded = true;
+      }
+      renderApp();
+    }
+
+    function saveAgentationPin(e) {
+      e.preventDefault();
+      const p = state.agentation.pendingPin;
+      if (!p) return;
+
+      const note = document.getElementById('pinNoteInput').value.trim();
+      const category = document.getElementById('pinCategoryInput').value;
+
+      const newAnnotation = {
+        id: 'pin_' + Date.now(),
+        x: p.x,
+        y: p.y,
+        pageTab: state.currentTab,
+        elementSelector: p.selector,
+        elementTag: p.tag,
+        elementText: p.text,
+        category,
+        note,
+        createdAt: new Date().toISOString(),
+        resolved: false,
+      };
+
+      state.agentation.annotations.push(newAnnotation);
+      localStorage.setItem('catu_agentation_annotations', JSON.stringify(state.agentation.annotations));
+      state.agentation.pendingPin = null;
+      renderApp();
+    }
+
+    function deleteAgentationPin(id) {
+      state.agentation.annotations = state.agentation.annotations.filter(a => a.id !== id);
+      localStorage.setItem('catu_agentation_annotations', JSON.stringify(state.agentation.annotations));
+      renderApp();
+    }
+
+    function clearAllAgentationPins() {
+      if (!confirm('Hapus seluruh catatan revisi Agentation?')) return;
+      state.agentation.annotations = [];
+      localStorage.setItem('catu_agentation_annotations', JSON.stringify([]));
+      renderApp();
+    }
+
+    function showAgentationPinDetail(id) {
+      const pin = state.agentation.annotations.find(a => a.id === id);
+      if (!pin) return;
+      alert(`[Pin ${pin.category}]\nTarget: ${pin.elementSelector}\nCatatan: ${pin.note}`);
+    }
+
+    function copyAgentationPromptToClipboard() {
+      const list = state.agentation.annotations.filter(a => !a.resolved);
+      if (list.length === 0) {
+        alert('Belum ada catatan revisi untuk disalin.');
+        return;
+      }
+
+      let prompt = `### 🎯 DAFTAR REVISI UI / DESAIN AGENTATION (${state.currentTab.toUpperCase()}):\n\n`;
+      list.forEach((a, i) => {
+        prompt += `${i + 1}. [${a.category}] Elemen: \`${a.elementSelector}\`\n   - Catatan: "${a.note}"\n   - Tag: <${a.elementTag}>\n\n`;
+      });
+      prompt += `Tolong revisi dan perbaiki elemen-elemen UI di atas sesuai catatan tepat sasaran.`;
+
+      navigator.clipboard.writeText(prompt).then(() => {
+        alert('✓ Seluruh catatan revisi Agentation berhasil disalin ke clipboard! Anda dapat langsung menempelkannya (Paste) ke chat AI.');
+      });
+    }
+
+    // ── Global Mouse Inspector Listener for Agentation ──
+    window.addEventListener('mousemove', (e) => {
+      if (!state.agentation.enabled) {
+        const box = document.getElementById('agentation-inspector-box');
+        if (box) box.style.display = 'none';
+        return;
+      }
+
+      const target = document.elementFromPoint(e.clientX, e.clientY);
+      if (!target || target.closest('[data-feedback-toolbar]') || target.closest('.agentation-pin') || target.id === 'agentation-inspector-box') {
+        return;
+      }
+
+      const rect = target.getBoundingClientRect();
+      const box = document.getElementById('agentation-inspector-box');
+      const label = document.getElementById('agentation-inspector-label');
+      if (box && label) {
+        box.style.display = 'block';
+        box.style.left = `${rect.left}px`;
+        box.style.top = `${rect.top}px`;
+        box.style.width = `${rect.width}px`;
+        box.style.height = `${rect.height}px`;
+
+        const tag = target.tagName.toLowerCase();
+        const cls = target.className ? ('.' + String(target.className).split(' ')[0]) : '';
+        label.textContent = `${tag}${cls} (${Math.round(rect.width)}x${Math.round(rect.height)})`;
+      }
+    });
+
+    window.addEventListener('click', (e) => {
+      if (!state.agentation.enabled) return;
+
+      const target = document.elementFromPoint(e.clientX, e.clientY);
+      if (!target || target.closest('[data-feedback-toolbar]') || target.closest('.agentation-pin') || target.closest('#editUserForm') || target.closest('.fixed')) {
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Compute unique CSS selector path
+      let path = [];
+      let el = target;
+      while (el && el.nodeType === Node.ELEMENT_NODE && path.length < 4) {
+        let sel = el.nodeName.toLowerCase();
+        if (el.id) {
+          sel += '#' + el.id;
+          path.unshift(sel);
+          break;
+        } else {
+          let sib = el, nth = 1;
+          while (sib = sib.previousElementSibling) {
+            if (sib.nodeName.toLowerCase() == sel) nth++;
+          }
+          if (nth != 1) sel += ":nth-of-type("+nth+")";
+        }
+        path.unshift(sel);
+        el = el.parentNode;
+      }
+
+      state.agentation.pendingPin = {
+        x: e.clientX,
+        y: e.clientY,
+        selector: path.join(' > '),
+        tag: target.tagName.toLowerCase(),
+        text: (target.innerText || target.textContent || '').trim().substring(0, 100),
+      };
+
+      const box = document.getElementById('agentation-inspector-box');
+      if (box) box.style.display = 'none';
+
+      renderApp();
+    }, true);
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 5. MODALS (EDIT USER, DETAILS, CHAT)
     // ══════════════════════════════════════════════════════════════════════════
     function renderEditUserModal() {
       const u = state.activeEditUser;
@@ -1495,7 +1956,6 @@
       `;
     }
 
-    // Modal Details
     function renderUserProfileModal() {
       const u = state.activeUserProfile;
       const uName = u.full_name || u.fullName || 'Pengguna';
@@ -1626,7 +2086,7 @@
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // 5. API ACTIONS
+    // 6. API ACTIONS
     // ══════════════════════════════════════════════════════════════════════════
     async function loadDashboardData() {
       try {
