@@ -39,6 +39,8 @@ services:
     restart: always
     ports:
       - "8000:80"
+    volumes:
+      - ./admin_web:/usr/share/nginx/html
     depends_on:
       - backend
 
