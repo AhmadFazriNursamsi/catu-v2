@@ -851,9 +851,9 @@
                   <tr>
                     <th class="px-6 py-3.5">NAMA LENGKAP UMAT</th>
                     <th class="px-6 py-3.5">EMAIL PENGGUNA</th>
-                    <th class="px-6 py-3.5">WHATSAPP / HP</th>
-                    <th class="px-6 py-3.5">PAROKI & DOMISILI</th>
-                    <th class="px-6 py-3.5">LINGKUNGAN / WILAYAH</th>
+                    <th class="px-6 py-3.5">NO. WHATSAPP</th>
+                    <th class="px-6 py-3.5">PAROKI</th>
+                    <th class="px-6 py-3.5">LINGKUNGAN</th>
                     <th class="px-6 py-3.5">STATUS</th>
                     <th class="px-6 py-3.5 text-right">AKSI</th>
                   </tr>
@@ -863,10 +863,8 @@
                     <tr><td colspan="7" class="text-center py-10 text-slate-400">Tidak ada data umat aktif ditemukan</td></tr>
                   ` : umats.map(u => `
                     <tr class="hover:bg-slate-50/80 transition">
-                      <!-- Removed photo profile avatar div cleanly -->
                       <td class="px-6 py-4">
                         <p class="font-extrabold text-slate-900 text-sm">${u.full_name || 'Umat'}</p>
-                        <p class="text-[10.5px] font-semibold text-slate-400">ID: #${u.id} • ${u.birth_date ? 'Lahir: ' + String(u.birth_date).substring(0, 10) : 'Umat Terdaftar'}</p>
                       </td>
                       <td class="px-6 py-4">
                         <span class="inline-flex items-center text-slate-700 font-medium bg-slate-100/90 border border-slate-200/60 px-2.5 py-1 rounded-lg">
@@ -982,7 +980,6 @@
                       <tr class="hover:bg-slate-50/80 transition">
                         <td class="px-6 py-4">
                           <p class="font-extrabold text-slate-900 text-sm">${u.full_name || 'Pengurus'}</p>
-                          <p class="text-[10.5px] font-semibold text-slate-400">ID: #${u.id}</p>
                         </td>
                         <td class="px-6 py-4">
                           <span class="inline-flex items-center text-slate-700 font-medium bg-slate-100/90 border border-slate-200/60 px-2.5 py-1 rounded-lg">
@@ -1288,9 +1285,9 @@
                 <tr>
                   <th class="px-6 py-3.5">PEMOHON AKUN</th>
                   <th class="px-6 py-3.5">EMAIL</th>
-                  <th class="px-6 py-3.5">WHATSAPP / HP</th>
+                  <th class="px-6 py-3.5">NO. WHATSAPP</th>
                   <th class="px-6 py-3.5">PERAN DIAJUKAN</th>
-                  <th class="px-6 py-3.5">PAROKI / DOMISILI</th>
+                  <th class="px-6 py-3.5">PAROKI</th>
                   <th class="px-6 py-3.5 text-right">AKSI VERIFIKASI</th>
                 </tr>
               </thead>
@@ -1305,7 +1302,6 @@
                   <tr class="hover:bg-slate-50/80 transition">
                     <td class="px-6 py-4">
                       <p class="font-extrabold text-slate-900 text-sm">${u.full_name || 'Pengguna Baru'}</p>
-                      <p class="text-[10.5px] font-semibold text-slate-400">ID: #${u.id}</p>
                     </td>
                     <td class="px-6 py-4">
                       <span class="inline-flex items-center text-slate-700 font-medium bg-slate-100/90 border border-slate-200/60 px-2 py-0.5 rounded">
