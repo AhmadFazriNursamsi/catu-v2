@@ -104,6 +104,17 @@
       lingkungan: [],
       ordo: [],
       masterSubTab: 'paroki',
+      masterSearch: '',
+      masterFilterKeuskupanId: '',
+      masterFilterParokiId: '',
+      masterFilterWilayahId: '',
+      serviceCategories: [],
+      masterDataList: [],
+      isMasterLoading: false,
+      activeMasterModal: null,
+      isSavingMaster: false,
+      masterModalError: '',
+      deleteConfirmModal: null,
       
       // Searches
       orderSearch: '',
@@ -513,6 +524,8 @@
         ${state.activeChatOrder ? renderChatModal() : ''}
         ${state.activeUserProfile ? renderUserProfileModal() : ''}
         ${state.activeEditUser ? renderEditUserModal() : ''}
+        ${state.activeMasterModal ? renderMasterModal() : ''}
+        ${state.deleteConfirmModal ? renderDeleteConfirmModal() : ''}
         ${state.agentation.pendingPin ? renderAgentationPendingDialog() : ''}
       `;
     }
@@ -567,6 +580,9 @@
 
     function setTab(tab) {
       state.currentTab = tab;
+      if (tab === 'master') {
+        loadMasterData(state.masterSubTab || 'paroki');
+      }
       renderApp();
     }
 
@@ -1087,13 +1103,587 @@
       `;
     }
 
-    // ── Tab: Master, Chat, QA ──
+    // ══════════════════════════════════════════════════════════════════════════
+    // 3. MASTER DATA TAB (FULL DATABASE CRUD)
+    // ══════════════════════════════════════════════════════════════════════════
     function renderMasterTab() {
+      const sub = state.masterSubTab || 'paroki';
+      const search = (state.masterSearch || '').toLowerCase().trim();
+      const list = state.masterDataList || [];
+
+      // Filtered items based on search and filters
+      const filtered = list.filter(item => {
+        if (search) {
+          const matchName = item.name && item.name.toLowerCase().includes(search);
+          const matchCode = item.code && item.code.toLowerCase().includes(search);
+          const matchAddress = item.address && item.address.toLowerCase().includes(search);
+          const matchKeuskupan = item.keuskupan_name && item.keuskupan_name.toLowerCase().includes(search);
+          const matchParoki = item.paroki_name && item.paroki_name.toLowerCase().includes(search);
+          const matchWilayah = item.wilayah_name && item.wilayah_name.toLowerCase().includes(search);
+          const matchDesc = item.description && item.description.toLowerCase().includes(search);
+          if (!matchName && !matchCode && !matchAddress && !matchKeuskupan && !matchParoki && !matchWilayah && !matchDesc) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      const getEntityLabel = (s) => {
+        if (s === 'keuskupan') return 'Keuskupan';
+        if (s === 'paroki') return 'Paroki';
+        if (s === 'wilayah') return 'Wilayah';
+        if (s === 'lingkungan') return 'Lingkungan';
+        if (s === 'ordo') return 'Ordo / Kongregasi';
+        if (s === 'services') return 'Kategori Pelayanan';
+        return s;
+      };
+
       return `
-        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-          <h3 class="text-sm font-bold text-slate-900 mb-4">Master Data Paroki & Keuskupan</h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            ${state.paroki.map(p => `<div class="p-3 bg-slate-50 rounded-xl border border-slate-200 font-bold text-xs">${p.name}</div>`).join('')}
+        <div class="space-y-6 animate-fade-in">
+          <!-- Sub-Tab Navigation Bar -->
+          <div class="bg-white rounded-2xl p-2 shadow-xs border border-slate-200 flex flex-wrap gap-1.5">
+            ${[
+              { id: 'keuskupan', icon: 'landmark', label: 'Keuskupan', count: state.keuskupan?.length },
+              { id: 'paroki', icon: 'church', label: 'Paroki', count: state.paroki?.length },
+              { id: 'wilayah', icon: 'map-pin', label: 'Wilayah' },
+              { id: 'lingkungan', icon: 'home', label: 'Lingkungan' },
+              { id: 'ordo', icon: 'cross', label: 'Ordo / Kongregasi', count: state.ordo?.length },
+              { id: 'services', icon: 'clipboard-list', label: 'Kategori Pelayanan', count: state.serviceCategories?.length }
+            ].map(tab => {
+              const active = sub === tab.id;
+              return `
+                <button onclick="setMasterSubTab('${tab.id}')"
+                  class="flex items-center space-x-2 px-4 py-2.5 rounded-xl font-extrabold text-xs transition ${
+                    active 
+                      ? 'bg-blue-950 text-white shadow-md shadow-blue-950/20' 
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }">
+                  <i data-lucide="${tab.icon}" class="w-4 h-4 ${active ? 'text-amber-400' : 'text-slate-400'}"></i>
+                  <span>${tab.label}</span>
+                  ${tab.count !== undefined && tab.count > 0 ? `
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${active ? 'bg-amber-400 text-slate-900' : 'bg-slate-200 text-slate-700'}">
+                      ${tab.count}
+                    </span>
+                  ` : ''}
+                </button>
+              `;
+            }).join('')}
+          </div>
+
+          <!-- Main Table Card -->
+          <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+            <!-- Header Toolbar -->
+            <div class="p-5 border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-50/50">
+              <div class="flex items-center space-x-3">
+                <div class="p-2.5 rounded-xl bg-blue-950 text-amber-400 shadow-md">
+                  <i data-lucide="database" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-slate-900">Master Data: ${getEntityLabel(sub)}</h3>
+                  <p class="text-xs text-slate-500">Daftar entitas aktif dari database PostgreSQL (${filtered.length} data ditemukan)</p>
+                </div>
+              </div>
+
+              <!-- Search & Action Controls -->
+              <div class="flex flex-wrap items-center gap-3">
+                <!-- Search Input -->
+                <div class="relative">
+                  <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                  <input type="text" value="${state.masterSearch || ''}" oninput="state.masterSearch = this.value; renderApp();"
+                    placeholder="Cari ${getEntityLabel(sub)}..."
+                    class="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 w-52 lg:w-64 shadow-xs" />
+                </div>
+
+                <!-- Contextual Filters -->
+                ${sub === 'paroki' ? `
+                  <select onchange="state.masterFilterKeuskupanId = this.value; loadMasterData('paroki');"
+                    class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
+                    <option value="">-- Semua Keuskupan --</option>
+                    ${state.keuskupan.map(k => `
+                      <option value="${k.id}" ${String(state.masterFilterKeuskupanId) === String(k.id) ? 'selected' : ''}>${k.name}</option>
+                    `).join('')}
+                  </select>
+                ` : ''}
+
+                ${sub === 'wilayah' ? `
+                  <select onchange="state.masterFilterParokiId = this.value; loadMasterData('wilayah');"
+                    class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
+                    <option value="">-- Semua Paroki --</option>
+                    ${state.paroki.map(p => `
+                      <option value="${p.id}" ${String(state.masterFilterParokiId) === String(p.id) ? 'selected' : ''}>${p.name}</option>
+                    `).join('')}
+                  </select>
+                ` : ''}
+
+                <!-- Add Button -->
+                <button onclick="openCreateMasterModal('${sub}')"
+                  class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-xs shadow-md shadow-amber-500/20 flex items-center space-x-1.5 transition transform hover:-translate-y-0.5">
+                  <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                  <span>Tambah ${getEntityLabel(sub)}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Table View -->
+            ${state.isMasterLoading ? `
+              <div class="p-16 text-center text-slate-500 space-y-3">
+                <span class="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin inline-block"></span>
+                <p class="text-xs font-bold">Memuat master data dari database...</p>
+              </div>
+            ` : filtered.length === 0 ? `
+              <div class="p-16 text-center text-slate-400 space-y-2">
+                <i data-lucide="folder-x" class="w-10 h-10 mx-auto text-slate-300"></i>
+                <p class="text-xs font-bold text-slate-600">Tidak ada data ${getEntityLabel(sub)} yang sesuai filter atau pencarian.</p>
+                <button onclick="openCreateMasterModal('${sub}')" class="text-xs font-bold text-amber-600 hover:underline">
+                  + Klik untuk menambahkan data baru
+                </button>
+              </div>
+            ` : `
+              <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-extrabold tracking-wider uppercase text-[10px]">
+                      <th class="py-3.5 px-4 w-16 text-center">ID</th>
+                      ${renderMasterTableHeaders(sub)}
+                      <th class="py-3.5 px-4 text-center w-36">AKSI</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    ${filtered.map(item => renderMasterTableRow(sub, item)).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMasterTableHeaders(sub) {
+      if (sub === 'keuskupan') {
+        return `
+          <th class="py-3.5 px-4">NAMA KEUSKUPAN</th>
+          <th class="py-3.5 px-4">KODE</th>
+          <th class="py-3.5 px-4 text-center">TOTAL PAROKI</th>
+          <th class="py-3.5 px-4">TANGGAL DIBUAT</th>
+        `;
+      } else if (sub === 'paroki') {
+        return `
+          <th class="py-3.5 px-4">NAMA PAROKI</th>
+          <th class="py-3.5 px-4">KEUSKUPAN</th>
+          <th class="py-3.5 px-4 text-center">TOTAL WILAYAH</th>
+          <th class="py-3.5 px-4">ALAMAT</th>
+        `;
+      } else if (sub === 'wilayah') {
+        return `
+          <th class="py-3.5 px-4">NAMA WILAYAH</th>
+          <th class="py-3.5 px-4">PAROKI</th>
+          <th class="py-3.5 px-4">KEUSKUPAN</th>
+          <th class="py-3.5 px-4 text-center">TOTAL LINGKUNGAN</th>
+        `;
+      } else if (sub === 'lingkungan') {
+        return `
+          <th class="py-3.5 px-4">NAMA LINGKUNGAN</th>
+          <th class="py-3.5 px-4">WILAYAH</th>
+          <th class="py-3.5 px-4">PAROKI</th>
+          <th class="py-3.5 px-4 text-center">TOTAL UMAT</th>
+        `;
+      } else if (sub === 'ordo') {
+        return `
+          <th class="py-3.5 px-4">NAMA ORDO / KONGREGASI</th>
+          <th class="py-3.5 px-4">KODE</th>
+          <th class="py-3.5 px-4 text-center">TOTAL ROMO</th>
+          <th class="py-3.5 px-4">ALAMAT / MARKAS</th>
+        `;
+      } else if (sub === 'services') {
+        return `
+          <th class="py-3.5 px-4">NAMA SAKRAMEN / PELAYANAN</th>
+          <th class="py-3.5 px-4">DESKRIPSI</th>
+          <th class="py-3.5 px-4 text-center">URGENT DEFAULT</th>
+          <th class="py-3.5 px-4 text-center">STATUS AKTIF</th>
+          <th class="py-3.5 px-4 text-center">TOTAL ORDER</th>
+        `;
+      }
+      return '';
+    }
+
+    function renderMasterTableRow(sub, item) {
+      const escapedItem = JSON.stringify(item).replace(/'/g, "&#39;");
+      return `
+        <tr class="hover:bg-slate-50/70 transition">
+          <td class="py-3.5 px-4 text-center font-mono font-bold text-slate-400">#${item.id}</td>
+          ${renderMasterTableColumns(sub, item)}
+          <td class="py-3.5 px-4 text-center">
+            <div class="flex items-center justify-center space-x-1.5">
+              <button onclick='openEditMasterModal("${sub}", ${escapedItem})'
+                class="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-[11px] flex items-center space-x-1 transition shadow-2xs" title="Edit Data">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                <span>Edit</span>
+              </button>
+              <button onclick='confirmDeleteMaster("${sub}", ${item.id}, "${(item.name || '').replace(/"/g, '')}")'
+                class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-[11px] flex items-center space-x-1 transition shadow-2xs" title="Hapus Data">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <span>Hapus</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    function renderMasterTableColumns(sub, item) {
+      if (sub === 'keuskupan') {
+        return `
+          <td class="py-3.5 px-4 font-bold text-slate-900">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="landmark" class="w-4 h-4 text-blue-900"></i>
+              <span class="font-extrabold text-blue-950">${item.name}</span>
+            </div>
+          </td>
+          <td class="py-3.5 px-4 font-mono font-bold text-slate-600">${item.code || '-'}</td>
+          <td class="py-3.5 px-4 text-center">
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 font-black border border-blue-200">
+              ${item.total_paroki || 0} Paroki
+            </span>
+          </td>
+          <td class="py-3.5 px-4 text-slate-500 font-medium text-[11px]">
+            ${item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
+          </td>
+        `;
+      } else if (sub === 'paroki') {
+        return `
+          <td class="py-3.5 px-4 font-bold text-slate-900">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="church" class="w-4 h-4 text-emerald-700"></i>
+              <span class="font-extrabold text-blue-950">${item.name}</span>
+            </div>
+          </td>
+          <td class="py-3.5 px-4">
+            <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 font-bold border border-slate-200 text-[11px]">
+              ${item.keuskupan_name || '-'}
+            </span>
+          </td>
+          <td class="py-3.5 px-4 text-center">
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-black border border-emerald-200">
+              ${item.total_wilayah || 0} Wilayah
+            </span>
+          </td>
+          <td class="py-3.5 px-4 text-slate-600 font-medium text-[11px] max-w-xs truncate">
+            ${item.address || '-'}
+          </td>
+        `;
+      } else if (sub === 'wilayah') {
+        return `
+          <td class="py-3.5 px-4 font-bold text-slate-900">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="map-pin" class="w-4 h-4 text-indigo-700"></i>
+              <span class="font-extrabold text-indigo-950">${item.name}</span>
+            </div>
+          </td>
+          <td class="py-3.5 px-4 font-bold text-slate-800">${item.paroki_name || '-'}</td>
+          <td class="py-3.5 px-4 text-slate-600 text-[11px]">${item.keuskupan_name || '-'}</td>
+          <td class="py-3.5 px-4 text-center">
+            <span class="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-800 font-black border border-indigo-200">
+              ${item.total_lingkungan || 0} Lingkungan
+            </span>
+          </td>
+        `;
+      } else if (sub === 'lingkungan') {
+        return `
+          <td class="py-3.5 px-4 font-bold text-slate-900">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="home" class="w-4 h-4 text-blue-700"></i>
+              <span class="font-extrabold text-blue-950">${item.name}</span>
+            </div>
+          </td>
+          <td class="py-3.5 px-4 font-bold text-slate-800">${item.wilayah_name || '-'}</td>
+          <td class="py-3.5 px-4 text-slate-600 text-[11px]">${item.paroki_name || '-'}</td>
+          <td class="py-3.5 px-4 text-center">
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 font-black border border-blue-200">
+              ${item.total_umat || 0} Umat
+            </span>
+          </td>
+        `;
+      } else if (sub === 'ordo') {
+        return `
+          <td class="py-3.5 px-4 font-bold text-purple-950">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="cross" class="w-4 h-4 text-purple-700"></i>
+              <span class="font-black">${item.name}</span>
+            </div>
+          </td>
+          <td class="py-3.5 px-4">
+            <span class="px-2 py-0.5 rounded bg-purple-50 text-purple-800 font-black text-[10px] border border-purple-200">
+              ${item.code || '-'}
+            </span>
+          </td>
+          <td class="py-3.5 px-4 text-center">
+            <span class="px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-800 font-black border border-purple-200">
+              ${item.total_romo || 0} Romo
+            </span>
+          </td>
+          <td class="py-3.5 px-4 text-slate-600 font-medium text-[11px] max-w-xs truncate">
+            ${item.address || '-'}
+          </td>
+        `;
+      } else if (sub === 'services') {
+        return `
+          <td class="py-3.5 px-4 font-bold text-slate-900">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="clipboard-list" class="w-4 h-4 text-amber-600"></i>
+              <span class="font-extrabold text-slate-900">${item.name}</span>
+            </div>
+          </td>
+          <td class="py-3.5 px-4 text-slate-600 text-[11px] max-w-xs truncate">${item.description || '-'}</td>
+          <td class="py-3.5 px-4 text-center">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black ${item.is_urgent_by_default ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-slate-100 text-slate-600'}">
+              ${item.is_urgent_by_default ? '🚨 URGENT' : 'NORMAL'}
+            </span>
+          </td>
+          <td class="py-3.5 px-4 text-center">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black ${item.is_active ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-500'}">
+              ${item.is_active ? '✓ AKTIF' : 'NON-AKTIF'}
+            </span>
+          </td>
+          <td class="py-3.5 px-4 text-center font-black text-slate-700">
+            ${item.total_orders || 0} Order
+          </td>
+        `;
+      }
+      return '';
+    }
+
+    // ── Master Modal (Create / Edit) ──
+    function renderMasterModal() {
+      const modal = state.activeMasterModal;
+      if (!modal) return '';
+      const { type, mode, data } = modal;
+      const isEdit = mode === 'EDIT';
+
+      const getTitle = () => {
+        const prefix = isEdit ? 'Perbarui Data' : 'Tambah Baru';
+        if (type === 'keuskupan') return `${prefix} Keuskupan`;
+        if (type === 'paroki') return `${prefix} Paroki`;
+        if (type === 'wilayah') return `${prefix} Wilayah`;
+        if (type === 'lingkungan') return `${prefix} Lingkungan`;
+        if (type === 'ordo') return `${prefix} Ordo / Kongregasi`;
+        if (type === 'services') return `${prefix} Kategori Pelayanan`;
+        return `${prefix} Master`;
+      };
+
+      return `
+        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 custom-scrollbar my-8 overflow-hidden">
+            <!-- Header Banner -->
+            <div class="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 p-6 text-white relative">
+              <button onclick="state.activeMasterModal = null; renderApp();"
+                class="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition">
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+
+              <div class="flex items-center space-x-3.5">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-white flex items-center justify-center shadow-lg border-2 border-white/20">
+                  <i data-lucide="${isEdit ? 'edit' : 'plus'}" class="w-6 h-6"></i>
+                </div>
+                <div>
+                  <h3 class="text-base font-black text-white">${getTitle()}</h3>
+                  <p class="text-xs text-slate-300">
+                    ${isEdit ? `Mengubah data ID #${data.id}` : 'Menyimpan entitas baru ke database'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form Body -->
+            <div class="p-6 space-y-4 text-xs">
+              ${state.masterModalError ? `
+                <div class="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start space-x-2 shadow-xs">
+                  <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-rose-600 mt-0.5"></i>
+                  <span>${state.masterModalError}</span>
+                </div>
+              ` : ''}
+
+              <form id="masterDataForm" onsubmit="handleSaveMaster(event)" class="space-y-4">
+                ${renderMasterModalFields(type, data)}
+
+                <div class="pt-4 border-t border-slate-200 flex items-center justify-end space-x-2.5">
+                  <button type="button" onclick="state.activeMasterModal = null; renderApp();"
+                    class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs transition">
+                    Batal
+                  </button>
+                  <button type="submit" ${state.isSavingMaster ? 'disabled' : ''}
+                    class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs flex items-center space-x-2 shadow-md shadow-amber-500/20 transition transform hover:-translate-y-0.5 disabled:opacity-50">
+                    ${state.isSavingMaster ? `
+                      <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Menyimpan...</span>
+                    ` : `
+                      <i data-lucide="save" class="w-4 h-4"></i>
+                      <span>${isEdit ? 'Simpan Perubahan' : 'Tambah Sekarang'}</span>
+                    `}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMasterModalFields(type, data) {
+      if (type === 'keuskupan') {
+        return `
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Nama Keuskupan *</label>
+            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Keuskupan Agung Jakarta"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
+          </div>
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Kode Singkatan</label>
+            <input type="text" id="masterCodeInput" value="${data.code || ''}" placeholder="misal: KAJ"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
+          </div>
+        `;
+      } else if (type === 'paroki') {
+        return `
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Keuskupan *</label>
+            <select id="masterKeuskupanIdInput" required
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
+              <option value="">-- Pilih Keuskupan --</option>
+              ${state.keuskupan.map(k => `
+                <option value="${k.id}" ${String(data.keuskupan_id || data.keuskupanId) === String(k.id) ? 'selected' : ''}>${k.name}</option>
+              `).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Nama Paroki *</label>
+            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Paroki Santa Maria Regina"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
+          </div>
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Alamat Lengkap Paroki</label>
+            <textarea id="masterAddressInput" rows="2" placeholder="misal: Jl. Bintaro Utama Sektor 7..."
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">${data.address || ''}</textarea>
+          </div>
+        `;
+      } else if (type === 'wilayah') {
+        return `
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Paroki *</label>
+            <select id="masterParokiIdInput" required
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
+              <option value="">-- Pilih Paroki --</option>
+              ${state.paroki.map(p => `
+                <option value="${p.id}" ${String(data.paroki_id || data.parokiId) === String(p.id) ? 'selected' : ''}>${p.name}</option>
+              `).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Nama Wilayah *</label>
+            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Wilayah St. Fransiskus Xaverius"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
+          </div>
+        `;
+      } else if (type === 'lingkungan') {
+        return `
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Wilayah *</label>
+            <select id="masterWilayahIdInput" required
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
+              <option value="">-- Pilih Wilayah --</option>
+              ${state.wilayah.map(w => `
+                <option value="${w.id}" ${String(data.wilayah_id || data.wilayahId) === String(w.id) ? 'selected' : ''}>${w.name}</option>
+              `).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Nama Lingkungan *</label>
+            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Lingkungan St. Gabriel 1"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
+          </div>
+        `;
+      } else if (type === 'ordo') {
+        return `
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Nama Ordo / Kongregasi *</label>
+            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Ordo Fratrum Minorum"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
+          </div>
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Kode Singkatan</label>
+            <input type="text" id="masterCodeInput" value="${data.code || ''}" placeholder="misal: OFM, SJ, MSC, CSsR"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
+          </div>
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Alamat Lengkap / Markas</label>
+            <textarea id="masterAddressInput" rows="2" placeholder="misal: Jl. Kramat Raya No. 134, Jakarta Pusat"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">${data.address || ''}</textarea>
+          </div>
+        `;
+      } else if (type === 'services') {
+        return `
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Nama Sakramen / Pelayanan *</label>
+            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Misa Syukur Ulang Tahun"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
+          </div>
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Deskripsi Pelayanan</label>
+            <textarea id="masterDescInput" rows="2" placeholder="Deskripsi singkat mengenai pelayanan ini..."
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">${data.description || ''}</textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3 pt-1">
+            <label class="flex items-center space-x-2 p-3 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer">
+              <input type="checkbox" id="masterIsUrgentInput" ${data.is_urgent_by_default ? 'checked' : ''} class="w-4 h-4 rounded text-amber-500 focus:ring-amber-400" />
+              <span class="font-bold text-slate-800">🚨 Default Urgent</span>
+            </label>
+            <label class="flex items-center space-x-2 p-3 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer">
+              <input type="checkbox" id="masterIsActiveInput" ${data.is_active !== false ? 'checked' : ''} class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500" />
+              <span class="font-bold text-slate-800">✓ Status Aktif</span>
+            </label>
+          </div>
+        `;
+      }
+      return '';
+    }
+
+    // ── Delete Confirmation Modal ──
+    function renderDeleteConfirmModal() {
+      const del = state.deleteConfirmModal;
+      if (!del) return '';
+
+      return `
+        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex items-start space-x-3.5">
+              <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-base font-black text-slate-900">Konfirmasi Hapus Data</h3>
+                <p class="text-xs text-slate-500 mt-1">
+                  Apakah Anda yakin ingin menghapus <span class="font-bold text-slate-800">${del.name}</span> (#${del.id})? Tindakan ini tidak dapat dibatalkan.
+                </p>
+              </div>
+            </div>
+
+            ${del.errorMessage ? `
+              <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start space-x-2">
+                <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-rose-600 mt-0.5"></i>
+                <span>${del.errorMessage}</span>
+              </div>
+            ` : ''}
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2.5">
+              <button onclick="state.deleteConfirmModal = null; renderApp();"
+                class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs transition">
+                Batal
+              </button>
+              <button onclick="executeDeleteMaster()"
+                class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md shadow-rose-600/20 transition">
+                Ya, Hapus Permanen
+              </button>
+            </div>
           </div>
         </div>
       `;
@@ -1934,19 +2524,20 @@
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // 6. API ACTIONS & CASCADING DROPDOWNS
+    // 6. API ACTIONS, CASCADING DROPDOWNS & MASTER DATA CRUD
     // ══════════════════════════════════════════════════════════════════════════
     async function loadDashboardData() {
       try {
-        const [anRes, ordRes, usrRes, provRes, kkRes, kRes, pRes, oRes] = await Promise.all([
+        const [anRes, ordRes, usrRes, provRes, kkRes, kRes, pRes, oRes, scRes] = await Promise.all([
           fetch(`${API_BASE}/auth/admin/analytics`),
           fetch(`${API_BASE}/orders`),
           fetch(`${API_BASE}/auth/admin/users`),
           fetch(`${API_BASE}/auth/provinsi`),
           fetch(`${API_BASE}/auth/kabupaten-kota`),
-          fetch(`${API_BASE}/auth/keuskupan`),
-          fetch(`${API_BASE}/auth/paroki`),
-          fetch(`${API_BASE}/auth/ordo`),
+          fetch(`${API_BASE}/master/keuskupan`),
+          fetch(`${API_BASE}/master/paroki`),
+          fetch(`${API_BASE}/master/ordo`),
+          fetch(`${API_BASE}/master/service-categories`),
         ]);
 
         state.analytics = await anRes.json();
@@ -1959,9 +2550,209 @@
         state.keuskupan = await kRes.json();
         state.paroki = await pRes.json();
         state.ordo = await oRes.json();
+        state.serviceCategories = await scRes.json();
+
+        // Also fetch initial master list for active subtab
+        await loadMasterData(state.masterSubTab || 'paroki');
         renderApp();
       } catch (err) {
         console.error('Error loading dashboard data:', err);
+      }
+    }
+
+    // ── Master Data API Handlers ──
+    async function setMasterSubTab(subTab) {
+      state.masterSubTab = subTab;
+      state.masterSearch = '';
+      await loadMasterData(subTab);
+    }
+
+    async function loadMasterData(subTab) {
+      if (subTab) state.masterSubTab = subTab;
+      state.isMasterLoading = true;
+      renderApp();
+
+      try {
+        const tab = state.masterSubTab;
+        let url = '';
+        if (tab === 'keuskupan') {
+          url = `${API_BASE}/master/keuskupan`;
+        } else if (tab === 'paroki') {
+          url = `${API_BASE}/master/paroki${state.masterFilterKeuskupanId ? '?keuskupanId=' + state.masterFilterKeuskupanId : ''}`;
+        } else if (tab === 'wilayah') {
+          url = `${API_BASE}/master/wilayah${state.masterFilterParokiId ? '?parokiId=' + state.masterFilterParokiId : ''}`;
+        } else if (tab === 'lingkungan') {
+          url = `${API_BASE}/master/lingkungan${state.masterFilterWilayahId ? '?wilayahId=' + state.masterFilterWilayahId : ''}`;
+        } else if (tab === 'ordo') {
+          url = `${API_BASE}/master/ordo`;
+        } else if (tab === 'services') {
+          url = `${API_BASE}/master/service-categories`;
+        }
+
+        const res = await fetch(url);
+        const data = await res.json();
+        state.masterDataList = Array.isArray(data) ? data : [];
+
+        // Update lookup state
+        if (tab === 'keuskupan') state.keuskupan = state.masterDataList;
+        if (tab === 'paroki') state.paroki = state.masterDataList;
+        if (tab === 'ordo') state.ordo = state.masterDataList;
+        if (tab === 'services') state.serviceCategories = state.masterDataList;
+      } catch (err) {
+        console.error('Error loading master data:', err);
+      } finally {
+        state.isMasterLoading = false;
+        renderApp();
+      }
+    }
+
+    function openCreateMasterModal(type) {
+      state.masterModalError = '';
+      state.activeMasterModal = {
+        type: type || state.masterSubTab || 'paroki',
+        mode: 'CREATE',
+        data: {}
+      };
+      renderApp();
+    }
+
+    function openEditMasterModal(type, item) {
+      state.masterModalError = '';
+      state.activeMasterModal = {
+        type: type || state.masterSubTab || 'paroki',
+        mode: 'EDIT',
+        data: { ...item }
+      };
+      renderApp();
+    }
+
+    async function handleSaveMaster(event) {
+      event.preventDefault();
+      const modal = state.activeMasterModal;
+      if (!modal) return;
+
+      state.isSavingMaster = true;
+      state.masterModalError = '';
+      renderApp();
+
+      try {
+        const { type, mode, data } = modal;
+        let endpoint = '';
+        let method = mode === 'CREATE' ? 'POST' : 'PUT';
+        let payload = {};
+
+        if (type === 'keuskupan') {
+          endpoint = mode === 'CREATE' ? `${API_BASE}/master/keuskupan` : `${API_BASE}/master/keuskupan/${data.id}`;
+          payload = {
+            name: document.getElementById('masterNameInput').value.trim(),
+            code: document.getElementById('masterCodeInput')?.value.trim() || undefined
+          };
+        } else if (type === 'paroki') {
+          endpoint = mode === 'CREATE' ? `${API_BASE}/master/paroki` : `${API_BASE}/master/paroki/${data.id}`;
+          payload = {
+            keuskupanId: parseInt(document.getElementById('masterKeuskupanIdInput').value),
+            name: document.getElementById('masterNameInput').value.trim(),
+            address: document.getElementById('masterAddressInput')?.value.trim() || undefined
+          };
+        } else if (type === 'wilayah') {
+          endpoint = mode === 'CREATE' ? `${API_BASE}/master/wilayah` : `${API_BASE}/master/wilayah/${data.id}`;
+          payload = {
+            parokiId: parseInt(document.getElementById('masterParokiIdInput').value),
+            name: document.getElementById('masterNameInput').value.trim()
+          };
+        } else if (type === 'lingkungan') {
+          endpoint = mode === 'CREATE' ? `${API_BASE}/master/lingkungan` : `${API_BASE}/master/lingkungan/${data.id}`;
+          payload = {
+            wilayahId: parseInt(document.getElementById('masterWilayahIdInput').value),
+            name: document.getElementById('masterNameInput').value.trim()
+          };
+        } else if (type === 'ordo') {
+          endpoint = mode === 'CREATE' ? `${API_BASE}/master/ordo` : `${API_BASE}/master/ordo/${data.id}`;
+          payload = {
+            name: document.getElementById('masterNameInput').value.trim(),
+            code: document.getElementById('masterCodeInput')?.value.trim() || undefined,
+            address: document.getElementById('masterAddressInput')?.value.trim() || undefined
+          };
+        } else if (type === 'services') {
+          endpoint = mode === 'CREATE' ? `${API_BASE}/master/service-categories` : `${API_BASE}/master/service-categories/${data.id}`;
+          payload = {
+            name: document.getElementById('masterNameInput').value.trim(),
+            description: document.getElementById('masterDescInput')?.value.trim() || undefined,
+            isUrgentByDefault: document.getElementById('masterIsUrgentInput')?.checked || false,
+            isActive: document.getElementById('masterIsActiveInput')?.checked !== false
+          };
+        }
+
+        const res = await fetch(endpoint, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        if (!res.ok) {
+          throw new Error(result.message || 'Gagal menyimpan data.');
+        }
+
+        state.activeMasterModal = null;
+        await loadMasterData(state.masterSubTab);
+
+        // Also refresh global lookups
+        const [kRes, pRes, oRes, scRes] = await Promise.all([
+          fetch(`${API_BASE}/master/keuskupan`),
+          fetch(`${API_BASE}/master/paroki`),
+          fetch(`${API_BASE}/master/ordo`),
+          fetch(`${API_BASE}/master/service-categories`)
+        ]);
+        state.keuskupan = await kRes.json();
+        state.paroki = await pRes.json();
+        state.ordo = await oRes.json();
+        state.serviceCategories = await scRes.json();
+        renderApp();
+      } catch (err) {
+        state.masterModalError = err.message || 'Terjadi kesalahan sistem.';
+        renderApp();
+      } finally {
+        state.isSavingMaster = false;
+        renderApp();
+      }
+    }
+
+    function confirmDeleteMaster(type, id, name) {
+      state.deleteConfirmModal = {
+        type: type,
+        id: id,
+        name: name,
+        errorMessage: ''
+      };
+      renderApp();
+    }
+
+    async function executeDeleteMaster() {
+      const del = state.deleteConfirmModal;
+      if (!del) return;
+
+      let endpoint = '';
+      if (del.type === 'keuskupan') endpoint = `${API_BASE}/master/keuskupan/${del.id}`;
+      else if (del.type === 'paroki') endpoint = `${API_BASE}/master/paroki/${del.id}`;
+      else if (del.type === 'wilayah') endpoint = `${API_BASE}/master/wilayah/${del.id}`;
+      else if (del.type === 'lingkungan') endpoint = `${API_BASE}/master/lingkungan/${del.id}`;
+      else if (del.type === 'ordo') endpoint = `${API_BASE}/master/ordo/${del.id}`;
+      else if (del.type === 'services') endpoint = `${API_BASE}/master/service-categories/${del.id}`;
+
+      try {
+        const res = await fetch(endpoint, { method: 'DELETE' });
+        const result = await res.json();
+        if (!res.ok) {
+          throw new Error(result.message || 'Gagal menghapus data.');
+        }
+
+        state.deleteConfirmModal = null;
+        await loadMasterData(state.masterSubTab);
+        renderApp();
+      } catch (err) {
+        del.errorMessage = err.message || 'Terjadi kesalahan saat menghapus data.';
+        renderApp();
       }
     }
 

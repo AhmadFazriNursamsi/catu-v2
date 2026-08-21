@@ -6,6 +6,7 @@ import {
   AssignmentsController,
   ChatController,
   TestRunnerController,
+  MasterDataController,
 } from './app.controller';
 import { AppService } from './app.service';
 
@@ -28,6 +29,7 @@ import { AppService } from './app.service';
     AssignmentsController,
     ChatController,
     TestRunnerController,
+    MasterDataController,
   ],
   providers: [AppService],
 })

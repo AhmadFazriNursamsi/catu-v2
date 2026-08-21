@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsDateString, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateOrderItemDto {
@@ -252,3 +252,189 @@ export class SendChatMessageDto {
   @IsOptional()
   attachmentUrl?: string;
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// MASTER DATA CRUD DTOs
+// ══════════════════════════════════════════════════════════════════════════
+
+export class CreateKeuskupanDto {
+  @ApiProperty({ example: 'Keuskupan Agung Semarang' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiPropertyOptional({ example: 'KAS' })
+  @IsString()
+  @IsOptional()
+  code?: string;
+}
+
+export class UpdateKeuskupanDto {
+  @ApiPropertyOptional({ example: 'Keuskupan Agung Semarang' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'KAS' })
+  @IsString()
+  @IsOptional()
+  code?: string;
+}
+
+export class CreateParokiDto {
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  keuskupanId: number;
+
+  @ApiProperty({ example: 'Paroki Santa Maria Regina' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiPropertyOptional({ example: 'Bintaro Jaya Sektor 7' })
+  @IsString()
+  @IsOptional()
+  address?: string;
+}
+
+export class UpdateParokiDto {
+  @ApiPropertyOptional({ example: 1 })
+  @IsNumber()
+  @IsOptional()
+  keuskupanId?: number;
+
+  @ApiPropertyOptional({ example: 'Paroki Santa Maria Regina' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'Bintaro Jaya Sektor 7' })
+  @IsString()
+  @IsOptional()
+  address?: string;
+}
+
+export class CreateWilayahDto {
+  @ApiProperty({ example: 10 })
+  @IsNumber()
+  parokiId: number;
+
+  @ApiProperty({ example: 'Wilayah St. Ignatius' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+}
+
+export class UpdateWilayahDto {
+  @ApiPropertyOptional({ example: 10 })
+  @IsNumber()
+  @IsOptional()
+  parokiId?: number;
+
+  @ApiPropertyOptional({ example: 'Wilayah St. Ignatius' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+}
+
+export class CreateLingkunganDto {
+  @ApiProperty({ example: 101 })
+  @IsNumber()
+  wilayahId: number;
+
+  @ApiProperty({ example: 'Lingkungan St. Gabriel 1' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+}
+
+export class UpdateLingkunganDto {
+  @ApiPropertyOptional({ example: 101 })
+  @IsNumber()
+  @IsOptional()
+  wilayahId?: number;
+
+  @ApiPropertyOptional({ example: 'Lingkungan St. Gabriel 1' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+}
+
+export class CreateOrdoDto {
+  @ApiProperty({ example: 'Ordo Fratrum Minorum' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiPropertyOptional({ example: 'OFM' })
+  @IsString()
+  @IsOptional()
+  code?: string;
+
+  @ApiPropertyOptional({ example: 'Kramat Raya, Jakarta Pusat' })
+  @IsString()
+  @IsOptional()
+  address?: string;
+}
+
+export class UpdateOrdoDto {
+  @ApiPropertyOptional({ example: 'Ordo Fratrum Minorum' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'OFM' })
+  @IsString()
+  @IsOptional()
+  code?: string;
+
+  @ApiPropertyOptional({ example: 'Kramat Raya, Jakarta Pusat' })
+  @IsString()
+  @IsOptional()
+  address?: string;
+}
+
+export class CreateServiceCategoryDto {
+  @ApiProperty({ example: 'Misa Ulang Tahun Pernikahan' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiPropertyOptional({ example: 'Pelayanan misa syukur peringatan ulang tahun perkawinan' })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({ example: false })
+  @IsBoolean()
+  @IsOptional()
+  isUrgentByDefault?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+}
+
+export class UpdateServiceCategoryDto {
+  @ApiPropertyOptional({ example: 'Misa Ulang Tahun Pernikahan' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'Pelayanan misa syukur' })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({ example: false })
+  @IsBoolean()
+  @IsOptional()
+  isUrgentByDefault?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+}
+
