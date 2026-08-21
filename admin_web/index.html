@@ -782,12 +782,24 @@
                     return `
                       <tr class="hover:bg-slate-50/80 transition">
                         <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Pengurus'}</td>
-                        <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold text-[11px]">${u.pengurus_position || 'Ketua Lingkungan'}</span></td>
-                        <td class="px-6 py-4">${u.lingkungan_name || '-'} (${u.paroki_name || '-'})</td>
                         <td class="px-6 py-4">
-                          <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold border border-slate-200/80 text-[11px]">
-                            <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
+                          <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-indigo-50/90 text-indigo-950 border border-indigo-200/80 font-extrabold text-[11.5px] shadow-xs">
+                            <i data-lucide="award" class="w-3.5 h-3.5 text-indigo-600"></i>
+                            <span>${u.pengurus_position || 'Ketua Lingkungan'}</span>
+                          </span>
+                        </td>
+                        <td class="px-6 py-4">
+                          <p class="font-extrabold text-slate-900 text-xs">${u.lingkungan_name || '-'}</p>
+                          <p class="text-[11px] font-semibold text-slate-500 flex items-center mt-0.5">
+                            <i data-lucide="church" class="w-3 h-3 mr-1 text-slate-400"></i>
+                            ${u.paroki_name || '-'}
+                          </p>
+                        </td>
+                        <td class="px-6 py-4">
+                          <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50/90 text-amber-950 border border-amber-200/80 font-extrabold text-[11px] shadow-xs">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5 text-amber-600"></i>
                             <span>${periode}</span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                           </span>
                         </td>
                         <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
