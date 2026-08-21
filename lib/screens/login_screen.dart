@@ -282,6 +282,33 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 24),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.build_circle_outlined, size: 13, color: Color(0xFF64748B)),
+                        SizedBox(width: 6),
+                        Text(
+                          'v2.5.0-build.20260821.164800',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF64748B),
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

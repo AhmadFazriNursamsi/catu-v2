@@ -761,7 +761,35 @@ class _LoginScreenState extends State<LoginScreen>
                           color: Colors.white.withOpacity(0.75),
                         ),
                       ),
-                      SizedBox(height: screenH * 0.05),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.verified_outlined, size: 13, color: Color(0xFFFCD34D)),
+                            const SizedBox(width: 5),
+                            Text(
+                              AppConstants.appVersion,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: screenH * 0.035),
 
                       // ── Form Card ──
                       Padding(
@@ -1051,12 +1079,12 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.build_circle_outlined, size: 14, color: Colors.white),
-                              SizedBox(width: 6),
+                            children: [
+                              const Icon(Icons.build_circle_outlined, size: 14, color: Colors.white),
+                              const SizedBox(width: 6),
                               Text(
                                 AppConstants.appVersion,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
