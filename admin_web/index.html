@@ -1835,14 +1835,16 @@
           alert('✓ Profil pengguna berhasil diperbarui!');
           state.activeEditUser = null;
           state.isSavingProfile = false;
+          state.editFormError = '';
           loadDashboardData();
         } else {
-          state.editFormError = data.message || 'Gagal menyimpan profil pengguna.';
+          const errMsg = Array.isArray(data.message) ? data.message.join(', ') : (data.message || 'Gagal menyimpan profil pengguna.');
+          state.editFormError = errMsg;
           state.isSavingProfile = false;
           renderApp();
         }
       } catch (err) {
-        state.editFormError = 'Terjadi kesalahan saat menghubungi server.';
+        state.editFormError = 'Terjadi kesalahan saat menghubungi server backend.';
         state.isSavingProfile = false;
         renderApp();
       }

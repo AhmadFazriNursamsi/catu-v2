@@ -193,9 +193,40 @@ export class UpdateUserProfileDto {
   @IsOptional()
   lingkunganId?: number;
 
+  @ApiPropertyOptional({ example: 1, description: 'ID Provinsi' })
+  @IsOptional()
+  provinsiId?: number;
+
   @ApiPropertyOptional({ example: 3175, description: 'ID Kabupaten/Kota' })
   @IsOptional()
   kabupatenKotaId?: number;
+
+  @ApiPropertyOptional({ example: 'APPROVED', description: 'Status Akun' })
+  @IsOptional()
+  @IsString()
+  accountStatus?: string;
+
+  @ApiPropertyOptional({ example: 'Ketua Lingkungan', description: 'Jabatan Pengurus Lingkungan' })
+  @IsOptional()
+  @IsString()
+  pengurusPosition?: string;
+
+  @ApiPropertyOptional({ example: 'Pastor Kepala Paroki', description: 'Posisi Pastoral Romo Paroki' })
+  @IsOptional()
+  @IsString()
+  romoPosition?: string;
+
+  @ApiPropertyOptional({ example: 2024, description: 'Tahun Mulai Jabatan' })
+  @IsOptional()
+  jabatanStartYear?: number;
+
+  @ApiPropertyOptional({ example: 2027, description: 'Tahun Selesai Jabatan' })
+  @IsOptional()
+  jabatanEndYear?: number;
+
+  @ApiPropertyOptional({ example: true, description: 'Apakah jabatan masih aktif' })
+  @IsOptional()
+  isJabatanActive?: boolean;
 
   @ApiPropertyOptional({ example: true, description: 'Kirim notifikasi ke Ketua Lingkungan' })
   @IsOptional()
