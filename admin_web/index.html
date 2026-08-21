@@ -1093,9 +1093,7 @@
                           <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
                         </td>
                         <td class="px-6 py-4">
-                          <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs">
-                            <span>${u.pengurus_position || 'Ketua Lingkungan'}</span>
-                          </span>
+                          ${getUserPositionBadge(u.pengurus_position || 'Ketua Lingkungan', 'PENGURUS_LINGKUNGAN')}
                         </td>
                         <td class="px-6 py-4">
                           <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
@@ -1279,9 +1277,7 @@
                         </div>
                       </td>
                       <td class="px-6 py-4">
-                        <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs">
-                          <span>${u.romo_position || 'Romo Paroki'}</span>
-                        </span>
+                        ${getUserPositionBadge(u.romo_position || 'Romo Paroki', 'ROMO_PAROKI')}
                       </td>
                       <td class="px-6 py-4 font-bold text-slate-800">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
@@ -1435,9 +1431,7 @@
                         </span>
                       </td>
                       <td class="px-6 py-4">
-                        <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs">
-                          <span>${u.romo_position || 'Romo Ordo'}</span>
-                        </span>
+                        ${getUserPositionBadge(u.romo_position || 'Romo Ordo', 'ROMO_ORDO')}
                       </td>
                       <td class="px-6 py-4 font-bold text-slate-800">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
@@ -1590,10 +1584,20 @@
                         </span>
                       </td>
                       <td class="px-6 py-4">
-                        <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs shadow-sm">
-                          <i data-lucide="shield" class="w-3.5 h-3.5 text-slate-500"></i>
-                          <span>${u.role_name || u.role_code}</span>
-                        </span>
+                        ${(() => {
+                          const r = (u.role_code || '').toUpperCase();
+                          const bgClass = r === 'UMAT' ? 'bg-blue-50 text-blue-900 border-blue-200'
+                            : r === 'PENGURUS_LINGKUNGAN' ? 'bg-indigo-50 text-indigo-900 border-indigo-200'
+                            : r === 'ROMO_PAROKI' ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                            : r === 'ROMO_ORDO' ? 'bg-purple-50 text-purple-900 border-purple-200'
+                            : 'bg-amber-50 text-amber-900 border-amber-200';
+                          return `
+                            <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl ${bgClass} border font-bold text-xs shadow-2xs">
+                              <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+                              <span>${u.role_name || u.role_code}</span>
+                            </span>
+                          `;
+                        })()}
                       </td>
                       <td class="px-6 py-4">
                         <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
@@ -1610,18 +1614,18 @@
                       <td class="px-6 py-4 text-right">
                         <div class="inline-flex items-center justify-end space-x-2">
                           <button onclick="approveUserAction('${u.id}', 'APPROVED')" 
-                            class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center space-x-1 transition shadow-sm">
+                            class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center space-x-1 transition shadow-md shadow-emerald-600/20 transform hover:-translate-y-0.5 cursor-pointer">
                             <i data-lucide="check" class="w-3.5 h-3.5"></i>
                             <span>Setujui</span>
                           </button>
                           <button onclick="approveUserAction('${u.id}', 'REJECTED')" 
-                            class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center space-x-1 transition shadow-sm">
+                            class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center space-x-1 transition shadow-md shadow-rose-600/20 transform hover:-translate-y-0.5 cursor-pointer">
                             <i data-lucide="x" class="w-3.5 h-3.5"></i>
                             <span>Tolak</span>
                           </button>
                           <button onclick="openEditUserModal('${u.id}')" 
-                            class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center space-x-1 transition shadow-2xs">
-                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                            class="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold border border-amber-200 text-xs flex items-center space-x-1.5 transition shadow-sm transform hover:-translate-y-0.5 cursor-pointer">
+                            <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-600"></i>
                             <span>Edit</span>
                           </button>
                         </div>
@@ -3655,12 +3659,12 @@
                   </p>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
                     <div class="bg-white p-2.5 rounded-xl border border-indigo-100/80">
-                      <p class="text-[10px] font-bold text-slate-400 uppercase">Posisi Kepengurusan</p>
-                      <p class="font-extrabold text-indigo-950 mt-0.5 text-xs">${u.pengurus_position || 'Ketua Lingkungan'}</p>
+                      <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Posisi Kepengurusan</p>
+                      ${getUserPositionBadge(u.pengurus_position || 'Ketua Lingkungan', 'PENGURUS_LINGKUNGAN')}
                     </div>
                     <div class="bg-white p-2.5 rounded-xl border border-indigo-100/80">
-                      <p class="text-[10px] font-bold text-slate-400 uppercase">Masa Jabatan</p>
-                      <p class="font-extrabold text-amber-800 mt-0.5 text-xs flex items-center">
+                      <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Masa Jabatan</p>
+                      <p class="font-extrabold text-amber-800 text-xs flex items-center">
                         <i data-lucide="calendar" class="w-3 h-3 mr-1 text-amber-600"></i>
                         ${periode}
                       </p>
@@ -3676,8 +3680,8 @@
                     Detail Jabatan Pastoral Paroki
                   </p>
                   <div class="bg-white p-3 rounded-xl border border-emerald-100/80">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase">Posisi Pastoral</p>
-                    <p class="font-extrabold text-emerald-950 mt-0.5 text-xs">${u.romo_position || 'Romo Paroki'}</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Posisi Pastoral</p>
+                    ${getUserPositionBadge(u.romo_position || 'Romo Paroki', 'ROMO_PAROKI')}
                   </div>
                 </div>
               ` : ''}
@@ -3689,8 +3693,8 @@
                     Detail Jabatan di Ordo Religius
                   </p>
                   <div class="bg-white p-3 rounded-xl border border-purple-100/80">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase">Posisi di Ordo</p>
-                    <p class="font-extrabold text-purple-950 mt-0.5 text-xs">${u.romo_position || 'Romo Ordo'}</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Posisi di Ordo</p>
+                    ${getUserPositionBadge(u.romo_position || 'Romo Ordo', 'ROMO_ORDO')}
                   </div>
                 </div>
               ` : ''}
@@ -3749,6 +3753,42 @@
         return 'bg-rose-50 text-rose-800 border border-rose-200';
       }
       return 'bg-amber-50 text-amber-800 border border-amber-200';
+    }
+
+    function getUserPositionBadge(pos, roleCode) {
+      const p = (pos || '').trim();
+      const r = (roleCode || '').toUpperCase();
+
+      if (!p) {
+        if (r === 'PENGURUS_LINGKUNGAN') return '<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold text-xs shadow-2xs"><span>Pengurus Lingkungan</span></span>';
+        if (r === 'ROMO_PAROKI') return '<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 font-bold text-xs shadow-2xs"><span>Romo Paroki</span></span>';
+        if (r === 'ROMO_ORDO') return '<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-purple-50 text-purple-900 border border-purple-200 font-bold text-xs shadow-2xs"><span>Romo Ordo</span></span>';
+        return '<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs shadow-2xs"><span>-</span></span>';
+      }
+
+      const pLower = p.toLowerCase();
+      // Pimpinan / Ketua / Kepala / Provinsial -> Amber
+      if (pLower.includes('ketua') || pLower.includes('kepala') || pLower.includes('pimpinan') || pLower.includes('provinsial')) {
+        return `<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-amber-50 text-amber-950 border border-amber-200 font-bold text-xs shadow-2xs"><span>${p}</span></span>`;
+      }
+      // Wakil / Sekretaris -> Indigo
+      if (pLower.includes('wakil') || pLower.includes('sekretaris')) {
+        return `<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold text-xs shadow-2xs"><span>${p}</span></span>`;
+      }
+      // Bendahara -> Teal
+      if (pLower.includes('bendahara')) {
+        return `<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-teal-50 text-teal-900 border border-teal-200 font-bold text-xs shadow-2xs"><span>${p}</span></span>`;
+      }
+      // Romo Paroki -> Emerald
+      if (r === 'ROMO_PAROKI' || pLower.includes('paroki')) {
+        return `<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 font-bold text-xs shadow-2xs"><span>${p}</span></span>`;
+      }
+      // Romo Ordo -> Purple
+      if (r === 'ROMO_ORDO' || pLower.includes('ordo')) {
+        return `<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-purple-50 text-purple-900 border border-purple-200 font-bold text-xs shadow-2xs"><span>${p}</span></span>`;
+      }
+      // Default / General Pengurus -> Blue
+      return `<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-blue-50 text-blue-900 border border-blue-200 font-bold text-xs shadow-2xs"><span>${p}</span></span>`;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
