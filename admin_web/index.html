@@ -1359,7 +1359,6 @@
                         oninput="onEditPhoneInput(this)"
                         class="block w-full pl-16 pr-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-1">Cukup ketik angka tanpa awalan 0 atau 62 (Contoh: 81234567890)</p>
                   </div>
 
                   <div>
@@ -1572,7 +1571,10 @@
     function onEditPhoneInput(input) {
       let val = input.value.replace(/\D/g, '');
       if (val.startsWith('62')) val = val.substring(2);
-      else if (val.startsWith('0')) val = val.substring(1);
+      if (val.startsWith('0')) val = val.substring(1);
+      if (val.length > 0 && !val.startsWith('8')) {
+        val = '8' + val.replace(/^[^8]+/, '');
+      }
       input.value = val;
     }
 
@@ -1757,13 +1759,31 @@
       const birthDateInput = document.getElementById('editBirthDate') ? document.getElementById('editBirthDate').value : '';
       const address = document.getElementById('editAddress') ? document.getElementById('editAddress').value.trim() : '';
 
-      // Validate Phone Number
-      if (!rawPhone || rawPhone.length < 9 || rawPhone.length > 13) {
-        state.editFormError = 'Nomor WhatsApp tidak valid. Masukkan minimal 9 dan maksimal 13 digit angka.';
+      // Validate Phone Number (Must start with 8 and be 9-13 digits)
+      if (!rawPhone || !rawPhone.startsWith('8')) {
+        state.editFormError = 'Nomor WhatsApp wajib diawali angka 8 (setelah kode negara +62).';
+        renderApp();
+        return;
+      }
+      if (rawPhone.length < 9 || rawPhone.length > 13) {
+        state.editFormError = 'Panjang nomor WhatsApp minimal 9 dan maksimal 13 digit angka.';
         renderApp();
         return;
       }
       const formattedPhone = rawPhone.startsWith('62') ? rawPhone : ('62' + rawPhone);
+
+      // Check if phone number is already used by another user
+      const isDuplicatePhone = state.users.some(other => {
+        if (String(other.id) === String(u.id)) return false;
+        const otherPhone = String(other.phone_number || other.phoneNumber || '').trim().replace(/\D/g, '');
+        const cleanOther = otherPhone.startsWith('62') ? otherPhone : ('62' + otherPhone.replace(/^0/, ''));
+        return cleanOther === formattedPhone;
+      });
+      if (isDuplicatePhone) {
+        state.editFormError = 'Nomor WhatsApp ini sudah digunakan oleh pengguna lain. Silakan gunakan nomor yang berbeda.';
+        renderApp();
+        return;
+      }
 
       // Validate Email
       if (!email || !email.includes('@')) {

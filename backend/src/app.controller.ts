@@ -1035,9 +1035,24 @@ export class AuthController implements OnModuleInit {
     if (isNaN(uid)) throw new BadRequestException('User ID tidak valid');
 
     if (dto.phoneNumber) {
+      let cleanPhone = dto.phoneNumber.trim().replace(/\D/g, '');
+      if (!cleanPhone.startsWith('62')) {
+        if (cleanPhone.startsWith('0')) cleanPhone = '62' + cleanPhone.substring(1);
+        else cleanPhone = '62' + cleanPhone;
+      }
+
+      // Check if phone number is already used by another user
+      const existingPhone = await this.dataSource.query(
+        `SELECT id, phone_number FROM auth_users WHERE (phone_number = $1 OR phone_number = $2 OR phone_number = $3) AND id != $4`,
+        [cleanPhone, cleanPhone.replace(/^62/, '0'), cleanPhone.replace(/^62/, ''), uid],
+      );
+      if (existingPhone.length > 0) {
+        throw new BadRequestException('Nomor WhatsApp ini sudah terdaftar dan digunakan oleh pengguna lain!');
+      }
+
       await this.dataSource.query(
         `UPDATE auth_users SET phone_number = $1 WHERE id = $2`,
-        [dto.phoneNumber, uid],
+        [cleanPhone, uid],
       );
     }
 
