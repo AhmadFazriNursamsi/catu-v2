@@ -245,8 +245,8 @@
             <div>
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3.5">
-                  <div class="w-12 h-12 rounded-xl bg-white p-1.5 shadow-lg border-2 border-amber-500 flex items-center justify-center">
-                    <img src="assets/images/logoCatu.png" alt="CATU Logo" class="h-full object-contain" />
+                  <div class="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0">
+                    <i data-lucide="church" class="w-6 h-6"></i>
                   </div>
                   <div>
                     <h1 class="text-xl font-extrabold tracking-wider text-white">CATU WEB PORTAL</h1>
@@ -300,7 +300,9 @@
           <div class="cross-bg lg:w-[46%] p-8 lg:p-14 flex items-center justify-center">
             <div class="w-full max-w-md bg-white rounded-3xl p-8 lg:p-10 shadow-2xl border border-slate-200">
               <div class="text-center mb-8">
-                <img src="assets/images/logoCatu.png" alt="CATU Logo" class="h-16 mx-auto mb-4 object-contain" />
+                <div class="w-14 h-14 rounded-2xl bg-slate-900 text-amber-400 border border-slate-800 flex items-center justify-center mx-auto mb-4 shadow-sm">
+                  <i data-lucide="church" class="w-7 h-7"></i>
+                </div>
                 <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Masuk Portal Admin</h2>
                 <p class="text-xs text-slate-500 mt-1">Masukkan kredensial Administrator untuk mengakses dashboard.</p>
               </div>
@@ -443,8 +445,8 @@
               ${isOpen ? `
                 <div class="p-5 flex items-center justify-between border-b border-slate-800">
                   <div class="flex items-center space-x-3">
-                    <div class="w-9 h-9 rounded-xl bg-white p-1 shadow border border-amber-500 flex items-center justify-center flex-shrink-0">
-                      <img src="assets/images/logoCatu.png" alt="CATU" class="h-full object-contain" />
+                    <div class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 text-amber-400 flex items-center justify-center flex-shrink-0">
+                      <i data-lucide="church" class="w-5 h-5"></i>
                     </div>
                     <div>
                       <h2 class="text-sm font-extrabold text-white tracking-wide">CATU ADMIN</h2>
@@ -457,8 +459,8 @@
                 </div>
               ` : `
                 <div class="p-3.5 flex flex-col items-center border-b border-slate-800 space-y-2">
-                  <div class="w-10 h-10 rounded-xl bg-white p-1 shadow border border-amber-500 flex items-center justify-center flex-shrink-0">
-                    <img src="assets/images/logoCatu.png" alt="CATU" class="h-full object-contain" />
+                  <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-amber-400 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="church" class="w-5 h-5"></i>
                   </div>
                   <button onclick="toggleSidebar()" class="p-1 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition" title="Buka Sidebar">
                     <i data-lucide="chevron-right" class="w-4 h-4"></i>
@@ -933,15 +935,8 @@
                   ` : umats.map(u => `
                     <tr class="hover:bg-amber-50/30 transition duration-150 group">
                       <td class="px-6 py-4">
-                        <div class="flex items-center space-x-3">
-                          <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-900 border border-blue-200/80 flex items-center justify-center font-black text-xs shadow-2xs">
-                            ${(u.full_name || 'U').charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p class="font-extrabold text-slate-900 text-xs">${u.full_name || 'Umat'}</p>
-                            <p class="text-[10.5px] text-slate-400 font-semibold truncate max-w-xs">${u.email || '-'}</p>
-                          </div>
-                        </div>
+                        <p class="font-extrabold text-slate-900 text-sm tracking-tight">${u.full_name || 'Umat'}</p>
+                        <p class="text-[11px] text-slate-400 font-semibold truncate max-w-xs mt-0.5">${u.email || '-'}</p>
                       </td>
                       <td class="px-6 py-4 font-bold text-slate-900">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
@@ -1674,16 +1669,9 @@
                     </tr>
                   ` : pendings.map(u => `
                     <tr class="hover:bg-amber-50/30 transition duration-150 group">
-                      <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">
-                        <div class="flex items-center space-x-3">
-                          <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 flex items-center justify-center font-black text-xs shadow-2xs">
-                            ${(u.full_name || 'U').charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p class="font-extrabold text-slate-900 text-xs">${u.full_name || 'Pengguna Baru'}</p>
-                            <p class="text-[10.5px] text-slate-400 font-semibold truncate max-w-xs">${u.email || '-'}</p>
-                          </div>
-                        </div>
+                      <td class="px-6 py-4">
+                        <p class="font-extrabold text-slate-900 text-sm tracking-tight">${u.full_name || 'Pengguna Baru'}</p>
+                        <p class="text-[11px] text-slate-400 font-semibold truncate max-w-xs mt-0.5">${u.email || '-'}</p>
                       </td>
                       <td class="px-6 py-4 font-bold text-slate-900">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
