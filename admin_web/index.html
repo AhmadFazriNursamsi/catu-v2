@@ -126,10 +126,24 @@
       orderCategoryFilter: 'ALL',
       
       umatSearch: '',
+      umatFilterParoki: '',
+      umatFilterLingkungan: '',
+
       pengurusSearch: '',
+      pengurusFilterPosition: '',
+      pengurusFilterParoki: '',
+
       romoParokiSearch: '',
+      romoParokiFilterPosition: '',
+      romoParokiFilterParoki: '',
+
       romoOrdoSearch: '',
+      romoOrdoFilterOrdo: '',
+      romoOrdoFilterPosition: '',
+
       approvalsSearch: '',
+      approvalsFilterRole: '',
+      approvalsFilterParoki: '',
 
       isLoading: false,
       loginLoading: false,
@@ -773,12 +787,36 @@
     }
 
     // ── Tab: Umat Katolik ──
+    // ── Tab: Umat Katolik ──
     function renderUmatTab() {
-      const q = state.umatSearch.toLowerCase();
+      const q = (state.umatSearch || '').toLowerCase().trim();
+      const hasFilter = state.umatSearch || state.umatFilterParoki || state.umatFilterLingkungan;
+
+      // Extract unique paroki & lingkungan for filter options
+      const allUmatUsers = state.users.filter(u => (u.role_code || u.roleCode || '').toUpperCase() === 'UMAT');
+      const parokiList = state.paroki?.length > 0 ? state.paroki : Array.from(new Set(allUmatUsers.map(u => u.paroki_name).filter(Boolean))).map(name => ({ id: name, name }));
+      const lingList = Array.from(new Set(
+        allUmatUsers
+          .filter(u => !state.umatFilterParoki || String(u.paroki_id) === String(state.umatFilterParoki) || u.paroki_name === state.umatFilterParoki)
+          .map(u => u.lingkungan_name)
+          .filter(Boolean)
+      )).sort();
+
       const umats = state.users.filter(u => {
         const role = (u.role_code || u.roleCode || '').toUpperCase();
         const status = (u.account_status || u.accountStatus || '').toUpperCase();
         if (role !== 'UMAT' || status !== 'APPROVED') return false;
+
+        if (state.umatFilterParoki) {
+          const matchPar = String(u.paroki_id) === String(state.umatFilterParoki) || (u.paroki_name === state.umatFilterParoki);
+          if (!matchPar) return false;
+        }
+
+        if (state.umatFilterLingkungan) {
+          const matchLing = String(u.lingkungan_id) === String(state.umatFilterLingkungan) || (u.lingkungan_name === state.umatFilterLingkungan);
+          if (!matchLing) return false;
+        }
+
         if (q) {
           const name = (u.full_name || u.fullName || '').toLowerCase();
           const email = (u.email || '').toLowerCase();
@@ -791,53 +829,134 @@
       });
 
       return `
-        <div class="space-y-6">
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
-            <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+        <div class="space-y-6 animate-fade-in">
+          <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+            <!-- Filter Toolbar Header -->
+            <div class="p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-50/90 via-white to-slate-50/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <!-- Search Input -->
               <div class="relative w-full max-w-md">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-                <input type="text" id="umatSearchInput" placeholder="Cari nama umat, email, no. WhatsApp, paroki, lingkungan..." value="${state.umatSearch}"
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="umatSearchInput" placeholder="Cari nama umat, email, no. WhatsApp, paroki..." value="${state.umatSearch}"
                   oninput="state.umatSearch = this.value; renderApp();"
-                  class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
+                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
+                ${state.umatSearch ? `
+                  <button onclick="state.umatSearch = ''; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5" title="Hapus Pencarian">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                  </button>
+                ` : ''}
+              </div>
+
+              <!-- Contextual Dropdown Filters -->
+              <div class="flex flex-wrap items-center gap-3">
+                <!-- Filter Paroki -->
+                <div class="relative">
+                  <select onchange="state.umatFilterParoki = this.value; renderApp();"
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs max-w-[210px] truncate">
+                    <option value="">⛪ Semua Paroki</option>
+                    ${parokiList.map(p => `
+                      <option value="${p.id || p.name}" ${String(state.umatFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>⛪ ${p.name}</option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                <!-- Filter Lingkungan -->
+                <div class="relative">
+                  <select onchange="state.umatFilterLingkungan = this.value; renderApp();"
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs max-w-[200px] truncate">
+                    <option value="">🏘️ Semua Lingkungan</option>
+                    ${lingList.map(l => `
+                      <option value="${l}" ${state.umatFilterLingkungan === l ? 'selected' : ''}>🏘️ ${l}</option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                <!-- Reset Filters Button -->
+                ${hasFilter ? `
+                  <button onclick="state.umatSearch = ''; state.umatFilterParoki = ''; state.umatFilterLingkungan = ''; renderApp();"
+                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition shadow-2xs">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span>Reset</span>
+                  </button>
+                ` : ''}
+
+                <!-- Counter Badge -->
+                <span class="px-3.5 py-1.5 rounded-full bg-blue-50 text-blue-950 border border-blue-200 text-xs font-black shadow-2xs whitespace-nowrap">
+                  ${umats.length} Umat Terdaftar
+                </span>
               </div>
             </div>
 
+            <!-- Table View -->
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
-                <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                <thead class="bg-gradient-to-r from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-600 font-black border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
                   <tr>
-                    <th class="px-6 py-3.5">NAMA LENGKAP UMAT</th>
-                    <th class="px-6 py-3.5">NO. WHATSAPP</th>
-                    <th class="px-6 py-3.5">PAROKI</th>
-                    <th class="px-6 py-3.5">LINGKUNGAN</th>
-                    <th class="px-6 py-3.5">STATUS</th>
-                    <th class="px-6 py-3.5 text-right">AKSI</th>
+                    <th class="px-6 py-4">NAMA LENGKAP UMAT</th>
+                    <th class="px-6 py-4">NO. WHATSAPP</th>
+                    <th class="px-6 py-4">PAROKI</th>
+                    <th class="px-6 py-4">LINGKUNGAN & WILAYAH</th>
+                    <th class="px-6 py-4 text-center">STATUS AKUN</th>
+                    <th class="px-6 py-4 text-right">AKSI</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                   ${umats.length === 0 ? `
-                    <tr><td colspan="6" class="text-center py-10 text-slate-400">Tidak ada data umat aktif ditemukan</td></tr>
-                  ` : umats.map(u => `
-                    <tr class="hover:bg-slate-50/80 transition">
-                      <td class="px-6 py-4">
-                        <p class="font-extrabold text-slate-900 text-sm">${u.full_name || 'Umat'}</p>
+                    <tr>
+                      <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+                          <i data-lucide="users" class="w-7 h-7"></i>
+                        </div>
+                        <p class="font-extrabold text-slate-700 text-sm">Tidak ada data umat yang sesuai filter</p>
+                        <p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau reset filter paroki dan lingkungan</p>
                       </td>
-                      <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
-                      <td class="px-6 py-4 font-bold text-slate-800">${u.paroki_name || u.kota_name || '-'}</td>
-                      <td class="px-6 py-4">${u.lingkungan_name || u.wilayah_name || '-'}</td>
+                    </tr>
+                  ` : umats.map(u => `
+                    <tr class="hover:bg-amber-50/30 transition duration-150 group">
                       <td class="px-6 py-4">
-                        <span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px]">AKTIF</span>
+                        <div class="flex items-center space-x-3">
+                          <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-900 border border-blue-200/80 flex items-center justify-center font-black text-xs shadow-2xs">
+                            ${(u.full_name || 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p class="font-extrabold text-slate-900 text-xs">${u.full_name || 'Umat'}</p>
+                            <p class="text-[10.5px] text-slate-400 font-semibold truncate max-w-xs">${u.email || '-'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 font-bold text-slate-900">
+                        <span class="inline-flex items-center space-x-1.5 text-xs">
+                          <i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-600"></i>
+                          <span>${u.phone_number}</span>
+                        </span>
+                      </td>
+                      <td class="px-6 py-4">
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-blue-50 text-blue-950 font-bold border border-blue-200 text-xs shadow-2xs">
+                          <i data-lucide="church" class="w-3.5 h-3.5 text-blue-700"></i>
+                          <span>${u.paroki_name || u.kota_name || '-'}</span>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4">
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-cyan-50 text-cyan-950 font-bold border border-cyan-200 text-xs shadow-2xs">
+                          <i data-lucide="home" class="w-3.5 h-3.5 text-cyan-700"></i>
+                          <span>${u.lingkungan_name || u.wilayah_name || '-'}</span>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 text-center">
+                        <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-200 font-black text-[11px] shadow-2xs">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                          <span>AKTIF</span>
+                        </span>
                       </td>
                       <td class="px-6 py-4 text-right">
                         <div class="inline-flex items-center justify-end space-x-2">
                           <button onclick="openEditUserModal('${u.id}')"
-                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
-                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 font-black border border-amber-200/90 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
+                            <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-600"></i>
                             <span>Edit</span>
                           </button>
                           <button onclick="viewUserProfileModal('${u.id}')"
-                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
-                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-950 font-black border border-blue-200 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
+                            <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-700"></i>
                             <span>Detail</span>
                           </button>
                         </div>
@@ -854,58 +973,143 @@
 
     // ── Tab: Pengurus Lingkungan ──
     function renderPengurusTab() {
-      const q = state.pengurusSearch.toLowerCase();
+      const q = (state.pengurusSearch || '').toLowerCase().trim();
+      const hasFilter = state.pengurusSearch || state.pengurusFilterPosition || state.pengurusFilterParoki;
+
+      // Extract unique positions & parokis for filter options
+      const allPengurusUsers = state.users.filter(u => (u.role_code || u.roleCode || '').toUpperCase() === 'PENGURUS_LINGKUNGAN');
+      const parokiList = state.paroki?.length > 0 ? state.paroki : Array.from(new Set(allPengurusUsers.map(u => u.paroki_name).filter(Boolean))).map(name => ({ id: name, name }));
+      const positionList = ['Ketua Lingkungan', 'Wakil Ketua', 'Sekretaris'];
+
       const list = state.users.filter(u => {
         const role = (u.role_code || u.roleCode || '').toUpperCase();
         const status = (u.account_status || u.accountStatus || '').toUpperCase();
         if (role !== 'PENGURUS_LINGKUNGAN' || status !== 'APPROVED') return false;
+
+        if (state.pengurusFilterPosition) {
+          if ((u.pengurus_position || '') !== state.pengurusFilterPosition) return false;
+        }
+
+        if (state.pengurusFilterParoki) {
+          const matchPar = String(u.paroki_id) === String(state.pengurusFilterParoki) || (u.paroki_name === state.pengurusFilterParoki);
+          if (!matchPar) return false;
+        }
+
         if (q) {
           const name = (u.full_name || u.fullName || '').toLowerCase();
           const email = (u.email || '').toLowerCase();
           const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
+          const pos = (u.pengurus_position || '').toLowerCase();
           const par = (u.paroki_name || u.parokiName || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !par.includes(q)) return false;
+          const ling = (u.lingkungan_name || '').toLowerCase();
+          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !pos.includes(q) && !par.includes(q) && !ling.includes(q)) return false;
         }
         return true;
       });
 
       return `
-        <div class="space-y-6">
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
-            <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+        <div class="space-y-6 animate-fade-in">
+          <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+            <!-- Filter Toolbar Header -->
+            <div class="p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-50/90 via-white to-slate-50/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <!-- Search Input -->
               <div class="relative w-full max-w-md">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" id="pengurusSearchInput" placeholder="Cari nama pengurus, email, jabatan, paroki..." value="${state.pengurusSearch}"
                   oninput="state.pengurusSearch = this.value; renderApp();"
-                  class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
+                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
+                ${state.pengurusSearch ? `
+                  <button onclick="state.pengurusSearch = ''; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5" title="Hapus Pencarian">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                  </button>
+                ` : ''}
+              </div>
+
+              <!-- Contextual Dropdown Filters -->
+              <div class="flex flex-wrap items-center gap-3">
+                <!-- Filter Jabatan -->
+                <div class="relative">
+                  <select onchange="state.pengurusFilterPosition = this.value; renderApp();"
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
+                    <option value="">🎖️ Semua Jabatan</option>
+                    ${positionList.map(pos => `
+                      <option value="${pos}" ${state.pengurusFilterPosition === pos ? 'selected' : ''}>🏅 ${pos}</option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                <!-- Filter Paroki -->
+                <div class="relative">
+                  <select onchange="state.pengurusFilterParoki = this.value; renderApp();"
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs max-w-[210px] truncate">
+                    <option value="">⛪ Semua Paroki</option>
+                    ${parokiList.map(p => `
+                      <option value="${p.id || p.name}" ${String(state.pengurusFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>⛪ ${p.name}</option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                <!-- Reset Filters Button -->
+                ${hasFilter ? `
+                  <button onclick="state.pengurusSearch = ''; state.pengurusFilterPosition = ''; state.pengurusFilterParoki = ''; renderApp();"
+                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition shadow-2xs">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span>Reset</span>
+                  </button>
+                ` : ''}
+
+                <!-- Counter Badge -->
+                <span class="px-3.5 py-1.5 rounded-full bg-indigo-50 text-indigo-950 border border-indigo-200 text-xs font-black shadow-2xs whitespace-nowrap">
+                  ${list.length} Pengurus Aktif
+                </span>
               </div>
             </div>
 
+            <!-- Table View -->
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
-                <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                <thead class="bg-gradient-to-r from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-600 font-black border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
                   <tr>
-                    <th class="px-6 py-3.5">NAMA PENGURUS</th>
-                    <th class="px-6 py-3.5">JABATAN</th>
-                    <th class="px-6 py-3.5">LINGKUNGAN & PAROKI</th>
-                    <th class="px-6 py-3.5">MASA JABATAN</th>
-                    <th class="px-6 py-3.5">NO. WHATSAPP</th>
-                    <th class="px-6 py-3.5 text-right">AKSI</th>
+                    <th class="px-6 py-4">NAMA PENGURUS</th>
+                    <th class="px-6 py-4">JABATAN</th>
+                    <th class="px-6 py-4">LINGKUNGAN & PAROKI</th>
+                    <th class="px-6 py-4">MASA JABATAN</th>
+                    <th class="px-6 py-4">NO. WHATSAPP</th>
+                    <th class="px-6 py-4 text-right">AKSI</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                   ${list.length === 0 ? `
-                    <tr><td colspan="6" class="text-center py-10 text-slate-400">Tidak ada data pengurus lingkungan aktif ditemukan</td></tr>
+                    <tr>
+                      <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+                          <i data-lucide="award" class="w-7 h-7"></i>
+                        </div>
+                        <p class="font-extrabold text-slate-700 text-sm">Tidak ada data pengurus lingkungan yang sesuai filter</p>
+                        <p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau reset filter jabatan dan paroki</p>
+                      </td>
+                    </tr>
                   ` : list.map(u => {
                     const startY = u.jabatan_start_year || (u.jabatan_start_date ? new Date(u.jabatan_start_date).getFullYear() : null);
                     const endY = u.jabatan_end_year || (u.jabatan_end_date ? new Date(u.jabatan_end_date).getFullYear() : null);
                     const periode = (startY && endY) ? `${startY} - ${endY}` : (startY ? `${startY} - Sekarang` : 'Aktif');
+                    const isLead = (u.pengurus_position || '').toLowerCase().includes('ketua') && !(u.pengurus_position || '').toLowerCase().includes('wakil');
                     return `
-                      <tr class="hover:bg-slate-50/80 transition">
-                        <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Pengurus'}</td>
+                      <tr class="hover:bg-amber-50/30 transition duration-150 group">
+                        <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">
+                          <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-xl ${isLead ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-indigo-50 text-indigo-900 border border-indigo-200'} flex items-center justify-center font-black text-xs shadow-2xs">
+                              ${isLead ? '👑' : (u.full_name || 'P').charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p class="font-extrabold text-slate-900 text-xs">${u.full_name || 'Pengurus'}</p>
+                              <p class="text-[10.5px] text-slate-400 font-semibold truncate max-w-xs">${u.email || '-'}</p>
+                            </div>
+                          </div>
+                        </td>
                         <td class="px-6 py-4">
-                          <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-indigo-50/90 text-indigo-950 border border-indigo-200/80 font-extrabold text-[11.5px] shadow-xs">
-                            <i data-lucide="award" class="w-3.5 h-3.5 text-indigo-600"></i>
+                          <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl ${isLead ? 'bg-amber-50 text-amber-950 border border-amber-300 font-black shadow-2xs' : 'bg-indigo-50 text-indigo-950 border border-indigo-200 font-extrabold'} text-xs">
+                            <i data-lucide="${isLead ? 'crown' : 'award'}" class="w-3.5 h-3.5 ${isLead ? 'text-amber-600' : 'text-indigo-600'}"></i>
                             <span>${u.pengurus_position || 'Ketua Lingkungan'}</span>
                           </span>
                         </td>
@@ -917,23 +1121,28 @@
                           </p>
                         </td>
                         <td class="px-6 py-4">
-                          <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50/90 text-amber-950 border border-amber-200/80 font-extrabold text-[11px] shadow-xs">
-                            <i data-lucide="calendar" class="w-3.5 h-3.5 text-amber-600"></i>
+                          <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-extrabold text-xs shadow-2xs">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-500"></i>
                             <span>${periode}</span>
                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                           </span>
                         </td>
-                        <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
+                        <td class="px-6 py-4 font-bold text-slate-900">
+                          <span class="inline-flex items-center space-x-1.5 text-xs">
+                            <i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            <span>${u.phone_number}</span>
+                          </span>
+                        </td>
                         <td class="px-6 py-4 text-right">
                           <div class="inline-flex items-center justify-end space-x-2">
                             <button onclick="openEditUserModal('${u.id}')"
-                              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
-                              <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 font-black border border-amber-200/90 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
+                              <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-600"></i>
                               <span>Edit</span>
                             </button>
                             <button onclick="viewUserProfileModal('${u.id}')"
-                              class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
-                              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                              class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-950 font-black border border-blue-200 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
+                              <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-700"></i>
                               <span>Detail</span>
                             </button>
                           </div>
@@ -951,71 +1160,173 @@
 
     // ── Tab: Romo Paroki ──
     function renderRomoParokiTab() {
-      const q = state.romoParokiSearch.toLowerCase();
+      const q = (state.romoParokiSearch || '').toLowerCase().trim();
+      const hasFilter = state.romoParokiSearch || state.romoParokiFilterPosition || state.romoParokiFilterParoki;
+
+      // Extract unique parokis for filter options
+      const allRomoParokiUsers = state.users.filter(u => (u.role_code || u.roleCode || '').toUpperCase() === 'ROMO_PAROKI');
+      const parokiList = state.paroki?.length > 0 ? state.paroki : Array.from(new Set(allRomoParokiUsers.map(u => u.paroki_name).filter(Boolean))).map(name => ({ id: name, name }));
+      const positionList = ['Kepala Romo Paroki', 'Romo Paroki'];
+
       const list = state.users.filter(u => {
         const role = (u.role_code || u.roleCode || '').toUpperCase();
         const status = (u.account_status || u.accountStatus || '').toUpperCase();
         if (role !== 'ROMO_PAROKI' || status !== 'APPROVED') return false;
+
+        if (state.romoParokiFilterPosition) {
+          if ((u.romo_position || '') !== state.romoParokiFilterPosition) return false;
+        }
+
+        if (state.romoParokiFilterParoki) {
+          const matchPar = String(u.paroki_id) === String(state.romoParokiFilterParoki) || (u.paroki_name === state.romoParokiFilterParoki);
+          if (!matchPar) return false;
+        }
+
         if (q) {
           const name = (u.full_name || u.fullName || '').toLowerCase();
           const email = (u.email || '').toLowerCase();
+          const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
+          const pos = (u.romo_position || '').toLowerCase();
           const par = (u.paroki_name || u.parokiName || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !par.includes(q)) return false;
+          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !pos.includes(q) && !par.includes(q)) return false;
         }
         return true;
       });
 
       return `
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
-          <div class="p-5 border-b border-slate-200">
-            <input type="text" id="romoParokiSearchInput" placeholder="Cari Romo Paroki..." value="${state.romoParokiSearch}"
-              oninput="state.romoParokiSearch = this.value; renderApp();"
-              class="w-full max-w-md pl-4 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-              <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
-                <tr>
-                  <th class="px-6 py-3.5">NAMA ROMO</th>
-                  <th class="px-6 py-3.5">PAROKI</th>
-                  <th class="px-6 py-3.5">JABATAN PASTORAL</th>
-                  <th class="px-6 py-3.5">NO. WHATSAPP</th>
-                  <th class="px-6 py-3.5 text-right">AKSI</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                ${list.map(u => {
-                  const isLead = (u.romo_position || '').toLowerCase().includes('kepala');
-                  return `
-                    <tr class="hover:bg-slate-50/80 transition">
-                      <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Romo Paroki'}</td>
-                      <td class="px-6 py-4 font-bold text-blue-950">${u.paroki_name || '-'}</td>
-                      <td class="px-6 py-4">
-                        <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg ${isLead ? 'bg-amber-50 text-amber-900 border border-amber-300 font-black shadow-2xs' : 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold'} text-[11px]">
-                          <i data-lucide="${isLead ? 'crown' : 'award'}" class="w-3.5 h-3.5 ${isLead ? 'text-amber-600' : 'text-emerald-600'}"></i>
-                          <span>${u.romo_position || 'Romo Paroki'}</span>
-                        </span>
-                      </td>
-                      <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
-                      <td class="px-6 py-4 text-right">
-                        <div class="inline-flex items-center justify-end space-x-2">
-                          <button onclick="openEditUserModal('${u.id}')"
-                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
-                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
-                            <span>Edit</span>
-                          </button>
-                          <button onclick="viewUserProfileModal('${u.id}')"
-                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
-                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                            <span>Detail</span>
-                          </button>
+        <div class="space-y-6 animate-fade-in">
+          <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+            <!-- Filter Toolbar Header -->
+            <div class="p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-50/90 via-white to-slate-50/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <!-- Search Input -->
+              <div class="relative w-full max-w-md">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="romoParokiSearchInput" placeholder="Cari Romo Paroki, nama, email, paroki..." value="${state.romoParokiSearch}"
+                  oninput="state.romoParokiSearch = this.value; renderApp();"
+                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
+                ${state.romoParokiSearch ? `
+                  <button onclick="state.romoParokiSearch = ''; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5" title="Hapus Pencarian">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                  </button>
+                ` : ''}
+              </div>
+
+              <!-- Contextual Dropdown Filters -->
+              <div class="flex flex-wrap items-center gap-3">
+                <!-- Filter Posisi Pastoral -->
+                <div class="relative">
+                  <select onchange="state.romoParokiFilterPosition = this.value; renderApp();"
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
+                    <option value="">⛪ Semua Posisi Pastoral</option>
+                    ${positionList.map(pos => `
+                      <option value="${pos}" ${state.romoParokiFilterPosition === pos ? 'selected' : ''}>⛪ ${pos}</option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                <!-- Filter Paroki -->
+                <div class="relative">
+                  <select onchange="state.romoParokiFilterParoki = this.value; renderApp();"
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs max-w-[210px] truncate">
+                    <option value="">🏛️ Semua Paroki</option>
+                    ${parokiList.map(p => `
+                      <option value="${p.id || p.name}" ${String(state.romoParokiFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>🏛️ ${p.name}</option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                <!-- Reset Filters Button -->
+                ${hasFilter ? `
+                  <button onclick="state.romoParokiSearch = ''; state.romoParokiFilterPosition = ''; state.romoParokiFilterParoki = ''; renderApp();"
+                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition shadow-2xs">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span>Reset</span>
+                  </button>
+                ` : ''}
+
+                <!-- Counter Badge -->
+                <span class="px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-950 border border-emerald-200 text-xs font-black shadow-2xs whitespace-nowrap">
+                  ${list.length} Romo Paroki
+                </span>
+              </div>
+            </div>
+
+            <!-- Table View -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-gradient-to-r from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-600 font-black border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
+                  <tr>
+                    <th class="px-6 py-4">NAMA ROMO</th>
+                    <th class="px-6 py-4">PAROKI</th>
+                    <th class="px-6 py-4">JABATAN PASTORAL</th>
+                    <th class="px-6 py-4">NO. WHATSAPP</th>
+                    <th class="px-6 py-4 text-right">AKSI</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                  ${list.length === 0 ? `
+                    <tr>
+                      <td colspan="5" class="text-center py-16 text-slate-400 space-y-3">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+                          <i data-lucide="church" class="w-7 h-7"></i>
                         </div>
+                        <p class="font-extrabold text-slate-700 text-sm">Tidak ada Romo Paroki yang sesuai filter</p>
+                        <p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau reset filter paroki dan posisi</p>
                       </td>
                     </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
+                  ` : list.map(u => {
+                    const isLead = (u.romo_position || '').toLowerCase().includes('kepala');
+                    return `
+                      <tr class="hover:bg-amber-50/30 transition duration-150 group">
+                        <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">
+                          <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-xl ${isLead ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-50 text-emerald-900 border border-emerald-200'} flex items-center justify-center font-black text-xs shadow-2xs">
+                              ${isLead ? '👑' : '⛪'}
+                            </div>
+                            <div>
+                              <p class="font-extrabold text-slate-900 text-xs">${u.full_name || 'Romo Paroki'}</p>
+                              <p class="text-[10.5px] text-slate-400 font-semibold truncate max-w-xs">${u.email || '-'}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="px-6 py-4">
+                          <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-blue-50 text-blue-950 font-bold border border-blue-200 text-xs shadow-2xs">
+                            <i data-lucide="landmark" class="w-3.5 h-3.5 text-blue-700"></i>
+                            <span>${u.paroki_name || '-'}</span>
+                          </div>
+                        </td>
+                        <td class="px-6 py-4">
+                          <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl ${isLead ? 'bg-amber-50 text-amber-950 border border-amber-300 font-black shadow-2xs' : 'bg-emerald-50 text-emerald-950 border border-emerald-200 font-extrabold'} text-xs">
+                            <i data-lucide="${isLead ? 'crown' : 'award'}" class="w-3.5 h-3.5 ${isLead ? 'text-amber-600' : 'text-emerald-600'}"></i>
+                            <span>${u.romo_position || 'Romo Paroki'}</span>
+                          </span>
+                        </td>
+                        <td class="px-6 py-4 font-bold text-slate-900">
+                          <span class="inline-flex items-center space-x-1.5 text-xs">
+                            <i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            <span>${u.phone_number}</span>
+                          </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                          <div class="inline-flex items-center justify-end space-x-2">
+                            <button onclick="openEditUserModal('${u.id}')"
+                              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 font-black border border-amber-200/90 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
+                              <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-600"></i>
+                              <span>Edit</span>
+                            </button>
+                            <button onclick="viewUserProfileModal('${u.id}')"
+                              class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-950 font-black border border-blue-200 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
+                              <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-700"></i>
+                              <span>Detail</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       `;
@@ -1023,71 +1334,173 @@
 
     // ── Tab: Romo Ordo ──
     function renderRomoOrdoTab() {
-      const q = state.romoOrdoSearch.toLowerCase();
+      const q = (state.romoOrdoSearch || '').toLowerCase().trim();
+      const hasFilter = state.romoOrdoSearch || state.romoOrdoFilterOrdo || state.romoOrdoFilterPosition;
+
+      // Extract unique ordo for filter options
+      const allRomoOrdoUsers = state.users.filter(u => (u.role_code || u.roleCode || '').toUpperCase() === 'ROMO_ORDO');
+      const ordoList = state.ordo?.length > 0 ? state.ordo : Array.from(new Set(allRomoOrdoUsers.map(u => u.ordo_name).filter(Boolean))).map(name => ({ id: name, name }));
+      const positionList = ['Ketua Romo Ordo', 'Romo Ordo'];
+
       const list = state.users.filter(u => {
         const role = (u.role_code || u.roleCode || '').toUpperCase();
         const status = (u.account_status || u.accountStatus || '').toUpperCase();
         if (role !== 'ROMO_ORDO' || status !== 'APPROVED') return false;
+
+        if (state.romoOrdoFilterOrdo) {
+          const matchOrdo = String(u.ordo_id) === String(state.romoOrdoFilterOrdo) || (u.ordo_name === state.romoOrdoFilterOrdo);
+          if (!matchOrdo) return false;
+        }
+
+        if (state.romoOrdoFilterPosition) {
+          if ((u.romo_position || '') !== state.romoOrdoFilterPosition) return false;
+        }
+
         if (q) {
           const name = (u.full_name || u.fullName || '').toLowerCase();
           const email = (u.email || '').toLowerCase();
+          const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
+          const pos = (u.romo_position || '').toLowerCase();
           const ordo = (u.ordo_name || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !ordo.includes(q)) return false;
+          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !pos.includes(q) && !ordo.includes(q)) return false;
         }
         return true;
       });
 
       return `
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
-          <div class="p-5 border-b border-slate-200">
-            <input type="text" id="romoOrdoSearchInput" placeholder="Cari Romo Ordo..." value="${state.romoOrdoSearch}"
-              oninput="state.romoOrdoSearch = this.value; renderApp();"
-              class="w-full max-w-md pl-4 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-              <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
-                <tr>
-                  <th class="px-6 py-3.5">NAMA ROMO</th>
-                  <th class="px-6 py-3.5">ORDO</th>
-                  <th class="px-6 py-3.5">JABATAN STRUKTUR</th>
-                  <th class="px-6 py-3.5">NO. WHATSAPP</th>
-                  <th class="px-6 py-3.5 text-right">AKSI</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                ${list.map(u => {
-                  const isLead = (u.romo_position || '').toLowerCase().includes('ketua');
-                  return `
-                    <tr class="hover:bg-slate-50/80 transition">
-                      <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Romo Ordo'}</td>
-                      <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-200 font-bold text-[11px]">${u.ordo_name || 'Ordo Religius'}</span></td>
-                      <td class="px-6 py-4">
-                        <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg ${isLead ? 'bg-amber-50 text-amber-900 border border-amber-300 font-black shadow-2xs' : 'bg-slate-100 text-slate-700 border border-slate-200 font-bold'} text-[11px]">
-                          <i data-lucide="${isLead ? 'crown' : 'award'}" class="w-3.5 h-3.5 ${isLead ? 'text-amber-600' : 'text-slate-500'}"></i>
-                          <span>${u.romo_position || 'Romo Ordo'}</span>
-                        </span>
-                      </td>
-                      <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
-                      <td class="px-6 py-4 text-right">
-                        <div class="inline-flex items-center justify-end space-x-2">
-                          <button onclick="openEditUserModal('${u.id}')"
-                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
-                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
-                            <span>Edit</span>
-                          </button>
-                          <button onclick="viewUserProfileModal('${u.id}')"
-                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
-                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                            <span>Detail</span>
-                          </button>
+        <div class="space-y-6 animate-fade-in">
+          <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+            <!-- Filter Toolbar Header -->
+            <div class="p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-50/90 via-white to-slate-50/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <!-- Search Input -->
+              <div class="relative w-full max-w-md">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="romoOrdoSearchInput" placeholder="Cari Romo Ordo, nama, email, ordo..." value="${state.romoOrdoSearch}"
+                  oninput="state.romoOrdoSearch = this.value; renderApp();"
+                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
+                ${state.romoOrdoSearch ? `
+                  <button onclick="state.romoOrdoSearch = ''; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5" title="Hapus Pencarian">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                  </button>
+                ` : ''}
+              </div>
+
+              <!-- Contextual Dropdown Filters -->
+              <div class="flex flex-wrap items-center gap-3">
+                <!-- Filter Ordo Religius -->
+                <div class="relative">
+                  <select onchange="state.romoOrdoFilterOrdo = this.value; renderApp();"
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs max-w-[210px] truncate">
+                    <option value="">✝️ Semua Ordo Religius</option>
+                    ${ordoList.map(o => `
+                      <option value="${o.id || o.name}" ${String(state.romoOrdoFilterOrdo) === String(o.id || o.name) ? 'selected' : ''}>✝️ ${o.name}</option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                <!-- Filter Jabatan Ordo -->
+                <div class="relative">
+                  <select onchange="state.romoOrdoFilterPosition = this.value; renderApp();"
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
+                    <option value="">🎖️ Semua Jabatan Ordo</option>
+                    ${positionList.map(pos => `
+                      <option value="${pos}" ${state.romoOrdoFilterPosition === pos ? 'selected' : ''}>🏅 ${pos}</option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                <!-- Reset Filters Button -->
+                ${hasFilter ? `
+                  <button onclick="state.romoOrdoSearch = ''; state.romoOrdoFilterOrdo = ''; state.romoOrdoFilterPosition = ''; renderApp();"
+                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition shadow-2xs">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span>Reset</span>
+                  </button>
+                ` : ''}
+
+                <!-- Counter Badge -->
+                <span class="px-3.5 py-1.5 rounded-full bg-purple-50 text-purple-950 border border-purple-200 text-xs font-black shadow-2xs whitespace-nowrap">
+                  ${list.length} Romo Ordo
+                </span>
+              </div>
+            </div>
+
+            <!-- Table View -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-gradient-to-r from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-600 font-black border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
+                  <tr>
+                    <th class="px-6 py-4">NAMA ROMO</th>
+                    <th class="px-6 py-4">ORDO RELIGIUS</th>
+                    <th class="px-6 py-4">JABATAN STRUKTUR</th>
+                    <th class="px-6 py-4">NO. WHATSAPP</th>
+                    <th class="px-6 py-4 text-right">AKSI</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                  ${list.length === 0 ? `
+                    <tr>
+                      <td colspan="5" class="text-center py-16 text-slate-400 space-y-3">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+                          <i data-lucide="cross" class="w-7 h-7"></i>
                         </div>
+                        <p class="font-extrabold text-slate-700 text-sm">Tidak ada Romo Ordo yang sesuai filter</p>
+                        <p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau reset filter ordo dan jabatan</p>
                       </td>
                     </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
+                  ` : list.map(u => {
+                    const isLead = (u.romo_position || '').toLowerCase().includes('ketua');
+                    return `
+                      <tr class="hover:bg-amber-50/30 transition duration-150 group">
+                        <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">
+                          <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-xl ${isLead ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-purple-50 text-purple-900 border border-purple-200'} flex items-center justify-center font-black text-xs shadow-2xs">
+                              ${isLead ? '👑' : '✝️'}
+                            </div>
+                            <div>
+                              <p class="font-extrabold text-slate-900 text-xs">${u.full_name || 'Romo Ordo'}</p>
+                              <p class="text-[10.5px] text-slate-400 font-semibold truncate max-w-xs">${u.email || '-'}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="px-6 py-4">
+                          <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-50 text-purple-950 border border-purple-200 font-extrabold text-xs shadow-2xs">
+                            <i data-lucide="cross" class="w-3.5 h-3.5 text-purple-700"></i>
+                            <span>${u.ordo_name || 'Ordo Religius'}</span>
+                          </span>
+                        </td>
+                        <td class="px-6 py-4">
+                          <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl ${isLead ? 'bg-amber-50 text-amber-950 border border-amber-300 font-black shadow-2xs' : 'bg-slate-100 text-slate-700 border border-slate-200 font-extrabold'} text-xs">
+                            <i data-lucide="${isLead ? 'crown' : 'award'}" class="w-3.5 h-3.5 ${isLead ? 'text-amber-600' : 'text-slate-500'}"></i>
+                            <span>${u.romo_position || 'Romo Ordo'}</span>
+                          </span>
+                        </td>
+                        <td class="px-6 py-4 font-bold text-slate-900">
+                          <span class="inline-flex items-center space-x-1.5 text-xs">
+                            <i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            <span>${u.phone_number}</span>
+                          </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                          <div class="inline-flex items-center justify-end space-x-2">
+                            <button onclick="openEditUserModal('${u.id}')"
+                              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 font-black border border-amber-200/90 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
+                              <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-600"></i>
+                              <span>Edit</span>
+                            </button>
+                            <button onclick="viewUserProfileModal('${u.id}')"
+                              class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-950 font-black border border-blue-200 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
+                              <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-700"></i>
+                              <span>Detail</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       `;
@@ -1095,63 +1508,179 @@
 
     // ── Tab: Approvals ──
     function renderApprovalsTab() {
-      const q = state.approvalsSearch.toLowerCase();
+      const q = (state.approvalsSearch || '').toLowerCase().trim();
+      const hasFilter = state.approvalsSearch || state.approvalsFilterRole || state.approvalsFilterParoki;
+
+      // Extract unique parokis for filter options
+      const allPendingUsers = state.users.filter(u => (u.account_status || u.accountStatus || '').toUpperCase() === 'PENDING_APPROVAL');
+      const parokiList = state.paroki?.length > 0 ? state.paroki : Array.from(new Set(allPendingUsers.map(u => u.paroki_name).filter(Boolean))).map(name => ({ id: name, name }));
+      const roleList = [
+        { code: 'UMAT', name: 'Umat Katolik' },
+        { code: 'PENGURUS_LINGKUNGAN', name: 'Pengurus Lingkungan' },
+        { code: 'ROMO_PAROKI', name: 'Romo Paroki' },
+        { code: 'ROMO_ORDO', name: 'Romo Ordo' }
+      ];
+
       const pendings = state.users.filter(u => {
         const status = (u.account_status || u.accountStatus || '').toUpperCase();
         if (status !== 'PENDING_APPROVAL') return false;
+
+        if (state.approvalsFilterRole) {
+          const role = (u.role_code || u.roleCode || '').toUpperCase();
+          if (role !== state.approvalsFilterRole) return false;
+        }
+
+        if (state.approvalsFilterParoki) {
+          const matchPar = String(u.paroki_id) === String(state.approvalsFilterParoki) || (u.paroki_name === state.approvalsFilterParoki);
+          if (!matchPar) return false;
+        }
+
         if (q) {
           const name = (u.full_name || u.fullName || '').toLowerCase();
           const email = (u.email || '').toLowerCase();
           const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !phone.includes(q)) return false;
+          const par = (u.paroki_name || u.kota_name || '').toLowerCase();
+          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !par.includes(q)) return false;
         }
         return true;
       });
 
       return `
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
-          <div class="p-5 border-b border-slate-200 flex items-center justify-between">
-            <input type="text" id="approvalsSearchInput" placeholder="Cari pendaftaran..." value="${state.approvalsSearch}"
-              oninput="state.approvalsSearch = this.value; renderApp();"
-              class="w-full max-w-md pl-4 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
-            <span class="text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-              ${pendings.length} Pendaftaran Menunggu Persetujuan
-            </span>
-          </div>
+        <div class="space-y-6 animate-fade-in">
+          <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+            <!-- Filter Toolbar Header -->
+            <div class="p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-50/90 via-white to-slate-50/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <!-- Search Input -->
+              <div class="relative w-full max-w-md">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="approvalsSearchInput" placeholder="Cari pemohon, nama, email, nomor HP..." value="${state.approvalsSearch}"
+                  oninput="state.approvalsSearch = this.value; renderApp();"
+                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
+                ${state.approvalsSearch ? `
+                  <button onclick="state.approvalsSearch = ''; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5" title="Hapus Pencarian">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                  </button>
+                ` : ''}
+              </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-              <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
-                <tr>
-                  <th class="px-6 py-3.5">PEMOHON AKUN</th>
-                  <th class="px-6 py-3.5">NO. WHATSAPP</th>
-                  <th class="px-6 py-3.5">PERAN DIAJUKAN</th>
-                  <th class="px-6 py-3.5">PAROKI</th>
-                  <th class="px-6 py-3.5 text-right">AKSI VERIFIKASI</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                ${pendings.length === 0 ? `
-                  <tr><td colspan="5" class="text-center py-12 text-slate-400">
-                    <i data-lucide="check-circle-2" class="w-10 h-10 mx-auto mb-2 text-emerald-500 opacity-60"></i>
-                    <p class="font-bold text-slate-700">Semua pendaftaran telah diverifikasi</p>
-                    <p class="text-xs text-slate-400">Tidak ada antrian persetujuan akun baru saat ini.</p>
-                  </td></tr>
-                ` : pendings.map(u => `
-                  <tr class="hover:bg-slate-50/80 transition">
-                    <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Pengguna Baru'}</td>
-                    <td class="px-6 py-4 font-semibold">${u.phone_number}</td>
-                    <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-950 border border-blue-200 font-bold text-[11px]">${u.role_name || u.role_code}</span></td>
-                    <td class="px-6 py-4">${u.paroki_name || u.kota_name || '-'}</td>
-                    <td class="px-6 py-4 text-right">
-                      <button onclick="approveUserAction('${u.id}', 'APPROVED')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold mr-1">Setujui</button>
-                      <button onclick="approveUserAction('${u.id}', 'REJECTED')" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white font-bold mr-1">Tolak</button>
-                      <button onclick="openEditUserModal('${u.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold">Edit</button>
-                    </td>
+              <!-- Contextual Dropdown Filters -->
+              <div class="flex flex-wrap items-center gap-3">
+                <!-- Filter Role / Jenis Akun -->
+                <div class="relative">
+                  <select onchange="state.approvalsFilterRole = this.value; renderApp();"
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
+                    <option value="">🛡️ Semua Peran Akun</option>
+                    ${roleList.map(r => `
+                      <option value="${r.code}" ${state.approvalsFilterRole === r.code ? 'selected' : ''}>🛡️ ${r.name}</option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                <!-- Filter Paroki -->
+                <div class="relative">
+                  <select onchange="state.approvalsFilterParoki = this.value; renderApp();"
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs max-w-[210px] truncate">
+                    <option value="">⛪ Semua Paroki</option>
+                    ${parokiList.map(p => `
+                      <option value="${p.id || p.name}" ${String(state.approvalsFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>⛪ ${p.name}</option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                <!-- Reset Filters Button -->
+                ${hasFilter ? `
+                  <button onclick="state.approvalsSearch = ''; state.approvalsFilterRole = ''; state.approvalsFilterParoki = ''; renderApp();"
+                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition shadow-2xs">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span>Reset</span>
+                  </button>
+                ` : ''}
+
+                <!-- Counter Badge -->
+                <span class="px-3.5 py-1.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-xs font-black shadow-2xs whitespace-nowrap">
+                  ${pendings.length} Pendaftaran Menunggu
+                </span>
+              </div>
+            </div>
+
+            <!-- Table View -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-gradient-to-r from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-600 font-black border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
+                  <tr>
+                    <th class="px-6 py-4">PEMOHON AKUN</th>
+                    <th class="px-6 py-4">NO. WHATSAPP</th>
+                    <th class="px-6 py-4">PERAN DIAJUKAN</th>
+                    <th class="px-6 py-4">PAROKI & DOMISILI</th>
+                    <th class="px-6 py-4 text-right">AKSI VERIFIKASI</th>
                   </tr>
-                `).join('')}
-              </tbody>
-            </table>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                  ${pendings.length === 0 ? `
+                    <tr>
+                      <td colspan="5" class="text-center py-16 text-slate-400 space-y-3">
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto">
+                          <i data-lucide="check-circle-2" class="w-7 h-7"></i>
+                        </div>
+                        <p class="font-extrabold text-slate-700 text-sm">Semua pendaftaran telah diverifikasi</p>
+                        <p class="text-xs text-slate-400">Tidak ada antrian persetujuan akun yang sesuai filter.</p>
+                      </td>
+                    </tr>
+                  ` : pendings.map(u => `
+                    <tr class="hover:bg-amber-50/30 transition duration-150 group">
+                      <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">
+                        <div class="flex items-center space-x-3">
+                          <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 flex items-center justify-center font-black text-xs shadow-2xs">
+                            ${(u.full_name || 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p class="font-extrabold text-slate-900 text-xs">${u.full_name || 'Pengguna Baru'}</p>
+                            <p class="text-[10.5px] text-slate-400 font-semibold truncate max-w-xs">${u.email || '-'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 font-bold text-slate-900">
+                        <span class="inline-flex items-center space-x-1.5 text-xs">
+                          <i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-600"></i>
+                          <span>${u.phone_number}</span>
+                        </span>
+                      </td>
+                      <td class="px-6 py-4">
+                        <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-950 border border-blue-200 font-extrabold text-xs shadow-2xs">
+                          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-blue-700"></i>
+                          <span>${u.role_name || u.role_code}</span>
+                        </span>
+                      </td>
+                      <td class="px-6 py-4">
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-50 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
+                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-500"></i>
+                          <span>${u.paroki_name || u.kota_name || '-'}</span>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 text-right">
+                        <div class="inline-flex items-center justify-end space-x-2">
+                          <button onclick="approveUserAction('${u.id}', 'APPROVED')" 
+                            class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center space-x-1 shadow-md shadow-emerald-600/20 transition transform hover:-translate-y-0.5 cursor-pointer">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                            <span>Setujui</span>
+                          </button>
+                          <button onclick="approveUserAction('${u.id}', 'REJECTED')" 
+                            class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs flex items-center space-x-1 shadow-md shadow-rose-600/20 transition transform hover:-translate-y-0.5 cursor-pointer">
+                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            <span>Tolak</span>
+                          </button>
+                          <button onclick="openEditUserModal('${u.id}')" 
+                            class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center space-x-1 transition shadow-2xs">
+                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                            <span>Edit</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       `;
@@ -3152,7 +3681,7 @@
     // ══════════════════════════════════════════════════════════════════════════
     async function loadDashboardData() {
       try {
-        const [anRes, ordRes, usrRes, provRes, kkRes, kRes, pRes, oRes, scRes] = await Promise.all([
+        const [anRes, ordRes, usrRes, provRes, kkRes, kRes, pRes, oRes, scRes, rRes, posRes] = await Promise.all([
           fetch(`${API_BASE}/auth/admin/analytics`),
           fetch(`${API_BASE}/orders`),
           fetch(`${API_BASE}/auth/admin/users`),
@@ -3177,8 +3706,8 @@
         state.paroki = await pRes.json();
         state.ordo = await oRes.json();
         state.serviceCategories = await scRes.json();
-        state.roles = await (await fetch(`${API_BASE}/master/roles`)).json();
-        state.positions = await (await fetch(`${API_BASE}/master/positions`)).json();
+        state.roles = await rRes.json();
+        state.positions = await posRes.json();
 
         // Also fetch initial master list for active subtab
         await loadMasterData(state.masterSubTab || 'paroki');
