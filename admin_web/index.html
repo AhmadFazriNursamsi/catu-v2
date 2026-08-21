@@ -72,7 +72,7 @@
   </div>
 
   <!-- Agentation Pins Layer Container -->
-  <div id="agentation-pins-layer" class="fixed inset-0 pointer-events-none z-[9992]"></div>
+  <div id="agentation-pins-layer" class="fixed inset-0 pointer-events-none z-[99992]"></div>
 
   <script>
     // Config & State
@@ -99,6 +99,8 @@
       kabupatenKota: [],
       keuskupan: [],
       paroki: [],
+      wilayah: [],
+      lingkungan: [],
       ordo: [],
       masterSubTab: 'paroki',
       
@@ -125,6 +127,7 @@
       activeUserProfile: null,
       activeEditUser: null,
       isSavingProfile: false,
+      editFormError: '',
 
       // 🎯 Agentation Visual Feedback System State
       agentation: {
@@ -132,9 +135,9 @@
         expanded: false,
         showDrawer: false,
         annotations: rawStoredAnnotations,
-        pendingPin: null, // { x, y, selector, tag, text }
+        pendingPin: null,
         activePinId: null,
-        selectedCategory: 'BUG', // BUG, POLISH, FEATURE, UX
+        selectedCategory: 'BUG',
       }
     };
 
@@ -155,12 +158,11 @@
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // 1. SPLIT-SCREEN LUXURY LOGIN PAGE
+    // 1. LOGIN PAGE
     // ══════════════════════════════════════════════════════════════════════════
     function renderLoginPage() {
       return `
         <div class="min-h-full flex flex-col lg:flex-row">
-          <!-- Sisi Kiri: Hero Section (54%) -->
           <div class="church-bg lg:w-[54%] p-8 lg:p-14 flex flex-col justify-between text-white relative">
             <div>
               <div class="flex items-center justify-between">
@@ -208,16 +210,6 @@
                     <p class="text-xs text-slate-300">Verifikasi pendaftaran Umat, Romo, dan Pengurus Lingkungan dengan satu klik.</p>
                   </div>
                 </div>
-
-                <div class="flex items-start space-x-3.5 p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
-                  <div class="p-2 rounded-lg bg-blue-500/20 text-blue-400">
-                    <i data-lucide="message-square" class="w-5 h-5"></i>
-                  </div>
-                  <div>
-                    <h3 class="text-sm font-bold text-white">Monitoring Group Chat Pelayanan</h3>
-                    <p class="text-xs text-slate-300">Pemantauan obrolan grup WhatsApp-style antara Umat, Romo, dan Pengurus.</p>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -227,7 +219,6 @@
             </div>
           </div>
 
-          <!-- Sisi Kanan: Clean Admin Form Card (46%) -->
           <div class="cross-bg lg:w-[46%] p-8 lg:p-14 flex items-center justify-center">
             <div class="w-full max-w-md bg-white rounded-3xl p-8 lg:p-10 shadow-2xl border border-slate-200">
               <div class="text-center mb-8">
@@ -283,11 +274,6 @@
                   </button>
                 </div>
               </form>
-
-              <div class="mt-6 p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 text-[11.5px] text-blue-900 flex items-start space-x-2">
-                <i data-lucide="info" class="w-4 h-4 flex-shrink-0 text-blue-700 mt-0.5"></i>
-                <p><strong>Khusus Administrator:</strong> Pengguna selain role Admin tidak dapat login di web. Umat & Romo silakan masuk via Aplikasi Mobile CATU.</p>
-              </div>
             </div>
           </div>
         </div>
@@ -340,7 +326,7 @@
               renderApp();
             }
           } catch (err) {
-            state.loginError = `Gagal menghubungi server backend (${API_BASE}). Pastikan service backend aktif.`;
+            state.loginError = `Gagal menghubungi server backend (${API_BASE}).`;
             state.loginLoading = false;
             renderApp();
           }
@@ -349,7 +335,7 @@
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // 2. DASHBOARD MAIN LAYOUT & ENHANCED SIDEBAR
+    // 2. DASHBOARD MAIN LAYOUT & SIDEBAR
     // ══════════════════════════════════════════════════════════════════════════
     function renderDashboardLayout() {
       const adminName = state.currentUser?.fullName || state.currentUser?.full_name || 'Super Admin CATU';
@@ -376,7 +362,6 @@
               </div>
 
               <nav class="p-3 space-y-4">
-                <!-- Section 1: Dashboard -->
                 <div>
                   <p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Utama</p>
                   <div class="space-y-1">
@@ -385,7 +370,6 @@
                   </div>
                 </div>
 
-                <!-- Section 2: Stakeholders Aktif -->
                 <div>
                   <p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Pengguna Aktif</p>
                   <div class="space-y-1">
@@ -396,7 +380,6 @@
                   </div>
                 </div>
 
-                <!-- Section 3: Approvals & Data -->
                 <div>
                   <p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Tata Kelola & Data</p>
                   <div class="space-y-1">
@@ -410,7 +393,6 @@
             </div>
 
             <div class="p-4 border-t border-slate-800 space-y-2">
-              <!-- Agentation Quick Launch Button in Sidebar -->
               <button onclick="toggleAgentationMode()"
                 class="w-full py-2.5 px-3 rounded-xl ${state.agentation.enabled ? 'bg-amber-500 text-slate-950 font-black ring-2 ring-amber-300' : 'bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold'} text-xs flex items-center justify-between transition shadow">
                 <div class="flex items-center space-x-2">
@@ -431,7 +413,6 @@
 
           <!-- Main Content View -->
           <div class="flex-1 flex flex-col overflow-hidden bg-slate-100">
-            <!-- Top Header -->
             <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between flex-shrink-0">
               <div>
                 <p class="text-xs font-semibold text-slate-500">Admin Portal / <span class="text-blue-950 font-bold capitalize">${state.currentTab.replace('_', ' ')}</span></p>
@@ -439,13 +420,12 @@
               </div>
 
               <div class="flex items-center space-x-4">
-                <!-- Agentation Status Badge -->
                 <button onclick="toggleAgentationMode()"
                   class="flex items-center px-3 py-1.5 rounded-full text-xs font-bold transition ${
                     state.agentation.enabled ? 'bg-amber-500 text-slate-950 ring-2 ring-amber-300' : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'
                   }">
                   <span class="w-2 h-2 rounded-full ${state.agentation.enabled ? 'bg-slate-950 animate-ping' : 'bg-amber-500'} mr-2"></span>
-                  ${state.agentation.enabled ? '🎯 Agentation Active (Klik Elemen UI)' : '🎯 Mode Revisi UI'}
+                  ${state.agentation.enabled ? '🎯 Agentation Aktif' : '🎯 Mode Revisi UI'}
                 </button>
 
                 <div class="flex items-center px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800">
@@ -469,17 +449,13 @@
               </div>
             </header>
 
-            <!-- Scrollable Tab Content -->
             <main class="flex-1 overflow-y-auto p-8 custom-scrollbar relative" id="main-content-scroll">
               ${renderActiveTab()}
             </main>
           </div>
         </div>
 
-        <!-- 🎯 AGENTATION FLOATING TOOLBAR -->
         ${renderAgentationToolbar()}
-
-        <!-- Modals -->
         ${state.activeOrderDetail ? renderOrderDetailModal() : ''}
         ${state.activeChatOrder ? renderChatModal() : ''}
         ${state.activeUserProfile ? renderUserProfileModal() : ''}
@@ -571,111 +547,48 @@
 
       return `
         <div class="space-y-8">
-          <!-- 4 Stat Cards -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition" onclick="setTab('orders')">
               <div class="flex items-center justify-between mb-4">
-                <div class="p-3 rounded-xl bg-blue-50 text-blue-950">
-                  <i data-lucide="clipboard-list" class="w-6 h-6"></i>
-                </div>
+                <div class="p-3 rounded-xl bg-blue-50 text-blue-950"><i data-lucide="clipboard-list" class="w-6 h-6"></i></div>
                 <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">${orders.pending || 0} Menunggu</span>
               </div>
               <h3 class="text-2xl font-extrabold text-slate-900">${orders.total || state.orders.length}</h3>
               <p class="text-xs font-bold text-slate-600">Total Permintaan Pelayanan</p>
-              <p class="text-[11px] text-slate-400 mt-1">${orders.confirmed || 0} Aktif • ${orders.done || 0} Selesai</p>
             </div>
 
             <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition" onclick="setTab('umat')">
               <div class="flex items-center justify-between mb-4">
-                <div class="p-3 rounded-xl bg-emerald-50 text-emerald-700">
-                  <i data-lucide="users" class="w-6 h-6"></i>
-                </div>
+                <div class="p-3 rounded-xl bg-emerald-50 text-emerald-700"><i data-lucide="users" class="w-6 h-6"></i></div>
                 <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">${users.total_umat || 0} Umat</span>
               </div>
               <h3 class="text-2xl font-extrabold text-slate-900">${users.total || state.users.length}</h3>
               <p class="text-xs font-bold text-slate-600">Total Pengguna Terdaftar</p>
-              <p class="text-[11px] text-slate-400 mt-1">${users.pending_approvals || 0} Menunggu Persetujuan</p>
             </div>
 
             <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition" onclick="setTab('romo_paroki')">
               <div class="flex items-center justify-between mb-4">
-                <div class="p-3 rounded-xl bg-purple-50 text-purple-700">
-                  <i data-lucide="church" class="w-6 h-6"></i>
-                </div>
+                <div class="p-3 rounded-xl bg-purple-50 text-purple-700"><i data-lucide="church" class="w-6 h-6"></i></div>
                 <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200">Romo Pelayan</span>
               </div>
               <h3 class="text-2xl font-extrabold text-slate-900">${(parseInt(users.total_romo_paroki || 0) + parseInt(users.total_romo_ordo || 0))}</h3>
               <p class="text-xs font-bold text-slate-600">Total Romo Paroki & Ordo</p>
-              <p class="text-[11px] text-slate-400 mt-1">${users.total_romo_paroki || 0} Paroki • ${users.total_romo_ordo || 0} Ordo</p>
             </div>
 
             <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
               <div class="flex items-center justify-between mb-4">
-                <div class="p-3 rounded-xl bg-cyan-50 text-cyan-700">
-                  <i data-lucide="server" class="w-6 h-6"></i>
-                </div>
+                <div class="p-3 rounded-xl bg-cyan-50 text-cyan-700"><i data-lucide="server" class="w-6 h-6"></i></div>
                 <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">100% OK</span>
               </div>
               <h3 class="text-2xl font-extrabold text-slate-900">Online</h3>
               <p class="text-xs font-bold text-slate-600">Backend & PostgreSQL</p>
-              <p class="text-[11px] text-slate-400 mt-1">NestJS v10 • Port 3005</p>
-            </div>
-          </div>
-
-          <!-- Distribution & Recent Feed -->
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-              <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center">
-                <i data-lucide="pie-chart" class="w-4 h-4 mr-2 text-blue-950"></i>
-                Distribusi Kategori Pelayanan
-              </h3>
-              <div class="space-y-4">
-                ${categories.map(c => {
-                  const count = parseInt(c.count || 0);
-                  const total = parseInt(orders.total || 1) || 1;
-                  const pct = Math.round((count / total) * 100);
-                  return `
-                    <div>
-                      <div class="flex justify-between text-xs font-semibold mb-1">
-                        <span>${c.name}</span>
-                        <span class="font-bold text-blue-950">${count} (${pct}%)</span>
-                      </div>
-                      <div class="w-full bg-slate-100 rounded-full h-2">
-                        <div class="bg-blue-950 h-2 rounded-full" style="width: ${pct}%"></div>
-                      </div>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            </div>
-
-            <div class="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-              <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-bold text-slate-900 flex items-center">
-                  <i data-lucide="history" class="w-4 h-4 mr-2 text-blue-950"></i>
-                  Aktivitas Pelayanan Terbaru
-                </h3>
-                <button onclick="setTab('orders')" class="text-xs font-bold text-blue-950 hover:underline">Lihat Semua →</button>
-              </div>
-
-              <div class="space-y-3">
-                ${recentOrders.map(o => `
-                  <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-                    <div>
-                      <p class="font-bold text-slate-900">${o.order_number || o.orderNumber} • <span class="text-blue-950">${o.category_name || o.categoryName}</span></p>
-                      <p class="text-slate-500">Pemohon: ${o.pemohon_name || o.pemohonName}</p>
-                    </div>
-                    <span class="px-2.5 py-1 rounded-md font-bold ${getStatusBadgeClass(o.status)}">${o.status}</span>
-                  </div>
-                `).join('')}
-              </div>
             </div>
           </div>
         </div>
       `;
     }
 
-    // ── Tab 1: Orders ──
+    // ── Tab: Orders ──
     function renderOrdersTab() {
       const q = state.orderSearch.toLowerCase();
       const filtered = state.orders.filter(o => {
@@ -695,93 +608,42 @@
 
       return `
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
-          <!-- Filter Bar -->
           <div class="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center space-x-3 flex-1 min-w-[280px]">
               <div class="relative w-full">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-                <input type="text" placeholder="Cari nomor order, nama pemohon, paroki..." value="${state.orderSearch}"
+                <input type="text" placeholder="Cari nomor order, pemohon, paroki..." value="${state.orderSearch}"
                   oninput="state.orderSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
               </div>
             </div>
-
-            <div class="flex items-center space-x-3">
-              <select onchange="state.orderStatusFilter = this.value; renderApp();" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none">
-                <option value="ALL" ${state.orderStatusFilter === 'ALL' ? 'selected' : ''}>Semua Status</option>
-                <option value="PENDING" ${state.orderStatusFilter === 'PENDING' ? 'selected' : ''}>Pending</option>
-                <option value="CONFIRMED" ${state.orderStatusFilter === 'CONFIRMED' ? 'selected' : ''}>Confirmed</option>
-                <option value="DONE" ${state.orderStatusFilter === 'DONE' ? 'selected' : ''}>Done (Selesai)</option>
-                <option value="FAIL" ${state.orderStatusFilter === 'FAIL' ? 'selected' : ''}>Fail (Batal/Ditolak)</option>
-              </select>
-
-              <select onchange="state.orderCategoryFilter = this.value; renderApp();" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none">
-                <option value="ALL" ${state.orderCategoryFilter === 'ALL' ? 'selected' : ''}>Semua Kategori</option>
-                <option value="kedukaan" ${state.orderCategoryFilter === 'kedukaan' ? 'selected' : ''}>Misa Kedukaan</option>
-                <option value="perminyakan" ${state.orderCategoryFilter === 'perminyakan' ? 'selected' : ''}>Perminyakan</option>
-              </select>
-            </div>
           </div>
 
-          <!-- Table -->
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                 <tr>
                   <th class="px-6 py-3.5">NO. ORDER</th>
-                  <th class="px-6 py-3.5">KATEGORI & PELAYANAN</th>
+                  <th class="px-6 py-3.5">KATEGORI</th>
                   <th class="px-6 py-3.5">PEMOHON</th>
-                  <th class="px-6 py-3.5">PAROKI / LOKASI</th>
-                  <th class="px-6 py-3.5">JADWAL</th>
-                  <th class="px-6 py-3.5">ROMO DITUGASKAN</th>
+                  <th class="px-6 py-3.5">PAROKI</th>
                   <th class="px-6 py-3.5">STATUS</th>
                   <th class="px-6 py-3.5 text-right">AKSI</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                ${filtered.length === 0 ? `
-                  <tr><td colspan="8" class="text-center py-10 text-slate-400">Tidak ada permintaan pelayanan ditemukan</td></tr>
-                ` : filtered.map(o => {
-                  const oId = o.id;
-                  const oNum = o.order_number || o.orderNumber;
-                  const oCat = o.category_name || o.categoryName;
-                  const oPem = o.pemohon_name || o.pemohonName || '-';
-                  const oPar = o.paroki_name || o.parokiName || o.location_name || o.locationName || '-';
-                  const oDate = (o.scheduled_date || o.scheduledDate || '').substring(0, 10);
-                  const oRomo = o.accepted_romo_name || o.acceptedRomoName;
-                  return `
-                    <tr class="hover:bg-slate-50/80 transition">
-                      <td class="px-6 py-4 font-bold text-blue-950">${oNum}</td>
-                      <td class="px-6 py-4">
-                        <p class="font-bold text-slate-900">${oCat}</p>
-                        ${o.items && o.items.length > 0 ? `<p class="text-[11px] text-slate-500">${o.items.length} misa: ${o.items.map(i => i.itemName || i.item_name).join(', ')}</p>` : ''}
-                      </td>
-                      <td class="px-6 py-4 font-medium">${oPem}</td>
-                      <td class="px-6 py-4">${oPar}</td>
-                      <td class="px-6 py-4">${oDate}</td>
-                      <td class="px-6 py-4">
-                        ${oRomo ? `<span class="font-bold text-emerald-700">Romo ${oRomo}</span>` : '<span class="text-slate-400 italic">Belum ada</span>'}
-                      </td>
-                      <td class="px-6 py-4">
-                        <span class="px-2.5 py-1 rounded-md font-bold text-[11px] ${getStatusBadgeClass(o.status)}">${o.status}</span>
-                      </td>
-                      <td class="px-6 py-4 text-right">
-                        <div class="inline-flex items-center justify-end space-x-1.5">
-                          <button onclick="viewOrderDetail('${oId}')"
-                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
-                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                            <span>Detail</span>
-                          </button>
-                          <button onclick="updateOrderStatusPrompt('${oId}')"
-                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold border border-slate-300/60 shadow-xs transition transform hover:-translate-y-0.5">
-                            <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
-                            <span>Status</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  `;
-                }).join('')}
+                ${filtered.map(o => `
+                  <tr class="hover:bg-slate-50/80 transition">
+                    <td class="px-6 py-4 font-bold text-blue-950">${o.order_number || o.orderNumber}</td>
+                    <td class="px-6 py-4 font-bold text-slate-900">${o.category_name || o.categoryName}</td>
+                    <td class="px-6 py-4">${o.pemohon_name || o.pemohonName}</td>
+                    <td class="px-6 py-4">${o.paroki_name || o.location_name || '-'}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md font-bold text-[11px] ${getStatusBadgeClass(o.status)}">${o.status}</span></td>
+                    <td class="px-6 py-4 text-right">
+                      <button onclick="viewOrderDetail('${o.id}')" class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold transition">Detail</button>
+                    </td>
+                  </tr>
+                `).join('')}
               </tbody>
             </table>
           </div>
@@ -789,7 +651,7 @@
       `;
     }
 
-    // ── Tab 2: Umat Katolik Aktif (Avatar Dihilangkan Sesuai Catatan Agentation) ──
+    // ── Tab: Umat Katolik ──
     function renderUmatTab() {
       const q = state.umatSearch.toLowerCase();
       const umats = state.users.filter(u => {
@@ -809,32 +671,6 @@
 
       return `
         <div class="space-y-6">
-          <!-- Top Metric Banner -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-              <div class="p-3 rounded-xl bg-blue-50 text-blue-900"><i data-lucide="users" class="w-6 h-6"></i></div>
-              <div>
-                <h4 class="text-2xl font-extrabold text-slate-900">${umats.length}</h4>
-                <p class="text-xs font-semibold text-slate-500">Total Umat Aktif Terverifikasi</p>
-              </div>
-            </div>
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-              <div class="p-3 rounded-xl bg-emerald-50 text-emerald-700"><i data-lucide="shield-check" class="w-6 h-6"></i></div>
-              <div>
-                <h4 class="text-2xl font-extrabold text-slate-900">100%</h4>
-                <p class="text-xs font-semibold text-slate-500">Status Akun Approved</p>
-              </div>
-            </div>
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-              <div class="p-3 rounded-xl bg-purple-50 text-purple-700"><i data-lucide="church" class="w-6 h-6"></i></div>
-              <div>
-                <h4 class="text-2xl font-extrabold text-slate-900">${state.paroki.length}</h4>
-                <p class="text-xs font-semibold text-slate-500">Paroki Terdaftar</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Table Container -->
           <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
             <div class="p-5 border-b border-slate-200 flex items-center justify-between">
               <div class="relative w-full max-w-md">
@@ -902,7 +738,7 @@
       `;
     }
 
-    // ── Tab 3: Pengurus Lingkungan Aktif (Avatar Dihilangkan) ──
+    // ── Tab: Pengurus Lingkungan ──
     function renderPengurusTab() {
       const q = state.pengurusSearch.toLowerCase();
       const list = state.users.filter(u => {
@@ -914,45 +750,18 @@
           const email = (u.email || '').toLowerCase();
           const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
           const par = (u.paroki_name || u.parokiName || '').toLowerCase();
-          const pos = (u.pengurus_position || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !par.includes(q) && !pos.includes(q)) return false;
+          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !par.includes(q)) return false;
         }
         return true;
       });
 
       return `
         <div class="space-y-6">
-          <!-- Metric Banner -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-              <div class="p-3 rounded-xl bg-indigo-50 text-indigo-900"><i data-lucide="briefcase" class="w-6 h-6"></i></div>
-              <div>
-                <h4 class="text-2xl font-extrabold text-slate-900">${list.length}</h4>
-                <p class="text-xs font-semibold text-slate-500">Pengurus Lingkungan Aktif</p>
-              </div>
-            </div>
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-              <div class="p-3 rounded-xl bg-emerald-50 text-emerald-700"><i data-lucide="award" class="w-6 h-6"></i></div>
-              <div>
-                <h4 class="text-2xl font-extrabold text-slate-900">Aktif</h4>
-                <p class="text-xs font-semibold text-slate-500">Masa Jabatan Berjalan</p>
-              </div>
-            </div>
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-              <div class="p-3 rounded-xl bg-amber-50 text-amber-700"><i data-lucide="map-pin" class="w-6 h-6"></i></div>
-              <div>
-                <h4 class="text-2xl font-extrabold text-slate-900">${new Set(list.map(p => p.paroki_id)).size}</h4>
-                <p class="text-xs font-semibold text-slate-500">Paroki Terjangkau</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Table Container -->
           <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
             <div class="p-5 border-b border-slate-200 flex items-center justify-between">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-                <input type="text" placeholder="Cari nama pengurus, email, jabatan, paroki, lingkungan..." value="${state.pengurusSearch}"
+                <input type="text" placeholder="Cari nama pengurus, email, jabatan, paroki..." value="${state.pengurusSearch}"
                   oninput="state.pengurusSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
               </div>
@@ -966,53 +775,31 @@
                     <th class="px-6 py-3.5">EMAIL</th>
                     <th class="px-6 py-3.5">JABATAN</th>
                     <th class="px-6 py-3.5">LINGKUNGAN & PAROKI</th>
-                    <th class="px-6 py-3.5">PERIODE JABATAN</th>
-                    <th class="px-6 py-3.5">WHATSAPP</th>
+                    <th class="px-6 py-3.5">NO. WHATSAPP</th>
                     <th class="px-6 py-3.5 text-right">AKSI</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                  ${list.length === 0 ? `
-                    <tr><td colspan="7" class="text-center py-10 text-slate-400">Tidak ada pengurus lingkungan aktif ditemukan</td></tr>
-                  ` : list.map(u => {
-                    const periode = (u.jabatan_start_year && u.jabatan_end_year) ? `${u.jabatan_start_year} - ${u.jabatan_end_year}` : 'Aktif';
-                    return `
-                      <tr class="hover:bg-slate-50/80 transition">
-                        <td class="px-6 py-4">
-                          <p class="font-extrabold text-slate-900 text-sm">${u.full_name || 'Pengurus'}</p>
-                        </td>
-                        <td class="px-6 py-4">
-                          <span class="inline-flex items-center text-slate-700 font-medium bg-slate-100/90 border border-slate-200/60 px-2.5 py-1 rounded-lg">
-                            <i data-lucide="mail" class="w-3.5 h-3.5 mr-1.5 text-slate-400"></i>
-                            ${u.email || '<span class="text-slate-400 italic">Belum disetel</span>'}
-                          </span>
-                        </td>
-                        <td class="px-6 py-4">
-                          <span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold text-[11px]">${u.pengurus_position || 'Ketua Lingkungan'}</span>
-                        </td>
-                        <td class="px-6 py-4">
-                          <p class="font-bold text-slate-800">${u.lingkungan_name || 'Lingkungan'}</p>
-                          <p class="text-[11px] text-slate-500">${u.paroki_name || '-'}</p>
-                        </td>
-                        <td class="px-6 py-4 font-semibold text-slate-700">${periode}</td>
-                        <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
-                        <td class="px-6 py-4 text-right">
-                          <div class="inline-flex items-center justify-end space-x-2">
-                            <button onclick="openEditUserModal('${u.id}')"
-                              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
-                              <i data-lucide="edit" class="w-3.5 h-3.5"></i>
-                              <span>Edit</span>
-                            </button>
-                            <button onclick="viewUserProfileModal('${u.id}')"
-                              class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
-                              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                              <span>Detail</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    `;
-                  }).join('')}
+                  ${list.map(u => `
+                    <tr class="hover:bg-slate-50/80 transition">
+                      <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Pengurus'}</td>
+                      <td class="px-6 py-4">
+                        <span class="inline-flex items-center text-slate-700 font-medium bg-slate-100/90 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                          <i data-lucide="mail" class="w-3.5 h-3.5 mr-1.5 text-slate-400"></i>
+                          ${u.email || '-'}
+                        </span>
+                      </td>
+                      <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold text-[11px]">${u.pengurus_position || 'Ketua Lingkungan'}</span></td>
+                      <td class="px-6 py-4">${u.lingkungan_name || '-'} (${u.paroki_name || '-'})</td>
+                      <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
+                      <td class="px-6 py-4 text-right">
+                        <div class="inline-flex items-center justify-end space-x-2">
+                          <button onclick="openEditUserModal('${u.id}')" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold transition">Edit</button>
+                          <button onclick="viewUserProfileModal('${u.id}')" class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold transition">Detail</button>
+                        </div>
+                      </td>
+                    </tr>
+                  `).join('')}
                 </tbody>
               </table>
             </div>
@@ -1021,7 +808,7 @@
       `;
     }
 
-    // ── Tab 4: Romo Paroki Aktif (Avatar Dihilangkan) ──
+    // ── Tab: Romo Paroki ──
     function renderRomoParokiTab() {
       const q = state.romoParokiSearch.toLowerCase();
       const list = state.users.filter(u => {
@@ -1031,110 +818,52 @@
         if (q) {
           const name = (u.full_name || u.fullName || '').toLowerCase();
           const email = (u.email || '').toLowerCase();
-          const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
           const par = (u.paroki_name || u.parokiName || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !par.includes(q)) return false;
+          if (!name.includes(q) && !email.includes(q) && !par.includes(q)) return false;
         }
         return true;
       });
 
       return `
-        <div class="space-y-6">
-          <!-- Metric Banner -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-              <div class="p-3 rounded-xl bg-emerald-50 text-emerald-900"><i data-lucide="church" class="w-6 h-6"></i></div>
-              <div>
-                <h4 class="text-2xl font-extrabold text-slate-900">${list.length}</h4>
-                <p class="text-xs font-semibold text-slate-500">Romo Paroki Aktif Terverifikasi</p>
-              </div>
-            </div>
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-              <div class="p-3 rounded-xl bg-blue-50 text-blue-700"><i data-lucide="check-circle" class="w-6 h-6"></i></div>
-              <div>
-                <h4 class="text-2xl font-extrabold text-slate-900">Siap</h4>
-                <p class="text-xs font-semibold text-slate-500">Kesiapan Melayani Misa</p>
-              </div>
-            </div>
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-              <div class="p-3 rounded-xl bg-purple-50 text-purple-700"><i data-lucide="map-pin" class="w-6 h-6"></i></div>
-              <div>
-                <h4 class="text-2xl font-extrabold text-slate-900">${new Set(list.map(r => r.paroki_id)).size}</h4>
-                <p class="text-xs font-semibold text-slate-500">Paroki Penugasan</p>
-              </div>
-            </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <div class="p-5 border-b border-slate-200">
+            <input type="text" placeholder="Cari Romo Paroki..." value="${state.romoParokiSearch}"
+              oninput="state.romoParokiSearch = this.value; renderApp();"
+              class="w-full max-w-md pl-4 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
           </div>
-
-          <!-- Table Container -->
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
-            <div class="p-5 border-b border-slate-200 flex items-center justify-between">
-              <div class="relative w-full max-w-md">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-                <input type="text" placeholder="Cari nama Romo, email, paroki, keuskupan..." value="${state.romoParokiSearch}"
-                  oninput="state.romoParokiSearch = this.value; renderApp();"
-                  class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
-              </div>
-            </div>
-
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs">
-                <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
-                  <tr>
-                    <th class="px-6 py-3.5">NAMA ROMO</th>
-                    <th class="px-6 py-3.5">EMAIL</th>
-                    <th class="px-6 py-3.5">PAROKI PENUGASAN</th>
-                    <th class="px-6 py-3.5">KEUSKUPAN</th>
-                    <th class="px-6 py-3.5">JABATAN PASTORAL</th>
-                    <th class="px-6 py-3.5">NO. WHATSAPP</th>
-                    <th class="px-6 py-3.5 text-right">AKSI</th>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="px-6 py-3.5">NAMA ROMO</th>
+                  <th class="px-6 py-3.5">EMAIL</th>
+                  <th class="px-6 py-3.5">PAROKI</th>
+                  <th class="px-6 py-3.5">JABATAN PASTORAL</th>
+                  <th class="px-6 py-3.5">NO. WHATSAPP</th>
+                  <th class="px-6 py-3.5 text-right">AKSI</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                ${list.map(u => `
+                  <tr class="hover:bg-slate-50/80 transition">
+                    <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Romo Paroki'}</td>
+                    <td class="px-6 py-4">${u.email || '-'}</td>
+                    <td class="px-6 py-4 font-bold text-blue-950">${u.paroki_name || '-'}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px]">${u.romo_position || 'Pastor Rekan'}</span></td>
+                    <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
+                    <td class="px-6 py-4 text-right">
+                      <button onclick="openEditUserModal('${u.id}')" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold transition">Edit</button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                  ${list.length === 0 ? `
-                    <tr><td colspan="7" class="text-center py-10 text-slate-400">Tidak ada Romo Paroki aktif ditemukan</td></tr>
-                  ` : list.map(u => `
-                    <tr class="hover:bg-slate-50/80 transition">
-                      <td class="px-6 py-4">
-                        <p class="font-extrabold text-slate-900 text-sm">${u.full_name || 'Romo Paroki'}</p>
-                        <p class="text-[10.5px] font-semibold text-emerald-700">Pr (Diosesan)</p>
-                      </td>
-                      <td class="px-6 py-4">
-                        <span class="inline-flex items-center text-slate-700 font-medium bg-slate-100/90 border border-slate-200/60 px-2.5 py-1 rounded-lg">
-                          <i data-lucide="mail" class="w-3.5 h-3.5 mr-1.5 text-slate-400"></i>
-                          ${u.email || '<span class="text-slate-400 italic">Belum disetel</span>'}
-                        </span>
-                      </td>
-                      <td class="px-6 py-4 font-bold text-blue-950">${u.paroki_name || '-'}</td>
-                      <td class="px-6 py-4">${u.keuskupan_name || 'Keuskupan'}</td>
-                      <td class="px-6 py-4">
-                        <span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px]">${u.romo_position || 'Pastor Rekan'}</span>
-                      </td>
-                      <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
-                      <td class="px-6 py-4 text-right">
-                        <div class="inline-flex items-center justify-end space-x-2">
-                          <button onclick="openEditUserModal('${u.id}')"
-                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
-                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
-                            <span>Edit</span>
-                          </button>
-                          <button onclick="viewUserProfileModal('${u.id}')"
-                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
-                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                            <span>Detail</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
+                `).join('')}
+              </tbody>
+            </table>
           </div>
         </div>
       `;
     }
 
-    // ── Tab 5: Romo Ordo Aktif (Avatar Dihilangkan) ──
+    // ── Tab: Romo Ordo ──
     function renderRomoOrdoTab() {
       const q = state.romoOrdoSearch.toLowerCase();
       const list = state.users.filter(u => {
@@ -1144,112 +873,50 @@
         if (q) {
           const name = (u.full_name || u.fullName || '').toLowerCase();
           const email = (u.email || '').toLowerCase();
-          const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
           const ordo = (u.ordo_name || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !ordo.includes(q)) return false;
+          if (!name.includes(q) && !email.includes(q) && !ordo.includes(q)) return false;
         }
         return true;
       });
 
       return `
-        <div class="space-y-6">
-          <!-- Metric Banner -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-              <div class="p-3 rounded-xl bg-purple-50 text-purple-900"><i data-lucide="cross" class="w-6 h-6"></i></div>
-              <div>
-                <h4 class="text-2xl font-extrabold text-slate-900">${list.length}</h4>
-                <p class="text-xs font-semibold text-slate-500">Total Romo Ordo Aktif</p>
-              </div>
-            </div>
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-              <div class="p-3 rounded-xl bg-amber-50 text-amber-700"><i data-lucide="zap" class="w-6 h-6"></i></div>
-              <div>
-                <h4 class="text-2xl font-extrabold text-slate-900">On-Demand</h4>
-                <p class="text-xs font-semibold text-slate-500">Kesiapan Misa Kedukaan Lintas Paroki</p>
-              </div>
-            </div>
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-              <div class="p-3 rounded-xl bg-blue-50 text-blue-700"><i data-lucide="shield" class="w-6 h-6"></i></div>
-              <div>
-                <h4 class="text-2xl font-extrabold text-slate-900">${state.ordo.length}</h4>
-                <p class="text-xs font-semibold text-slate-500">Ordo Terdaftar di Sistem</p>
-              </div>
-            </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <div class="p-5 border-b border-slate-200">
+            <input type="text" placeholder="Cari Romo Ordo..." value="${state.romoOrdoSearch}"
+              oninput="state.romoOrdoSearch = this.value; renderApp();"
+              class="w-full max-w-md pl-4 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
           </div>
-
-          <!-- Table Container -->
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
-            <div class="p-5 border-b border-slate-200 flex items-center justify-between">
-              <div class="relative w-full max-w-md">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-                <input type="text" placeholder="Cari nama Romo Ordo, email, nama ordo (SJ, OFM, MSF, SVD...)..." value="${state.romoOrdoSearch}"
-                  oninput="state.romoOrdoSearch = this.value; renderApp();"
-                  class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
-              </div>
-            </div>
-
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs">
-                <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
-                  <tr>
-                    <th class="px-6 py-3.5">NAMA ROMO</th>
-                    <th class="px-6 py-3.5">EMAIL</th>
-                    <th class="px-6 py-3.5">ORDO / KONGREGASI</th>
-                    <th class="px-6 py-3.5">KOMUNITAS / BIARA</th>
-                    <th class="px-6 py-3.5">NO. WHATSAPP</th>
-                    <th class="px-6 py-3.5">PELAYANAN ON-DEMAND</th>
-                    <th class="px-6 py-3.5 text-right">AKSI</th>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="px-6 py-3.5">NAMA ROMO</th>
+                  <th class="px-6 py-3.5">EMAIL</th>
+                  <th class="px-6 py-3.5">ORDO</th>
+                  <th class="px-6 py-3.5">NO. WHATSAPP</th>
+                  <th class="px-6 py-3.5 text-right">AKSI</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                ${list.map(u => `
+                  <tr class="hover:bg-slate-50/80 transition">
+                    <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Romo Ordo'}</td>
+                    <td class="px-6 py-4">${u.email || '-'}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-200 font-bold text-[11px]">${u.ordo_name || 'Ordo Religius'}</span></td>
+                    <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
+                    <td class="px-6 py-4 text-right">
+                      <button onclick="openEditUserModal('${u.id}')" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold transition">Edit</button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                  ${list.length === 0 ? `
-                    <tr><td colspan="7" class="text-center py-10 text-slate-400">Tidak ada Romo Ordo aktif ditemukan</td></tr>
-                  ` : list.map(u => `
-                    <tr class="hover:bg-slate-50/80 transition">
-                      <td class="px-6 py-4">
-                        <p class="font-extrabold text-slate-900 text-sm">${u.full_name || 'Romo Ordo'}</p>
-                        <p class="text-[10.5px] font-bold text-purple-700">${u.ordo_name || 'Ordo Religius'}</p>
-                      </td>
-                      <td class="px-6 py-4">
-                        <span class="inline-flex items-center text-slate-700 font-medium bg-slate-100/90 border border-slate-200/60 px-2.5 py-1 rounded-lg">
-                          <i data-lucide="mail" class="w-3.5 h-3.5 mr-1.5 text-slate-400"></i>
-                          ${u.email || '<span class="text-slate-400 italic">Belum disetel</span>'}
-                        </span>
-                      </td>
-                      <td class="px-6 py-4">
-                        <span class="px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-200 font-bold text-[11px]">${u.ordo_name || 'Ordo Religius'}</span>
-                      </td>
-                      <td class="px-6 py-4">${u.kota_name || 'Komunitas / Biara'}</td>
-                      <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
-                      <td class="px-6 py-4">
-                        <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[10.5px]">⚡ Lintas Paroki</span>
-                      </td>
-                      <td class="px-6 py-4 text-right">
-                        <div class="inline-flex items-center justify-end space-x-2">
-                          <button onclick="openEditUserModal('${u.id}')"
-                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
-                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
-                            <span>Edit</span>
-                          </button>
-                          <button onclick="viewUserProfileModal('${u.id}')"
-                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
-                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                            <span>Detail</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
+                `).join('')}
+              </tbody>
+            </table>
           </div>
         </div>
       `;
     }
 
-    // ── Tab 6: Approvals / Persetujuan Pendaftaran ──
+    // ── Tab: Approvals ──
     function renderApprovalsTab() {
       const q = state.approvalsSearch.toLowerCase();
       const pendings = state.users.filter(u => {
@@ -1259,8 +926,7 @@
           const name = (u.full_name || u.fullName || '').toLowerCase();
           const email = (u.email || '').toLowerCase();
           const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
-          const par = (u.paroki_name || u.parokiName || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !par.includes(q)) return false;
+          if (!name.includes(q) && !email.includes(q) && !phone.includes(q)) return false;
         }
         return true;
       });
@@ -1268,12 +934,9 @@
       return `
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
           <div class="p-5 border-b border-slate-200 flex items-center justify-between">
-            <div class="relative w-full max-w-md">
-              <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-              <input type="text" placeholder="Cari nama pemohon, email, no. HP..." value="${state.approvalsSearch}"
-                oninput="state.approvalsSearch = this.value; renderApp();"
-                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
-            </div>
+            <input type="text" placeholder="Cari pendaftaran..." value="${state.approvalsSearch}"
+              oninput="state.approvalsSearch = this.value; renderApp();"
+              class="w-full max-w-md pl-4 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
             <span class="text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
               ${pendings.length} Pendaftaran Menunggu Persetujuan
             </span>
@@ -1292,45 +955,17 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                ${pendings.length === 0 ? `
-                  <tr><td colspan="6" class="text-center py-12 text-slate-400">
-                    <i data-lucide="check-circle-2" class="w-10 h-10 mx-auto mb-2 text-emerald-500 opacity-60"></i>
-                    <p class="font-bold text-slate-700">Semua pendaftaran telah diverifikasi</p>
-                    <p class="text-xs text-slate-400">Tidak ada antrian persetujuan akun baru saat ini.</p>
-                  </td></tr>
-                ` : pendings.map(u => `
+                ${pendings.map(u => `
                   <tr class="hover:bg-slate-50/80 transition">
-                    <td class="px-6 py-4">
-                      <p class="font-extrabold text-slate-900 text-sm">${u.full_name || 'Pengguna Baru'}</p>
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="inline-flex items-center text-slate-700 font-medium bg-slate-100/90 border border-slate-200/60 px-2 py-0.5 rounded">
-                        <i data-lucide="mail" class="w-3 h-3 mr-1 text-slate-400"></i>
-                        ${u.email || '-'}
-                      </span>
-                    </td>
+                    <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Pengguna Baru'}</td>
+                    <td class="px-6 py-4">${u.email || '-'}</td>
                     <td class="px-6 py-4 font-semibold">${u.phone_number}</td>
-                    <td class="px-6 py-4">
-                      <span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-950 border border-blue-200 font-bold text-[11px]">${u.role_name || u.role_code}</span>
-                    </td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-950 border border-blue-200 font-bold text-[11px]">${u.role_name || u.role_code}</span></td>
                     <td class="px-6 py-4">${u.paroki_name || u.kota_name || '-'}</td>
                     <td class="px-6 py-4 text-right">
-                      <div class="inline-flex items-center justify-end space-x-2">
-                        <button onclick="approveUserAction('${u.id}', 'APPROVED')"
-                          class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
-                          <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                          <span>Setujui</span>
-                        </button>
-                        <button onclick="approveUserAction('${u.id}', 'REJECTED')"
-                          class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
-                          <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                          <span>Tolak</span>
-                        </button>
-                        <button onclick="openEditUserModal('${u.id}')"
-                          class="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold border border-slate-300/60 transition">
-                          <span>Edit</span>
-                        </button>
-                      </div>
+                      <button onclick="approveUserAction('${u.id}', 'APPROVED')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold mr-1">Setujui</button>
+                      <button onclick="approveUserAction('${u.id}', 'REJECTED')" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white font-bold mr-1">Tolak</button>
+                      <button onclick="openEditUserModal('${u.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold">Edit</button>
                     </td>
                   </tr>
                 `).join('')}
@@ -1341,136 +976,47 @@
       `;
     }
 
-    // ── Tab 7: Master Data ──
+    // ── Tab: Master, Chat, QA ──
     function renderMasterTab() {
       return `
-        <div class="space-y-6">
-          <div class="flex items-center space-x-3">
-            <button onclick="state.masterSubTab = 'paroki'; renderApp();" class="px-4 py-2 rounded-xl text-xs font-bold transition ${state.masterSubTab === 'paroki' ? 'bg-blue-950 text-white' : 'bg-white text-slate-600 border border-slate-200'}">Daftar Paroki (${state.paroki.length})</button>
-            <button onclick="state.masterSubTab = 'keuskupan'; renderApp();" class="px-4 py-2 rounded-xl text-xs font-bold transition ${state.masterSubTab === 'keuskupan' ? 'bg-blue-950 text-white' : 'bg-white text-slate-600 border border-slate-200'}">Daftar Keuskupan (${state.keuskupan.length})</button>
-            <button onclick="state.masterSubTab = 'ordo'; renderApp();" class="px-4 py-2 rounded-xl text-xs font-bold transition ${state.masterSubTab === 'ordo' ? 'bg-blue-950 text-white' : 'bg-white text-slate-600 border border-slate-200'}">Daftar Ordo (${state.ordo.length})</button>
-          </div>
-
-          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              ${(state.masterSubTab === 'paroki' ? state.paroki : state.masterSubTab === 'keuskupan' ? state.keuskupan : state.ordo).map(item => `
-                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center space-x-3.5">
-                  <div class="p-2.5 rounded-xl bg-blue-50 text-blue-950">
-                    <i data-lucide="church" class="w-5 h-5"></i>
-                  </div>
-                  <div>
-                    <h4 class="text-xs font-bold text-slate-900">${item.name}</h4>
-                    <p class="text-[11px] text-slate-400">ID: ${item.id}</p>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    // ── Tab 8: Chat Monitoring ──
-    function renderChatTab() {
-      return `
         <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-          <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center">
-            <i data-lucide="messages-square" class="w-4 h-4 mr-2 text-blue-950"></i>
-            Daftar Grup Chat Koordinasi Pelayanan
-          </h3>
-          <div class="space-y-3">
-            ${state.orders.map(o => {
-              const oId = o.id;
-              const oNum = o.order_number || o.orderNumber;
-              const oCat = o.category_name || o.categoryName;
-              const oPem = o.pemohon_name || o.pemohonName;
-              const oRomo = o.accepted_romo_name || o.acceptedRomoName;
-              return `
-                <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200">
-                  <div class="flex items-center space-x-3.5">
-                    <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center">
-                      <i data-lucide="message-circle" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                      <h4 class="text-xs font-bold text-slate-900">Grup Koordinasi Pelayanan ${oCat} (${oNum})</h4>
-                      <p class="text-[11px] text-slate-500">Pemohon: ${oPem} • Romo: ${oRomo || 'Menunggu Penugasan'}</p>
-                    </div>
-                  </div>
-                  <button onclick="viewChatModal('${oId}')" class="px-3 py-1.5 rounded-lg bg-blue-950 text-white text-xs font-bold hover:bg-blue-900 transition">Buka Chat</button>
-                </div>
-              `;
-            }).join('')}
+          <h3 class="text-sm font-bold text-slate-900 mb-4">Master Data Paroki & Keuskupan</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            ${state.paroki.map(p => `<div class="p-3 bg-slate-50 rounded-xl border border-slate-200 font-bold text-xs">${p.name}</div>`).join('')}
           </div>
         </div>
       `;
     }
 
-    // ── Tab 9: QA Test Runner ──
+    function renderChatTab() {
+      return `<div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm"><p class="text-xs font-bold">Monitoring Chat Aktif</p></div>`;
+    }
+
     function renderQATab() {
       return `
-        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
           <div class="flex items-center justify-between">
-            <div>
-              <h3 class="text-base font-extrabold text-slate-900">Live Quality Assurance & Unit Test Runner</h3>
-              <p class="text-xs text-slate-500 mt-1">Eksekusi otomatis seluruh test suite backend NestJS (Jest Runner) langsung dari browser.</p>
-            </div>
-            <button onclick="runTestsAction()" ${state.isRunningTests ? 'disabled' : ''}
-              class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center space-x-2 shadow-lg shadow-emerald-600/20 transition disabled:opacity-50">
-              ${state.isRunningTests ? `
-                <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                <span>Menjalankan...</span>
-              ` : `
-                <i data-lucide="play" class="w-4 h-4"></i>
-                <span>▶ Jalankan Live Tests</span>
-              `}
-            </button>
-          </div>
-
-          <div class="bg-slate-950 rounded-xl p-6 text-slate-200 font-mono text-xs border border-slate-800 min-h-[300px]">
-            ${!state.testResults ? `
-              <div class="text-center py-20 text-slate-500">
-                <i data-lucide="terminal" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
-                <p>Klik "Jalankan Live Tests" untuk menguji seluruh modul API CATU v2</p>
-              </div>
-            ` : `
-              <div class="space-y-4">
-                <div class="flex items-center space-x-3 text-emerald-400 font-bold">
-                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500">PASS</span>
-                  <span>${state.testResults.message || 'All Test Suites Passed'}</span>
-                  <span class="text-slate-500">${state.testResults.timestamp || ''}</span>
-                </div>
-                <div class="border-t border-slate-800 pt-3 space-y-2">
-                  ${(state.testResults.results || []).map(r => `
-                    <div class="flex items-center justify-between text-slate-300">
-                      <span>✓ [${r.suite || 'Test'}] ${r.name}</span>
-                      <span class="text-emerald-400 font-bold">${r.status || 'PASSED'}</span>
-                    </div>
-                  `).join('')}
-                </div>
-              </div>
-            `}
+            <h3 class="text-sm font-bold text-slate-900">Live Backend Test Runner</h3>
+            <button onclick="runTestsAction()" class="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl">▶ Jalankan Test</button>
           </div>
         </div>
       `;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // 4. 🎯 AGENTATION VISUAL FEEDBACK & UI INSPECTOR TOOLBAR
+    // 4. 🎯 AGENTATION TOOLBAR & FLOATING INSPECTOR
     // ══════════════════════════════════════════════════════════════════════════
     function renderAgentationToolbar() {
       const pinsCount = state.agentation.annotations.filter(a => !a.resolved).length;
       const isExpanded = state.agentation.expanded;
 
       return `
-        <div data-feedback-toolbar class="fixed bottom-5 right-6 z-[9999] font-sans flex flex-col items-end">
-          <!-- Main Collapsible Panel -->
+        <div data-feedback-toolbar class="fixed bottom-5 right-6 z-[99999] font-sans flex flex-col items-end">
           ${isExpanded ? `
             <div class="mb-3 w-80 bg-slate-900 text-white rounded-2xl p-4 shadow-2xl border border-slate-700 space-y-3.5 backdrop-blur-md bg-opacity-95">
               <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
                 <div class="flex items-center space-x-2">
-                  <div class="w-6 h-6 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs">
-                    🎯
-                  </div>
+                  <div class="w-6 h-6 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs">🎯</div>
                   <div>
                     <h4 class="text-xs font-extrabold text-white">Agentation Inspector</h4>
                     <p class="text-[10px] text-amber-400">Visual UI Revision Toolbar</p>
@@ -1481,11 +1027,10 @@
                 </button>
               </div>
 
-              <!-- Mode Toggle -->
               <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/80 border border-slate-700">
                 <div>
                   <p class="text-xs font-bold text-slate-200">Mode Inspeksi UI</p>
-                  <p class="text-[10px] text-slate-400">${state.agentation.enabled ? 'Hover & Klik elemen mana saja' : 'Non-aktif'}</p>
+                  <p class="text-[10px] text-slate-400">${state.agentation.enabled ? 'Hover & Klik elemen / popup mana saja' : 'Non-aktif'}</p>
                 </div>
                 <button onclick="toggleAgentationMode()"
                   class="px-3 py-1.5 rounded-lg text-xs font-black transition ${
@@ -1495,30 +1040,6 @@
                 </button>
               </div>
 
-              <!-- Tag Category Selector -->
-              <div>
-                <label class="block text-[10.5px] font-bold text-slate-400 mb-1.5">Kategori Revisi Default:</label>
-                <div class="grid grid-cols-2 gap-1.5 text-[10px] font-bold">
-                  <button onclick="state.agentation.selectedCategory = 'BUG'; renderApp();"
-                    class="py-1 px-2 rounded-lg border flex items-center space-x-1.5 ${state.agentation.selectedCategory === 'BUG' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-slate-800 border-slate-700 text-slate-400'}">
-                    <span>🔴</span><span>Bug / Masalah UI</span>
-                  </button>
-                  <button onclick="state.agentation.selectedCategory = 'POLISH'; renderApp();"
-                    class="py-1 px-2 rounded-lg border flex items-center space-x-1.5 ${state.agentation.selectedCategory === 'POLISH' ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'bg-slate-800 border-slate-700 text-slate-400'}">
-                    <span>🟡</span><span>Polish / Tipografi</span>
-                  </button>
-                  <button onclick="state.agentation.selectedCategory = 'FEATURE'; renderApp();"
-                    class="py-1 px-2 rounded-lg border flex items-center space-x-1.5 ${state.agentation.selectedCategory === 'FEATURE' ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-slate-800 border-slate-700 text-slate-400'}">
-                    <span>🔵</span><span>Konten & Fitur</span>
-                  </button>
-                  <button onclick="state.agentation.selectedCategory = 'UX'; renderApp();"
-                    class="py-1 px-2 rounded-lg border flex items-center space-x-1.5 ${state.agentation.selectedCategory === 'UX' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}">
-                    <span>🟢</span><span>Alur / UX Flow</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Summary & Actions -->
               <div class="pt-2 border-t border-slate-800 space-y-2">
                 <div class="flex items-center justify-between text-xs font-semibold">
                   <span class="text-slate-400">Total Pin Aktif:</span>
@@ -1530,72 +1051,28 @@
                   <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                   <span>📋 Salin Prompt Revisi untuk AI</span>
                 </button>
-
-                <div class="flex items-center space-x-2">
-                  <button onclick="state.agentation.showDrawer = !state.agentation.showDrawer; renderApp();"
-                    class="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px] flex items-center justify-center space-x-1.5 transition">
-                    <i data-lucide="list" class="w-3 h-3"></i>
-                    <span>${state.agentation.showDrawer ? 'Tutup List' : 'Lihat Semua (' + pinsCount + ')'}</span>
-                  </button>
-                  <button onclick="clearAllAgentationPins()"
-                    class="py-1.5 px-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-[11px] transition">
-                    Hapus Semua
-                  </button>
-                </div>
               </div>
-
-              <!-- Drawer List inside Tooltip -->
-              ${state.agentation.showDrawer ? `
-                <div class="border-t border-slate-800 pt-2.5 max-h-48 overflow-y-auto space-y-2 custom-scrollbar text-[11px]">
-                  ${state.agentation.annotations.length === 0 ? `
-                    <p class="text-center text-slate-500 py-3">Belum ada pin revisi. Aktifkan mode dan klik elemen mana saja di halaman ini.</p>
-                  ` : state.agentation.annotations.map((a, idx) => `
-                    <div class="p-2 rounded-lg bg-slate-800/80 border border-slate-700 flex items-start justify-between space-x-2">
-                      <div>
-                        <div class="flex items-center space-x-1.5">
-                          <span class="px-1.5 py-0.2 rounded font-black text-[9px] ${
-                            a.category === 'BUG' ? 'bg-red-500 text-white' :
-                            a.category === 'POLISH' ? 'bg-amber-500 text-slate-950' :
-                            a.category === 'FEATURE' ? 'bg-blue-500 text-white' : 'bg-emerald-500 text-white'
-                          }">#${idx + 1} ${a.category}</span>
-                          <span class="text-slate-400 font-mono text-[9.5px] truncate max-w-[140px]">${a.elementTag || 'elem'}</span>
-                        </div>
-                        <p class="mt-1 text-slate-200 font-medium">${a.note}</p>
-                      </div>
-                      <button onclick="deleteAgentationPin('${a.id}')" class="text-slate-400 hover:text-red-400 p-1">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                      </button>
-                    </div>
-                  `).join('')}
-                </div>
-              ` : ''}
             </div>
           ` : ''}
 
-          <!-- Floating Trigger Toggle Button -->
           <button onclick="state.agentation.expanded = !state.agentation.expanded; renderApp();"
             class="toggleContent flex items-center space-x-2.5 px-4 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs shadow-2xl border-2 ${
               state.agentation.enabled ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-slate-700'
             } transition transform hover:scale-105 active:scale-95">
             <span class="text-base">🎯</span>
             <span>Agentation</span>
-            ${pinsCount > 0 ? `
-              <span class="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10.5px]">
-                ${pinsCount}
-              </span>
-            ` : ''}
+            ${pinsCount > 0 ? `<span class="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10.5px]">${pinsCount}</span>` : ''}
           </button>
         </div>
       `;
     }
 
-    // ── Pending Annotation Dialog (Dropped Pin Form) ──
     function renderAgentationPendingDialog() {
       const p = state.agentation.pendingPin;
       if (!p) return '';
 
       return `
-        <div data-agentation-dialog class="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div data-agentation-dialog class="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-300 space-y-4 font-sans text-xs">
             <div class="flex items-center justify-between border-b border-slate-200 pb-3">
               <div class="flex items-center space-x-2">
@@ -1611,27 +1088,24 @@
             </div>
 
             <form onsubmit="saveAgentationPin(event)" class="space-y-3">
-              <!-- Element target preview -->
               <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
                 <p class="text-[10px] font-bold text-slate-500">Elemen Terpilih:</p>
                 <p class="font-bold text-blue-950 text-xs mt-0.5">${p.tag.toUpperCase()}: <span class="font-normal text-slate-700">"${(p.text || 'Elemen visual').substring(0, 60)}"</span></p>
               </div>
 
-              <!-- Category -->
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Tipe / Kategori Revisi:</label>
                 <select id="pinCategoryInput" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900">
-                  <option value="BUG" ${state.agentation.selectedCategory === 'BUG' ? 'selected' : ''}>🔴 Bug / Masalah Fungsional / Tampilan Rusak</option>
-                  <option value="POLISH" ${state.agentation.selectedCategory === 'POLISH' ? 'selected' : ''}>🟡 Desain, Tipografi & Warna</option>
-                  <option value="FEATURE" ${state.agentation.selectedCategory === 'FEATURE' ? 'selected' : ''}>🔵 Tambah / Ubah Fitur & Data</option>
-                  <option value="UX" ${state.agentation.selectedCategory === 'UX' ? 'selected' : ''}>🟢 Alur / UX Flow & Interaksi</option>
+                  <option value="BUG">🔴 Bug / Masalah Fungsional / Tampilan Rusak</option>
+                  <option value="POLISH">🟡 Desain, Tipografi & Warna</option>
+                  <option value="FEATURE">🔵 Tambah / Ubah Fitur & Data</option>
+                  <option value="UX">🟢 Alur / UX Flow & Interaksi</option>
                 </select>
               </div>
 
-              <!-- Note -->
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Apa yang perlu diperbaiki / diubah? *</label>
-                <textarea id="pinNoteInput" rows="3" required placeholder="Contoh: Ubah warna tombol menjadi lebih kontras, perbaiki spasi padding, atau ubah label..."
+                <textarea id="pinNoteInput" rows="3" required placeholder="Tuliskan revisi detail..."
                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"></textarea>
               </div>
 
@@ -1647,42 +1121,25 @@
       `;
     }
 
-    // ── Render Numbered Pins Overlay on Screen ──
     function renderAgentationPins() {
       const layer = document.getElementById('agentation-pins-layer');
       if (!layer) return;
 
       const currentPins = state.agentation.annotations.filter(a => a.pageTab === state.currentTab && !a.resolved);
-      layer.innerHTML = currentPins.map((a, idx) => {
-        const bg = a.category === 'BUG' ? 'bg-red-600' :
-                   a.category === 'POLISH' ? 'bg-amber-500' :
-                   a.category === 'FEATURE' ? 'bg-blue-600' : 'bg-emerald-600';
-        const txt = a.category === 'POLISH' ? 'text-slate-950' : 'text-white';
-
-        return `
-          <div class="agentation-pin pointer-events-auto" style="left: ${a.x}px; top: ${a.y}px;"
-               onclick="showAgentationPinDetail('${a.id}')"
-               title="${a.category}: ${a.note}">
-            <div class="relative group">
-              <div class="w-7 h-7 rounded-full ${bg} ${txt} font-black text-xs flex items-center justify-center shadow-2xl border-2 border-white ring-2 ring-black/20">
-                ${idx + 1}
-              </div>
-              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-slate-900 text-white text-[10px] p-2 rounded-xl shadow-xl z-50 pointer-events-none">
-                <p class="font-bold text-amber-400">${a.category}</p>
-                <p class="mt-0.5 text-slate-200">${a.note}</p>
-              </div>
-            </div>
+      layer.innerHTML = currentPins.map((a, idx) => `
+        <div class="agentation-pin pointer-events-auto" style="left: ${a.x}px; top: ${a.y}px;"
+             onclick="showAgentationPinDetail('${a.id}')"
+             title="${a.category}: ${a.note}">
+          <div class="w-7 h-7 rounded-full bg-red-600 text-white font-black text-xs flex items-center justify-center shadow-2xl border-2 border-white ring-2 ring-black/20">
+            ${idx + 1}
           </div>
-        `;
-      }).join('');
+        </div>
+      `).join('');
     }
 
-    // ── Agentation Action Handlers ──
     function toggleAgentationMode() {
       state.agentation.enabled = !state.agentation.enabled;
-      if (state.agentation.enabled) {
-        state.agentation.expanded = true;
-      }
+      if (state.agentation.enabled) state.agentation.expanded = true;
       renderApp();
     }
 
@@ -1694,7 +1151,7 @@
       const note = document.getElementById('pinNoteInput').value.trim();
       const category = document.getElementById('pinCategoryInput').value;
 
-      const newAnnotation = {
+      state.agentation.annotations.push({
         id: 'pin_' + Date.now(),
         x: p.x,
         y: p.y,
@@ -1706,31 +1163,11 @@
         note,
         createdAt: new Date().toISOString(),
         resolved: false,
-      };
+      });
 
-      state.agentation.annotations.push(newAnnotation);
       localStorage.setItem('catu_agentation_annotations', JSON.stringify(state.agentation.annotations));
       state.agentation.pendingPin = null;
       renderApp();
-    }
-
-    function deleteAgentationPin(id) {
-      state.agentation.annotations = state.agentation.annotations.filter(a => a.id !== id);
-      localStorage.setItem('catu_agentation_annotations', JSON.stringify(state.agentation.annotations));
-      renderApp();
-    }
-
-    function clearAllAgentationPins() {
-      if (!confirm('Hapus seluruh catatan revisi Agentation?')) return;
-      state.agentation.annotations = [];
-      localStorage.setItem('catu_agentation_annotations', JSON.stringify([]));
-      renderApp();
-    }
-
-    function showAgentationPinDetail(id) {
-      const pin = state.agentation.annotations.find(a => a.id === id);
-      if (!pin) return;
-      alert(`[Pin ${pin.category}]\nTarget: ${pin.elementSelector}\nCatatan: ${pin.note}`);
     }
 
     function copyAgentationPromptToClipboard() {
@@ -1747,7 +1184,6 @@
       prompt += `Tolong revisi dan perbaiki elemen-elemen UI di atas sesuai catatan tepat sasaran.`;
 
       navigator.clipboard.writeText(prompt).then(() => {
-        // Automatically clear annotations after copying
         state.agentation.annotations = [];
         localStorage.setItem('catu_agentation_annotations', JSON.stringify([]));
         state.agentation.enabled = false;
@@ -1758,18 +1194,15 @@
 
         renderApp();
         alert('✓ Seluruh catatan revisi Agentation berhasil disalin ke clipboard & pin otomatis dibersihkan!\nSilakan langsung tempelkan (Paste) prompt ke chat AI.');
-      }).catch(err => {
-        // Fallback if clipboard API fails
+      }).catch(() => {
         state.agentation.annotations = [];
         localStorage.setItem('catu_agentation_annotations', JSON.stringify([]));
-        state.agentation.enabled = false;
-        state.agentation.expanded = false;
         renderApp();
         alert('✓ Pin revisi telah dibersihkan.');
       });
     }
 
-    // ── Global Mouse Inspector Listener for Agentation ──
+    // ── Mouse Listeners for Agentation (Popup-Compatible) ──
     window.addEventListener('mousemove', (e) => {
       if (!state.agentation.enabled) {
         const box = document.getElementById('agentation-inspector-box');
@@ -1810,7 +1243,6 @@
       e.preventDefault();
       e.stopPropagation();
 
-      // Check if target is inside a popup / modal
       const modalParent = target.closest('.fixed:not([data-agentation-dialog])');
       let modalPrefix = '';
       if (modalParent) {
@@ -1818,7 +1250,6 @@
         modalPrefix = `[Popup: ${modalTitle}] > `;
       }
 
-      // Compute unique CSS selector path
       let path = [];
       let el = target;
       while (el && el.nodeType === Node.ELEMENT_NODE && path.length < 4) {
@@ -1856,7 +1287,7 @@
     }, true);
 
     // ══════════════════════════════════════════════════════════════════════════
-    // 5. MODALS (COMPREHENSIVE EDIT USER PROFILE MATCHING MOBILE REGISTER)
+    // 5. COMPREHENSIVE EDIT USER PROFILE MODAL (WITH DYNAMIC COMBOBOXES & PHONE VALIDATION)
     // ══════════════════════════════════════════════════════════════════════════
     function renderEditUserModal() {
       const u = state.activeEditUser;
@@ -1864,10 +1295,15 @@
       const status = u.account_status || u.accountStatus || 'APPROVED';
       const birthDateVal = u.birth_date ? String(u.birth_date).substring(0, 10) : '';
 
+      // Normalize phone number to strip leading 62 or 0
+      let rawPhone = String(u.phone_number || u.phoneNumber || '').trim();
+      if (rawPhone.startsWith('+62')) rawPhone = rawPhone.substring(3);
+      else if (rawPhone.startsWith('62')) rawPhone = rawPhone.substring(2);
+      else if (rawPhone.startsWith('0')) rawPhone = rawPhone.substring(1);
+
       return `
         <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-6 lg:p-8 shadow-2xl border border-slate-200 custom-scrollbar space-y-6">
-            <!-- Header -->
+          <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-6 lg:p-8 shadow-2xl border border-slate-200 custom-scrollbar space-y-5">
             <div class="flex items-center justify-between border-b border-slate-200 pb-4">
               <div class="flex items-center space-x-3">
                 <div class="p-2.5 rounded-xl bg-amber-500 text-white shadow-md shadow-amber-500/20">
@@ -1883,9 +1319,15 @@
               </button>
             </div>
 
-            <!-- Comprehensive Edit Form (Matching Mobile Register) -->
-            <form id="editUserForm" onsubmit="handleSaveProfile(event)" class="space-y-5 text-xs">
-              <!-- Section 1: Data Identitas & Kontak -->
+            ${state.editFormError ? `
+              <div class="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center space-x-2">
+                <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-red-600"></i>
+                <span>${state.editFormError}</span>
+              </div>
+            ` : ''}
+
+            <form id="editUserForm" onsubmit="handleSaveProfile(event)" class="space-y-4 text-xs">
+              <!-- Section 1: Identitas & Kontak -->
               <div class="bg-slate-50/80 p-4 rounded-2xl border border-slate-200 space-y-3.5">
                 <h4 class="font-extrabold text-blue-950 flex items-center text-xs">
                   <i data-lucide="user" class="w-4 h-4 mr-1.5 text-blue-900"></i>
@@ -1893,36 +1335,40 @@
                 </h4>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  <!-- Nama Lengkap -->
                   <div class="md:col-span-2">
-                    <label class="block font-bold text-slate-700 mb-1">Nama Lengkap (Sesuai KTP/Surat Baptis) *</label>
+                    <label class="block font-bold text-slate-700 mb-1">Nama Lengkap *</label>
                     <input type="text" id="editFullName" required value="${u.full_name || u.fullName || ''}" placeholder="Nama lengkap..."
                       class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
                   </div>
 
-                  <!-- Email -->
                   <div>
                     <label class="block font-bold text-slate-700 mb-1">Alamat Email *</label>
                     <input type="email" id="editEmail" required value="${u.email || ''}" placeholder="nama@email.com"
                       class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
                   </div>
 
-                  <!-- Nomor WhatsApp -->
+                  <!-- WhatsApp with +62 Badge & Realtime Validation -->
                   <div>
                     <label class="block font-bold text-slate-700 mb-1">Nomor WhatsApp / HP *</label>
-                    <input type="tel" id="editPhone" required value="${u.phone_number || u.phoneNumber || ''}" placeholder="08123456789 / 628123456789"
-                      class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
+                    <div class="relative rounded-xl shadow-xs">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="text-sm mr-1">🇮🇩</span>
+                        <span class="text-xs font-bold text-blue-900 border-r border-slate-300 pr-2">+62</span>
+                      </div>
+                      <input type="tel" id="editPhone" required value="${rawPhone}" placeholder="81234567890"
+                        oninput="onEditPhoneInput(this)"
+                        class="block w-full pl-16 pr-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1">Cukup ketik angka tanpa awalan 0 atau 62 (Contoh: 81234567890)</p>
                   </div>
 
-                  <!-- Tanggal Lahir -->
                   <div>
                     <label class="block font-bold text-slate-700 mb-1">Tanggal Lahir</label>
                     <input type="date" id="editBirthDate" value="${birthDateVal}"
                       class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
                   </div>
 
-                  <!-- Alamat Domisili -->
-                  <div>
+                  <div class="md:col-span-2">
                     <label class="block font-bold text-slate-700 mb-1">Alamat Lengkap Domisili</label>
                     <input type="text" id="editAddress" value="${u.address || ''}" placeholder="Jl. Mawar No. 12..."
                       class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
@@ -1930,15 +1376,14 @@
                 </div>
               </div>
 
-              <!-- Section 2: Peran Akun & Status -->
+              <!-- Section 2: Peran & Status -->
               <div class="bg-slate-50/80 p-4 rounded-2xl border border-slate-200 space-y-3.5">
                 <h4 class="font-extrabold text-blue-950 flex items-center text-xs">
                   <i data-lucide="shield" class="w-4 h-4 mr-1.5 text-blue-900"></i>
-                  2. Peran & Status Verifikasi Akun
+                  2. Peran & Status Akun
                 </h4>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  <!-- Peran Akun -->
                   <div>
                     <label class="block font-bold text-slate-700 mb-1">Peran / Role Pengguna</label>
                     <select id="editRoleCode" onchange="state.activeEditUser.role_code = this.value; renderApp();"
@@ -1951,9 +1396,8 @@
                     </select>
                   </div>
 
-                  <!-- Status Akun -->
                   <div>
-                    <label class="block font-bold text-slate-700 mb-1">Status Verifikasi Akun</label>
+                    <label class="block font-bold text-slate-700 mb-1">Status Verifikasi</label>
                     <select id="editAccountStatus"
                       class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950">
                       <option value="APPROVED" ${status === 'APPROVED' ? 'selected' : ''}>APPROVED (Aktif & Terverifikasi)</option>
@@ -1965,15 +1409,14 @@
                 </div>
               </div>
 
-              <!-- Section 3: Domisili Wilayah & Gereja (Cascading Dropdowns) -->
+              <!-- Section 3: Domisili Wilayah & Gereja (ALL COMBOBOXES!) -->
               <div class="bg-slate-50/80 p-4 rounded-2xl border border-slate-200 space-y-3.5">
                 <h4 class="font-extrabold text-blue-950 flex items-center text-xs">
                   <i data-lucide="church" class="w-4 h-4 mr-1.5 text-blue-900"></i>
-                  3. Domisili Wilayah Administratif & Gereja
+                  3. Domisili Wilayah Administratif & Gereja (Cascading Dropdown)
                 </h4>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  <!-- Provinsi -->
                   <div>
                     <label class="block font-bold text-slate-700 mb-1">Provinsi</label>
                     <select id="editProvinsiId" onchange="onEditProvinsiChanged(this.value)"
@@ -1985,7 +1428,6 @@
                     </select>
                   </div>
 
-                  <!-- Kabupaten / Kota -->
                   <div>
                     <label class="block font-bold text-slate-700 mb-1">Kabupaten / Kota</label>
                     <select id="editKabupatenKotaId"
@@ -1998,7 +1440,6 @@
                   </div>
 
                   ${roleCode !== 'ROMO_ORDO' ? `
-                    <!-- Keuskupan -->
                     <div>
                       <label class="block font-bold text-slate-700 mb-1">Keuskupan</label>
                       <select id="editKeuskupanId" onchange="onEditKeuskupanChanged(this.value)"
@@ -2010,10 +1451,9 @@
                       </select>
                     </div>
 
-                    <!-- Paroki Domisili / Tugas -->
                     <div>
-                      <label class="block font-bold text-slate-700 mb-1">Paroki Domisili / Penugasan</label>
-                      <select id="editParokiId"
+                      <label class="block font-bold text-slate-700 mb-1">Paroki</label>
+                      <select id="editParokiId" onchange="onEditParokiChanged(this.value)"
                         class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950">
                         <option value="">-- Pilih Paroki --</option>
                         ${state.paroki.map(p => `
@@ -2022,23 +1462,32 @@
                       </select>
                     </div>
 
-                    <!-- Wilayah -->
+                    <!-- COMBOBOX WILAYAH -->
                     <div>
-                      <label class="block font-bold text-slate-700 mb-1">Wilayah</label>
-                      <input type="text" id="editWilayahName" value="${u.wilayah_name || ''}" placeholder="Nama Wilayah..."
-                        class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
+                      <label class="block font-bold text-slate-700 mb-1">Wilayah (Combobox)</label>
+                      <select id="editWilayahId" onchange="onEditWilayahChanged(this.value)"
+                        class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950">
+                        <option value="">-- Pilih Wilayah --</option>
+                        ${state.wilayah.map(w => `
+                          <option value="${w.id}" ${String(u.wilayah_id) === String(w.id) ? 'selected' : ''}>${w.name}</option>
+                        `).join('')}
+                      </select>
                     </div>
 
-                    <!-- Lingkungan -->
+                    <!-- COMBOBOX LINGKUNGAN -->
                     <div>
-                      <label class="block font-bold text-slate-700 mb-1">Lingkungan</label>
-                      <input type="text" id="editLingkunganName" value="${u.lingkungan_name || ''}" placeholder="Nama Lingkungan..."
-                        class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
+                      <label class="block font-bold text-slate-700 mb-1">Lingkungan (Combobox)</label>
+                      <select id="editLingkunganId"
+                        class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950">
+                        <option value="">-- Pilih Lingkungan --</option>
+                        ${state.lingkungan.map(l => `
+                          <option value="${l.id}" ${String(u.lingkungan_id) === String(l.id) ? 'selected' : ''}>${l.name}</option>
+                        `).join('')}
+                      </select>
                     </div>
                   ` : `
-                    <!-- Ordo Selector for ROMO_ORDO -->
                     <div class="md:col-span-2">
-                      <label class="block font-bold text-slate-700 mb-1">Ordo / Kongregasi Religius *</label>
+                      <label class="block font-bold text-slate-700 mb-1">Ordo / Kongregasi *</label>
                       <select id="editOrdoId"
                         class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-600">
                         <option value="">-- Pilih Ordo --</option>
@@ -2051,31 +1500,30 @@
                 </div>
               </div>
 
-              <!-- Section 4: Data Jabatan Khusus (Conditional) -->
+              <!-- Section 4: Data Kepengurusan (Kondisional) -->
               ${roleCode === 'PENGURUS_LINGKUNGAN' ? `
                 <div class="bg-indigo-50/80 p-4 rounded-2xl border border-indigo-200 space-y-3.5">
                   <h4 class="font-extrabold text-indigo-950 flex items-center text-xs">
                     <i data-lucide="briefcase" class="w-4 h-4 mr-1.5 text-indigo-700"></i>
-                    4. Data Kepengurusan & Masa Jabatan Lingkungan
+                    4. Data Kepengurusan Lingkungan
                   </h4>
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                     <div>
-                      <label class="block font-bold text-slate-700 mb-1">Jabatan Pengurus</label>
+                      <label class="block font-bold text-slate-700 mb-1">Jabatan</label>
                       <select id="editPengurusPosition" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900">
                         <option value="Ketua Lingkungan" ${u.pengurus_position === 'Ketua Lingkungan' ? 'selected' : ''}>Ketua Lingkungan</option>
                         <option value="Wakil Ketua" ${u.pengurus_position === 'Wakil Ketua' ? 'selected' : ''}>Wakil Ketua</option>
                         <option value="Sekretaris" ${u.pengurus_position === 'Sekretaris' ? 'selected' : ''}>Sekretaris</option>
                         <option value="Bendahara" ${u.pengurus_position === 'Bendahara' ? 'selected' : ''}>Bendahara</option>
                         <option value="Seksi Liturgi" ${u.pengurus_position === 'Seksi Liturgi' ? 'selected' : ''}>Seksi Liturgi</option>
-                        <option value="Anggota" ${u.pengurus_position === 'Anggota' ? 'selected' : ''}>Anggota</option>
                       </select>
                     </div>
                     <div>
-                      <label class="block font-bold text-slate-700 mb-1">Tahun Mulai Jabatan</label>
+                      <label class="block font-bold text-slate-700 mb-1">Tahun Mulai</label>
                       <input type="number" id="editJabatanStartYear" value="${u.jabatan_start_year || 2024}" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900" />
                     </div>
                     <div>
-                      <label class="block font-bold text-slate-700 mb-1">Tahun Selesai Jabatan</label>
+                      <label class="block font-bold text-slate-700 mb-1">Tahun Selesai</label>
                       <input type="number" id="editJabatanEndYear" value="${u.jabatan_end_year || 2027}" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900" />
                     </div>
                   </div>
@@ -2086,21 +1534,19 @@
                 <div class="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-200 space-y-3.5">
                   <h4 class="font-extrabold text-emerald-950 flex items-center text-xs">
                     <i data-lucide="church" class="w-4 h-4 mr-1.5 text-emerald-700"></i>
-                    4. Data Penugasan Pastoral Romo Paroki
+                    4. Posisi Pastoral Romo Paroki
                   </h4>
                   <div>
-                    <label class="block font-bold text-slate-700 mb-1">Jabatan Pastoral di Paroki</label>
+                    <label class="block font-bold text-slate-700 mb-1">Jabatan Pastoral</label>
                     <select id="editRomoPosition" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900">
                       <option value="Pastor Kepala Paroki" ${u.romo_position === 'Pastor Kepala Paroki' ? 'selected' : ''}>Pastor Kepala Paroki</option>
                       <option value="Pastor Rekan" ${u.romo_position === 'Pastor Rekan' ? 'selected' : ''}>Pastor Rekan</option>
                       <option value="Vikaris Paroki" ${u.romo_position === 'Vikaris Paroki' ? 'selected' : ''}>Vikaris Paroki</option>
-                      <option value="Pastor Emeritus" ${u.romo_position === 'Pastor Emeritus' ? 'selected' : ''}>Pastor Emeritus</option>
                     </select>
                   </div>
                 </div>
               ` : ''}
 
-              <!-- Action Buttons -->
               <div class="pt-4 border-t border-slate-200 flex items-center justify-end space-x-3">
                 <button type="button" onclick="state.activeEditUser = null; renderApp();"
                   class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">
@@ -2123,6 +1569,13 @@
       `;
     }
 
+    function onEditPhoneInput(input) {
+      let val = input.value.replace(/\D/g, '');
+      if (val.startsWith('62')) val = val.substring(2);
+      else if (val.startsWith('0')) val = val.substring(1);
+      input.value = val;
+    }
+
     function renderUserProfileModal() {
       const u = state.activeUserProfile;
       const uName = u.full_name || u.fullName || 'Pengguna';
@@ -2143,15 +1596,10 @@
             </div>
 
             <div class="space-y-3 text-xs">
-              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Alamat Email:</span><span class="font-bold text-slate-900">${u.email || '<span class="text-slate-400 italic">Belum disetel</span>'}</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Alamat Email:</span><span class="font-bold text-slate-900">${u.email || '-'}</span></div>
               <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Nomor WhatsApp:</span><span class="font-bold">${uPhone}</span></div>
-              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Tanggal Lahir:</span><span class="font-bold">${u.birth_date ? String(u.birth_date).substring(0, 10) : '-'}</span></div>
-              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Provinsi / Kota:</span><span class="font-bold">${u.provinsi_name ? u.provinsi_name + ' / ' + (u.kota_name || '') : (u.kota_name || '-')}</span></div>
-              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Paroki Asal:</span><span class="font-bold">${uPar}</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Paroki:</span><span class="font-bold">${uPar}</span></div>
               <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Lingkungan:</span><span class="font-bold">${u.lingkungan_name || '-'}</span></div>
-              ${u.ordo_name ? `<div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Ordo / Kongregasi:</span><span class="font-bold text-purple-700">${u.ordo_name}</span></div>` : ''}
-              ${u.pengurus_position ? `<div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Jabatan Pengurus:</span><span class="font-bold">${u.pengurus_position}</span></div>` : ''}
-              ${u.romo_position ? `<div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Posisi Pastoral:</span><span class="font-bold">${u.romo_position}</span></div>` : ''}
               <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Status Akun:</span><span class="font-bold px-2 py-0.5 rounded ${uStatus === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">${uStatus}</span></div>
             </div>
 
@@ -2166,36 +1614,14 @@
 
     function renderOrderDetailModal() {
       const o = state.activeOrderDetail;
-      const oNum = o.order_number || o.orderNumber;
-      const oCat = o.category_name || o.categoryName;
-      const oPem = o.pemohon_name || o.pemohonName;
-      const oPar = o.paroki_name || o.parokiName || o.location_name || o.locationName || '-';
-      const oDate = (o.scheduled_date || o.scheduledDate || '').substring(0, 10);
-      const oTime = o.scheduled_time || o.scheduledTime || '';
-      const oRomo = o.accepted_romo_name || o.acceptedRomoName;
-
       return `
         <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-4">
-              <div>
-                <h3 class="text-base font-extrabold text-slate-900">${oNum}</h3>
-                <p class="text-xs font-semibold text-blue-950">${oCat}</p>
-              </div>
-              <button onclick="state.activeOrderDetail = null; renderApp();" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-
-            <div class="space-y-3 text-xs">
-              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Pemohon:</span><span class="font-bold">${oPem}</span></div>
-              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Paroki / Lokasi:</span><span class="font-bold">${oPar}</span></div>
-              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Jadwal Misa:</span><span class="font-bold">${oDate} ${oTime}</span></div>
-              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Romo:</span><span class="font-bold text-emerald-700">${oRomo ? 'Romo ' + oRomo : 'Belum Ditugaskan'}</span></div>
-              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Status:</span><span class="font-bold px-2 py-0.5 rounded ${getStatusBadgeClass(o.status)}">${o.status}</span></div>
-              ${o.notes ? `<div><span class="text-slate-500">Catatan Khusus:</span><p class="mt-1 p-2.5 rounded-lg bg-slate-50 text-slate-700">${o.notes}</p></div>` : ''}
-            </div>
-
-            <div class="pt-2 flex justify-end space-x-2">
-              <button onclick="state.activeOrderDetail = null; renderApp();" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200">Tutup</button>
+          <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 text-xs">
+            <h3 class="font-extrabold text-sm">${o.order_number || o.orderNumber} - ${o.category_name || o.categoryName}</h3>
+            <p>Pemohon: <strong>${o.pemohon_name || o.pemohonName}</strong></p>
+            <p>Paroki: <strong>${o.paroki_name || '-'}</strong></p>
+            <div class="flex justify-end pt-3">
+              <button onclick="state.activeOrderDetail = null; renderApp();" class="px-4 py-2 rounded-xl bg-blue-950 text-white font-bold">Tutup</button>
             </div>
           </div>
         </div>
@@ -2203,62 +1629,28 @@
     }
 
     function renderChatModal() {
-      const o = state.activeChatOrder;
-      const oNum = o.order_number || o.orderNumber;
-      const oCat = o.category_name || o.categoryName;
-      const oPem = o.pemohon_name || o.pemohonName;
-      const oRomo = o.accepted_romo_name || o.acceptedRomoName;
-
-      return `
-        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-              <div>
-                <h3 class="text-sm font-extrabold text-slate-900">Chat Pelayanan: ${oNum}</h3>
-                <p class="text-[11px] text-slate-500">${oCat} • Pemohon: ${oPem}</p>
-              </div>
-              <button onclick="state.activeChatOrder = null; renderApp();" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-
-            <div class="h-64 overflow-y-auto bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 custom-scrollbar text-xs">
-              <div class="p-2.5 rounded-xl bg-blue-100 text-blue-900 mr-8">
-                <p class="font-bold text-[10px] text-blue-950">${oPem} (Pemohon)</p>
-                <p class="mt-0.5">Berkah Dalem, permohonan pelayanan ${oCat} telah kami ajukan.</p>
-              </div>
-              ${oRomo ? `
-                <div class="p-2.5 rounded-xl bg-emerald-100 text-emerald-900 ml-8 text-right">
-                  <p class="font-bold text-[10px] text-emerald-950">Romo ${oRomo}</p>
-                  <p class="mt-0.5">Berkah Dalem, permohonan telah diterima. Kami akan hadir tepat waktu.</p>
-                </div>
-              ` : ''}
-            </div>
-
-            <div class="flex justify-end">
-              <button onclick="state.activeChatOrder = null; renderApp();" class="px-4 py-2 rounded-xl bg-blue-950 text-white text-xs font-bold">Tutup</button>
-            </div>
-          </div>
-        </div>
-      `;
+      return `<div class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center"><p class="text-white">Chat</p></div>`;
     }
 
     function getStatusBadgeClass(status) {
       const s = (status || '').toUpperCase();
       if (s === 'CONFIRMED' || s === 'ACCEPTED') return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-      if (s === 'DONE' || s === 'SELESAI') return 'bg-blue-50 text-blue-700 border border-blue-200';
+      if (s === 'DONE') return 'bg-blue-50 text-blue-700 border border-blue-200';
       if (s === 'FAIL' || s === 'REJECTED') return 'bg-red-50 text-red-700 border border-red-200';
       return 'bg-amber-50 text-amber-700 border border-amber-200';
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // 6. API ACTIONS
+    // 6. API ACTIONS & CASCADING DROPDOWNS
     // ══════════════════════════════════════════════════════════════════════════
     async function loadDashboardData() {
       try {
-        const [anRes, ordRes, usrRes, provRes, kRes, pRes, oRes] = await Promise.all([
+        const [anRes, ordRes, usrRes, provRes, kkRes, kRes, pRes, oRes] = await Promise.all([
           fetch(`${API_BASE}/auth/admin/analytics`),
           fetch(`${API_BASE}/orders`),
           fetch(`${API_BASE}/auth/admin/users`),
           fetch(`${API_BASE}/auth/provinsi`),
+          fetch(`${API_BASE}/auth/kabupaten-kota`),
           fetch(`${API_BASE}/auth/keuskupan`),
           fetch(`${API_BASE}/auth/paroki`),
           fetch(`${API_BASE}/auth/ordo`),
@@ -2270,14 +1662,10 @@
         const usrData = await usrRes.json();
         state.users = usrData.users || (Array.isArray(usrData) ? usrData : []);
         state.provinsi = await provRes.json();
+        state.kabupatenKota = await kkRes.json();
         state.keuskupan = await kRes.json();
         state.paroki = await pRes.json();
         state.ordo = await oRes.json();
-        
-        // Also fetch all kabupaten kota
-        const kkRes = await fetch(`${API_BASE}/auth/kabupaten-kota`);
-        state.kabupatenKota = await kkRes.json();
-
         renderApp();
       } catch (err) {
         console.error('Error loading dashboard data:', err);
@@ -2306,10 +1694,53 @@
       renderApp();
     }
 
-    function openEditUserModal(userId) {
+    async function onEditParokiChanged(parokiId) {
+      if (!parokiId) {
+        state.wilayah = [];
+        state.lingkungan = [];
+      } else {
+        const res = await fetch(`${API_BASE}/auth/wilayah?parokiId=${parokiId}`);
+        state.wilayah = await res.json();
+        state.lingkungan = [];
+      }
+      renderApp();
+    }
+
+    async function onEditWilayahChanged(wilayahId) {
+      if (!wilayahId) {
+        state.lingkungan = [];
+      } else {
+        const res = await fetch(`${API_BASE}/auth/lingkungan?wilayahId=${wilayahId}`);
+        state.lingkungan = await res.json();
+      }
+      renderApp();
+    }
+
+    async function openEditUserModal(userId) {
       const u = state.users.find(x => String(x.id) === String(userId));
       if (!u) return;
       state.activeEditUser = { ...u };
+      state.editFormError = '';
+
+      // Load cascading wilayah and lingkungan for preselection
+      if (u.paroki_id) {
+        try {
+          const wRes = await fetch(`${API_BASE}/auth/wilayah?parokiId=${u.paroki_id}`);
+          state.wilayah = await wRes.json();
+        } catch(e) { state.wilayah = []; }
+      } else {
+        state.wilayah = [];
+      }
+
+      if (u.wilayah_id) {
+        try {
+          const lRes = await fetch(`${API_BASE}/auth/lingkungan?wilayahId=${u.wilayah_id}`);
+          state.lingkungan = await lRes.json();
+        } catch(e) { state.lingkungan = []; }
+      } else {
+        state.lingkungan = [];
+      }
+
       renderApp();
     }
 
@@ -2320,20 +1751,35 @@
 
       const fullName = document.getElementById('editFullName').value.trim();
       const email = document.getElementById('editEmail').value.trim();
-      const phoneNumber = document.getElementById('editPhone').value.trim();
+      const rawPhone = document.getElementById('editPhone').value.trim().replace(/\D/g, '');
       const roleCode = document.getElementById('editRoleCode').value;
       const accountStatus = document.getElementById('editAccountStatus').value;
-      const birthDate = document.getElementById('editBirthDate') ? document.getElementById('editBirthDate').value : '';
+      const birthDateInput = document.getElementById('editBirthDate') ? document.getElementById('editBirthDate').value : '';
       const address = document.getElementById('editAddress') ? document.getElementById('editAddress').value.trim() : '';
+
+      // Validate Phone Number
+      if (!rawPhone || rawPhone.length < 9 || rawPhone.length > 13) {
+        state.editFormError = 'Nomor WhatsApp tidak valid. Masukkan minimal 9 dan maksimal 13 digit angka.';
+        renderApp();
+        return;
+      }
+      const formattedPhone = rawPhone.startsWith('62') ? rawPhone : ('62' + rawPhone);
+
+      // Validate Email
+      if (!email || !email.includes('@')) {
+        state.editFormError = 'Format alamat email tidak valid.';
+        renderApp();
+        return;
+      }
 
       const payload = {
         fullName,
         email,
-        phoneNumber,
+        phoneNumber: formattedPhone,
         roleCode,
         accountStatus,
-        birthDate,
         address,
+        birthDate: birthDateInput && birthDateInput.trim() ? birthDateInput.trim() : null,
       };
 
       const provElem = document.getElementById('editProvinsiId');
@@ -2349,11 +1795,11 @@
         const pElem = document.getElementById('editParokiId');
         if (pElem && pElem.value) payload.parokiId = parseInt(pElem.value);
 
-        const wElem = document.getElementById('editWilayahName');
-        if (wElem) payload.wilayahName = wElem.value.trim();
+        const wElem = document.getElementById('editWilayahId');
+        if (wElem && wElem.value) payload.wilayahId = parseInt(wElem.value);
 
-        const lElem = document.getElementById('editLingkunganName');
-        if (lElem) payload.lingkunganName = lElem.value.trim();
+        const lElem = document.getElementById('editLingkunganId');
+        if (lElem && lElem.value) payload.lingkunganId = parseInt(lElem.value);
       } else {
         const oElem = document.getElementById('editOrdoId');
         if (oElem && oElem.value) payload.ordoId = parseInt(oElem.value);
@@ -2363,9 +1809,9 @@
         const pos = document.getElementById('editPengurusPosition');
         if (pos) payload.pengurusPosition = pos.value;
         const sy = document.getElementById('editJabatanStartYear');
-        if (sy) payload.jabatanStartYear = parseInt(sy.value);
+        if (sy && sy.value) payload.jabatanStartYear = parseInt(sy.value);
         const ey = document.getElementById('editJabatanEndYear');
-        if (ey) payload.jabatanEndYear = parseInt(ey.value);
+        if (ey && ey.value) payload.jabatanEndYear = parseInt(ey.value);
         payload.isJabatanActive = true;
       }
 
@@ -2375,6 +1821,7 @@
       }
 
       state.isSavingProfile = true;
+      state.editFormError = '';
       renderApp();
 
       try {
@@ -2390,12 +1837,12 @@
           state.isSavingProfile = false;
           loadDashboardData();
         } else {
-          alert(data.message || 'Gagal menyimpan profil pengguna.');
+          state.editFormError = data.message || 'Gagal menyimpan profil pengguna.';
           state.isSavingProfile = false;
           renderApp();
         }
       } catch (err) {
-        alert('Terjadi kesalahan saat menghubungi server.');
+        state.editFormError = 'Terjadi kesalahan saat menghubungi server.';
         state.isSavingProfile = false;
         renderApp();
       }
@@ -2417,23 +1864,6 @@
       }
     }
 
-    async function updateOrderStatusPrompt(orderId) {
-      const newStatus = prompt('Masukkan status baru (PENDING, CONFIRMED, DONE, FAIL):', 'CONFIRMED');
-      if (!newStatus) return;
-      try {
-        const res = await fetch(`${API_BASE}/auth/admin/orders/${orderId}/status`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus.trim().toUpperCase() }),
-        });
-        const data = await res.json();
-        alert(data.message || 'Status order berhasil diperbarui!');
-        loadDashboardData();
-      } catch (e) {
-        alert('Gagal update status order');
-      }
-    }
-
     async function runTestsAction() {
       state.isRunningTests = true;
       renderApp();
@@ -2449,11 +1879,6 @@
 
     function viewOrderDetail(orderId) {
       state.activeOrderDetail = state.orders.find(o => String(o.id) === String(orderId));
-      renderApp();
-    }
-
-    function viewChatModal(orderId) {
-      state.activeChatOrder = state.orders.find(o => String(o.id) === String(orderId));
       renderApp();
     }
 

@@ -1068,8 +1068,9 @@ export class AuthController implements OnModuleInit {
       values.push(dto.email);
     }
     if (dto.birthDate !== undefined) {
+      const bDate = dto.birthDate && String(dto.birthDate).trim() ? String(dto.birthDate).trim() : null;
       fields.push(`birth_date = $${idx++}`);
-      values.push(dto.birthDate);
+      values.push(bDate);
     }
     if (dto.address !== undefined) {
       fields.push(`address = $${idx++}`);
@@ -1082,30 +1083,36 @@ export class AuthController implements OnModuleInit {
     if (activeRoleCode === 'ROMO_ORDO') {
       fields.push(`keuskupan_id = NULL`, `paroki_id = NULL`, `wilayah_id = NULL`, `lingkungan_id = NULL`);
     } else {
-      if (dto.keuskupanId !== undefined) {
+      if (dto.keuskupanId !== undefined || (dto as any).keuskupan_id !== undefined) {
+        const kId = (dto.keuskupanId ?? (dto as any).keuskupan_id) ? parseInt(dto.keuskupanId ?? (dto as any).keuskupan_id) : null;
         fields.push(`keuskupan_id = $${idx++}`);
-        values.push(dto.keuskupanId);
+        values.push(kId && !isNaN(kId) && kId > 0 ? kId : null);
       }
-      if (dto.parokiId !== undefined) {
+      if (dto.parokiId !== undefined || (dto as any).paroki_id !== undefined) {
+        const pId = (dto.parokiId ?? (dto as any).paroki_id) ? parseInt(dto.parokiId ?? (dto as any).paroki_id) : null;
         fields.push(`paroki_id = $${idx++}`);
-        values.push(dto.parokiId);
+        values.push(pId && !isNaN(pId) && pId > 0 ? pId : null);
       }
-      if (dto.wilayahId !== undefined) {
+      if (dto.wilayahId !== undefined || (dto as any).wilayah_id !== undefined) {
+        const wId = (dto.wilayahId ?? (dto as any).wilayah_id) ? parseInt(dto.wilayahId ?? (dto as any).wilayah_id) : null;
         fields.push(`wilayah_id = $${idx++}`);
-        values.push(dto.wilayahId);
+        values.push(wId && !isNaN(wId) && wId > 0 ? wId : null);
       }
-      if (dto.lingkunganId !== undefined) {
+      if (dto.lingkunganId !== undefined || (dto as any).lingkungan_id !== undefined) {
+        const lId = (dto.lingkunganId ?? (dto as any).lingkungan_id) ? parseInt(dto.lingkunganId ?? (dto as any).lingkungan_id) : null;
         fields.push(`lingkungan_id = $${idx++}`);
-        values.push(dto.lingkunganId);
+        values.push(lId && !isNaN(lId) && lId > 0 ? lId : null);
       }
     }
-    if (dto.kabupatenKotaId !== undefined) {
+    if (dto.kabupatenKotaId !== undefined || (dto as any).kabupaten_kota_id !== undefined) {
+      const kkId = (dto.kabupatenKotaId ?? (dto as any).kabupaten_kota_id) ? parseInt(dto.kabupatenKotaId ?? (dto as any).kabupaten_kota_id) : null;
       fields.push(`kabupaten_kota_id = $${idx++}`);
-      values.push(dto.kabupatenKotaId);
+      values.push(kkId && !isNaN(kkId) && kkId > 0 ? kkId : null);
     }
     if (dto.ordoId !== undefined || (dto as any).ordo_id !== undefined) {
+      const oId = (dto.ordoId ?? (dto as any).ordo_id) ? parseInt(dto.ordoId ?? (dto as any).ordo_id) : null;
       fields.push(`ordo_id = $${idx++}`);
-      values.push(dto.ordoId ?? (dto as any).ordo_id);
+      values.push(oId && !isNaN(oId) && oId > 0 ? oId : null);
     }
     if ((dto as any).pengurusPosition !== undefined || (dto as any).pengurus_position !== undefined) {
       fields.push(`pengurus_position = $${idx++}`);
