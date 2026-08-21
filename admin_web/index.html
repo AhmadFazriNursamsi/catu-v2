@@ -775,31 +775,53 @@
                     <th class="px-6 py-3.5">EMAIL</th>
                     <th class="px-6 py-3.5">JABATAN</th>
                     <th class="px-6 py-3.5">LINGKUNGAN & PAROKI</th>
+                    <th class="px-6 py-3.5">MASA JABATAN</th>
                     <th class="px-6 py-3.5">NO. WHATSAPP</th>
                     <th class="px-6 py-3.5 text-right">AKSI</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                  ${list.map(u => `
-                    <tr class="hover:bg-slate-50/80 transition">
-                      <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Pengurus'}</td>
-                      <td class="px-6 py-4">
-                        <span class="inline-flex items-center text-slate-700 font-medium bg-slate-100/90 border border-slate-200/60 px-2.5 py-1 rounded-lg">
-                          <i data-lucide="mail" class="w-3.5 h-3.5 mr-1.5 text-slate-400"></i>
-                          ${u.email || '-'}
-                        </span>
-                      </td>
-                      <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold text-[11px]">${u.pengurus_position || 'Ketua Lingkungan'}</span></td>
-                      <td class="px-6 py-4">${u.lingkungan_name || '-'} (${u.paroki_name || '-'})</td>
-                      <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
-                      <td class="px-6 py-4 text-right">
-                        <div class="inline-flex items-center justify-end space-x-2">
-                          <button onclick="openEditUserModal('${u.id}')" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold transition">Edit</button>
-                          <button onclick="viewUserProfileModal('${u.id}')" class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold transition">Detail</button>
-                        </div>
-                      </td>
-                    </tr>
-                  `).join('')}
+                  ${list.length === 0 ? `
+                    <tr><td colspan="7" class="text-center py-10 text-slate-400">Tidak ada data pengurus lingkungan aktif ditemukan</td></tr>
+                  ` : list.map(u => {
+                    const startY = u.jabatan_start_year || (u.jabatan_start_date ? new Date(u.jabatan_start_date).getFullYear() : null);
+                    const endY = u.jabatan_end_year || (u.jabatan_end_date ? new Date(u.jabatan_end_date).getFullYear() : null);
+                    const periode = (startY && endY) ? `${startY} - ${endY}` : (startY ? `${startY} - Sekarang` : 'Aktif');
+                    return `
+                      <tr class="hover:bg-slate-50/80 transition">
+                        <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Pengurus'}</td>
+                        <td class="px-6 py-4">
+                          <span class="inline-flex items-center text-slate-700 font-medium bg-slate-100/90 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                            <i data-lucide="mail" class="w-3.5 h-3.5 mr-1.5 text-slate-400"></i>
+                            ${u.email || '-'}
+                          </span>
+                        </td>
+                        <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold text-[11px]">${u.pengurus_position || 'Ketua Lingkungan'}</span></td>
+                        <td class="px-6 py-4">${u.lingkungan_name || '-'} (${u.paroki_name || '-'})</td>
+                        <td class="px-6 py-4">
+                          <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold border border-slate-200/80 text-[11px]">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
+                            <span>${periode}</span>
+                          </span>
+                        </td>
+                        <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
+                        <td class="px-6 py-4 text-right">
+                          <div class="inline-flex items-center justify-end space-x-2">
+                            <button onclick="openEditUserModal('${u.id}')"
+                              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
+                              <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                              <span>Edit</span>
+                            </button>
+                            <button onclick="viewUserProfileModal('${u.id}')"
+                              class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
+                              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                              <span>Detail</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
                 </tbody>
               </table>
             </div>
@@ -852,7 +874,18 @@
                     <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px]">${u.romo_position || 'Pastor Rekan'}</span></td>
                     <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
                     <td class="px-6 py-4 text-right">
-                      <button onclick="openEditUserModal('${u.id}')" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold transition">Edit</button>
+                      <div class="inline-flex items-center justify-end space-x-2">
+                        <button onclick="openEditUserModal('${u.id}')"
+                          class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
+                          <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                          <span>Edit</span>
+                        </button>
+                        <button onclick="viewUserProfileModal('${u.id}')"
+                          class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
+                          <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                          <span>Detail</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 `).join('')}
@@ -905,7 +938,18 @@
                     <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-200 font-bold text-[11px]">${u.ordo_name || 'Ordo Religius'}</span></td>
                     <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
                     <td class="px-6 py-4 text-right">
-                      <button onclick="openEditUserModal('${u.id}')" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold transition">Edit</button>
+                      <div class="inline-flex items-center justify-end space-x-2">
+                        <button onclick="openEditUserModal('${u.id}')"
+                          class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
+                          <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                          <span>Edit</span>
+                        </button>
+                        <button onclick="viewUserProfileModal('${u.id}')"
+                          class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-950 font-bold border border-blue-200/60 shadow-xs transition transform hover:-translate-y-0.5">
+                          <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                          <span>Detail</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 `).join('')}
