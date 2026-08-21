@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-100">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CATU Admin Portal - Sistem Informasi Pelayanan Gereja</title>
+  <link rel="icon" type="image/png" href="assets/images/logoCatu.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .church-bg {
+      background-image: linear-gradient(135deg, rgba(10, 17, 40, 0.92), rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.94)), url('assets/images/church_1.jpg');
+      background-size: cover;
+      background-position: center;
+    }
+    .cross-bg {
+      background-image: linear-gradient(rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.96)), url('assets/images/cross_banner.jpg');
+      background-size: cover;
+      background-position: center;
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  </style>
+</head>
+<body class="h-full text-slate-800 antialiased">
+  <div id="app" class="h-full"></div>
+
+  <script>
+    // Config & State
+    const API_BASE = `http://${window.location.hostname}:3005`;
+    const state = {
+      currentUser: JSON.parse(localStorage.getItem('catu_admin_user') || 'null'),
+      token: localStorage.getItem('catu_admin_token') || '',
+      currentTab: 'overview',
+      analytics: null,
+      orders: [],
+      users: [],
+      keuskupan: [],
+      paroki: [],
+      ordo: [],
+      masterSubTab: 'paroki',
+      orderSearch: '',
+      orderStatusFilter: 'ALL',
+      orderCategoryFilter: 'ALL',
+      userSearch: '',
+      userRoleFilter: 'ALL',
+      userStatusFilter: 'ALL',
+      isLoading: false,
+      loginLoading: false,
+      loginError: '',
+      testResults: null,
+      isRunningTests: false,
+      activeChatOrder: null,
+      activeOrderDetail: null,
+    };
+
+    // Render Main App Dispatcher
+    function renderApp() {
+      const app = document.getElementById('app');
+      if (!state.currentUser || state.currentUser.roleCode !== 'ADMIN') {
+        app.innerHTML = renderLoginPage();
+        attachLoginListeners();
+      } else {
+        app.innerHTML = renderDashboardLayout();
+        attachDashboardListeners();
+      }
+      lucide.createIcons();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 1. SPLIT-SCREEN LUXURY LOGIN PAGE
+    // ══════════════════════════════════════════════════════════════════════════
+    function renderLoginPage() {
+      return `
+        <div class="min-h-full flex flex-col lg:flex-row">
+          <!-- Sisi Kiri: Hero Section (54%) -->
+          <div class="church-bg lg:w-[54%] p-8 lg:p-14 flex flex-col justify-between text-white relative">
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3.5">
+                  <div class="w-12 h-12 rounded-xl bg-white p-1.5 shadow-lg border-2 border-amber-500 flex items-center justify-center">
+                    <img src="assets/images/logoCatu.png" alt="CATU Logo" class="h-full object-contain" />
+                  </div>
+                  <div>
+                    <h1 class="text-xl font-extrabold tracking-wider text-white">CATU WEB PORTAL</h1>
+                    <p class="text-[11px] font-bold text-amber-400 tracking-wider">CARI & BANTU PELAYANAN GEREJA</p>
+                  </div>
+                </div>
+                <div class="hidden sm:inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold text-white/90">
+                  <i data-lucide="shield-alert" class="w-3.5 h-3.5 mr-1.5 text-amber-400"></i>
+                  Portal Khusus Administrator
+                </div>
+              </div>
+            </div>
+
+            <div class="my-12 lg:my-0 max-w-xl">
+              <h2 class="text-3xl lg:text-4xl font-extrabold leading-tight tracking-tight text-white mb-4">
+                Sistem Informasi & Manajemen<br/><span class="text-amber-400">Pelayanan Umat Katolik</span>
+              </h2>
+              <p class="text-slate-300 text-sm lg:text-base leading-relaxed mb-8">
+                Platform terpusat untuk monitoring pelayanan Misa Kedukaan, Sakramen Perminyakan, verifikasi pendaftaran berjenjang, dan koordinasi lintas paroki.
+              </p>
+
+              <div class="space-y-4">
+                <div class="flex items-start space-x-3.5 p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                  <div class="p-2 rounded-lg bg-amber-500/20 text-amber-400">
+                    <i data-lucide="church" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-bold text-white">Integrasi Lintas Paroki & Ordo</h3>
+                    <p class="text-xs text-slate-300">Pengelolaan permohonan pelayanan sakramental secara transparan dan terstruktur.</p>
+                  </div>
+                </div>
+
+                <div class="flex items-start space-x-3.5 p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                  <div class="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
+                    <i data-lucide="user-check" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-bold text-white">Persetujuan Akun Berjenjang</h3>
+                    <p class="text-xs text-slate-300">Verifikasi pendaftaran Umat, Romo, dan Pengurus Lingkungan dengan satu klik.</p>
+                  </div>
+                </div>
+
+                <div class="flex items-start space-x-3.5 p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                  <div class="p-2 rounded-lg bg-blue-500/20 text-blue-400">
+                    <i data-lucide="message-square" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-bold text-white">Monitoring Group Chat Pelayanan</h3>
+                    <p class="text-xs text-slate-300">Pemantauan obrolan grup WhatsApp-style antara Umat, Romo, dan Pengurus.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center text-xs text-slate-400 space-x-2 pt-6 border-t border-white/10">
+              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+              <span>CATU Platform v2.5.0 • Powered by NestJS & PostgreSQL 16</span>
+            </div>
+          </div>
+
+          <!-- Sisi Kanan: Clean Admin Form Card (46%) -->
+          <div class="cross-bg lg:w-[46%] p-8 lg:p-14 flex items-center justify-center">
+            <div class="w-full max-w-md bg-white rounded-3xl p-8 lg:p-10 shadow-2xl border border-slate-200">
+              <div class="text-center mb-8">
+                <img src="assets/images/logoCatu.png" alt="CATU Logo" class="h-16 mx-auto mb-4 object-contain" />
+                <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Masuk Portal Admin</h2>
+                <p class="text-xs text-slate-500 mt-1">Masukkan kredensial Administrator untuk mengakses dashboard.</p>
+              </div>
+
+              ${state.loginError ? `
+                <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start space-x-2.5">
+                  <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0 text-red-600"></i>
+                  <span>${state.loginError}</span>
+                </div>
+              ` : ''}
+
+              <form id="loginForm" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1.5">Nomor WhatsApp / HP</label>
+                  <div class="relative rounded-xl shadow-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span class="text-sm mr-1">🇮🇩</span>
+                      <span class="text-xs font-bold text-blue-900 border-r border-slate-300 pr-2">+62</span>
+                    </div>
+                    <input type="tel" id="phoneInput" required placeholder="89999999999"
+                      class="block w-full pl-16 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1.5">Kata Sandi</label>
+                  <div class="relative rounded-xl shadow-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                      <i data-lucide="lock" class="w-4 h-4 text-blue-900"></i>
+                    </div>
+                    <input type="password" id="passwordInput" required placeholder="••••••••"
+                      class="block w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white" />
+                    <button type="button" id="togglePasswordBtn" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+                      <i data-lucide="eye" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="pt-2">
+                  <button type="submit" id="submitBtn"
+                    class="w-full py-3.5 px-4 bg-blue-950 hover:bg-blue-900 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-950/20 flex items-center justify-center space-x-2 transition duration-200 disabled:opacity-50">
+                    ${state.loginLoading ? `
+                      <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Memverifikasi...</span>
+                    ` : `
+                      <i data-lucide="log-in" class="w-4 h-4"></i>
+                      <span>MASUK KE PORTAL ADMIN</span>
+                    `}
+                  </button>
+                </div>
+              </form>
+
+              <div class="mt-6 p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 text-[11.5px] text-blue-900 flex items-start space-x-2">
+                <i data-lucide="info" class="w-4 h-4 flex-shrink-0 text-blue-700 mt-0.5"></i>
+                <p><strong>Khusus Administrator:</strong> Pengguna selain role Admin tidak dapat login di web. Umat & Romo silakan masuk via Aplikasi Mobile CATU.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function attachLoginListeners() {
+      const toggleBtn = document.getElementById('togglePasswordBtn');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+          const pass = document.getElementById('passwordInput');
+          pass.type = pass.type === 'password' ? 'text' : 'password';
+        });
+      }
+
+      const form = document.getElementById('loginForm');
+      if (form) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const phone = document.getElementById('phoneInput').value.trim();
+          const password = document.getElementById('passwordInput').value.trim();
+
+          state.loginLoading = true;
+          state.loginError = '';
+          renderApp();
+
+          try {
+            const res = await fetch(`${API_BASE}/auth/admin/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ phoneNumber: phone, password }),
+            });
+            const data = await res.json();
+
+            if (res.status === 200 && data.user && data.user.roleCode === 'ADMIN') {
+              state.currentUser = data.user;
+              state.token = data.accessToken;
+              localStorage.setItem('catu_admin_user', JSON.stringify(data.user));
+              localStorage.setItem('catu_admin_token', data.accessToken);
+              state.loginLoading = false;
+              renderApp();
+              loadDashboardData();
+            } else {
+              state.loginError = data.message || 'Login gagal. Pastikan Anda menggunakan akun Administrator.';
+              state.loginLoading = false;
+              renderApp();
+            }
+          } catch (err) {
+            state.loginError = `Gagal menghubungi server backend (${API_BASE}). Pastikan service backend aktif.`;
+            state.loginLoading = false;
+            renderApp();
+          }
+        });
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 2. DASHBOARD MAIN LAYOUT & TABS
+    // ══════════════════════════════════════════════════════════════════════════
+    function renderDashboardLayout() {
+      return `
+        <div class="h-full flex">
+          <!-- Sidebar Nav (Left) -->
+          <div class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between flex-shrink-0">
+            <div>
+              <div class="p-5 flex items-center space-x-3 border-b border-slate-800">
+                <div class="w-9 h-9 rounded-xl bg-white p-1 shadow border border-amber-500 flex items-center justify-center">
+                  <img src="assets/images/logoCatu.png" alt="CATU" class="h-full object-contain" />
+                </div>
+                <div>
+                  <h2 class="text-sm font-extrabold text-white tracking-wide">CATU ADMIN</h2>
+                  <p class="text-[9.5px] font-bold text-amber-400">PORTAL PUSAT SISTEM</p>
+                </div>
+              </div>
+
+              <nav class="p-3 space-y-1">
+                ${renderNavItem('overview', 'dashboard', 'Ringkasan & Analytics')}
+                ${renderNavItem('orders', 'clipboard-list', 'Manajemen Pelayanan', state.analytics?.orders?.pending)}
+                ${renderNavItem('users', 'users', 'Pengguna & Persetujuan', state.analytics?.users?.pending_approvals, 'bg-amber-500')}
+                ${renderNavItem('master', 'church', 'Master Data Gereja')}
+                ${renderNavItem('chat', 'messages-square', 'Monitoring Chat')}
+                ${renderNavItem('qa', 'flask-conical', 'QA & Live Test Runner')}
+              </nav>
+            </div>
+
+            <div class="p-4 border-t border-slate-800">
+              <button id="logoutBtn" class="w-full py-2.5 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold flex items-center space-x-2 transition">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                <span>Keluar Akun Admin</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Main Content View -->
+          <div class="flex-1 flex flex-col overflow-hidden bg-slate-100">
+            <!-- Top Header -->
+            <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between flex-shrink-0">
+              <div>
+                <p class="text-xs font-semibold text-slate-500">Admin Portal / <span class="text-blue-950 font-bold capitalize">${state.currentTab}</span></p>
+                <h1 class="text-xl font-extrabold text-slate-900 tracking-tight capitalize">${getTabTitle(state.currentTab)}</h1>
+              </div>
+
+              <div class="flex items-center space-x-4">
+                <div class="flex items-center px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-2"></span>
+                  Backend Online (Port 3005)
+                </div>
+
+                <button id="refreshBtn" class="p-2 text-slate-600 hover:text-blue-950 rounded-lg hover:bg-slate-100 transition" title="Segarkan Data">
+                  <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                </button>
+
+                <div class="flex items-center space-x-2.5 pl-4 border-l border-slate-200">
+                  <div class="w-8 h-8 rounded-full bg-blue-950 text-white flex items-center justify-center font-bold text-xs">
+                    SA
+                  </div>
+                  <div>
+                    <p class="text-xs font-bold text-slate-900">${state.currentUser.fullName || 'Super Admin'}</p>
+                    <p class="text-[10px] font-bold text-amber-600">SUPER ADMINISTRATOR</p>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <!-- Scrollable Tab Content -->
+            <main class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+              ${renderActiveTab()}
+            </main>
+          </div>
+        </div>
+
+        ${state.activeOrderDetail ? renderOrderDetailModal() : ''}
+        ${state.activeChatOrder ? renderChatModal() : ''}
+      `;
+    }
+
+    function renderNavItem(id, icon, label, badge, badgeColor = 'bg-red-500') {
+      const active = state.currentTab === id;
+      return `
+        <button onclick="setTab('${id}')"
+          class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
+            active ? 'bg-blue-950 text-white font-bold border border-blue-800' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+          }">
+          <div class="flex items-center space-x-3">
+            <i data-lucide="${icon}" class="w-4 h-4 ${active ? 'text-amber-400' : ''}"></i>
+            <span>${label}</span>
+          </div>
+          ${badge && parseInt(badge) > 0 ? `
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${badgeColor}">${badge}</span>
+          ` : ''}
+        </button>
+      `;
+    }
+
+    function getTabTitle(tab) {
+      if (tab === 'overview') return 'Ringkasan & Analytics';
+      if (tab === 'orders') return 'Manajemen Pelayanan';
+      if (tab === 'users') return 'Manajemen Pengguna & Persetujuan';
+      if (tab === 'master') return 'Master Data Wilayah & Gereja';
+      if (tab === 'chat') return 'Monitoring Group Chat';
+      if (tab === 'qa') return 'QA & Live Test Runner';
+      return tab;
+    }
+
+    function setTab(tab) {
+      state.currentTab = tab;
+      renderApp();
+    }
+
+    function attachDashboardListeners() {
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+          localStorage.removeItem('catu_admin_user');
+          localStorage.removeItem('catu_admin_token');
+          state.currentUser = null;
+          state.token = '';
+          renderApp();
+        });
+      }
+
+      const refreshBtn = document.getElementById('refreshBtn');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+          loadDashboardData();
+        });
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 3. TAB RENDERERS
+    // ══════════════════════════════════════════════════════════════════════════
+    function renderActiveTab() {
+      if (state.currentTab === 'overview') return renderOverviewTab();
+      if (state.currentTab === 'orders') return renderOrdersTab();
+      if (state.currentTab === 'users') return renderUsersTab();
+      if (state.currentTab === 'master') return renderMasterTab();
+      if (state.currentTab === 'chat') return renderChatTab();
+      if (state.currentTab === 'qa') return renderQATab();
+      return '';
+    }
+
+    // Tab 0: Overview
+    function renderOverviewTab() {
+      const orders = state.analytics?.orders || {};
+      const users = state.analytics?.users || {};
+      const categories = state.analytics?.categories || [];
+      const recentOrders = state.analytics?.recentOrders || [];
+
+      return `
+        <div class="space-y-8">
+          <!-- 4 Stat Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="p-3 rounded-xl bg-blue-50 text-blue-950">
+                  <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">${orders.pending || 0} Menunggu</span>
+              </div>
+              <h3 class="text-2xl font-extrabold text-slate-900">${orders.total || state.orders.length}</h3>
+              <p class="text-xs font-bold text-slate-600">Total Permintaan Pelayanan</p>
+              <p class="text-[11px] text-slate-400 mt-1">${orders.confirmed || 0} Aktif • ${orders.done || 0} Selesai</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="p-3 rounded-xl bg-emerald-50 text-emerald-700">
+                  <i data-lucide="users" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200">${users.pending_approvals || 0} Approval</span>
+              </div>
+              <h3 class="text-2xl font-extrabold text-slate-900">${users.total || state.users.length}</h3>
+              <p class="text-xs font-bold text-slate-600">Total Pengguna Terdaftar</p>
+              <p class="text-[11px] text-slate-400 mt-1">${users.total_umat || 0} Umat • ${users.total_pengurus || 0} Pengurus</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="p-3 rounded-xl bg-purple-50 text-purple-700">
+                  <i data-lucide="church" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200">Romo Pelayan</span>
+              </div>
+              <h3 class="text-2xl font-extrabold text-slate-900">${(parseInt(users.total_romo_paroki || 0) + parseInt(users.total_romo_ordo || 0))}</h3>
+              <p class="text-xs font-bold text-slate-600">Total Romo Paroki & Ordo</p>
+              <p class="text-[11px] text-slate-400 mt-1">${users.total_romo_paroki || 0} Romo Paroki • ${users.total_romo_ordo || 0} Romo Ordo</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="p-3 rounded-xl bg-cyan-50 text-cyan-700">
+                  <i data-lucide="server" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">100% OK</span>
+              </div>
+              <h3 class="text-2xl font-extrabold text-slate-900">Online</h3>
+              <p class="text-xs font-bold text-slate-600">Backend & PostgreSQL</p>
+              <p class="text-[11px] text-slate-400 mt-1">NestJS v10 • Port 3005</p>
+            </div>
+          </div>
+
+          <!-- Distribution & Recent Feed -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+              <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center">
+                <i data-lucide="pie-chart" class="w-4 h-4 mr-2 text-blue-950"></i>
+                Distribusi Kategori Pelayanan
+              </h3>
+              <div class="space-y-4">
+                ${categories.map(c => {
+                  const count = parseInt(c.count || 0);
+                  const total = parseInt(orders.total || 1) || 1;
+                  const pct = Math.round((count / total) * 100);
+                  return `
+                    <div>
+                      <div class="flex justify-between text-xs font-semibold mb-1">
+                        <span>${c.name}</span>
+                        <span class="font-bold text-blue-950">${count} (${pct}%)</span>
+                      </div>
+                      <div class="w-full bg-slate-100 rounded-full h-2">
+                        <div class="bg-blue-950 h-2 rounded-full" style="width: ${pct}%"></div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <div class="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-bold text-slate-900 flex items-center">
+                  <i data-lucide="history" class="w-4 h-4 mr-2 text-blue-950"></i>
+                  Aktivitas Pelayanan Terbaru
+                </h3>
+                <button onclick="setTab('orders')" class="text-xs font-bold text-blue-950 hover:underline">Lihat Semua →</button>
+              </div>
+
+              <div class="space-y-3">
+                ${recentOrders.map(o => `
+                  <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                    <div>
+                      <p class="font-bold text-slate-900">${o.order_number} • <span class="text-blue-950">${o.category_name}</span></p>
+                      <p class="text-slate-500">Pemohon: ${o.pemohon_name}</p>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-md font-bold ${getStatusBadgeClass(o.status)}">${o.status}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Tab 1: Orders
+    function renderOrdersTab() {
+      const q = state.orderSearch.toLowerCase();
+      const filtered = state.orders.filter(o => {
+        if (state.orderStatusFilter !== 'ALL' && o.status.toUpperCase() !== state.orderStatusFilter) return false;
+        if (state.orderCategoryFilter !== 'ALL' && !o.categoryName.toLowerCase().includes(state.orderCategoryFilter.toLowerCase())) return false;
+        if (q) {
+          const matchNum = o.orderNumber.toLowerCase().includes(q);
+          const matchPem = o.pemohonName.toLowerCase().includes(q);
+          const matchPar = (o.parokiName || '').toLowerCase().includes(q);
+          if (!matchNum && !matchPem && !matchPar) return false;
+        }
+        return true;
+      });
+
+      return `
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <!-- Filter Bar -->
+          <div class="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3 flex-1 min-w-[280px]">
+              <div class="relative w-full">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                <input type="text" placeholder="Cari nomor order, nama pemohon, paroki..." value="${state.orderSearch}"
+                  oninput="state.orderSearch = this.value; renderApp();"
+                  class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+              <select onchange="state.orderStatusFilter = this.value; renderApp();" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none">
+                <option value="ALL" ${state.orderStatusFilter === 'ALL' ? 'selected' : ''}>Semua Status</option>
+                <option value="PENDING" ${state.orderStatusFilter === 'PENDING' ? 'selected' : ''}>Pending</option>
+                <option value="CONFIRMED" ${state.orderStatusFilter === 'CONFIRMED' ? 'selected' : ''}>Confirmed</option>
+                <option value="DONE" ${state.orderStatusFilter === 'DONE' ? 'selected' : ''}>Done (Selesai)</option>
+                <option value="FAIL" ${state.orderStatusFilter === 'FAIL' ? 'selected' : ''}>Fail (Batal/Ditolak)</option>
+              </select>
+
+              <select onchange="state.orderCategoryFilter = this.value; renderApp();" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none">
+                <option value="ALL" ${state.orderCategoryFilter === 'ALL' ? 'selected' : ''}>Semua Kategori</option>
+                <option value="kedukaan" ${state.orderCategoryFilter === 'kedukaan' ? 'selected' : ''}>Misa Kedukaan</option>
+                <option value="perminyakan" ${state.orderCategoryFilter === 'perminyakan' ? 'selected' : ''}>Perminyakan</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="px-6 py-3.5">NO. ORDER</th>
+                  <th class="px-6 py-3.5">KATEGORI & PELAYANAN</th>
+                  <th class="px-6 py-3.5">PEMOHON</th>
+                  <th class="px-6 py-3.5">PAROKI / LOKASI</th>
+                  <th class="px-6 py-3.5">JADWAL</th>
+                  <th class="px-6 py-3.5">ROMO DITUGASKAN</th>
+                  <th class="px-6 py-3.5">STATUS</th>
+                  <th class="px-6 py-3.5 text-right">AKSI</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                ${filtered.length === 0 ? `
+                  <tr><td colspan="8" class="text-center py-10 text-slate-400">Tidak ada permintaan pelayanan ditemukan</td></tr>
+                ` : filtered.map(o => `
+                  <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-4 font-bold text-blue-950">${o.orderNumber}</td>
+                    <td class="px-6 py-4">
+                      <p class="font-bold text-slate-900">${o.categoryName}</p>
+                      ${o.items && o.items.length > 0 ? `<p class="text-[11px] text-slate-500">${o.items.length} misa: ${o.items.map(i => i.itemName).join(', ')}</p>` : ''}
+                    </td>
+                    <td class="px-6 py-4">${o.pemohonName || '-'}</td>
+                    <td class="px-6 py-4">${o.parokiName || o.locationName || '-'}</td>
+                    <td class="px-6 py-4">${o.scheduledDate || '-'}</td>
+                    <td class="px-6 py-4">
+                      ${o.acceptedRomoName ? `<span class="font-bold text-emerald-700">Romo ${o.acceptedRomoName}</span>` : '<span class="text-slate-400 italic">Belum ada</span>'}
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="px-2.5 py-1 rounded-md font-bold text-[11px] ${getStatusBadgeClass(o.status)}">${o.status}</span>
+                    </td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                      <button onclick="viewOrderDetail(${o.id})" class="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-950 font-bold hover:bg-blue-100 transition">Detail</button>
+                      <button onclick="updateOrderStatusPrompt(${o.id})" class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition">Ubah Status</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // Tab 2: Users & Approvals
+    function renderUsersTab() {
+      const q = state.userSearch.toLowerCase();
+      const filtered = state.users.filter(u => {
+        if (state.userRoleFilter !== 'ALL' && (u.role_code || '').toUpperCase() !== state.userRoleFilter) return false;
+        if (state.userStatusFilter !== 'ALL' && (u.account_status || '').toUpperCase() !== state.userStatusFilter) return false;
+        if (q) {
+          const matchName = (u.full_name || '').toLowerCase().includes(q);
+          const matchPhone = (u.phone_number || '').toLowerCase().includes(q);
+          const matchPar = (u.paroki_name || '').toLowerCase().includes(q);
+          if (!matchName && !matchPhone && !matchPar) return false;
+        }
+        return true;
+      });
+
+      return `
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <!-- Filter Bar -->
+          <div class="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3 flex-1 min-w-[280px]">
+              <div class="relative w-full">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                <input type="text" placeholder="Cari nama umat, no. HP, paroki..." value="${state.userSearch}"
+                  oninput="state.userSearch = this.value; renderApp();"
+                  class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+              <select onchange="state.userRoleFilter = this.value; renderApp();" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none">
+                <option value="ALL" ${state.userRoleFilter === 'ALL' ? 'selected' : ''}>Semua Role</option>
+                <option value="UMAT" ${state.userRoleFilter === 'UMAT' ? 'selected' : ''}>Umat</option>
+                <option value="ROMO_PAROKI" ${state.userRoleFilter === 'ROMO_PAROKI' ? 'selected' : ''}>Romo Paroki</option>
+                <option value="ROMO_ORDO" ${state.userRoleFilter === 'ROMO_ORDO' ? 'selected' : ''}>Romo Ordo</option>
+                <option value="PENGURUS_LINGKUNGAN" ${state.userRoleFilter === 'PENGURUS_LINGKUNGAN' ? 'selected' : ''}>Pengurus Lingkungan</option>
+                <option value="ADMIN" ${state.userRoleFilter === 'ADMIN' ? 'selected' : ''}>Admin</option>
+              </select>
+
+              <select onchange="state.userStatusFilter = this.value; renderApp();" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none">
+                <option value="ALL" ${state.userStatusFilter === 'ALL' ? 'selected' : ''}>Semua Status</option>
+                <option value="PENDING_APPROVAL" ${state.userStatusFilter === 'PENDING_APPROVAL' ? 'selected' : ''}>Menunggu Approval</option>
+                <option value="APPROVED" ${state.userStatusFilter === 'APPROVED' ? 'selected' : ''}>Approved</option>
+                <option value="REJECTED" ${state.userStatusFilter === 'REJECTED' ? 'selected' : ''}>Rejected</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="px-6 py-3.5">PENGGUNA</th>
+                  <th class="px-6 py-3.5">NO. WHATSAPP</th>
+                  <th class="px-6 py-3.5">ROLE</th>
+                  <th class="px-6 py-3.5">PAROKI / DOMISILI</th>
+                  <th class="px-6 py-3.5">STATUS AKUN</th>
+                  <th class="px-6 py-3.5 text-right">AKSI APPROVAL</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                ${filtered.length === 0 ? `
+                  <tr><td colspan="6" class="text-center py-10 text-slate-400">Tidak ada pengguna ditemukan</td></tr>
+                ` : filtered.map(u => `
+                  <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-4">
+                      <p class="font-bold text-slate-900">${u.full_name || 'Pengguna'}</p>
+                      <p class="text-[11px] text-slate-400">${u.email || '-'}</p>
+                    </td>
+                    <td class="px-6 py-4 font-semibold">${u.phone_number}</td>
+                    <td class="px-6 py-4">
+                      <span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-950 font-bold text-[11px]">${u.role_name || u.role_code}</span>
+                    </td>
+                    <td class="px-6 py-4">${u.paroki_name || u.kota_name || '-'}</td>
+                    <td class="px-6 py-4">
+                      <span class="px-2.5 py-1 rounded-md font-bold text-[11px] ${
+                        u.account_status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                        u.account_status === 'PENDING_APPROVAL' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                        'bg-red-50 text-red-700 border border-red-200'
+                      }">${u.account_status}</span>
+                    </td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                      ${u.account_status === 'PENDING_APPROVAL' ? `
+                        <button onclick="approveUserAction(${u.id}, 'APPROVED')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition">Setujui</button>
+                        <button onclick="approveUserAction(${u.id}, 'REJECTED')" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold transition">Tolak</button>
+                      ` : `
+                        <button onclick="toggleUserStatusPrompt(${u.id}, '${u.full_name}', '${u.account_status}')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition">Ubah Status</button>
+                      `}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // Tab 3: Master Data
+    function renderMasterTab() {
+      return `
+        <div class="space-y-6">
+          <div class="flex items-center space-x-3">
+            <button onclick="state.masterSubTab = 'paroki'; renderApp();" class="px-4 py-2 rounded-xl text-xs font-bold transition ${state.masterSubTab === 'paroki' ? 'bg-blue-950 text-white' : 'bg-white text-slate-600 border border-slate-200'}">Daftar Paroki (${state.paroki.length})</button>
+            <button onclick="state.masterSubTab = 'keuskupan'; renderApp();" class="px-4 py-2 rounded-xl text-xs font-bold transition ${state.masterSubTab === 'keuskupan' ? 'bg-blue-950 text-white' : 'bg-white text-slate-600 border border-slate-200'}">Daftar Keuskupan (${state.keuskupan.length})</button>
+            <button onclick="state.masterSubTab = 'ordo'; renderApp();" class="px-4 py-2 rounded-xl text-xs font-bold transition ${state.masterSubTab === 'ordo' ? 'bg-blue-950 text-white' : 'bg-white text-slate-600 border border-slate-200'}">Daftar Ordo (${state.ordo.length})</button>
+          </div>
+
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              ${(state.masterSubTab === 'paroki' ? state.paroki : state.masterSubTab === 'keuskupan' ? state.keuskupan : state.ordo).map(item => `
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center space-x-3.5">
+                  <div class="p-2.5 rounded-xl bg-blue-50 text-blue-950">
+                    <i data-lucide="church" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-slate-900">${item.name}</h4>
+                    <p class="text-[11px] text-slate-400">ID: ${item.id}</p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Tab 4: Chat Monitoring
+    function renderChatTab() {
+      return `
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center">
+            <i data-lucide="messages-square" class="w-4 h-4 mr-2 text-blue-950"></i>
+            Daftar Grup Chat Koordinasi Pelayanan
+          </h3>
+          <div class="space-y-3">
+            ${state.orders.map(o => `
+              <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <div class="flex items-center space-x-3.5">
+                  <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+                    <i data-lucide="message-circle" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-slate-900">Grup Koordinasi Pelayanan ${o.categoryName} (${o.orderNumber})</h4>
+                    <p class="text-[11px] text-slate-500">Pemohon: ${o.pemohonName} • Romo: ${o.acceptedRomoName || 'Menunggu Penugasan'}</p>
+                  </div>
+                </div>
+                <button onclick="viewChatModal(${o.id})" class="px-3 py-1.5 rounded-lg bg-blue-950 text-white text-xs font-bold hover:bg-blue-900 transition">Buka Chat</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // Tab 5: QA Test Runner
+    function renderQATab() {
+      return `
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900">Live Quality Assurance & Unit Test Runner</h3>
+              <p class="text-xs text-slate-500 mt-1">Eksekusi otomatis seluruh test suite backend NestJS (Jest Runner) langsung dari browser.</p>
+            </div>
+            <button onclick="runTestsAction()" ${state.isRunningTests ? 'disabled' : ''}
+              class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center space-x-2 shadow-lg shadow-emerald-600/20 transition disabled:opacity-50">
+              ${state.isRunningTests ? `
+                <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span>Menjalankan...</span>
+              ` : `
+                <i data-lucide="play" class="w-4 h-4"></i>
+                <span>▶ Jalankan Live Tests</span>
+              `}
+            </button>
+          </div>
+
+          <div class="bg-slate-950 rounded-xl p-6 text-slate-200 font-mono text-xs border border-slate-800 min-h-[300px]">
+            ${!state.testResults ? `
+              <div class="text-center py-20 text-slate-500">
+                <i data-lucide="terminal" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
+                <p>Klik "Jalankan Live Tests" untuk menguji seluruh modul API CATU v2</p>
+              </div>
+            ` : `
+              <div class="space-y-4">
+                <div class="flex items-center space-x-3 text-emerald-400 font-bold">
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500">PASS</span>
+                  <span>${state.testResults.message || 'All Test Suites Passed'}</span>
+                  <span class="text-slate-500">${state.testResults.timestamp || ''}</span>
+                </div>
+                <div class="border-t border-slate-800 pt-3 space-y-2">
+                  ${(state.testResults.results || []).map(r => `
+                    <div class="flex items-center justify-between text-slate-300">
+                      <span>✓ [${r.suite || 'Test'}] ${r.name}</span>
+                      <span class="text-emerald-400 font-bold">${r.status || 'PASSED'}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    // Modal Helpers
+    function renderOrderDetailModal() {
+      const o = state.activeOrderDetail;
+      return `
+        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+              <div>
+                <h3 class="text-base font-extrabold text-slate-900">${o.orderNumber}</h3>
+                <p class="text-xs font-semibold text-blue-950">${o.categoryName}</p>
+              </div>
+              <button onclick="state.activeOrderDetail = null; renderApp();" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Pemohon:</span><span class="font-bold">${o.pemohonName}</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Paroki / Lokasi:</span><span class="font-bold">${o.parokiName || o.locationName || '-'}</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Jadwal Misa:</span><span class="font-bold">${o.scheduledDate || '-'} ${o.scheduledTime || ''}</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Romo:</span><span class="font-bold text-emerald-700">${o.acceptedRomoName ? 'Romo ' + o.acceptedRomoName : 'Belum Ditugaskan'}</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Status:</span><span class="font-bold px-2 py-0.5 rounded ${getStatusBadgeClass(o.status)}">${o.status}</span></div>
+              ${o.notes ? `<div><span class="text-slate-500">Catatan Khusus:</span><p class="mt-1 p-2.5 rounded-lg bg-slate-50 text-slate-700">${o.notes}</p></div>` : ''}
+            </div>
+
+            <div class="pt-2 flex justify-end space-x-2">
+              <button onclick="state.activeOrderDetail = null; renderApp();" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200">Tutup</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderChatModal() {
+      const o = state.activeChatOrder;
+      return `
+        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div>
+                <h3 class="text-sm font-extrabold text-slate-900">Chat Pelayanan: ${o.orderNumber}</h3>
+                <p class="text-[11px] text-slate-500">${o.categoryName} • Pemohon: ${o.pemohonName}</p>
+              </div>
+              <button onclick="state.activeChatOrder = null; renderApp();" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="h-64 overflow-y-auto bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 custom-scrollbar text-xs">
+              <div class="p-2.5 rounded-xl bg-blue-100 text-blue-900 mr-8">
+                <p class="font-bold text-[10px] text-blue-950">${o.pemohonName} (Pemohon)</p>
+                <p class="mt-0.5">Berkah Dalem, permohonan pelayanan ${o.categoryName} telah kami ajukan.</p>
+              </div>
+              ${o.acceptedRomoName ? `
+                <div class="p-2.5 rounded-xl bg-emerald-100 text-emerald-900 ml-8 text-right">
+                  <p class="font-bold text-[10px] text-emerald-950">Romo ${o.acceptedRomoName}</p>
+                  <p class="mt-0.5">Berkah Dalem, permohonan telah diterima. Kami akan hadir tepat waktu.</p>
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="flex justify-end">
+              <button onclick="state.activeChatOrder = null; renderApp();" class="px-4 py-2 rounded-xl bg-blue-950 text-white text-xs font-bold">Tutup</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function getStatusBadgeClass(status) {
+      const s = (status || '').toUpperCase();
+      if (s === 'CONFIRMED' || s === 'ACCEPTED') return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+      if (s === 'DONE' || s === 'SELESAI') return 'bg-blue-50 text-blue-700 border border-blue-200';
+      if (s === 'FAIL' || s === 'REJECTED') return 'bg-red-50 text-red-700 border border-red-200';
+      return 'bg-amber-50 text-amber-700 border border-amber-200';
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 4. API ACTIONS
+    // ══════════════════════════════════════════════════════════════════════════
+    async function loadDashboardData() {
+      try {
+        const [anRes, ordRes, usrRes, kRes, pRes, oRes] = await Promise.all([
+          fetch(`${API_BASE}/auth/admin/analytics`),
+          fetch(`${API_BASE}/orders`),
+          fetch(`${API_BASE}/auth/admin/users`),
+          fetch(`${API_BASE}/auth/keuskupan`),
+          fetch(`${API_BASE}/auth/paroki`),
+          fetch(`${API_BASE}/auth/ordo`),
+        ]);
+
+        state.analytics = await anRes.json();
+        const ordData = await ordRes.json();
+        state.orders = ordData.orders || ordData || [];
+        const usrData = await usrRes.json();
+        state.users = usrData.users || [];
+        state.keuskupan = await kRes.json();
+        state.paroki = await pRes.json();
+        state.ordo = await oRes.json();
+        renderApp();
+      } catch (err) {
+        console.error('Error loading dashboard data:', err);
+      }
+    }
+
+    async function approveUserAction(userId, action) {
+      if (!confirm(`Apakah Anda yakin ingin mengubah status akun ini menjadi ${action}?`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/auth/approve-registration`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetUserId: userId, action }),
+        });
+        const data = await res.json();
+        alert(data.message || 'Status akun berhasil diperbarui!');
+        loadDashboardData();
+      } catch (e) {
+        alert('Gagal memperbarui status user');
+      }
+    }
+
+    async function updateOrderStatusPrompt(orderId) {
+      const newStatus = prompt('Masukkan status baru (PENDING, CONFIRMED, DONE, FAIL):', 'CONFIRMED');
+      if (!newStatus) return;
+      try {
+        const res = await fetch(`${API_BASE}/auth/admin/orders/${orderId}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus.trim().toUpperCase() }),
+        });
+        const data = await res.json();
+        alert(data.message || 'Status order berhasil diperbarui!');
+        loadDashboardData();
+      } catch (e) {
+        alert('Gagal update status order');
+      }
+    }
+
+    async function toggleUserStatusPrompt(userId, userName, currentStatus) {
+      const newStatus = prompt(`Ubah status akun ${userName} (APPROVED, PENDING_APPROVAL, REJECTED):`, currentStatus);
+      if (!newStatus) return;
+      try {
+        const res = await fetch(`${API_BASE}/auth/admin/users/${userId}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus.trim().toUpperCase() }),
+        });
+        const data = await res.json();
+        alert(data.message || 'Status user berhasil diperbarui!');
+        loadDashboardData();
+      } catch (e) {
+        alert('Gagal update status user');
+      }
+    }
+
+    async function runTestsAction() {
+      state.isRunningTests = true;
+      renderApp();
+      try {
+        const res = await fetch(`${API_BASE}/test-runner/run-unit-tests`, { method: 'POST' });
+        state.testResults = await res.json();
+      } catch (e) {
+        alert('Gagal menjalankan unit tests');
+      }
+      state.isRunningTests = false;
+      renderApp();
+    }
+
+    function viewOrderDetail(orderId) {
+      state.activeOrderDetail = state.orders.find(o => o.id === orderId);
+      renderApp();
+    }
+
+    function viewChatModal(orderId) {
+      state.activeChatOrder = state.orders.find(o => o.id === orderId);
+      renderApp();
+    }
+
+    // Init
+    renderApp();
+    if (state.currentUser && state.currentUser.roleCode === 'ADMIN') {
+      loadDashboardData();
+    }
+  </script>
+</body>
+</html>

@@ -31,11 +31,11 @@ services:
     depends_on:
       - postgres
 
-  mobile_frontend:
+  admin_web:
     build:
-      context: ./mobile
+      context: ./admin_web
       dockerfile: Dockerfile
-    container_name: catu_mobile_frontend
+    container_name: catu_admin_web
     restart: always
     ports:
       - "8000:80"

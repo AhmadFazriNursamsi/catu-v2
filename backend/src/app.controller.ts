@@ -766,6 +766,76 @@ export class AuthController implements OnModuleInit {
     };
   }
 
+  @Post('admin/login')
+  @ApiOperation({
+    summary: 'Login Khusus Administrator Web Portal',
+    description: 'Hanya mengizinkan akun dengan peran ADMIN. User peran lain (UMAT, ROMO, PENGURUS) akan ditolak dengan status 403.',
+  })
+  async adminLogin(@Body() dto: LoginDto) {
+    let phone = dto.phoneNumber.trim();
+    if (phone.startsWith('0')) phone = phone.substring(1);
+    if (phone.startsWith('62')) phone = phone.substring(2);
+    const fullPhone = `62${phone}`;
+
+    const users = await this.dataSource.query(
+      `SELECT u.id, u.uuid, u.phone_number, u.password_hash, u.account_status, r.code as role_code, 
+              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id, kk.provinsi_id,
+              k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, kk.name as kota_name,
+              p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
+       FROM auth_users u 
+       JOIN roles r ON u.role_id = r.id 
+       JOIN user_profiles p ON p.user_id = u.id
+       LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
+       LEFT JOIN paroki par ON p.paroki_id = par.id
+       LEFT JOIN wilayah w ON p.wilayah_id = w.id
+       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+       LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
+       WHERE u.phone_number = $1 OR u.phone_number = $2 OR u.phone_number = $3`,
+      [fullPhone, `0${phone}`, dto.phoneNumber.trim()],
+    );
+
+    if (!users.length) {
+      return { statusCode: 401, message: 'Nomor WhatsApp / HP atau kata sandi salah' };
+    }
+
+    const user = users[0];
+
+    // Check Role: MUST BE ADMIN
+    if (user.role_code !== 'ADMIN') {
+      return {
+        statusCode: 403,
+        message: `Akses Ditolak: Portal Web ini khusus untuk Administrator Sistem. Pengguna peran "${user.role_code}" silakan masuk melalui Aplikasi Mobile CATU.`,
+      };
+    }
+
+    const dbPasswordHash = user.password_hash;
+    let isPasswordValid = false;
+    if (dbPasswordHash && (dbPasswordHash.startsWith('$2b$') || dbPasswordHash.startsWith('$2a$'))) {
+      isPasswordValid = await bcrypt.compare(dto.password, dbPasswordHash);
+    } else {
+      isPasswordValid = dbPasswordHash === dto.password;
+    }
+
+    if (!isPasswordValid) {
+      return { statusCode: 401, message: 'Nomor WhatsApp / HP atau kata sandi salah' };
+    }
+
+    return {
+      statusCode: 200,
+      message: 'Login Administrator Berhasil',
+      accessToken: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock_jwt_token_admin_${user.id}`,
+      user: {
+        id: user.id,
+        uuid: user.uuid,
+        fullName: user.full_name,
+        phoneNumber: user.phone_number,
+        email: user.email,
+        roleCode: user.role_code,
+        accountStatus: user.account_status,
+      },
+    };
+  }
+
   // ── Forgot Password Endpoints ──
 
   @Post('forgot-password/request-otp')
