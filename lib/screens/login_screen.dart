@@ -297,7 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Icon(Icons.build_circle_outlined, size: 13, color: Color(0xFF64748B)),
                         SizedBox(width: 6),
                         Text(
-                          'v2.5.0-build.20260821.164800',
+                          'v2.5.0-build.20260821.170800',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,

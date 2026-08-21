@@ -10,6 +10,7 @@ import '../orders/order_detail_screen.dart';
 import '../orders/schedule_screen.dart';
 import '../profile/main_menu_screen.dart';
 import '../notifications/notification_screen.dart';
+import '../admin/romo_approval_screen.dart';
 
 class RomoDashboardCardItem {
   final Order parentOrder;
@@ -77,6 +78,11 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     final rawRole = widget.user['roleCode'] ?? widget.user['role_code'] ?? '';
     if (rawRole.toString().toUpperCase().contains('PAROKI')) return 'ROMO_PAROKI';
     return 'ROMO_ORDO';
+  }
+
+  bool get _isKetuaRomo {
+    final pos = (widget.user['romoPosition'] ?? widget.user['romo_position'] ?? '').toString().toUpperCase();
+    return pos == 'KETUA_ROMO';
   }
 
   Future<void> _openNotifications() async {
@@ -430,6 +436,83 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                   ],
                 ),
               ),
+
+              // ── Ketua Romo Approval Action Banner (if KETUA_ROMO) ──
+              if (_isKetuaRomo)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  child: InkWell(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RomoApprovalScreen(user: widget.user),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1E3A8A).withValues(alpha: 0.3),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(Icons.verified_user_outlined, color: Colors.white, size: 24),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _romoRole == 'ROMO_ORDO'
+                                      ? 'Persetujuan Romo Ordo'
+                                      : 'Persetujuan Romo Paroki',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _romoRole == 'ROMO_ORDO'
+                                      ? 'Kelola pendaftaran romo baru di ordo Anda'
+                                      : 'Kelola pendaftaran romo baru di paroki Anda',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
 
               // ── 4. Section 1: Jadwal Pelayanan Hari Ini ──
               Padding(

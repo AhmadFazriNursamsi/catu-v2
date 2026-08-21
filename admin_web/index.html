@@ -1614,11 +1614,29 @@
                       <td class="px-6 py-4 text-right">
                         ${(() => {
                           const r = (u.role_code || u.roleCode || '').toUpperCase();
+                          const romoPos = (u.romo_position || u.romoPosition || '').toUpperCase();
+
                           if (r === 'UMAT') {
                             return `
-                              <div class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80 font-bold text-[11px] shadow-2xs" title="Persetujuan pendaftaran Umat dilakukan oleh Pengurus Lingkungan masing-masing via aplikasi mobile CATU">
+                              <div class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80 font-bold text-[11px] shadow-2xs" title="Persetujuan pendaftaran Umat dilakukan oleh Pengurus Lingkungan via aplikasi mobile CATU">
                                 <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-600"></i>
                                 <span>Verifikasi Pengurus Lingkungan</span>
+                              </div>
+                            `;
+                          }
+                          if (r === 'ROMO_PAROKI' && romoPos !== 'KETUA_ROMO') {
+                            return `
+                              <div class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-900 border border-indigo-200/80 font-bold text-[11px] shadow-2xs" title="Persetujuan Romo Paroki dilakukan oleh Kepala Romo Paroki terkait via aplikasi mobile CATU">
+                                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-indigo-600"></i>
+                                <span>Verifikasi Kepala Romo Paroki</span>
+                              </div>
+                            `;
+                          }
+                          if (r === 'ROMO_ORDO' && romoPos !== 'KETUA_ROMO') {
+                            return `
+                              <div class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-50 text-purple-900 border border-purple-200/80 font-bold text-[11px] shadow-2xs" title="Persetujuan Romo Ordo dilakukan oleh Ketua Romo Ordo terkait via aplikasi mobile CATU">
+                                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-purple-600"></i>
+                                <span>Verifikasi Ketua Romo Ordo</span>
                               </div>
                             `;
                           }
@@ -4641,9 +4659,19 @@
       const targetUser = state.users.find(u => String(u.id) === String(userId));
       const userName = targetUser?.full_name || targetUser?.fullName || 'Pengguna Baru';
       const isApprove = action === 'APPROVED';
+      const r = (targetUser?.role_code || targetUser?.roleCode || '').toUpperCase();
+      const romoPos = (targetUser?.romo_position || targetUser?.romoPosition || '').toUpperCase();
 
-      if ((targetUser?.role_code || targetUser?.roleCode || '').toUpperCase() === 'UMAT') {
+      if (r === 'UMAT') {
         showToast('Pendaftaran akun Umat diverifikasi dan disetujui oleh Pengurus Lingkungan setempat via aplikasi mobile CATU.', 'warning', 'Persetujuan Khusus Pengurus');
+        return;
+      }
+      if (r === 'ROMO_PAROKI' && romoPos !== 'KETUA_ROMO') {
+        showToast('Pendaftaran Romo Paroki diverifikasi dan disetujui oleh Kepala Romo Paroki terkait via aplikasi mobile CATU.', 'warning', 'Persetujuan Khusus Kepala Romo');
+        return;
+      }
+      if (r === 'ROMO_ORDO' && romoPos !== 'KETUA_ROMO') {
+        showToast('Pendaftaran Romo Ordo diverifikasi dan disetujui oleh Ketua Romo Ordo terkait via aplikasi mobile CATU.', 'warning', 'Persetujuan Khusus Ketua Romo Ordo');
         return;
       }
 

@@ -9,6 +9,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import 'edit_profile_screen.dart';
 import '../admin/pengurus_approval_screen.dart';
+import '../admin/romo_approval_screen.dart';
 
 class MainMenuScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -475,6 +476,27 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                   context,
                   MaterialPageRoute(
                     builder: (_) => PengurusApprovalScreen(user: _userData),
+                  ),
+                );
+              },
+            ),
+            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          ],
+
+          // ── Ketua Romo Approval Tile ──
+          if ((_userData['romoPosition'] ?? _userData['romo_position'] ?? '').toString().toUpperCase() == 'KETUA_ROMO') ...[
+            _buildMenuItem(
+              icon: Icons.verified_user_rounded,
+              title: (_userData['roleCode'] ?? _userData['role_code'] ?? '').toString().toUpperCase().contains('ORDO')
+                  ? 'Persetujuan Romo Ordo'
+                  : 'Persetujuan Romo Paroki',
+              subtitle: 'Verifikasi pendaftaran romo baru untuk wilayah pelayanan Anda',
+              onTap: () {
+                HapticFeedback.selectionClick();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RomoApprovalScreen(user: _userData),
                   ),
                 );
               },

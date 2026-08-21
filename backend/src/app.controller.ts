@@ -739,6 +739,106 @@ export class AuthController implements OnModuleInit {
     };
   }
 
+  @Get('romo/pending-romo')
+  @ApiOperation({ summary: 'Daftar Romo Baru yang Menunggu Persetujuan Kepala Romo Paroki / Ketua Romo Ordo' })
+  async getRomoPendingRomo(
+    @Query('romoUserId') romoUserId?: string,
+    @Query('parokiId') parokiId?: string,
+    @Query('ordoId') ordoId?: string,
+  ) {
+    let resolvedParokiId = parokiId ? parseInt(parokiId, 10) : null;
+    let resolvedOrdoId = ordoId ? parseInt(ordoId, 10) : null;
+    let isOrdo = false;
+
+    if (romoUserId) {
+      const p = await this.dataSource.query(
+        `SELECT p.paroki_id, p.ordo_id, r.code as role_code, p.romo_position
+         FROM user_profiles p
+         JOIN auth_users u ON p.user_id = u.id
+         JOIN roles r ON u.role_id = r.id
+         WHERE p.user_id = $1`,
+        [parseInt(romoUserId, 10)],
+      );
+      if (p.length > 0) {
+        if (p[0].role_code === 'ROMO_ORDO') isOrdo = true;
+        if (p[0].paroki_id) resolvedParokiId = p[0].paroki_id;
+        if (p[0].ordo_id) resolvedOrdoId = p[0].ordo_id;
+      }
+    }
+
+    if (isOrdo || resolvedOrdoId) {
+      const rows = await this.dataSource.query(
+        `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.created_at,
+                p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+                p.romo_position, o.name as ordo_name, o.code as ordo_code,
+                k.name as keuskupan_name, par.name as paroki_name,
+                kk.name as kota_name
+         FROM auth_users u
+         JOIN roles r ON u.role_id = r.id
+         JOIN user_profiles p ON u.id = p.user_id
+         LEFT JOIN ordo o ON (p.ordo_id = o.id OR p.user_id IN (SELECT rp.user_id FROM romo_profiles rp WHERE rp.ordo_id = o.id))
+         LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
+         LEFT JOIN paroki par ON p.paroki_id = par.id
+         LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
+         WHERE r.code = 'ROMO_ORDO'
+           AND u.account_status = 'PENDING_APPROVAL'
+           AND ($1::int IS NULL OR p.ordo_id = $1::int OR p.user_id IN (SELECT rp.user_id FROM romo_profiles rp WHERE rp.ordo_id = $1::int))
+         ORDER BY u.created_at DESC`,
+        [resolvedOrdoId],
+      );
+      return rows;
+    } else {
+      const rows = await this.dataSource.query(
+        `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.created_at,
+                p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+                p.romo_position,
+                k.name as keuskupan_name, par.name as paroki_name,
+                kk.name as kota_name
+         FROM auth_users u
+         JOIN roles r ON u.role_id = r.id
+         JOIN user_profiles p ON u.id = p.user_id
+         LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
+         LEFT JOIN paroki par ON p.paroki_id = par.id
+         LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
+         WHERE r.code = 'ROMO_PAROKI'
+           AND u.account_status = 'PENDING_APPROVAL'
+           AND ($1::int IS NULL OR p.paroki_id = $1::int)
+         ORDER BY u.created_at DESC`,
+        [resolvedParokiId],
+      );
+      return rows;
+    }
+  }
+
+  @Post('romo/process-approval')
+  @ApiOperation({ summary: 'Proses Persetujuan Romo oleh Kepala Romo Paroki / Ketua Romo Ordo' })
+  async processRomoApproval(
+    @Body() body: { targetUserId: number; approverUserId: number; action: 'APPROVE' | 'REJECT'; rejectionReason?: string },
+  ) {
+    const { targetUserId, approverUserId, action, rejectionReason } = body;
+    if (!targetUserId || !approverUserId || !action) {
+      throw new BadRequestException('Parameter targetUserId, approverUserId, dan action wajib diisi.');
+    }
+
+    const newStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+    await this.dataSource.query(
+      'UPDATE auth_users SET account_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [newStatus, targetUserId],
+    );
+
+    await this.dataSource.query(
+      `INSERT INTO user_approvals (target_user_id, approver_user_id, action, rejection_reason)
+       VALUES ($1, $2, $3, $4)`,
+      [targetUserId, approverUserId, action, rejectionReason || null],
+    );
+
+    return {
+      statusCode: 200,
+      message: action === 'APPROVE' ? 'Romo berhasil disetujui!' : 'Pendaftaran Romo berhasil ditolak.',
+      accountStatus: newStatus,
+    };
+  }
+
   @Post('register')
   @ApiOperation({
     summary: 'Registrasi User Baru (Terpisah Antara auth_users & user_profiles)',
@@ -755,8 +855,13 @@ export class AuthController implements OnModuleInit {
       const role = await queryRunner.query('SELECT id FROM roles WHERE code = $1', [dto.roleCode]);
       const roleId = role[0]?.id || 1;
 
+      // Romo Position only applies to Romo roles (ROMO_PAROKI / ROMO_ORDO)
+      const isRomo = dto.roleCode === RoleCodeEnum.ROMO_PAROKI || dto.roleCode === RoleCodeEnum.ROMO_ORDO || (dto.roleCode as string).startsWith('ROMO');
+      const pengurusPositionVal = (dto.pengurusPosition && dto.pengurusPosition.trim() !== '') ? dto.pengurusPosition : null;
+      const romoPositionVal = isRomo ? ((dto.romoPosition && dto.romoPosition.trim() !== '') ? dto.romoPosition : 'ROMO_BIASA') : null;
+
       let approverName = 'Admin Aplikasi CATU';
-      let assignedPengurusId: number | null = null;
+      let assignedApproverId: number | null = null;
       if (dto.roleCode === 'UMAT' && dto.lingkunganId) {
         const pengurus = await queryRunner.query(
           `SELECT u.id, p.full_name, u.phone_number 
@@ -771,18 +876,47 @@ export class AuthController implements OnModuleInit {
           [dto.lingkunganId],
         );
         if (pengurus.length > 0) {
-          assignedPengurusId = pengurus[0].id;
+          assignedApproverId = pengurus[0].id;
           approverName = `${pengurus[0].full_name} (${pengurus[0].phone_number})`;
+        }
+      } else if (dto.roleCode === 'ROMO_PAROKI' && romoPositionVal !== 'KETUA_ROMO' && dto.parokiId) {
+        const ketuaRomo = await queryRunner.query(
+          `SELECT u.id, p.full_name, u.phone_number 
+           FROM user_profiles p 
+           JOIN auth_users u ON p.user_id = u.id 
+           JOIN roles r ON u.role_id = r.id
+           WHERE p.paroki_id = $1 
+             AND r.code = 'ROMO_PAROKI'
+             AND p.romo_position = 'KETUA_ROMO'
+             AND u.account_status = 'APPROVED'
+           LIMIT 1`,
+          [dto.parokiId],
+        );
+        if (ketuaRomo.length > 0) {
+          assignedApproverId = ketuaRomo[0].id;
+          approverName = `Kepala Romo Paroki: ${ketuaRomo[0].full_name} (${ketuaRomo[0].phone_number})`;
+        }
+      } else if (dto.roleCode === 'ROMO_ORDO' && romoPositionVal !== 'KETUA_ROMO' && dto.ordoId) {
+        const ketuaOrdo = await queryRunner.query(
+          `SELECT u.id, p.full_name, u.phone_number 
+           FROM user_profiles p 
+           JOIN auth_users u ON p.user_id = u.id 
+           JOIN roles r ON u.role_id = r.id
+           WHERE (p.ordo_id = $1 OR p.user_id IN (SELECT rp.user_id FROM romo_profiles rp WHERE rp.ordo_id = $1))
+             AND r.code = 'ROMO_ORDO'
+             AND p.romo_position = 'KETUA_ROMO'
+             AND u.account_status = 'APPROVED'
+           LIMIT 1`,
+          [dto.ordoId],
+        );
+        if (ketuaOrdo.length > 0) {
+          assignedApproverId = ketuaOrdo[0].id;
+          approverName = `Ketua Romo Ordo: ${ketuaOrdo[0].full_name} (${ketuaOrdo[0].phone_number})`;
         }
       }
 
       // Hash password dengan Bcrypt salt 10
       const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-      // Romo Position only applies to Romo roles (ROMO_PAROKI / ROMO_ORDO)
-      const isRomo = dto.roleCode === RoleCodeEnum.ROMO_PAROKI || dto.roleCode === RoleCodeEnum.ROMO_ORDO || (dto.roleCode as string).startsWith('ROMO');
-      const pengurusPositionVal = (dto.pengurusPosition && dto.pengurusPosition.trim() !== '') ? dto.pengurusPosition : null;
-      const romoPositionVal = isRomo ? ((dto.romoPosition && dto.romoPosition.trim() !== '') ? dto.romoPosition : 'ROMO_BIASA') : null;
 
       // Check if position already taken for that Lingkungan
       if ((dto.roleCode === 'PENGURUS_LINGKUNGAN' || pengurusPositionVal) && dto.lingkunganId && pengurusPositionVal) {
@@ -830,7 +964,7 @@ export class AuthController implements OnModuleInit {
       const authResult = await queryRunner.query(
         `INSERT INTO auth_users (phone_number, password_hash, role_id, account_status, approval_assigned_to_user_id)
          VALUES ($1, $2, $3, 'PENDING_APPROVAL', $4) RETURNING id, uuid, phone_number, account_status`,
-        [dto.phoneNumber, hashedPassword, roleId, assignedPengurusId],
+        [dto.phoneNumber, hashedPassword, roleId, assignedApproverId],
       );
       const authUser = authResult[0];
 
@@ -909,12 +1043,72 @@ export class AuthController implements OnModuleInit {
             );
           } catch (_) {}
         }
+      } else if (dto.roleCode === 'ROMO_PAROKI' && romoPositionVal !== 'KETUA_ROMO' && dto.parokiId) {
+        const ketuaRomoUsers = await this.dataSource.query(
+          `SELECT u.id FROM auth_users u
+           JOIN user_profiles p ON u.id = p.user_id
+           JOIN roles r ON u.role_id = r.id
+           WHERE p.paroki_id = $1
+             AND r.code = 'ROMO_PAROKI'
+             AND p.romo_position = 'KETUA_ROMO'
+             AND u.account_status = 'APPROVED'`,
+          [dto.parokiId],
+        );
+
+        for (const kr of ketuaRomoUsers) {
+          try {
+            await this.dataSource.query(
+              `INSERT INTO notifications (user_id, title, body, type)
+               VALUES ($1, $2, $3, 'NEW_ORDER_MONITOR')`,
+              [
+                kr.id,
+                `Pendaftaran Romo Paroki Baru: ${dto.fullName}`,
+                `Romo ${dto.fullName} (${dto.phoneNumber}) mendaftar di paroki Anda (${parokiName || 'Paroki'}) dan menunggu persetujuan (approval).`,
+              ],
+            );
+          } catch (_) {}
+        }
+      } else if (dto.roleCode === 'ROMO_ORDO' && romoPositionVal !== 'KETUA_ROMO' && dto.ordoId) {
+        let ordoName = '';
+        const ordoRes = await this.dataSource.query('SELECT name FROM ordo WHERE id = $1', [dto.ordoId]);
+        if (ordoRes.length > 0) ordoName = ordoRes[0].name;
+
+        const ketuaOrdoUsers = await this.dataSource.query(
+          `SELECT u.id FROM auth_users u
+           JOIN user_profiles p ON u.id = p.user_id
+           JOIN roles r ON u.role_id = r.id
+           WHERE (p.ordo_id = $1 OR p.user_id IN (SELECT rp.user_id FROM romo_profiles rp WHERE rp.ordo_id = $1))
+             AND r.code = 'ROMO_ORDO'
+             AND p.romo_position = 'KETUA_ROMO'
+             AND u.account_status = 'APPROVED'`,
+          [dto.ordoId],
+        );
+
+        for (const ko of ketuaOrdoUsers) {
+          try {
+            await this.dataSource.query(
+              `INSERT INTO notifications (user_id, title, body, type)
+               VALUES ($1, $2, $3, 'NEW_ORDER_MONITOR')`,
+              [
+                ko.id,
+                `Pendaftaran Romo Ordo Baru: ${dto.fullName}`,
+                `Romo ${dto.fullName} (${dto.phoneNumber}) mendaftar di ordo Anda (${ordoName || 'Ordo'}) dan menunggu persetujuan (approval).`,
+              ],
+            );
+          } catch (_) {}
+        }
       }
 
-      const isPengurusOrLeader = Boolean(dto.pengurusPosition || (isRomo && dto.romoPosition === 'KETUA_ROMO'));
-      const approvalTargetMsg = isPengurusOrLeader
-        ? 'Admin Aplikasi CATU'
-        : (dto.roleCode === 'UMAT' ? 'Pengurus Lingkungan' : 'Admin Aplikasi CATU');
+      let approvalTargetMsg = 'Admin Aplikasi CATU';
+      if (dto.roleCode === 'UMAT') {
+        approvalTargetMsg = 'Pengurus Lingkungan';
+      } else if (dto.roleCode === 'ROMO_PAROKI') {
+        approvalTargetMsg = romoPositionVal === 'KETUA_ROMO' ? 'Admin Aplikasi CATU' : 'Kepala Romo Paroki';
+      } else if (dto.roleCode === 'ROMO_ORDO') {
+        approvalTargetMsg = romoPositionVal === 'KETUA_ROMO' ? 'Admin Aplikasi CATU' : 'Ketua Romo Ordo';
+      } else if (dto.roleCode === 'PENGURUS_LINGKUNGAN') {
+        approvalTargetMsg = 'Admin Aplikasi CATU';
+      }
 
       return {
         statusCode: 201,
@@ -1555,6 +1749,33 @@ export class AuthController implements OnModuleInit {
 
       if (targetProf.length > 0 && targetProf[0].role_code === 'UMAT') {
         throw new BadRequestException('Pendaftaran akun Umat harus diverifikasi dan disetujui oleh Pengurus Lingkungan setempat melalui aplikasi mobile CATU.');
+      }
+
+      if (targetProf.length > 0 && targetProf[0].role_code === 'ROMO_PAROKI' && targetProf[0].romo_position !== 'KETUA_ROMO' && targetProf[0].paroki_id) {
+        const hasKetua = await this.dataSource.query(
+          `SELECT u.id, p.full_name FROM user_profiles p
+           JOIN auth_users u ON p.user_id = u.id
+           JOIN roles r ON u.role_id = r.id
+           WHERE p.paroki_id = $1 AND r.code = 'ROMO_PAROKI' AND p.romo_position = 'KETUA_ROMO' AND u.account_status = 'APPROVED'`,
+          [targetProf[0].paroki_id],
+        );
+        if (hasKetua.length > 0) {
+          throw new BadRequestException(`Pendaftaran Romo Paroki (${targetProf[0].full_name}) diverifikasi dan disetujui oleh Kepala Romo Paroki (${hasKetua[0].full_name}) melalui aplikasi mobile CATU.`);
+        }
+      }
+
+      if (targetProf.length > 0 && targetProf[0].role_code === 'ROMO_ORDO' && targetProf[0].romo_position !== 'KETUA_ROMO' && targetProf[0].ordo_id) {
+        const hasKetuaOrdo = await this.dataSource.query(
+          `SELECT u.id, p.full_name FROM user_profiles p
+           JOIN auth_users u ON p.user_id = u.id
+           JOIN roles r ON u.role_id = r.id
+           WHERE (p.ordo_id = $1 OR p.user_id IN (SELECT rp.user_id FROM romo_profiles rp WHERE rp.ordo_id = $1))
+             AND r.code = 'ROMO_ORDO' AND p.romo_position = 'KETUA_ROMO' AND u.account_status = 'APPROVED'`,
+          [targetProf[0].ordo_id],
+        );
+        if (hasKetuaOrdo.length > 0) {
+          throw new BadRequestException(`Pendaftaran Romo Ordo (${targetProf[0].full_name}) diverifikasi dan disetujui oleh Ketua Romo Ordo (${hasKetuaOrdo[0].full_name}) melalui aplikasi mobile CATU.`);
+        }
       }
 
       if (targetProf.length > 0 && targetProf[0].role_code === 'PENGURUS_LINGKUNGAN' && targetProf[0].lingkungan_id && targetProf[0].pengurus_position) {

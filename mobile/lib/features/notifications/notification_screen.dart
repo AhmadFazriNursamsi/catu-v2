@@ -5,6 +5,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/notification_service.dart';
 import '../orders/order_detail_screen.dart';
 import '../admin/pengurus_approval_screen.dart';
+import '../admin/romo_approval_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   final String role; // 'UMAT', 'ROMO_ORDO', 'ROMO_PAROKI', 'PENGURUS'
@@ -525,12 +526,23 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   item.body.toLowerCase().contains('approval');
 
               if (isApprovalNotification) {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PengurusApprovalScreen(user: widget.user),
-                  ),
-                );
+                final isRomoApproval = item.title.toLowerCase().contains('romo') ||
+                    widget.role.toUpperCase().contains('ROMO');
+                if (isRomoApproval) {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RomoApprovalScreen(user: widget.user),
+                    ),
+                  );
+                } else {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PengurusApprovalScreen(user: widget.user),
+                    ),
+                  );
+                }
                 return;
               }
 

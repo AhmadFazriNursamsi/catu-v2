@@ -658,4 +658,51 @@ class ApiService {
     }
     return [];
   }
+
+  // ── Romo Approval System (Kepala Romo Paroki & Ketua Romo Ordo) ──
+  static Future<List<Map<String, dynamic>>> getPendingRomoList({
+    int? romoUserId,
+    int? parokiId,
+    int? ordoId,
+  }) async {
+    try {
+      final queryParams = <String>[];
+      if (romoUserId != null) queryParams.add('romoUserId=$romoUserId');
+      if (parokiId != null) queryParams.add('parokiId=$parokiId');
+      if (ordoId != null) queryParams.add('ordoId=$ordoId');
+
+      final queryString = queryParams.isNotEmpty ? '?${queryParams.join('&')}' : '';
+      final response = await http.get(Uri.parse('$baseUrl/auth/romo/pending-romo$queryString'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return List<Map<String, dynamic>>.from(data);
+      }
+    } catch (e) {
+      print('Error getPendingRomoList: $e');
+    }
+    return [];
+  }
+
+  static Future<Map<String, dynamic>> processRomoApproval({
+    required int targetUserId,
+    required int approverUserId,
+    required String action,
+    String? rejectionReason,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/romo/process-approval'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'targetUserId': targetUserId,
+          'approverUserId': approverUserId,
+          'action': action,
+          if (rejectionReason != null) 'rejectionReason': rejectionReason,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'statusCode': 500, 'message': 'Gagal memproses persetujuan romo: $e'};
+    }
+  }
 }
