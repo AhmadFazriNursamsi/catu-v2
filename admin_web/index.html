@@ -1320,16 +1320,9 @@
                     const isLead = (u.romo_position || '').toLowerCase().includes('kepala');
                     return `
                       <tr class="hover:bg-amber-50/30 transition duration-150 group">
-                        <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">
-                          <div class="flex items-center space-x-3">
-                            <div class="w-9 h-9 rounded-xl ${isLead ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-50 text-emerald-900 border border-emerald-200'} flex items-center justify-center font-black text-xs shadow-2xs">
-                              ${isLead ? '👑' : '⛪'}
-                            </div>
-                            <div>
-                              <p class="font-extrabold text-slate-900 text-xs">${u.full_name || 'Romo Paroki'}</p>
-                              <p class="text-[10.5px] text-slate-400 font-semibold truncate max-w-xs">${u.email || '-'}</p>
-                            </div>
-                          </div>
+                        <td class="px-6 py-4">
+                          <p class="font-extrabold text-slate-900 text-sm tracking-tight">${u.full_name || 'Romo Paroki'}</p>
+                          <p class="text-[11px] text-slate-400 font-semibold truncate max-w-xs mt-0.5">${u.email || '-'}</p>
                         </td>
                         <td class="px-6 py-4">
                           <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
@@ -1503,16 +1496,9 @@
                     const isLead = (u.romo_position || '').toLowerCase().includes('ketua');
                     return `
                       <tr class="hover:bg-amber-50/30 transition duration-150 group">
-                        <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">
-                          <div class="flex items-center space-x-3">
-                            <div class="w-9 h-9 rounded-xl ${isLead ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-purple-50 text-purple-900 border border-purple-200'} flex items-center justify-center font-black text-xs shadow-2xs">
-                              ${isLead ? '👑' : '✝️'}
-                            </div>
-                            <div>
-                              <p class="font-extrabold text-slate-900 text-xs">${u.full_name || 'Romo Ordo'}</p>
-                              <p class="text-[10.5px] text-slate-400 font-semibold truncate max-w-xs">${u.email || '-'}</p>
-                            </div>
-                          </div>
+                        <td class="px-6 py-4">
+                          <p class="font-extrabold text-slate-900 text-sm tracking-tight">${u.full_name || 'Romo Ordo'}</p>
+                          <p class="text-[11px] text-slate-400 font-semibold truncate max-w-xs mt-0.5">${u.email || '-'}</p>
                         </td>
                         <td class="px-6 py-4">
                           <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
