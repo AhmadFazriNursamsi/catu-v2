@@ -686,7 +686,6 @@
                 <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                   <tr>
                     <th class="px-6 py-3.5">NAMA LENGKAP UMAT</th>
-                    <th class="px-6 py-3.5">EMAIL PENGGUNA</th>
                     <th class="px-6 py-3.5">NO. WHATSAPP</th>
                     <th class="px-6 py-3.5">PAROKI</th>
                     <th class="px-6 py-3.5">LINGKUNGAN</th>
@@ -696,17 +695,11 @@
                 </thead>
                 <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
                   ${umats.length === 0 ? `
-                    <tr><td colspan="7" class="text-center py-10 text-slate-400">Tidak ada data umat aktif ditemukan</td></tr>
+                    <tr><td colspan="6" class="text-center py-10 text-slate-400">Tidak ada data umat aktif ditemukan</td></tr>
                   ` : umats.map(u => `
                     <tr class="hover:bg-slate-50/80 transition">
                       <td class="px-6 py-4">
                         <p class="font-extrabold text-slate-900 text-sm">${u.full_name || 'Umat'}</p>
-                      </td>
-                      <td class="px-6 py-4">
-                        <span class="inline-flex items-center text-slate-700 font-medium bg-slate-100/90 border border-slate-200/60 px-2.5 py-1 rounded-lg">
-                          <i data-lucide="mail" class="w-3.5 h-3.5 mr-1.5 text-slate-400"></i>
-                          ${u.email || '<span class="text-slate-400 italic">Belum disetel</span>'}
-                        </span>
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
                       <td class="px-6 py-4 font-bold text-slate-800">${u.paroki_name || u.kota_name || '-'}</td>
@@ -772,7 +765,6 @@
                 <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                   <tr>
                     <th class="px-6 py-3.5">NAMA PENGURUS</th>
-                    <th class="px-6 py-3.5">EMAIL</th>
                     <th class="px-6 py-3.5">JABATAN</th>
                     <th class="px-6 py-3.5">LINGKUNGAN & PAROKI</th>
                     <th class="px-6 py-3.5">MASA JABATAN</th>
@@ -782,7 +774,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
                   ${list.length === 0 ? `
-                    <tr><td colspan="7" class="text-center py-10 text-slate-400">Tidak ada data pengurus lingkungan aktif ditemukan</td></tr>
+                    <tr><td colspan="6" class="text-center py-10 text-slate-400">Tidak ada data pengurus lingkungan aktif ditemukan</td></tr>
                   ` : list.map(u => {
                     const startY = u.jabatan_start_year || (u.jabatan_start_date ? new Date(u.jabatan_start_date).getFullYear() : null);
                     const endY = u.jabatan_end_year || (u.jabatan_end_date ? new Date(u.jabatan_end_date).getFullYear() : null);
@@ -790,12 +782,6 @@
                     return `
                       <tr class="hover:bg-slate-50/80 transition">
                         <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Pengurus'}</td>
-                        <td class="px-6 py-4">
-                          <span class="inline-flex items-center text-slate-700 font-medium bg-slate-100/90 border border-slate-200/60 px-2.5 py-1 rounded-lg">
-                            <i data-lucide="mail" class="w-3.5 h-3.5 mr-1.5 text-slate-400"></i>
-                            ${u.email || '-'}
-                          </span>
-                        </td>
                         <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold text-[11px]">${u.pengurus_position || 'Ketua Lingkungan'}</span></td>
                         <td class="px-6 py-4">${u.lingkungan_name || '-'} (${u.paroki_name || '-'})</td>
                         <td class="px-6 py-4">
@@ -858,7 +844,6 @@
               <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                 <tr>
                   <th class="px-6 py-3.5">NAMA ROMO</th>
-                  <th class="px-6 py-3.5">EMAIL</th>
                   <th class="px-6 py-3.5">PAROKI</th>
                   <th class="px-6 py-3.5">JABATAN PASTORAL</th>
                   <th class="px-6 py-3.5">NO. WHATSAPP</th>
@@ -869,7 +854,6 @@
                 ${list.map(u => `
                   <tr class="hover:bg-slate-50/80 transition">
                     <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Romo Paroki'}</td>
-                    <td class="px-6 py-4">${u.email || '-'}</td>
                     <td class="px-6 py-4 font-bold text-blue-950">${u.paroki_name || '-'}</td>
                     <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px]">${u.romo_position || 'Pastor Rekan'}</span></td>
                     <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
@@ -924,7 +908,6 @@
               <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                 <tr>
                   <th class="px-6 py-3.5">NAMA ROMO</th>
-                  <th class="px-6 py-3.5">EMAIL</th>
                   <th class="px-6 py-3.5">ORDO</th>
                   <th class="px-6 py-3.5">NO. WHATSAPP</th>
                   <th class="px-6 py-3.5 text-right">AKSI</th>
@@ -934,7 +917,6 @@
                 ${list.map(u => `
                   <tr class="hover:bg-slate-50/80 transition">
                     <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Romo Ordo'}</td>
-                    <td class="px-6 py-4">${u.email || '-'}</td>
                     <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-200 font-bold text-[11px]">${u.ordo_name || 'Ordo Religius'}</span></td>
                     <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
                     <td class="px-6 py-4 text-right">
@@ -991,7 +973,6 @@
               <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                 <tr>
                   <th class="px-6 py-3.5">PEMOHON AKUN</th>
-                  <th class="px-6 py-3.5">EMAIL</th>
                   <th class="px-6 py-3.5">NO. WHATSAPP</th>
                   <th class="px-6 py-3.5">PERAN DIAJUKAN</th>
                   <th class="px-6 py-3.5">PAROKI</th>
@@ -999,10 +980,15 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                ${pendings.map(u => `
+                ${pendings.length === 0 ? `
+                  <tr><td colspan="5" class="text-center py-12 text-slate-400">
+                    <i data-lucide="check-circle-2" class="w-10 h-10 mx-auto mb-2 text-emerald-500 opacity-60"></i>
+                    <p class="font-bold text-slate-700">Semua pendaftaran telah diverifikasi</p>
+                    <p class="text-xs text-slate-400">Tidak ada antrian persetujuan akun baru saat ini.</p>
+                  </td></tr>
+                ` : pendings.map(u => `
                   <tr class="hover:bg-slate-50/80 transition">
                     <td class="px-6 py-4 font-extrabold text-slate-900 text-sm">${u.full_name || 'Pengguna Baru'}</td>
-                    <td class="px-6 py-4">${u.email || '-'}</td>
                     <td class="px-6 py-4 font-semibold">${u.phone_number}</td>
                     <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-950 border border-blue-200 font-bold text-[11px]">${u.role_name || u.role_code}</span></td>
                     <td class="px-6 py-4">${u.paroki_name || u.kota_name || '-'}</td>
