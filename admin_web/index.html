@@ -1194,6 +1194,18 @@
         return s;
       };
 
+      const getEntityDescription = (s) => {
+        if (s === 'keuskupan') return 'Hierarki Keuskupan Agung & Keuskupan Sufragan se-Indonesia';
+        if (s === 'paroki') return 'Daftar Gereja Paroki Katolik terhubung dengan Keuskupan induk';
+        if (s === 'wilayah') return 'Struktur Wilayah Rohani / Teritorial gereja di bawah naungan Paroki';
+        if (s === 'lingkungan') return 'Komunitas basis Umat Katolik di tingkat RT/RW Lingkungan';
+        if (s === 'ordo') return 'Daftar Ordo & Kongregasi Religius (Imam & Biarawan On-Demand)';
+        if (s === 'services') return 'Katalog Sakramen, Misa, dan Layanan Pastoral Gereja';
+        if (s === 'roles') return 'Hak akses dan peran akun pengguna mobile & web portal';
+        if (s === 'positions') return 'Struktur hierarki jabatan resmi (Ketua Lingkungan, Kepala Romo, Sekretaris)';
+        return 'Pengelolaan data master gereja terintegrasi PostgreSQL';
+      };
+
       const getEntityIcon = (s) => {
         if (s === 'keuskupan') return 'landmark';
         if (s === 'paroki') return 'church';
@@ -1209,7 +1221,7 @@
       return `
         <div class="space-y-6 animate-fade-in">
           <!-- Sub-Tab Navigation Bar -->
-          <div class="bg-white rounded-2xl p-2 shadow-xs border border-slate-200 flex flex-wrap gap-2">
+          <div class="bg-white/95 backdrop-blur-md rounded-2xl p-2 shadow-xs border border-slate-200/90 flex flex-wrap gap-2">
             ${[
               { id: 'keuskupan', icon: 'landmark', label: 'Keuskupan', count: state.keuskupan?.length, color: 'text-blue-600' },
               { id: 'paroki', icon: 'church', label: 'Paroki', count: state.paroki?.length, color: 'text-emerald-600' },
@@ -1225,8 +1237,8 @@
                 <button onclick="setMasterSubTab('${tab.id}')"
                   class="flex items-center space-x-2.5 px-4 py-2.5 rounded-xl font-extrabold text-xs transition-all ${
                     active 
-                      ? 'bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white shadow-md shadow-blue-950/25 ring-1 ring-white/10 scale-[1.02]' 
-                      : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 hover:scale-[1.01]'
+                      ? 'bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white shadow-md shadow-blue-950/25 ring-1 ring-white/15 scale-[1.02]' 
+                      : 'text-slate-600 hover:bg-slate-100/90 hover:text-slate-950 hover:scale-[1.01]'
                   }">
                   <i data-lucide="${tab.icon}" class="w-4 h-4 ${active ? 'text-amber-400' : tab.color}"></i>
                   <span class="tracking-wide">${tab.label}</span>
@@ -1244,102 +1256,134 @@
             }).join('')}
           </div>
 
-          <!-- Main Table Card -->
-          <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
-            <!-- Header Toolbar -->
-            <div class="p-6 border-b border-slate-200/80 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-slate-50/80 via-white to-slate-50/50">
-              <div class="flex items-center space-x-3.5">
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-950 to-slate-900 text-amber-400 flex items-center justify-center shadow-md shadow-blue-950/15 border border-white/20">
-                  <i data-lucide="${getEntityIcon(sub)}" class="w-6 h-6"></i>
-                </div>
-                <div>
-                  <div class="flex items-center space-x-2">
-                    <h3 class="text-base font-black text-slate-900">Master Data: ${getEntityLabel(sub)}</h3>
-                    <span class="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-900 border border-blue-200/70 text-[10px] font-extrabold">
-                      ${filtered.length} Data
-                    </span>
-                  </div>
-                  <p class="text-xs text-slate-500 font-medium mt-0.5">Daftar struktur hierarki gereja katolik tersinkronisasi langsung dengan PostgreSQL</p>
-                </div>
-              </div>
+          <!-- Main Table Card (Ultra-Beautified UI Container) -->
+          <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200/90 overflow-hidden">
+            
+            <!-- Premium Header Banner Toolbar -->
+            <div class="bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 text-white p-6 lg:p-7 relative overflow-hidden border-b border-blue-900/40">
+              <!-- Ambient Background Glows -->
+              <div class="absolute -right-16 -top-16 w-64 h-64 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+              <div class="absolute right-1/3 -bottom-20 w-48 h-48 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
 
-              <!-- Search & Action Controls -->
-              <div class="flex flex-wrap items-center gap-3">
-                <!-- Search Input -->
-                <div class="relative">
-                  <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                  <input type="text" id="masterSearchInput" value="${state.masterSearch || ''}" oninput="state.masterSearch = this.value; renderApp();"
-                    placeholder="Cari ${getEntityLabel(sub)}..."
-                    class="pl-10 pr-9 py-2.5 bg-slate-50/80 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 w-56 lg:w-72 shadow-2xs transition" />
-                  ${state.masterSearch ? `
-                    <button onclick="state.masterSearch = ''; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5" title="Hapus Pencarian">
-                      <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                    </button>
+              <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                <!-- Left Title & Counter -->
+                <div class="flex items-center space-x-4">
+                  <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/25 ring-2 ring-white/20 flex-shrink-0">
+                    <i data-lucide="${getEntityIcon(sub)}" class="w-7 h-7"></i>
+                  </div>
+                  <div>
+                    <div class="flex items-center space-x-2.5 flex-wrap">
+                      <span class="text-[10.5px] font-black uppercase tracking-wider text-amber-400/90 flex items-center">
+                        <i data-lucide="database" class="w-3 h-3 mr-1"></i> MASTER DATA
+                      </span>
+                      <span class="text-slate-500 font-bold">•</span>
+                      <h3 class="text-xl font-black text-white tracking-tight">${getEntityLabel(sub)}</h3>
+                      <span class="px-3 py-0.5 rounded-full bg-white/10 text-amber-300 border border-white/15 text-xs font-black backdrop-blur-md shadow-xs">
+                        ${filtered.length} Data Tersedia
+                      </span>
+                    </div>
+                    <p class="text-xs text-slate-300/90 font-medium mt-1 flex items-center space-x-1.5">
+                      <span>${getEntityDescription(sub)}</span>
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Right Search, Filters & Action Controls -->
+                <div class="flex flex-wrap items-center gap-3">
+                  <!-- Search Input with Glass Styling -->
+                  <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                    <input type="text" id="masterSearchInput" value="${state.masterSearch || ''}" oninput="state.masterSearch = this.value; renderApp();"
+                      placeholder="Cari ${getEntityLabel(sub)}..."
+                      class="pl-10 pr-9 py-2.5 bg-white/10 hover:bg-white/15 focus:bg-white text-white focus:text-slate-900 border border-white/20 focus:border-amber-400 rounded-2xl text-xs font-bold w-full sm:w-60 lg:w-72 shadow-inner placeholder:text-slate-400 transition-all backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-amber-400/50" />
+                    ${state.masterSearch ? `
+                      <button onclick="state.masterSearch = ''; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-0.5 transition" title="Hapus Pencarian">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                      </button>
+                    ` : ''}
+                  </div>
+
+                  <!-- Contextual Filter: Keuskupan for Paroki -->
+                  ${sub === 'paroki' ? `
+                    <div class="relative">
+                      <select onchange="state.masterFilterKeuskupanId = this.value; loadMasterData('paroki');"
+                        class="pl-3.5 pr-8 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-2xl text-xs font-black focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs backdrop-blur-md transition">
+                        <option value="" class="text-slate-900">🏛️ Semua Keuskupan (${state.keuskupan.length})</option>
+                        ${state.keuskupan.map(k => `
+                          <option value="${k.id}" ${String(state.masterFilterKeuskupanId) === String(k.id) ? 'selected' : ''} class="text-slate-900">🏛️ ${k.name}</option>
+                        `).join('')}
+                      </select>
+                    </div>
                   ` : ''}
+
+                  <!-- Contextual Filter: Paroki for Wilayah -->
+                  ${sub === 'wilayah' ? `
+                    <div class="relative">
+                      <select onchange="state.masterFilterParokiId = this.value; loadMasterData('wilayah');"
+                        class="pl-3.5 pr-8 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-2xl text-xs font-black focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs max-w-xs truncate backdrop-blur-md transition">
+                        <option value="" class="text-slate-900">⛪ Semua Paroki (${state.paroki.length})</option>
+                        ${state.paroki.map(p => `
+                          <option value="${p.id}" ${String(state.masterFilterParokiId) === String(p.id) ? 'selected' : ''} class="text-slate-900">⛪ ${p.name}</option>
+                        `).join('')}
+                      </select>
+                    </div>
+                  ` : ''}
+
+                  <!-- Contextual Filter: Wilayah for Lingkungan -->
+                  ${sub === 'lingkungan' ? `
+                    <div class="relative">
+                      <select onchange="state.masterFilterWilayahId = this.value; loadMasterData('lingkungan');"
+                        class="pl-3.5 pr-8 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-2xl text-xs font-black focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs max-w-xs truncate backdrop-blur-md transition">
+                        <option value="" class="text-slate-900">📍 Semua Wilayah</option>
+                        ${(state.modalWilayahList || []).map(w => `
+                          <option value="${w.id}" ${String(state.masterFilterWilayahId) === String(w.id) ? 'selected' : ''} class="text-slate-900">📍 ${w.name}</option>
+                        `).join('')}
+                      </select>
+                    </div>
+                  ` : ''}
+
+                  <!-- Add Primary Action Button -->
+                  <button onclick="openCreateMasterModal('${sub}')"
+                    class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 flex items-center space-x-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex-shrink-0 cursor-pointer">
+                    <i data-lucide="plus-circle" class="w-4 h-4 text-slate-950 font-black"></i>
+                    <span>+ Tambah ${getEntityLabel(sub)} Baru</span>
+                  </button>
                 </div>
-
-                <!-- Contextual Filters -->
-                ${sub === 'paroki' ? `
-                  <div class="relative">
-                    <select onchange="state.masterFilterKeuskupanId = this.value; loadMasterData('paroki');"
-                      class="pl-3.5 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
-                      <option value="">🏛️ Semua Keuskupan (${state.keuskupan.length})</option>
-                      ${state.keuskupan.map(k => `
-                        <option value="${k.id}" ${String(state.masterFilterKeuskupanId) === String(k.id) ? 'selected' : ''}>🏛️ ${k.name}</option>
-                      `).join('')}
-                    </select>
-                  </div>
-                ` : ''}
-
-                ${sub === 'wilayah' ? `
-                  <div class="relative">
-                    <select onchange="state.masterFilterParokiId = this.value; loadMasterData('wilayah');"
-                      class="pl-3.5 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs max-w-xs truncate">
-                      <option value="">⛪ Semua Paroki (${state.paroki.length})</option>
-                      ${state.paroki.map(p => `
-                        <option value="${p.id}" ${String(state.masterFilterParokiId) === String(p.id) ? 'selected' : ''}>⛪ ${p.name}</option>
-                      `).join('')}
-                    </select>
-                  </div>
-                ` : ''}
-
-                <!-- Add Button -->
-                <button onclick="openCreateMasterModal('${sub}')"
-                  class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs shadow-md shadow-amber-500/25 flex items-center space-x-2 transition transform hover:-translate-y-0.5">
-                  <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                  <span>+ Tambah ${getEntityLabel(sub)}</span>
-                </button>
               </div>
             </div>
 
             <!-- Table View -->
             ${state.isMasterLoading ? `
-              <div class="p-20 text-center text-slate-500 space-y-3">
-                <span class="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin inline-block"></span>
-                <p class="text-xs font-bold text-slate-600">Memuat master data dari database PostgreSQL...</p>
+              <div class="p-20 text-center text-slate-500 space-y-4">
+                <div class="w-12 h-12 rounded-full border-4 border-amber-500 border-t-transparent animate-spin mx-auto"></div>
+                <div>
+                  <p class="text-sm font-extrabold text-slate-800">Menyinkronkan Data ${getEntityLabel(sub)}...</p>
+                  <p class="text-xs text-slate-400 mt-1">Mengambil data terbaru langsung dari database PostgreSQL CATU v2</p>
+                </div>
               </div>
             ` : filtered.length === 0 ? `
-              <div class="p-20 text-center text-slate-400 space-y-3">
-                <div class="w-16 h-16 rounded-3xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto shadow-inner">
-                  <i data-lucide="folder-search" class="w-8 h-8"></i>
+              <div class="p-20 text-center text-slate-400 space-y-4">
+                <div class="w-20 h-20 rounded-3xl bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center mx-auto shadow-inner">
+                  <i data-lucide="folder-search" class="w-10 h-10 text-amber-500/70"></i>
                 </div>
-                <div>
-                  <p class="text-sm font-extrabold text-slate-700">Tidak ada data ${getEntityLabel(sub)} yang sesuai</p>
-                  <p class="text-xs text-slate-400 mt-1">Coba periksa kata kunci pencarian atau ubah filter di bagian atas</p>
+                <div class="max-w-md mx-auto">
+                  <p class="text-base font-extrabold text-slate-800">Tidak ada data ${getEntityLabel(sub)} yang cocok</p>
+                  <p class="text-xs text-slate-500 mt-1">Gunakan kata kunci lain atau klik tombol di bawah untuk membuat data baru di database.</p>
                 </div>
-                <button onclick="openCreateMasterModal('${sub}')" class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-black transition">
-                  <i data-lucide="plus" class="w-3.5 h-3.5 text-amber-600"></i>
-                  <span>Tambah Data ${getEntityLabel(sub)} Baru</span>
+                <button onclick="openCreateMasterModal('${sub}')" 
+                  class="inline-flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-black shadow-xs transition transform hover:-translate-y-0.5">
+                  <i data-lucide="plus-circle" class="w-4 h-4 text-amber-600"></i>
+                  <span>Tambah Data ${getEntityLabel(sub)} Pertama</span>
                 </button>
               </div>
             ` : `
               <div class="overflow-x-auto custom-scrollbar">
                 <table class="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr class="bg-slate-50/90 border-b border-slate-200/80 text-slate-500 font-black tracking-wider uppercase text-[10px]">
-                      <th class="py-4 px-5 w-20 text-center">ID</th>
+                    <tr class="bg-gradient-to-r from-slate-100/90 via-slate-50 to-slate-100/80 border-b border-slate-200 text-slate-600 font-black tracking-wider uppercase text-[10.5px]">
+                      <th class="py-4 px-6 w-20 text-center">ID</th>
                       ${renderMasterTableHeaders(sub)}
-                      <th class="py-4 px-5 text-center w-52">AKSI & KELOLA</th>
+                      <th class="py-4 px-6 text-center w-56">AKSI & KELOLA</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100">
@@ -1348,12 +1392,17 @@
                 </table>
               </div>
 
-              <!-- Footer Stats -->
-              <div class="px-6 py-4 bg-slate-50/60 border-t border-slate-200/70 flex items-center justify-between text-xs font-semibold text-slate-500">
-                <p>Menampilkan <span class="font-bold text-slate-800">${filtered.length}</span> data ${getEntityLabel(sub)}</p>
-                <div class="flex items-center space-x-2 text-[11px] font-bold text-slate-400">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span>Database PostgreSQL Live Synchronized</span>
+              <!-- Footer Statistics Bar -->
+              <div class="p-5 bg-gradient-to-r from-slate-50 via-white to-slate-50 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-slate-500">
+                <div class="flex items-center space-x-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <p>Menampilkan <span class="font-extrabold text-slate-900">${filtered.length}</span> entri data ${getEntityLabel(sub)}</p>
+                </div>
+                <div class="flex items-center space-x-2.5">
+                  <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-extrabold shadow-2xs">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>PostgreSQL Live Synchronized</span>
+                  </span>
                 </div>
               </div>
             `}
@@ -1428,42 +1477,44 @@
     function renderMasterTableRow(sub, item, idx) {
       const escapedItem = JSON.stringify(item).replace(/'/g, "&#39;");
       return `
-        <tr class="hover:bg-amber-50/20 transition duration-150 group">
-          <td class="py-4 px-5 text-center font-mono font-bold text-slate-400 group-hover:text-amber-600 transition">
-            #${item.id}
+        <tr class="hover:bg-amber-50/30 transition duration-150 group border-b border-slate-100/90">
+          <td class="py-4.5 px-6 text-center">
+            <span class="px-2.5 py-1 rounded-lg bg-slate-100/90 group-hover:bg-amber-100/80 text-slate-500 group-hover:text-amber-900 font-mono font-black text-[11px] border border-slate-200/60 shadow-2xs transition">
+              #${String(item.id).padStart(2, '0')}
+            </span>
           </td>
           ${renderMasterTableColumns(sub, item)}
-          <td class="py-4 px-5 text-center">
-            <div class="flex items-center justify-center space-x-1.5">
+          <td class="py-4.5 px-6 text-center">
+            <div class="flex items-center justify-center space-x-2">
               ${sub === 'keuskupan' ? `
                 <button onclick='openCreateMasterModal("paroki", { keuskupan_id: ${item.id} })'
-                  class="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 font-extrabold text-[11px] flex items-center space-x-1 transition shadow-2xs transform hover:-translate-y-0.5" title="Tambah Paroki Baru di Keuskupan Ini">
-                  <i data-lucide="plus" class="w-3.5 h-3.5 text-blue-600"></i>
+                  class="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-950 font-black text-[11px] flex items-center space-x-1 transition shadow-2xs transform hover:-translate-y-0.5" title="Tambah Paroki Baru di Keuskupan Ini">
+                  <i data-lucide="plus" class="w-3.5 h-3.5 text-blue-700"></i>
                   <span>+ Paroki</span>
                 </button>
               ` : ''}
               ${sub === 'paroki' ? `
                 <button onclick='openCreateMasterModal("wilayah", { keuskupan_id: ${item.keuskupan_id || 'null'}, paroki_id: ${item.id} })'
-                  class="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-extrabold text-[11px] flex items-center space-x-1 transition shadow-2xs transform hover:-translate-y-0.5" title="Tambah Wilayah Baru di Paroki Ini">
-                  <i data-lucide="plus" class="w-3.5 h-3.5 text-emerald-600"></i>
+                  class="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-950 font-black text-[11px] flex items-center space-x-1 transition shadow-2xs transform hover:-translate-y-0.5" title="Tambah Wilayah Baru di Paroki Ini">
+                  <i data-lucide="plus" class="w-3.5 h-3.5 text-emerald-700"></i>
                   <span>+ Wilayah</span>
                 </button>
               ` : ''}
               ${sub === 'wilayah' ? `
                 <button onclick='openCreateMasterModal("lingkungan", { paroki_id: ${item.paroki_id || 'null'}, wilayah_id: ${item.id} })'
-                  class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 font-extrabold text-[11px] flex items-center space-x-1 transition shadow-2xs transform hover:-translate-y-0.5" title="Tambah Lingkungan Baru di Wilayah Ini">
-                  <i data-lucide="plus" class="w-3.5 h-3.5 text-indigo-600"></i>
+                  class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-950 font-black text-[11px] flex items-center space-x-1 transition shadow-2xs transform hover:-translate-y-0.5" title="Tambah Lingkungan Baru di Wilayah Ini">
+                  <i data-lucide="plus" class="w-3.5 h-3.5 text-indigo-700"></i>
                   <span>+ Lingkungan</span>
                 </button>
               ` : ''}
 
               <button onclick='openEditMasterModal("${sub}", ${escapedItem})'
-                class="px-2.5 py-1.5 rounded-xl bg-amber-50/90 hover:bg-amber-100 border border-amber-200 text-amber-900 font-extrabold text-[11px] flex items-center space-x-1 transition shadow-2xs transform hover:-translate-y-0.5" title="Edit Data">
+                class="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/90 text-amber-950 font-black text-xs flex items-center space-x-1.5 transition shadow-2xs transform hover:-translate-y-0.5" title="Edit Data">
                 <i data-lucide="edit-3" class="w-3.5 h-3.5 text-amber-600"></i>
                 <span>Edit</span>
               </button>
               <button onclick='confirmDeleteMaster("${sub}", ${item.id}, "${(item.name || '').replace(/"/g, '')}")'
-                class="px-2.5 py-1.5 rounded-xl bg-rose-50/90 hover:bg-rose-100 border border-rose-200 text-rose-700 font-extrabold text-[11px] flex items-center space-x-1 transition shadow-2xs transform hover:-translate-y-0.5" title="Hapus Data">
+                class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200/90 text-rose-700 font-black text-xs flex items-center space-x-1.5 transition shadow-2xs transform hover:-translate-y-0.5" title="Hapus Data">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-600"></i>
                 <span>Hapus</span>
               </button>
