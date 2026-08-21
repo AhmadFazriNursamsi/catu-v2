@@ -245,8 +245,8 @@
             <div>
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3.5">
-                  <div class="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0">
-                    <i data-lucide="church" class="w-6 h-6"></i>
+                  <div class="w-12 h-12 rounded-xl bg-white p-1.5 shadow-lg border-2 border-amber-500 flex items-center justify-center flex-shrink-0">
+                    <img src="assets/images/logoCatu.png" alt="CATU Logo" class="h-full object-contain" />
                   </div>
                   <div>
                     <h1 class="text-xl font-extrabold tracking-wider text-white">CATU WEB PORTAL</h1>
@@ -300,9 +300,7 @@
           <div class="cross-bg lg:w-[46%] p-8 lg:p-14 flex items-center justify-center">
             <div class="w-full max-w-md bg-white rounded-3xl p-8 lg:p-10 shadow-2xl border border-slate-200">
               <div class="text-center mb-8">
-                <div class="w-14 h-14 rounded-2xl bg-slate-900 text-amber-400 border border-slate-800 flex items-center justify-center mx-auto mb-4 shadow-sm">
-                  <i data-lucide="church" class="w-7 h-7"></i>
-                </div>
+                <img src="assets/images/logoCatu.png" alt="CATU Logo" class="h-16 mx-auto mb-4 object-contain" />
                 <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Masuk Portal Admin</h2>
                 <p class="text-xs text-slate-500 mt-1">Masukkan kredensial Administrator untuk mengakses dashboard.</p>
               </div>
@@ -318,12 +316,11 @@
                 <div>
                   <label class="block text-xs font-bold text-slate-700 mb-1.5">Nomor WhatsApp / HP</label>
                   <div class="relative rounded-xl shadow-sm">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span class="text-sm mr-1">🇮🇩</span>
-                      <span class="text-xs font-bold text-blue-900 border-r border-slate-300 pr-2">+62</span>
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <span class="text-xs font-bold text-slate-700 border-r border-slate-300 pr-2">+62</span>
                     </div>
                     <input type="tel" id="phoneInput" required placeholder="89999999999" value="89999999999"
-                      class="block w-full pl-16 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white" />
+                      class="block w-full pl-14 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white" />
                   </div>
                 </div>
 
@@ -445,8 +442,8 @@
               ${isOpen ? `
                 <div class="p-5 flex items-center justify-between border-b border-slate-800">
                   <div class="flex items-center space-x-3">
-                    <div class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 text-amber-400 flex items-center justify-center flex-shrink-0">
-                      <i data-lucide="church" class="w-5 h-5"></i>
+                    <div class="w-9 h-9 rounded-xl bg-white p-1 shadow border border-amber-500 flex items-center justify-center flex-shrink-0">
+                      <img src="assets/images/logoCatu.png" alt="CATU" class="h-full object-contain" />
                     </div>
                     <div>
                       <h2 class="text-sm font-extrabold text-white tracking-wide">CATU ADMIN</h2>
@@ -459,8 +456,8 @@
                 </div>
               ` : `
                 <div class="p-3.5 flex flex-col items-center border-b border-slate-800 space-y-2">
-                  <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-amber-400 flex items-center justify-center flex-shrink-0">
-                    <i data-lucide="church" class="w-5 h-5"></i>
+                  <div class="w-10 h-10 rounded-xl bg-white p-1 shadow border border-amber-500 flex items-center justify-center flex-shrink-0">
+                    <img src="assets/images/logoCatu.png" alt="CATU" class="h-full object-contain" />
                   </div>
                   <button onclick="toggleSidebar()" class="p-1 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition" title="Buka Sidebar">
                     <i data-lucide="chevron-right" class="w-4 h-4"></i>
@@ -852,65 +849,52 @@
       return `
         <div class="space-y-6 animate-fade-in">
           <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
-            <!-- Filter Toolbar Header -->
-            <div class="p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-50/90 via-white to-slate-50/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <!-- Search Input -->
+            <div class="p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" id="umatSearchInput" placeholder="Cari nama umat, kota, no. WhatsApp, paroki..." value="${state.umatSearch}"
                   oninput="state.umatSearch = this.value; renderApp();"
-                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
-                ${state.umatSearch ? `
-                  <button onclick="state.umatSearch = ''; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5" title="Hapus Pencarian">
-                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                  </button>
-                ` : ''}
+                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
               </div>
 
-              <!-- Contextual Dropdown Filters -->
               <div class="flex flex-wrap items-center gap-3">
-                <!-- Filter Paroki -->
                 <div class="relative">
                   <select onchange="state.umatFilterParoki = this.value; renderApp();"
-                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs max-w-[210px] truncate">
-                    <option value="">⛪ Semua Paroki</option>
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-[210px] truncate">
+                    <option value="">Semua Paroki</option>
                     ${parokiList.map(p => `
-                      <option value="${p.id || p.name}" ${String(state.umatFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>⛪ ${p.name}</option>
+                      <option value="${p.id || p.name}" ${String(state.umatFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>${p.name}</option>
                     `).join('')}
                   </select>
                 </div>
 
-                <!-- Filter Lingkungan -->
                 <div class="relative">
                   <select onchange="state.umatFilterLingkungan = this.value; renderApp();"
-                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs max-w-[200px] truncate">
-                    <option value="">🏘️ Semua Lingkungan</option>
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-[200px] truncate">
+                    <option value="">Semua Lingkungan</option>
                     ${lingList.map(l => `
-                      <option value="${l}" ${state.umatFilterLingkungan === l ? 'selected' : ''}>🏘️ ${l}</option>
+                      <option value="${l}" ${state.umatFilterLingkungan === l ? 'selected' : ''}>${l}</option>
                     `).join('')}
                   </select>
                 </div>
 
-                <!-- Reset Filters Button -->
                 ${hasFilter ? `
                   <button onclick="state.umatSearch = ''; state.umatFilterParoki = ''; state.umatFilterLingkungan = ''; renderApp();"
-                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition shadow-2xs">
+                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
                     <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
                     <span>Reset</span>
                   </button>
                 ` : ''}
 
-                <!-- Counter Badge -->
-                <span class="px-3.5 py-1.5 rounded-full bg-blue-50 text-blue-950 border border-blue-200 text-xs font-black shadow-2xs whitespace-nowrap">
+                <span class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold whitespace-nowrap">
                   ${umats.length} Umat Terdaftar
                 </span>
               </div>
             </div>
 
-            <!-- Table View -->
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
-                <thead class="bg-gradient-to-r from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-600 font-black border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
+                <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
                   <tr>
                     <th class="px-6 py-4">NAMA LENGKAP UMAT</th>
                     <th class="px-6 py-4">NO. WHATSAPP</th>
@@ -928,56 +912,55 @@
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
                           <i data-lucide="users" class="w-7 h-7"></i>
                         </div>
-                        <p class="font-extrabold text-slate-700 text-sm">Tidak ada data umat yang sesuai filter</p>
-                        <p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau reset filter paroki dan lingkungan</p>
+                        <p class="font-bold text-slate-700 text-sm">Tidak ada data umat yang sesuai filter</p>
                       </td>
                     </tr>
                   ` : umats.map(u => `
-                    <tr class="hover:bg-amber-50/30 transition duration-150 group">
+                    <tr class="hover:bg-slate-50/80 transition duration-150 group">
                       <td class="px-6 py-4">
-                        <p class="font-extrabold text-slate-900 text-sm tracking-tight">${u.full_name || 'Umat'}</p>
-                        <p class="text-[11px] text-slate-400 font-semibold truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                        <p class="font-bold text-slate-900 text-sm tracking-tight">${u.full_name || 'Umat'}</p>
+                        <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
                       </td>
-                      <td class="px-6 py-4 font-bold text-slate-900">
+                      <td class="px-6 py-4 font-bold text-slate-800">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
-                          <i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-600"></i>
+                          <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
                           <span>${u.phone_number}</span>
                         </span>
                       </td>
                       <td class="px-6 py-4">
-                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
-                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i>
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
+                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
                           <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
                         </div>
                       </td>
                       <td class="px-6 py-4">
-                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-blue-50 text-blue-950 font-bold border border-blue-200 text-xs shadow-2xs">
-                          <i data-lucide="church" class="w-3.5 h-3.5 text-blue-700"></i>
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
+                          <i data-lucide="church" class="w-3.5 h-3.5 text-slate-400"></i>
                           <span>${u.paroki_name || u.kota_name || '-'}</span>
                         </div>
                       </td>
                       <td class="px-6 py-4">
-                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-cyan-50 text-cyan-950 font-bold border border-cyan-200 text-xs shadow-2xs">
-                          <i data-lucide="home" class="w-3.5 h-3.5 text-cyan-700"></i>
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
+                          <i data-lucide="home" class="w-3.5 h-3.5 text-slate-400"></i>
                           <span>${u.lingkungan_name || u.wilayah_name || '-'}</span>
                         </div>
                       </td>
                       <td class="px-6 py-4 text-center">
-                        <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-200 font-black text-[11px] shadow-2xs">
-                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                        <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-bold text-[11px] shadow-sm">
+                          <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                           <span>AKTIF</span>
                         </span>
                       </td>
                       <td class="px-6 py-4 text-right">
                         <div class="inline-flex items-center justify-end space-x-2">
                           <button onclick="openEditUserModal('${u.id}')"
-                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 font-black border border-amber-200/90 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
-                            <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-600"></i>
+                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 text-xs transition">
+                            <i data-lucide="edit" class="w-3.5 h-3.5 text-slate-500"></i>
                             <span>Edit</span>
                           </button>
                           <button onclick="viewUserProfileModal('${u.id}')"
-                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-950 font-black border border-blue-200 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
-                            <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-700"></i>
+                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 text-xs transition">
+                            <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-500"></i>
                             <span>Detail</span>
                           </button>
                         </div>
@@ -997,7 +980,6 @@
       const q = (state.pengurusSearch || '').toLowerCase().trim();
       const hasFilter = state.pengurusSearch || state.pengurusFilterPosition || state.pengurusFilterParoki;
 
-      // Extract unique positions & parokis for filter options
       const allPengurusUsers = state.users.filter(u => (u.role_code || u.roleCode || '').toUpperCase() === 'PENGURUS_LINGKUNGAN');
       const parokiList = state.paroki?.length > 0 ? state.paroki : Array.from(new Set(allPengurusUsers.map(u => u.paroki_name).filter(Boolean))).map(name => ({ id: name, name }));
       const positionList = ['Ketua Lingkungan', 'Wakil Ketua', 'Sekretaris'];
@@ -1033,65 +1015,52 @@
       return `
         <div class="space-y-6 animate-fade-in">
           <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
-            <!-- Filter Toolbar Header -->
-            <div class="p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-50/90 via-white to-slate-50/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <!-- Search Input -->
+            <div class="p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="pengurusSearchInput" placeholder="Cari nama pengurus, kota, email, jabatan, paroki..." value="${state.pengurusSearch}"
+                <input type="text" id="pengurusSearchInput" placeholder="Cari nama pengurus, kota, email, jabatan..." value="${state.pengurusSearch}"
                   oninput="state.pengurusSearch = this.value; renderApp();"
-                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
-                ${state.pengurusSearch ? `
-                  <button onclick="state.pengurusSearch = ''; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5" title="Hapus Pencarian">
-                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                  </button>
-                ` : ''}
+                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
               </div>
 
-              <!-- Contextual Dropdown Filters -->
               <div class="flex flex-wrap items-center gap-3">
-                <!-- Filter Jabatan -->
                 <div class="relative">
                   <select onchange="state.pengurusFilterPosition = this.value; renderApp();"
-                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
-                    <option value="">🎖️ Semua Jabatan</option>
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm">
+                    <option value="">Semua Jabatan</option>
                     ${positionList.map(pos => `
-                      <option value="${pos}" ${state.pengurusFilterPosition === pos ? 'selected' : ''}>🏅 ${pos}</option>
+                      <option value="${pos}" ${state.pengurusFilterPosition === pos ? 'selected' : ''}>${pos}</option>
                     `).join('')}
                   </select>
                 </div>
 
-                <!-- Filter Paroki -->
                 <div class="relative">
                   <select onchange="state.pengurusFilterParoki = this.value; renderApp();"
-                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs max-w-[210px] truncate">
-                    <option value="">⛪ Semua Paroki</option>
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-[210px] truncate">
+                    <option value="">Semua Paroki</option>
                     ${parokiList.map(p => `
-                      <option value="${p.id || p.name}" ${String(state.pengurusFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>⛪ ${p.name}</option>
+                      <option value="${p.id || p.name}" ${String(state.pengurusFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>${p.name}</option>
                     `).join('')}
                   </select>
                 </div>
 
-                <!-- Reset Filters Button -->
                 ${hasFilter ? `
                   <button onclick="state.pengurusSearch = ''; state.pengurusFilterPosition = ''; state.pengurusFilterParoki = ''; renderApp();"
-                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition shadow-2xs">
+                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
                     <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
                     <span>Reset</span>
                   </button>
                 ` : ''}
 
-                <!-- Counter Badge -->
-                <span class="px-3.5 py-1.5 rounded-full bg-indigo-50 text-indigo-950 border border-indigo-200 text-xs font-black shadow-2xs whitespace-nowrap">
+                <span class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold whitespace-nowrap">
                   ${list.length} Pengurus Aktif
                 </span>
               </div>
             </div>
 
-            <!-- Table View -->
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
-                <thead class="bg-gradient-to-r from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-600 font-black border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
+                <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
                   <tr>
                     <th class="px-6 py-4">NAMA PENGURUS</th>
                     <th class="px-6 py-4">JABATAN</th>
@@ -1109,37 +1078,35 @@
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
                           <i data-lucide="award" class="w-7 h-7"></i>
                         </div>
-                        <p class="font-extrabold text-slate-700 text-sm">Tidak ada data pengurus lingkungan yang sesuai filter</p>
-                        <p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau reset filter jabatan dan paroki</p>
+                        <p class="font-bold text-slate-700 text-sm">Tidak ada data pengurus lingkungan yang sesuai filter</p>
                       </td>
                     </tr>
                   ` : list.map(u => {
                     const currentYear = new Date().getFullYear();
                     const endY = u.jabatan_end_year || (u.jabatan_end_date ? new Date(u.jabatan_end_date).getFullYear() : null);
                     const isExpired = (endY && endY < currentYear) || u.is_jabatan_active === false;
-                    const isLead = (u.pengurus_position || '').toLowerCase().includes('ketua') && !(u.pengurus_position || '').toLowerCase().includes('wakil');
                     return `
-                      <tr class="hover:bg-amber-50/30 transition duration-150 group">
+                      <tr class="hover:bg-slate-50/80 transition duration-150 group">
                         <td class="px-6 py-4">
-                          <p class="font-extrabold text-slate-900 text-sm tracking-tight">${u.full_name || 'Pengurus'}</p>
-                          <p class="text-[11px] text-slate-400 font-semibold truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                          <p class="font-bold text-slate-900 text-sm tracking-tight">${u.full_name || 'Pengurus'}</p>
+                          <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
                         </td>
                         <td class="px-6 py-4">
-                          <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl ${isLead ? 'bg-amber-50 text-amber-950 border border-amber-300 font-black shadow-2xs' : 'bg-indigo-50 text-indigo-950 border border-indigo-200 font-extrabold'} text-xs">
-                            <i data-lucide="${isLead ? 'crown' : 'award'}" class="w-3.5 h-3.5 ${isLead ? 'text-amber-600' : 'text-indigo-600'}"></i>
+                          <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs">
+                            <i data-lucide="award" class="w-3.5 h-3.5 text-slate-500"></i>
                             <span>${u.pengurus_position || 'Ketua Lingkungan'}</span>
                           </span>
                         </td>
                         <td class="px-6 py-4">
-                          <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
-                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i>
+                          <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
                             <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
                           </div>
                         </td>
                         <td class="px-6 py-4">
                           <div class="space-y-1">
-                            <div class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-cyan-50 text-cyan-950 font-extrabold border border-cyan-200 text-xs shadow-2xs">
-                              <i data-lucide="home" class="w-3.5 h-3.5 text-cyan-700"></i>
+                            <div class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
+                              <i data-lucide="home" class="w-3.5 h-3.5 text-slate-400"></i>
                               <span class="truncate max-w-[170px]">${u.lingkungan_name || '-'}</span>
                             </div>
                             <div class="flex items-center space-x-1 text-[11px] font-bold text-slate-500 pl-1">
@@ -1150,33 +1117,33 @@
                         </td>
                         <td class="px-6 py-4 text-center">
                           ${isExpired ? `
-                            <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-bold text-[11px] shadow-2xs">
+                            <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200 font-bold text-[11px] shadow-sm">
                               <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                               <span>TIDAK AKTIF</span>
                             </span>
                           ` : `
-                            <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-200 font-black text-[11px] shadow-2xs">
-                              <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                            <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-bold text-[11px] shadow-sm">
+                              <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                               <span>AKTIF</span>
                             </span>
                           `}
                         </td>
-                        <td class="px-6 py-4 font-bold text-slate-900">
+                        <td class="px-6 py-4 font-bold text-slate-800">
                           <span class="inline-flex items-center space-x-1.5 text-xs">
-                            <i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
                             <span>${u.phone_number}</span>
                           </span>
                         </td>
                         <td class="px-6 py-4 text-right">
                           <div class="inline-flex items-center justify-end space-x-2">
                             <button onclick="openEditUserModal('${u.id}')"
-                              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 font-black border border-amber-200/90 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
-                              <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-600"></i>
+                              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 text-xs transition">
+                              <i data-lucide="edit" class="w-3.5 h-3.5 text-slate-500"></i>
                               <span>Edit</span>
                             </button>
                             <button onclick="viewUserProfileModal('${u.id}')"
-                              class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-950 font-black border border-blue-200 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
-                              <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-700"></i>
+                              class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 text-xs transition">
+                              <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-500"></i>
                               <span>Detail</span>
                             </button>
                           </div>
@@ -1197,7 +1164,6 @@
       const q = (state.romoParokiSearch || '').toLowerCase().trim();
       const hasFilter = state.romoParokiSearch || state.romoParokiFilterPosition || state.romoParokiFilterParoki;
 
-      // Extract unique parokis for filter options
       const allRomoParokiUsers = state.users.filter(u => (u.role_code || u.roleCode || '').toUpperCase() === 'ROMO_PAROKI');
       const parokiList = state.paroki?.length > 0 ? state.paroki : Array.from(new Set(allRomoParokiUsers.map(u => u.paroki_name).filter(Boolean))).map(name => ({ id: name, name }));
       const positionList = ['Kepala Romo Paroki', 'Romo Paroki'];
@@ -1232,65 +1198,52 @@
       return `
         <div class="space-y-6 animate-fade-in">
           <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
-            <!-- Filter Toolbar Header -->
-            <div class="p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-50/90 via-white to-slate-50/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <!-- Search Input -->
+            <div class="p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" id="romoParokiSearchInput" placeholder="Cari Romo Paroki, nama, kota, email, paroki..." value="${state.romoParokiSearch}"
                   oninput="state.romoParokiSearch = this.value; renderApp();"
-                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
-                ${state.romoParokiSearch ? `
-                  <button onclick="state.romoParokiSearch = ''; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5" title="Hapus Pencarian">
-                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                  </button>
-                ` : ''}
+                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
               </div>
 
-              <!-- Contextual Dropdown Filters -->
               <div class="flex flex-wrap items-center gap-3">
-                <!-- Filter Posisi Pastoral -->
                 <div class="relative">
                   <select onchange="state.romoParokiFilterPosition = this.value; renderApp();"
-                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
-                    <option value="">⛪ Semua Posisi Pastoral</option>
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm">
+                    <option value="">Semua Posisi Pastoral</option>
                     ${positionList.map(pos => `
-                      <option value="${pos}" ${state.romoParokiFilterPosition === pos ? 'selected' : ''}>⛪ ${pos}</option>
+                      <option value="${pos}" ${state.romoParokiFilterPosition === pos ? 'selected' : ''}>${pos}</option>
                     `).join('')}
                   </select>
                 </div>
 
-                <!-- Filter Paroki -->
                 <div class="relative">
                   <select onchange="state.romoParokiFilterParoki = this.value; renderApp();"
-                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs max-w-[210px] truncate">
-                    <option value="">🏛️ Semua Paroki</option>
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-[210px] truncate">
+                    <option value="">Semua Paroki</option>
                     ${parokiList.map(p => `
-                      <option value="${p.id || p.name}" ${String(state.romoParokiFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>🏛️ ${p.name}</option>
+                      <option value="${p.id || p.name}" ${String(state.romoParokiFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>${p.name}</option>
                     `).join('')}
                   </select>
                 </div>
 
-                <!-- Reset Filters Button -->
                 ${hasFilter ? `
                   <button onclick="state.romoParokiSearch = ''; state.romoParokiFilterPosition = ''; state.romoParokiFilterParoki = ''; renderApp();"
-                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition shadow-2xs">
+                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
                     <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
                     <span>Reset</span>
                   </button>
                 ` : ''}
 
-                <!-- Counter Badge -->
-                <span class="px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-950 border border-emerald-200 text-xs font-black shadow-2xs whitespace-nowrap">
+                <span class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold whitespace-nowrap">
                   ${list.length} Romo Paroki
                 </span>
               </div>
             </div>
 
-            <!-- Table View -->
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
-                <thead class="bg-gradient-to-r from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-600 font-black border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
+                <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
                   <tr>
                     <th class="px-6 py-4">NAMA ROMO</th>
                     <th class="px-6 py-4">KOTA / DOMISILI</th>
@@ -1307,59 +1260,55 @@
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
                           <i data-lucide="church" class="w-7 h-7"></i>
                         </div>
-                        <p class="font-extrabold text-slate-700 text-sm">Tidak ada Romo Paroki yang sesuai filter</p>
-                        <p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau reset filter paroki dan posisi</p>
+                        <p class="font-bold text-slate-700 text-sm">Tidak ada Romo Paroki yang sesuai filter</p>
                       </td>
                     </tr>
-                  ` : list.map(u => {
-                    const isLead = (u.romo_position || '').toLowerCase().includes('kepala');
-                    return `
-                      <tr class="hover:bg-amber-50/30 transition duration-150 group">
-                        <td class="px-6 py-4">
-                          <p class="font-extrabold text-slate-900 text-sm tracking-tight">${u.full_name || 'Romo Paroki'}</p>
-                          <p class="text-[11px] text-slate-400 font-semibold truncate max-w-xs mt-0.5">${u.email || '-'}</p>
-                        </td>
-                        <td class="px-6 py-4">
-                          <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
-                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i>
-                            <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
-                          </div>
-                        </td>
-                        <td class="px-6 py-4">
-                          <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-blue-50 text-blue-950 font-bold border border-blue-200 text-xs shadow-2xs">
-                            <i data-lucide="landmark" class="w-3.5 h-3.5 text-blue-700"></i>
-                            <span>${u.paroki_name || '-'}</span>
-                          </div>
-                        </td>
-                        <td class="px-6 py-4">
-                          <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl ${isLead ? 'bg-amber-50 text-amber-950 border border-amber-300 font-black shadow-2xs' : 'bg-emerald-50 text-emerald-950 border border-emerald-200 font-extrabold'} text-xs">
-                            <i data-lucide="${isLead ? 'crown' : 'award'}" class="w-3.5 h-3.5 ${isLead ? 'text-amber-600' : 'text-emerald-600'}"></i>
-                            <span>${u.romo_position || 'Romo Paroki'}</span>
-                          </span>
-                        </td>
-                        <td class="px-6 py-4 font-bold text-slate-900">
-                          <span class="inline-flex items-center space-x-1.5 text-xs">
-                            <i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-600"></i>
-                            <span>${u.phone_number}</span>
-                          </span>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                          <div class="inline-flex items-center justify-end space-x-2">
-                            <button onclick="openEditUserModal('${u.id}')"
-                              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 font-black border border-amber-200/90 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
-                              <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-600"></i>
-                              <span>Edit</span>
-                            </button>
-                            <button onclick="viewUserProfileModal('${u.id}')"
-                              class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-950 font-black border border-blue-200 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
-                              <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-700"></i>
-                              <span>Detail</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    `;
-                  }).join('')}
+                  ` : list.map(u => `
+                    <tr class="hover:bg-slate-50/80 transition duration-150 group">
+                      <td class="px-6 py-4">
+                        <p class="font-bold text-slate-900 text-sm tracking-tight">${u.full_name || 'Romo Paroki'}</p>
+                        <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                      </td>
+                      <td class="px-6 py-4">
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
+                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
+                          <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4">
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
+                          <i data-lucide="church" class="w-3.5 h-3.5 text-slate-400"></i>
+                          <span>${u.paroki_name || '-'}</span>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4">
+                        <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs">
+                          <i data-lucide="award" class="w-3.5 h-3.5 text-slate-500"></i>
+                          <span>${u.romo_position || 'Romo Paroki'}</span>
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 font-bold text-slate-800">
+                        <span class="inline-flex items-center space-x-1.5 text-xs">
+                          <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
+                          <span>${u.phone_number}</span>
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 text-right">
+                        <div class="inline-flex items-center justify-end space-x-2">
+                          <button onclick="openEditUserModal('${u.id}')"
+                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 text-xs transition">
+                            <i data-lucide="edit" class="w-3.5 h-3.5 text-slate-500"></i>
+                            <span>Edit</span>
+                          </button>
+                          <button onclick="viewUserProfileModal('${u.id}')"
+                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 text-xs transition">
+                            <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-500"></i>
+                            <span>Detail</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `).join('')}
                 </tbody>
               </table>
             </div>
@@ -1373,7 +1322,6 @@
       const q = (state.romoOrdoSearch || '').toLowerCase().trim();
       const hasFilter = state.romoOrdoSearch || state.romoOrdoFilterOrdo || state.romoOrdoFilterPosition;
 
-      // Extract unique ordo for filter options
       const allRomoOrdoUsers = state.users.filter(u => (u.role_code || u.roleCode || '').toUpperCase() === 'ROMO_ORDO');
       const ordoList = state.ordo?.length > 0 ? state.ordo : Array.from(new Set(allRomoOrdoUsers.map(u => u.ordo_name).filter(Boolean))).map(name => ({ id: name, name }));
       const positionList = ['Ketua Romo Ordo', 'Romo Ordo'];
@@ -1408,65 +1356,52 @@
       return `
         <div class="space-y-6 animate-fade-in">
           <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
-            <!-- Filter Toolbar Header -->
-            <div class="p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-50/90 via-white to-slate-50/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <!-- Search Input -->
+            <div class="p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" id="romoOrdoSearchInput" placeholder="Cari Romo Ordo, nama, kota, email, ordo..." value="${state.romoOrdoSearch}"
                   oninput="state.romoOrdoSearch = this.value; renderApp();"
-                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
-                ${state.romoOrdoSearch ? `
-                  <button onclick="state.romoOrdoSearch = ''; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5" title="Hapus Pencarian">
-                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                  </button>
-                ` : ''}
+                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
               </div>
 
-              <!-- Contextual Dropdown Filters -->
               <div class="flex flex-wrap items-center gap-3">
-                <!-- Filter Ordo Religius -->
                 <div class="relative">
                   <select onchange="state.romoOrdoFilterOrdo = this.value; renderApp();"
-                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs max-w-[210px] truncate">
-                    <option value="">✝️ Semua Ordo Religius</option>
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-[210px] truncate">
+                    <option value="">Semua Ordo Religius</option>
                     ${ordoList.map(o => `
-                      <option value="${o.id || o.name}" ${String(state.romoOrdoFilterOrdo) === String(o.id || o.name) ? 'selected' : ''}>✝️ ${o.name}</option>
+                      <option value="${o.id || o.name}" ${String(state.romoOrdoFilterOrdo) === String(o.id || o.name) ? 'selected' : ''}>${o.name}</option>
                     `).join('')}
                   </select>
                 </div>
 
-                <!-- Filter Jabatan Ordo -->
                 <div class="relative">
                   <select onchange="state.romoOrdoFilterPosition = this.value; renderApp();"
-                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
-                    <option value="">🎖️ Semua Jabatan Ordo</option>
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm">
+                    <option value="">Semua Jabatan Ordo</option>
                     ${positionList.map(pos => `
-                      <option value="${pos}" ${state.romoOrdoFilterPosition === pos ? 'selected' : ''}>🏅 ${pos}</option>
+                      <option value="${pos}" ${state.romoOrdoFilterPosition === pos ? 'selected' : ''}>${pos}</option>
                     `).join('')}
                   </select>
                 </div>
 
-                <!-- Reset Filters Button -->
                 ${hasFilter ? `
                   <button onclick="state.romoOrdoSearch = ''; state.romoOrdoFilterOrdo = ''; state.romoOrdoFilterPosition = ''; renderApp();"
-                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition shadow-2xs">
+                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
                     <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
                     <span>Reset</span>
                   </button>
                 ` : ''}
 
-                <!-- Counter Badge -->
-                <span class="px-3.5 py-1.5 rounded-full bg-purple-50 text-purple-950 border border-purple-200 text-xs font-black shadow-2xs whitespace-nowrap">
+                <span class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold whitespace-nowrap">
                   ${list.length} Romo Ordo
                 </span>
               </div>
             </div>
 
-            <!-- Table View -->
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
-                <thead class="bg-gradient-to-r from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-600 font-black border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
+                <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
                   <tr>
                     <th class="px-6 py-4">NAMA ROMO</th>
                     <th class="px-6 py-4">KOTA / DOMISILI</th>
@@ -1483,59 +1418,55 @@
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
                           <i data-lucide="cross" class="w-7 h-7"></i>
                         </div>
-                        <p class="font-extrabold text-slate-700 text-sm">Tidak ada Romo Ordo yang sesuai filter</p>
-                        <p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau reset filter ordo dan jabatan</p>
+                        <p class="font-bold text-slate-700 text-sm">Tidak ada Romo Ordo yang sesuai filter</p>
                       </td>
                     </tr>
-                  ` : list.map(u => {
-                    const isLead = (u.romo_position || '').toLowerCase().includes('ketua');
-                    return `
-                      <tr class="hover:bg-amber-50/30 transition duration-150 group">
-                        <td class="px-6 py-4">
-                          <p class="font-extrabold text-slate-900 text-sm tracking-tight">${u.full_name || 'Romo Ordo'}</p>
-                          <p class="text-[11px] text-slate-400 font-semibold truncate max-w-xs mt-0.5">${u.email || '-'}</p>
-                        </td>
-                        <td class="px-6 py-4">
-                          <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
-                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i>
-                            <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
-                          </div>
-                        </td>
-                        <td class="px-6 py-4">
-                          <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-50 text-purple-950 border border-purple-200 font-extrabold text-xs shadow-2xs">
-                            <i data-lucide="cross" class="w-3.5 h-3.5 text-purple-700"></i>
-                            <span>${u.ordo_name || 'Ordo Religius'}</span>
-                          </span>
-                        </td>
-                        <td class="px-6 py-4">
-                          <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl ${isLead ? 'bg-amber-50 text-amber-950 border border-amber-300 font-black shadow-2xs' : 'bg-slate-100 text-slate-700 border border-slate-200 font-extrabold'} text-xs">
-                            <i data-lucide="${isLead ? 'crown' : 'award'}" class="w-3.5 h-3.5 ${isLead ? 'text-amber-600' : 'text-slate-500'}"></i>
-                            <span>${u.romo_position || 'Romo Ordo'}</span>
-                          </span>
-                        </td>
-                        <td class="px-6 py-4 font-bold text-slate-900">
-                          <span class="inline-flex items-center space-x-1.5 text-xs">
-                            <i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-600"></i>
-                            <span>${u.phone_number}</span>
-                          </span>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                          <div class="inline-flex items-center justify-end space-x-2">
-                            <button onclick="openEditUserModal('${u.id}')"
-                              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 font-black border border-amber-200/90 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
-                              <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-600"></i>
-                              <span>Edit</span>
-                            </button>
-                            <button onclick="viewUserProfileModal('${u.id}')"
-                              class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-950 font-black border border-blue-200 text-xs transition shadow-2xs transform hover:-translate-y-0.5">
-                              <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-700"></i>
-                              <span>Detail</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    `;
-                  }).join('')}
+                  ` : list.map(u => `
+                    <tr class="hover:bg-slate-50/80 transition duration-150 group">
+                      <td class="px-6 py-4">
+                        <p class="font-bold text-slate-900 text-sm tracking-tight">${u.full_name || 'Romo Ordo'}</p>
+                        <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                      </td>
+                      <td class="px-6 py-4">
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
+                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
+                          <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4">
+                        <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs shadow-sm">
+                          <i data-lucide="cross" class="w-3.5 h-3.5 text-slate-500"></i>
+                          <span>${u.ordo_name || 'Ordo Religius'}</span>
+                        </span>
+                      </td>
+                      <td class="px-6 py-4">
+                        <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs">
+                          <i data-lucide="award" class="w-3.5 h-3.5 text-slate-500"></i>
+                          <span>${u.romo_position || 'Romo Ordo'}</span>
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 font-bold text-slate-800">
+                        <span class="inline-flex items-center space-x-1.5 text-xs">
+                          <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
+                          <span>${u.phone_number}</span>
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 text-right">
+                        <div class="inline-flex items-center justify-end space-x-2">
+                          <button onclick="openEditUserModal('${u.id}')"
+                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 text-xs transition">
+                            <i data-lucide="edit" class="w-3.5 h-3.5 text-slate-500"></i>
+                            <span>Edit</span>
+                          </button>
+                          <button onclick="viewUserProfileModal('${u.id}')"
+                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 text-xs transition">
+                            <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-500"></i>
+                            <span>Detail</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `).join('')}
                 </tbody>
               </table>
             </div>
@@ -1549,7 +1480,6 @@
       const q = (state.approvalsSearch || '').toLowerCase().trim();
       const hasFilter = state.approvalsSearch || state.approvalsFilterRole || state.approvalsFilterParoki;
 
-      // Extract unique parokis for filter options
       const allPendingUsers = state.users.filter(u => (u.account_status || u.accountStatus || '').toUpperCase() === 'PENDING_APPROVAL');
       const parokiList = state.paroki?.length > 0 ? state.paroki : Array.from(new Set(allPendingUsers.map(u => u.paroki_name).filter(Boolean))).map(name => ({ id: name, name }));
       const roleList = [
@@ -1588,65 +1518,52 @@
       return `
         <div class="space-y-6 animate-fade-in">
           <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
-            <!-- Filter Toolbar Header -->
-            <div class="p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-50/90 via-white to-slate-50/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <!-- Search Input -->
+            <div class="p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" id="approvalsSearchInput" placeholder="Cari pemohon, nama, kota, nomor HP..." value="${state.approvalsSearch}"
                   oninput="state.approvalsSearch = this.value; renderApp();"
-                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
-                ${state.approvalsSearch ? `
-                  <button onclick="state.approvalsSearch = ''; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5" title="Hapus Pencarian">
-                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                  </button>
-                ` : ''}
+                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
               </div>
 
-              <!-- Contextual Dropdown Filters -->
               <div class="flex flex-wrap items-center gap-3">
-                <!-- Filter Role / Jenis Akun -->
                 <div class="relative">
                   <select onchange="state.approvalsFilterRole = this.value; renderApp();"
-                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
-                    <option value="">🛡️ Semua Peran Akun</option>
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm">
+                    <option value="">Semua Peran Akun</option>
                     ${roleList.map(r => `
-                      <option value="${r.code}" ${state.approvalsFilterRole === r.code ? 'selected' : ''}>🛡️ ${r.name}</option>
+                      <option value="${r.code}" ${state.approvalsFilterRole === r.code ? 'selected' : ''}>${r.name}</option>
                     `).join('')}
                   </select>
                 </div>
 
-                <!-- Filter Paroki -->
                 <div class="relative">
                   <select onchange="state.approvalsFilterParoki = this.value; renderApp();"
-                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs max-w-[210px] truncate">
-                    <option value="">⛪ Semua Paroki</option>
+                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-[210px] truncate">
+                    <option value="">Semua Paroki</option>
                     ${parokiList.map(p => `
-                      <option value="${p.id || p.name}" ${String(state.approvalsFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>⛪ ${p.name}</option>
+                      <option value="${p.id || p.name}" ${String(state.approvalsFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>${p.name}</option>
                     `).join('')}
                   </select>
                 </div>
 
-                <!-- Reset Filters Button -->
                 ${hasFilter ? `
                   <button onclick="state.approvalsSearch = ''; state.approvalsFilterRole = ''; state.approvalsFilterParoki = ''; renderApp();"
-                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition shadow-2xs">
+                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
                     <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
                     <span>Reset</span>
                   </button>
                 ` : ''}
 
-                <!-- Counter Badge -->
-                <span class="px-3.5 py-1.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-xs font-black shadow-2xs whitespace-nowrap">
+                <span class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold whitespace-nowrap">
                   ${pendings.length} Pendaftaran Menunggu
                 </span>
               </div>
             </div>
 
-            <!-- Table View -->
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
-                <thead class="bg-gradient-to-r from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-600 font-black border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
+                <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
                   <tr>
                     <th class="px-6 py-4">PEMOHON AKUN</th>
                     <th class="px-6 py-4">NO. WHATSAPP</th>
@@ -1660,52 +1577,51 @@
                   ${pendings.length === 0 ? `
                     <tr>
                       <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
-                        <div class="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center mx-auto">
                           <i data-lucide="check-circle-2" class="w-7 h-7"></i>
                         </div>
-                        <p class="font-extrabold text-slate-700 text-sm">Semua pendaftaran telah diverifikasi</p>
-                        <p class="text-xs text-slate-400">Tidak ada antrian persetujuan akun yang sesuai filter.</p>
+                        <p class="font-bold text-slate-700 text-sm">Semua pendaftaran telah diverifikasi</p>
                       </td>
                     </tr>
                   ` : pendings.map(u => `
-                    <tr class="hover:bg-amber-50/30 transition duration-150 group">
+                    <tr class="hover:bg-slate-50/80 transition duration-150 group">
                       <td class="px-6 py-4">
-                        <p class="font-extrabold text-slate-900 text-sm tracking-tight">${u.full_name || 'Pengguna Baru'}</p>
-                        <p class="text-[11px] text-slate-400 font-semibold truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                        <p class="font-bold text-slate-900 text-sm tracking-tight">${u.full_name || 'Pengguna Baru'}</p>
+                        <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
                       </td>
-                      <td class="px-6 py-4 font-bold text-slate-900">
+                      <td class="px-6 py-4 font-bold text-slate-800">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
-                          <i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-600"></i>
+                          <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
                           <span>${u.phone_number}</span>
                         </span>
                       </td>
                       <td class="px-6 py-4">
-                        <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-950 border border-blue-200 font-extrabold text-xs shadow-2xs">
-                          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-blue-700"></i>
+                        <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs shadow-sm">
+                          <i data-lucide="shield" class="w-3.5 h-3.5 text-slate-500"></i>
                           <span>${u.role_name || u.role_code}</span>
                         </span>
                       </td>
                       <td class="px-6 py-4">
-                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
-                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i>
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
+                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
                           <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
                         </div>
                       </td>
                       <td class="px-6 py-4">
-                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-50 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
-                          <i data-lucide="church" class="w-3.5 h-3.5 text-slate-500"></i>
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
+                          <i data-lucide="church" class="w-3.5 h-3.5 text-slate-400"></i>
                           <span>${u.paroki_name || u.kota_name || '-'}</span>
                         </div>
                       </td>
                       <td class="px-6 py-4 text-right">
                         <div class="inline-flex items-center justify-end space-x-2">
                           <button onclick="approveUserAction('${u.id}', 'APPROVED')" 
-                            class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center space-x-1 shadow-md shadow-emerald-600/20 transition transform hover:-translate-y-0.5 cursor-pointer">
+                            class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center space-x-1 transition shadow-sm">
                             <i data-lucide="check" class="w-3.5 h-3.5"></i>
                             <span>Setujui</span>
                           </button>
                           <button onclick="approveUserAction('${u.id}', 'REJECTED')" 
-                            class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs flex items-center space-x-1 shadow-md shadow-rose-600/20 transition transform hover:-translate-y-0.5 cursor-pointer">
+                            class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center space-x-1 transition shadow-sm">
                             <i data-lucide="x" class="w-3.5 h-3.5"></i>
                             <span>Tolak</span>
                           </button>
@@ -1876,10 +1792,10 @@
                   ${sub === 'paroki' ? `
                     <div class="relative">
                       <select onchange="state.masterFilterKeuskupanId = this.value; loadMasterData('paroki');"
-                        class="pl-3.5 pr-8 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-2xl text-xs font-black focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs backdrop-blur-md transition">
-                        <option value="" class="text-slate-900">🏛️ Semua Keuskupan (${state.keuskupan.length})</option>
+                        class="pl-3.5 pr-8 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs backdrop-blur-md transition">
+                        <option value="" class="text-slate-900">Semua Keuskupan (${state.keuskupan.length})</option>
                         ${state.keuskupan.map(k => `
-                          <option value="${k.id}" ${String(state.masterFilterKeuskupanId) === String(k.id) ? 'selected' : ''} class="text-slate-900">🏛️ ${k.name}</option>
+                          <option value="${k.id}" ${String(state.masterFilterKeuskupanId) === String(k.id) ? 'selected' : ''} class="text-slate-900">${k.name}</option>
                         `).join('')}
                       </select>
                     </div>
@@ -1889,10 +1805,10 @@
                   ${sub === 'wilayah' ? `
                     <div class="relative">
                       <select onchange="state.masterFilterParokiId = this.value; loadMasterData('wilayah');"
-                        class="pl-3.5 pr-8 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-2xl text-xs font-black focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs max-w-xs truncate backdrop-blur-md transition">
-                        <option value="" class="text-slate-900">⛪ Semua Paroki (${state.paroki.length})</option>
+                        class="pl-3.5 pr-8 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs max-w-xs truncate backdrop-blur-md transition">
+                        <option value="" class="text-slate-900">Semua Paroki (${state.paroki.length})</option>
                         ${state.paroki.map(p => `
-                          <option value="${p.id}" ${String(state.masterFilterParokiId) === String(p.id) ? 'selected' : ''} class="text-slate-900">⛪ ${p.name}</option>
+                          <option value="${p.id}" ${String(state.masterFilterParokiId) === String(p.id) ? 'selected' : ''} class="text-slate-900">${p.name}</option>
                         `).join('')}
                       </select>
                     </div>
@@ -1902,10 +1818,10 @@
                   ${sub === 'lingkungan' ? `
                     <div class="relative">
                       <select onchange="state.masterFilterWilayahId = this.value; loadMasterData('lingkungan');"
-                        class="pl-3.5 pr-8 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-2xl text-xs font-black focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs max-w-xs truncate backdrop-blur-md transition">
-                        <option value="" class="text-slate-900">📍 Semua Wilayah</option>
+                        class="pl-3.5 pr-8 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xs max-w-xs truncate backdrop-blur-md transition">
+                        <option value="" class="text-slate-900">Semua Wilayah</option>
                         ${(state.modalWilayahList || []).map(w => `
-                          <option value="${w.id}" ${String(state.masterFilterWilayahId) === String(w.id) ? 'selected' : ''} class="text-slate-900">📍 ${w.name}</option>
+                          <option value="${w.id}" ${String(state.masterFilterWilayahId) === String(w.id) ? 'selected' : ''} class="text-slate-900">${w.name}</option>
                         `).join('')}
                       </select>
                     </div>
@@ -2313,35 +2229,37 @@
             </div>
           </td>
           <td class="py-4.5 px-6 text-center">
-            <span class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-black ${(item.total_users || 0) > 0 ? 'bg-blue-50 text-blue-900 border border-blue-200 shadow-2xs' : 'bg-slate-100 text-slate-500'}">
-              <span>👥 ${item.total_users || 0} Pengguna</span>
+            <span class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+              <i data-lucide="users" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span>${item.total_users || 0} Pengguna</span>
             </span>
           </td>
           <td class="py-4.5 px-6">
-            <span class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl text-xs font-extrabold ${item.code === 'ADMIN' ? 'text-amber-950 bg-amber-50 border border-amber-300 shadow-2xs' : 'text-slate-700 bg-slate-100 border border-slate-200'}">
-              <span>${item.code === 'ADMIN' ? '🛡️ Portal Administrator Web' : '📱 Aplikasi Mobile CATU'}</span>
+            <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${item.code === 'ADMIN' ? 'text-amber-950 bg-amber-50 border border-amber-300' : 'text-slate-700 bg-slate-100 border border-slate-200'}">
+              <i data-lucide="${item.code === 'ADMIN' ? 'shield' : 'smartphone'}" class="w-3.5 h-3.5 ${item.code === 'ADMIN' ? 'text-amber-600' : 'text-slate-400'}"></i>
+              <span>${item.code === 'ADMIN' ? 'Portal Administrator Web' : 'Aplikasi Mobile CATU'}</span>
             </span>
           </td>
         `;
       } else if (sub === 'positions') {
         const catBadge = item.category === 'PENGURUS_LINGKUNGAN'
-          ? '<span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-950 border border-indigo-200 font-black text-xs shadow-2xs">🏘️ Pengurus Lingkungan</span>'
+          ? '<span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs"><i data-lucide="home" class="w-3.5 h-3.5 text-slate-500"></i><span>Pengurus Lingkungan</span></span>'
           : item.category === 'ROMO_PAROKI'
-          ? '<span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-950 border border-emerald-200 font-black text-xs shadow-2xs">⛪ Romo Paroki</span>'
-          : '<span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-50 text-purple-950 border border-purple-200 font-black text-xs shadow-2xs">✝️ Romo Ordo</span>';
+          ? '<span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs"><i data-lucide="church" class="w-3.5 h-3.5 text-slate-500"></i><span>Romo Paroki</span></span>'
+          : '<span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs"><i data-lucide="cross" class="w-3.5 h-3.5 text-slate-500"></i><span>Romo Ordo</span></span>';
         return `
           <td class="py-4.5 px-6">
-            <span class="px-2.5 py-1 rounded-xl bg-slate-900 text-amber-300 font-mono font-black text-xs border border-slate-800 shadow-2xs">
+            <span class="px-2.5 py-1 rounded-xl bg-slate-900 text-amber-300 font-mono font-bold text-xs border border-slate-800 shadow-2xs">
               ${item.code || '-'}
             </span>
           </td>
-          <td class="py-4.5 px-6 font-black text-slate-900 text-xs">
+          <td class="py-4.5 px-6 font-bold text-slate-900 text-xs">
             <div class="flex items-center space-x-3">
-              <div class="w-9 h-9 rounded-xl ${item.is_lead ? 'bg-amber-100 text-amber-800 border border-amber-300 shadow-xs' : 'bg-slate-100 text-slate-700 border border-slate-200'} flex items-center justify-center font-bold shadow-xs">
+              <div class="w-9 h-9 rounded-xl ${item.is_lead ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-700 border border-slate-200'} flex items-center justify-center font-bold shadow-xs">
                 <i data-lucide="${item.is_lead ? 'crown' : 'award'}" class="w-4.5 h-4.5 text-amber-700"></i>
               </div>
               <div>
-                <p class="font-extrabold text-slate-900 text-xs">${item.name || '-'}</p>
+                <p class="font-bold text-slate-900 text-xs">${item.name || '-'}</p>
                 <p class="text-[10px] text-slate-400 font-semibold">${item.is_lead ? 'Pimpinan / Ketua Utama' : 'Struktur Anggota'}</p>
               </div>
             </div>
@@ -2350,13 +2268,14 @@
             ${catBadge}
           </td>
           <td class="py-4.5 px-6 text-center">
-            <span class="inline-flex items-center space-x-1 px-3.5 py-1.5 rounded-full text-xs font-black ${item.is_lead ? 'bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs' : 'bg-slate-100 text-slate-600 border border-slate-200'}">
-              <span>${item.is_lead ? '👑 KETUA / KEPALA' : 'ANGGOTA'}</span>
+            <span class="inline-flex items-center space-x-1 px-3.5 py-1.5 rounded-full text-xs font-bold ${item.is_lead ? 'bg-amber-100 text-amber-950 border border-amber-300' : 'bg-slate-100 text-slate-600 border border-slate-200'}">
+              <span>${item.is_lead ? 'KETUA / KEPALA' : 'ANGGOTA'}</span>
             </span>
           </td>
           <td class="py-4.5 px-6 text-center">
-            <span class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-black ${(item.total_pejabat || 0) > 0 ? 'bg-blue-50 text-blue-900 border border-blue-200 shadow-2xs' : 'bg-slate-100 text-slate-500'}">
-              <span>👥 ${item.total_pejabat || 0} Pejabat</span>
+            <span class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+              <i data-lucide="users" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span>${item.total_pejabat || 0} Pejabat</span>
             </span>
           </td>
         `;
@@ -2460,21 +2379,21 @@
             id: 'masterKeuskupanIdInput',
             name: 'modalParokiKeuskupan',
             label: 'Keuskupan Induk *',
-            icon: '🏛️',
+            icon: 'landmark',
             badgeText: `${(state.keuskupan || []).length} Keuskupan`,
             placeholder: '-- Pilih Keuskupan Induk --',
-            searchPlaceholder: '🔍 Cari Keuskupan...',
+            searchPlaceholder: 'Cari Keuskupan...',
             options: (state.keuskupan || []).map(k => ({ id: k.id, name: k.name })),
             selectedValue: data.keuskupan_id || data.keuskupanId,
             onSelectCallback: 'onMasterModalKeuskupanSelectedForParoki',
           })}
           <div>
-            <label class="block font-extrabold text-slate-700 mb-1.5">Nama Paroki *</label>
+            <label class="block font-bold text-slate-700 mb-1.5">Nama Paroki *</label>
             <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Paroki Santa Maria Regina"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
           <div>
-            <label class="block font-extrabold text-slate-700 mb-1.5">Alamat Lengkap Paroki</label>
+            <label class="block font-bold text-slate-700 mb-1.5">Alamat Lengkap Paroki</label>
             <textarea id="masterAddressInput" rows="2" placeholder="misal: Jl. Bintaro Utama Sektor 7..."
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">${data.address || ''}</textarea>
           </div>
@@ -2490,10 +2409,10 @@
               id: 'modalWilayahFilterKeuskupanId',
               name: 'modalWilayahKeuskupan',
               label: '1. Filter Keuskupan (Opsional)',
-              icon: '🏛️',
+              icon: 'landmark',
               badgeText: `${(state.keuskupan || []).length} Keuskupan`,
               placeholder: '-- Tampilkan Semua Paroki --',
-              searchPlaceholder: '🔍 Cari Keuskupan...',
+              searchPlaceholder: 'Cari Keuskupan...',
               options: (state.keuskupan || []).map(k => ({ id: k.id, name: k.name })),
               selectedValue: modal.filterKeuskupanId || data.keuskupan_id,
               onSelectCallback: 'onMasterModalKeuskupanSelectedForWilayah',
@@ -2506,10 +2425,10 @@
             id: 'masterParokiIdInput',
             name: 'modalWilayahParoki',
             label: '2. Pilih Paroki Induk *',
-            icon: '⛪',
+            icon: 'church',
             badgeText: `${parokiList.length} Paroki Tersedia`,
             placeholder: '-- Pilih Paroki Induk --',
-            searchPlaceholder: '🔍 Cari Paroki Induk...',
+            searchPlaceholder: 'Cari Paroki Induk...',
             options: parokiList.map(p => ({ id: p.id, name: `${p.name} (${p.keuskupan_name || 'Keuskupan'})` })),
             selectedValue: selectedParokiId,
             onSelectCallback: 'onMasterModalParokiSelectedForWilayah',
@@ -2517,7 +2436,7 @@
 
           <!-- 3. Nama Wilayah -->
           <div>
-            <label class="block font-extrabold text-slate-800 mb-1.5">📍 3. Nama Wilayah Baru *</label>
+            <label class="block font-bold text-slate-800 mb-1.5">3. Nama Wilayah Baru *</label>
             <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Wilayah St. Fransiskus Xaverius"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
@@ -2534,10 +2453,10 @@
               id: 'modalLingkunganFilterKeuskupanId',
               name: 'modalLingkunganKeuskupan',
               label: '1. Filter Keuskupan (Opsional)',
-              icon: '🏛️',
+              icon: 'landmark',
               badgeText: `${(state.keuskupan || []).length} Keuskupan`,
               placeholder: '-- Semua Keuskupan --',
-              searchPlaceholder: '🔍 Cari Keuskupan...',
+              searchPlaceholder: 'Cari Keuskupan...',
               options: (state.keuskupan || []).map(k => ({ id: k.id, name: k.name })),
               selectedValue: modal.filterKeuskupanId || data.keuskupan_id,
               onSelectCallback: 'onMasterModalKeuskupanSelectedForLingkungan',
@@ -2551,10 +2470,10 @@
               id: 'modalLingkunganFilterParokiId',
               name: 'modalLingkunganParoki',
               label: '2. Filter Paroki (Pilih untuk menyaring Wilayah)',
-              icon: '⛪',
+              icon: 'church',
               badgeText: `${parokiList.length} Paroki`,
               placeholder: '-- Pilih Paroki Induk --',
-              searchPlaceholder: '🔍 Cari Paroki...',
+              searchPlaceholder: 'Cari Paroki...',
               options: parokiList.map(p => ({ id: p.id, name: `${p.name} (${p.keuskupan_name || 'Keuskupan'})` })),
               selectedValue: modal.filterParokiId || data.paroki_id,
               onSelectCallback: 'onMasterModalParokiSelectedForLingkungan',
@@ -2567,10 +2486,10 @@
             id: 'masterWilayahIdInput',
             name: 'modalLingkunganWilayah',
             label: '3. Pilih Wilayah Induk *',
-            icon: '📍',
+            icon: 'map-pin',
             badgeText: `${wilayahList.length} Wilayah Tersedia`,
             placeholder: wilayahList.length === 0 ? '-- Pilih Paroki terlebih dahulu --' : '-- Pilih Wilayah Induk --',
-            searchPlaceholder: '🔍 Cari Wilayah...',
+            searchPlaceholder: 'Cari Wilayah...',
             options: wilayahList.map(w => ({ id: w.id, name: `${w.name} (${w.paroki_name || 'Paroki'})` })),
             selectedValue: selectedWilayahId,
             onSelectCallback: 'onMasterModalWilayahSelectedForLingkungan',
@@ -2579,7 +2498,7 @@
 
           <!-- 4. Nama Lingkungan -->
           <div>
-            <label class="block font-extrabold text-slate-800 mb-1.5">🏘️ 4. Nama Lingkungan Baru *</label>
+            <label class="block font-bold text-slate-800 mb-1.5">4. Nama Lingkungan Baru *</label>
             <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Lingkungan St. Gabriel 1"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
@@ -2644,9 +2563,9 @@
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Kategori Struktur Jabatan *</label>
             <select id="masterCategoryInput" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
-              <option value="PENGURUS_LINGKUNGAN" ${data.category === 'PENGURUS_LINGKUNGAN' ? 'selected' : ''}>🏘️ Pengurus Lingkungan (Ketua, Wakil, Sekretaris)</option>
-              <option value="ROMO_PAROKI" ${data.category === 'ROMO_PAROKI' ? 'selected' : ''}>⛪ Romo Paroki (Kepala Romo, Romo Paroki)</option>
-              <option value="ROMO_ORDO" ${data.category === 'ROMO_ORDO' ? 'selected' : ''}>✝️ Romo Ordo (Ketua Romo Ordo, Romo Ordo)</option>
+              <option value="PENGURUS_LINGKUNGAN" ${data.category === 'PENGURUS_LINGKUNGAN' ? 'selected' : ''}>Pengurus Lingkungan (Ketua, Wakil, Sekretaris)</option>
+              <option value="ROMO_PAROKI" ${data.category === 'ROMO_PAROKI' ? 'selected' : ''}>Romo Paroki (Kepala Romo, Romo Paroki)</option>
+              <option value="ROMO_ORDO" ${data.category === 'ROMO_ORDO' ? 'selected' : ''}>Romo Ordo (Ketua Romo Ordo, Romo Ordo)</option>
             </select>
           </div>
           <div>
@@ -2662,7 +2581,7 @@
           <div class="pt-1">
             <label class="flex items-center space-x-2 p-3 bg-amber-50/70 rounded-xl border border-amber-200 cursor-pointer">
               <input type="checkbox" id="masterIsLeadInput" ${data.is_lead ? 'checked' : ''} class="w-4 h-4 rounded text-amber-600 focus:ring-amber-500" />
-              <span class="font-extrabold text-amber-950 text-xs">👑 Jabatan Pimpinan / Ketua Utama (Ketua / Kepala)</span>
+              <span class="font-extrabold text-amber-950 text-xs">Jabatan Pimpinan / Ketua Utama (Ketua / Kepala)</span>
             </label>
           </div>
         `;
@@ -3158,9 +3077,9 @@
         <div class="custom-combobox-container relative">
           ${label ? `
             <div class="flex items-center justify-between mb-1.5">
-              <label class="block font-extrabold text-slate-700 text-[11px] flex items-center">
-                ${icon ? `<span class="mr-1">${icon}</span>` : ''}
-                ${label}
+              <label class="block font-bold text-slate-700 text-[11px] flex items-center">
+                ${icon ? `<i data-lucide="${icon}" class="w-3.5 h-3.5 mr-1.5 text-slate-400"></i>` : ''}
+                <span>${label}</span>
               </label>
               ${badgeText ? `<span class="text-[10px] text-slate-400 font-bold">${badgeText}</span>` : ''}
             </div>
@@ -3396,10 +3315,10 @@
                       id: 'editProvinsiId',
                       name: 'editProvinsi',
                       label: 'Provinsi',
-                      icon: '🗺️',
+                      icon: 'map',
                       badgeText: `${(state.provinsi || []).length} Provinsi`,
                       placeholder: '-- Pilih Provinsi --',
-                      searchPlaceholder: '🔍 Cari nama Provinsi...',
+                      searchPlaceholder: 'Cari nama Provinsi...',
                       options: (state.provinsi || []).map(p => ({ id: p.id, name: p.name })),
                       selectedValue: u.provinsi_id,
                       onSelectCallback: 'onEditProvinsiSelected',
@@ -3411,10 +3330,10 @@
                       id: 'editKabupatenKotaId',
                       name: 'editKabupatenKota',
                       label: 'Kabupaten / Kota',
-                      icon: '🌆',
+                      icon: 'building-2',
                       badgeText: `${(state.editKabupatenKotaList && state.editKabupatenKotaList.length > 0 ? state.editKabupatenKotaList : (state.kabupatenKota || [])).length} Kota/Kab`,
                       placeholder: '-- Pilih Kabupaten/Kota --',
-                      searchPlaceholder: '🔍 Cari Kota atau Kabupaten...',
+                      searchPlaceholder: 'Cari Kota atau Kabupaten...',
                       options: (state.editKabupatenKotaList && state.editKabupatenKotaList.length > 0 ? state.editKabupatenKotaList : (state.kabupatenKota || [])).map(k => ({ id: k.id, name: k.name })),
                       selectedValue: u.kabupaten_kota_id,
                       onSelectCallback: 'onEditKabupatenKotaSelected',
@@ -3427,10 +3346,10 @@
                         id: 'editKeuskupanId',
                         name: 'editKeuskupan',
                         label: 'Keuskupan',
-                        icon: '🏛️',
+                        icon: 'landmark',
                         badgeText: `${(state.keuskupan || []).length} Keuskupan`,
                         placeholder: '-- Pilih Keuskupan --',
-                        searchPlaceholder: '🔍 Cari nama Keuskupan...',
+                        searchPlaceholder: 'Cari nama Keuskupan...',
                         options: (state.keuskupan || []).map(k => ({ id: k.id, name: k.name })),
                         selectedValue: u.keuskupan_id,
                         onSelectCallback: 'onEditKeuskupanSelected',
@@ -3442,10 +3361,10 @@
                         id: 'editParokiId',
                         name: 'editParoki',
                         label: 'Paroki',
-                        icon: '⛪',
+                        icon: 'church',
                         badgeText: `${(state.editParokiList && state.editParokiList.length > 0 ? state.editParokiList : (state.paroki || [])).length} Paroki`,
                         placeholder: '-- Pilih Paroki --',
-                        searchPlaceholder: '🔍 Cari nama Paroki...',
+                        searchPlaceholder: 'Cari nama Paroki...',
                         options: (state.editParokiList && state.editParokiList.length > 0 ? state.editParokiList : (state.paroki || [])).map(p => ({ id: p.id, name: p.name })),
                         selectedValue: u.paroki_id,
                         onSelectCallback: 'onEditParokiSelected',
@@ -3457,10 +3376,10 @@
                         id: 'editWilayahId',
                         name: 'editWilayah',
                         label: 'Wilayah',
-                        icon: '📍',
+                        icon: 'map-pin',
                         badgeText: `${(state.editWilayahList || []).length} Wilayah`,
                         placeholder: (state.editWilayahList || []).length === 0 ? '-- Pilih Paroki terlebih dahulu --' : '-- Pilih Wilayah --',
-                        searchPlaceholder: '🔍 Cari nama Wilayah...',
+                        searchPlaceholder: 'Cari nama Wilayah...',
                         options: (state.editWilayahList || []).map(w => ({ id: w.id, name: w.name })),
                         selectedValue: u.wilayah_id,
                         onSelectCallback: 'onEditWilayahSelected',
@@ -3473,10 +3392,10 @@
                         id: 'editLingkunganId',
                         name: 'editLingkungan',
                         label: 'Lingkungan',
-                        icon: '🏘️',
+                        icon: 'home',
                         badgeText: `${(state.editLingkunganList || []).length} Lingkungan`,
                         placeholder: (state.editLingkunganList || []).length === 0 ? '-- Pilih Wilayah terlebih dahulu --' : '-- Pilih Lingkungan --',
-                        searchPlaceholder: '🔍 Cari nama Lingkungan...',
+                        searchPlaceholder: 'Cari nama Lingkungan...',
                         options: (state.editLingkunganList || []).map(l => ({ id: l.id, name: l.name })),
                         selectedValue: u.lingkungan_id,
                         onSelectCallback: 'onEditLingkunganSelected',
@@ -3490,10 +3409,10 @@
                           id: 'editOrdoId',
                           name: 'editOrdo',
                           label: 'Ordo / Kongregasi Religius',
-                          icon: '✝️',
+                          icon: 'cross',
                           badgeText: `${(state.ordo || []).length} Ordo`,
                           placeholder: '-- Pilih Ordo / Kongregasi --',
-                          searchPlaceholder: '🔍 Cari nama atau kode singkatan Ordo...',
+                          searchPlaceholder: 'Cari nama atau kode singkatan Ordo...',
                           options: (state.ordo || []).map(o => ({ id: o.id, name: o.name, code: o.code })),
                           selectedValue: u.ordo_id,
                           onSelectCallback: 'onEditOrdoSelected',
