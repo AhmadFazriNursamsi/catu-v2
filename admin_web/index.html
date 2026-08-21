@@ -140,6 +140,10 @@
       activeOrderDetail: null,
       activeUserProfile: null,
       activeEditUser: null,
+      editKabupatenKotaList: [],
+      editParokiList: [],
+      editWilayahList: [],
+      editLingkunganList: [],
       isSavingProfile: false,
       editFormError: '',
 
@@ -2369,7 +2373,7 @@
                       <select id="editProvinsiId" onchange="onEditProvinsiChanged(this.value)"
                         class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
                         <option value="">-- Pilih Provinsi --</option>
-                        ${state.provinsi.map(prov => `
+                        ${(state.provinsi || []).map(prov => `
                           <option value="${prov.id}" ${String(u.provinsi_id) === String(prov.id) ? 'selected' : ''}>${prov.name}</option>
                         `).join('')}
                       </select>
@@ -2377,10 +2381,10 @@
 
                     <div>
                       <label class="block font-extrabold text-slate-700 mb-1.5">Kabupaten / Kota</label>
-                      <select id="editKabupatenKotaId"
+                      <select id="editKabupatenKotaId" onchange="syncEditFormToState(); state.activeEditUser.kabupaten_kota_id = this.value ? parseInt(this.value) : null;"
                         class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
                         <option value="">-- Pilih Kabupaten/Kota --</option>
-                        ${state.kabupatenKota.map(k => `
+                        ${(state.editKabupatenKotaList && state.editKabupatenKotaList.length > 0 ? state.editKabupatenKotaList : (state.kabupatenKota || [])).map(k => `
                           <option value="${k.id}" ${String(u.kabupaten_kota_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
                         `).join('')}
                       </select>
@@ -2388,22 +2392,28 @@
 
                     ${roleCode !== 'ROMO_ORDO' ? `
                       <div>
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Keuskupan</label>
+                        <div class="flex items-center justify-between mb-1.5">
+                          <label class="block font-extrabold text-slate-700">🏛️ Keuskupan</label>
+                          <span class="text-[10px] text-slate-400 font-bold">${state.keuskupan?.length || 0} Tersedia</span>
+                        </div>
                         <select id="editKeuskupanId" onchange="onEditKeuskupanChanged(this.value)"
                           class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
                           <option value="">-- Pilih Keuskupan --</option>
-                          ${state.keuskupan.map(k => `
+                          ${(state.keuskupan || []).map(k => `
                             <option value="${k.id}" ${String(u.keuskupan_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
                           `).join('')}
                         </select>
                       </div>
 
                       <div>
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Paroki</label>
+                        <div class="flex items-center justify-between mb-1.5">
+                          <label class="block font-extrabold text-slate-700">⛪ Paroki</label>
+                          <span class="text-[10px] text-emerald-700 font-bold">${(state.editParokiList && state.editParokiList.length > 0 ? state.editParokiList : (state.paroki || [])).length} Paroki</span>
+                        </div>
                         <select id="editParokiId" onchange="onEditParokiChanged(this.value)"
                           class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
                           <option value="">-- Pilih Paroki --</option>
-                          ${state.paroki.map(p => `
+                          ${(state.editParokiList && state.editParokiList.length > 0 ? state.editParokiList : (state.paroki || [])).map(p => `
                             <option value="${p.id}" ${String(u.paroki_id) === String(p.id) ? 'selected' : ''}>${p.name}</option>
                           `).join('')}
                         </select>
@@ -2411,11 +2421,14 @@
 
                       <!-- COMBOBOX WILAYAH -->
                       <div>
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Wilayah (Combobox)</label>
+                        <div class="flex items-center justify-between mb-1.5">
+                          <label class="block font-extrabold text-slate-700">📍 Wilayah</label>
+                          <span class="text-[10px] text-indigo-700 font-bold">${(state.editWilayahList || []).length} Wilayah</span>
+                        </div>
                         <select id="editWilayahId" onchange="onEditWilayahChanged(this.value)"
                           class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
-                          <option value="">-- Pilih Wilayah --</option>
-                          ${state.wilayah.map(w => `
+                          <option value="">-- ${(state.editWilayahList || []).length === 0 ? 'Pilih Paroki terlebih dahulu' : 'Pilih Wilayah'} --</option>
+                          ${(state.editWilayahList || []).map(w => `
                             <option value="${w.id}" ${String(u.wilayah_id) === String(w.id) ? 'selected' : ''}>${w.name}</option>
                           `).join('')}
                         </select>
@@ -2423,11 +2436,14 @@
 
                       <!-- COMBOBOX LINGKUNGAN -->
                       <div>
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Lingkungan (Combobox)</label>
-                        <select id="editLingkunganId"
+                        <div class="flex items-center justify-between mb-1.5">
+                          <label class="block font-extrabold text-slate-700">🏘️ Lingkungan</label>
+                          <span class="text-[10px] text-cyan-700 font-bold">${(state.editLingkunganList || []).length} Lingkungan</span>
+                        </div>
+                        <select id="editLingkunganId" onchange="onEditLingkunganChanged(this.value)"
                           class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
-                          <option value="">-- Pilih Lingkungan --</option>
-                          ${state.lingkungan.map(l => `
+                          <option value="">-- ${(state.editLingkunganList || []).length === 0 ? 'Pilih Wilayah terlebih dahulu' : 'Pilih Lingkungan'} --</option>
+                          ${(state.editLingkunganList || []).map(l => `
                             <option value="${l.id}" ${String(u.lingkungan_id) === String(l.id) ? 'selected' : ''}>${l.name}</option>
                           `).join('')}
                         </select>
@@ -2435,10 +2451,10 @@
                     ` : `
                       <div class="md:col-span-2">
                         <label class="block font-extrabold text-slate-700 mb-1.5">Ordo / Kongregasi *</label>
-                        <select id="editOrdoId"
+                        <select id="editOrdoId" onchange="syncEditFormToState(); state.activeEditUser.ordo_id = this.value ? parseInt(this.value) : null;"
                           class="w-full px-4 py-2.5 bg-white border border-purple-200 rounded-xl font-black text-purple-950 text-xs focus:outline-none focus:ring-2 focus:ring-purple-600 shadow-xs transition">
                           <option value="">-- Pilih Ordo --</option>
-                          ${state.ordo.map(o => `
+                          ${(state.ordo || []).map(o => `
                             <option value="${o.id}" ${String(u.ordo_id) === String(o.id) ? 'selected' : ''}>${o.name}</option>
                           `).join('')}
                         </select>
@@ -3129,48 +3145,121 @@
       }
     }
 
+    function syncEditFormToState() {
+      if (!state.activeEditUser) return;
+      const u = state.activeEditUser;
+      const fn = document.getElementById('editFullName');
+      if (fn) u.full_name = fn.value;
+      const em = document.getElementById('editEmail');
+      if (em) u.email = em.value;
+      const ph = document.getElementById('editPhone');
+      if (ph) u.phone_number = ph.value;
+      const bd = document.getElementById('editBirthDate');
+      if (bd) u.birth_date = bd.value;
+      const ad = document.getElementById('editAddress');
+      if (ad) u.address = ad.value;
+      const rc = document.getElementById('editRoleCode');
+      if (rc) u.role_code = rc.value;
+      const as = document.getElementById('editAccountStatus');
+      if (as) u.account_status = as.value;
+      const pr = document.getElementById('editProvinsiId');
+      if (pr) u.provinsi_id = pr.value ? parseInt(pr.value) : null;
+      const kk = document.getElementById('editKabupatenKotaId');
+      if (kk) u.kabupaten_kota_id = kk.value ? parseInt(kk.value) : null;
+      const ke = document.getElementById('editKeuskupanId');
+      if (ke) u.keuskupan_id = ke.value ? parseInt(ke.value) : null;
+      const pa = document.getElementById('editParokiId');
+      if (pa) u.paroki_id = pa.value ? parseInt(pa.value) : null;
+      const wi = document.getElementById('editWilayahId');
+      if (wi) u.wilayah_id = wi.value ? parseInt(wi.value) : null;
+      const li = document.getElementById('editLingkunganId');
+      if (li) u.lingkungan_id = li.value ? parseInt(li.value) : null;
+      const ord = document.getElementById('editOrdoId');
+      if (ord) u.ordo_id = ord.value ? parseInt(ord.value) : null;
+      const pp = document.getElementById('editPengurusPosition');
+      if (pp) u.pengurus_position = pp.value;
+      const rp = document.getElementById('editRomoPosition');
+      if (rp) u.romo_position = rp.value;
+      const sy = document.getElementById('editJabatanStartYear');
+      if (sy) u.jabatan_start_year = sy.value ? parseInt(sy.value) : null;
+      const ey = document.getElementById('editJabatanEndYear');
+      if (ey) u.jabatan_end_year = ey.value ? parseInt(ey.value) : null;
+    }
+
     async function onEditProvinsiChanged(provinsiId) {
-      if (!provinsiId) {
-        const res = await fetch(`${API_BASE}/auth/kabupaten-kota`);
-        state.kabupatenKota = await res.json();
-      } else {
-        const res = await fetch(`${API_BASE}/auth/kabupaten-kota?provinsiId=${provinsiId}`);
-        state.kabupatenKota = await res.json();
+      syncEditFormToState();
+      state.activeEditUser.provinsi_id = provinsiId ? parseInt(provinsiId) : null;
+      state.activeEditUser.kabupaten_kota_id = null;
+      try {
+        const url = provinsiId ? `${API_BASE}/auth/kabupaten-kota?provinsiId=${provinsiId}` : `${API_BASE}/auth/kabupaten-kota`;
+        const res = await fetch(url);
+        state.editKabupatenKotaList = await res.json();
+      } catch (e) {
+        state.editKabupatenKotaList = [];
       }
       renderApp();
     }
 
     async function onEditKeuskupanChanged(keuskupanId) {
-      if (!keuskupanId) {
-        const res = await fetch(`${API_BASE}/auth/paroki`);
-        state.paroki = await res.json();
-      } else {
-        const res = await fetch(`${API_BASE}/auth/paroki?keuskupanId=${keuskupanId}`);
-        state.paroki = await res.json();
+      syncEditFormToState();
+      state.activeEditUser.keuskupan_id = keuskupanId ? parseInt(keuskupanId) : null;
+      state.activeEditUser.paroki_id = null;
+      state.activeEditUser.wilayah_id = null;
+      state.activeEditUser.lingkungan_id = null;
+      try {
+        const url = keuskupanId ? `${API_BASE}/auth/paroki?keuskupanId=${keuskupanId}` : `${API_BASE}/auth/paroki`;
+        const res = await fetch(url);
+        state.editParokiList = await res.json();
+        state.editWilayahList = [];
+        state.editLingkunganList = [];
+      } catch (e) {
+        state.editParokiList = [];
+        state.editWilayahList = [];
+        state.editLingkunganList = [];
       }
       renderApp();
     }
 
     async function onEditParokiChanged(parokiId) {
-      if (!parokiId) {
-        state.wilayah = [];
-        state.lingkungan = [];
-      } else {
-        const res = await fetch(`${API_BASE}/auth/wilayah?parokiId=${parokiId}`);
-        state.wilayah = await res.json();
-        state.lingkungan = [];
+      syncEditFormToState();
+      state.activeEditUser.paroki_id = parokiId ? parseInt(parokiId) : null;
+      state.activeEditUser.wilayah_id = null;
+      state.activeEditUser.lingkungan_id = null;
+      try {
+        if (parokiId) {
+          const res = await fetch(`${API_BASE}/auth/wilayah?parokiId=${parokiId}`);
+          state.editWilayahList = await res.json();
+        } else {
+          state.editWilayahList = [];
+        }
+        state.editLingkunganList = [];
+      } catch (e) {
+        state.editWilayahList = [];
+        state.editLingkunganList = [];
       }
       renderApp();
     }
 
     async function onEditWilayahChanged(wilayahId) {
-      if (!wilayahId) {
-        state.lingkungan = [];
-      } else {
-        const res = await fetch(`${API_BASE}/auth/lingkungan?wilayahId=${wilayahId}`);
-        state.lingkungan = await res.json();
+      syncEditFormToState();
+      state.activeEditUser.wilayah_id = wilayahId ? parseInt(wilayahId) : null;
+      state.activeEditUser.lingkungan_id = null;
+      try {
+        if (wilayahId) {
+          const res = await fetch(`${API_BASE}/auth/lingkungan?wilayahId=${wilayahId}`);
+          state.editLingkunganList = await res.json();
+        } else {
+          state.editLingkunganList = [];
+        }
+      } catch (e) {
+        state.editLingkunganList = [];
       }
       renderApp();
+    }
+
+    function onEditLingkunganChanged(lingkunganId) {
+      syncEditFormToState();
+      state.activeEditUser.lingkungan_id = lingkunganId ? parseInt(lingkunganId) : null;
     }
 
     async function openEditUserModal(userId) {
@@ -3179,23 +3268,48 @@
       state.activeEditUser = { ...u };
       state.editFormError = '';
 
-      // Load cascading wilayah and lingkungan for preselection
-      if (u.paroki_id) {
-        try {
-          const wRes = await fetch(`${API_BASE}/auth/wilayah?parokiId=${u.paroki_id}`);
-          state.wilayah = await wRes.json();
-        } catch(e) { state.wilayah = []; }
-      } else {
-        state.wilayah = [];
-      }
+      try {
+        // Preload lookups if needed
+        if (!state.provinsi || state.provinsi.length === 0) {
+          const pRes = await fetch(`${API_BASE}/auth/provinsi`);
+          state.provinsi = await pRes.json();
+        }
+        if (!state.keuskupan || state.keuskupan.length === 0) {
+          const kRes = await fetch(`${API_BASE}/auth/keuskupan`);
+          state.keuskupan = await kRes.json();
+        }
+        if (!state.ordo || state.ordo.length === 0) {
+          const oRes = await fetch(`${API_BASE}/auth/ordo`);
+          state.ordo = await oRes.json();
+        }
 
-      if (u.wilayah_id) {
-        try {
+        // Preload kabupaten-kota list
+        const kkUrl = u.provinsi_id ? `${API_BASE}/auth/kabupaten-kota?provinsiId=${u.provinsi_id}` : `${API_BASE}/auth/kabupaten-kota`;
+        const kkRes = await fetch(kkUrl);
+        state.editKabupatenKotaList = await kkRes.json();
+
+        // Preload paroki list
+        const parUrl = u.keuskupan_id ? `${API_BASE}/auth/paroki?keuskupanId=${u.keuskupan_id}` : `${API_BASE}/auth/paroki`;
+        const parRes = await fetch(parUrl);
+        state.editParokiList = await parRes.json();
+
+        // Load cascading wilayah
+        if (u.paroki_id) {
+          const wRes = await fetch(`${API_BASE}/auth/wilayah?parokiId=${u.paroki_id}`);
+          state.editWilayahList = await wRes.json();
+        } else {
+          state.editWilayahList = [];
+        }
+
+        // Load cascading lingkungan
+        if (u.wilayah_id) {
           const lRes = await fetch(`${API_BASE}/auth/lingkungan?wilayahId=${u.wilayah_id}`);
-          state.lingkungan = await lRes.json();
-        } catch(e) { state.lingkungan = []; }
-      } else {
-        state.lingkungan = [];
+          state.editLingkunganList = await lRes.json();
+        } else {
+          state.editLingkunganList = [];
+        }
+      } catch (err) {
+        console.error('Error preloading user profile dropdown lists:', err);
       }
 
       renderApp();
@@ -3258,26 +3372,26 @@
       };
 
       const provElem = document.getElementById('editProvinsiId');
-      if (provElem && provElem.value) payload.provinsiId = parseInt(provElem.value);
+      payload.provinsiId = (provElem && provElem.value) ? parseInt(provElem.value) : null;
 
       const kkElem = document.getElementById('editKabupatenKotaId');
-      if (kkElem && kkElem.value) payload.kabupatenKotaId = parseInt(kkElem.value);
+      payload.kabupatenKotaId = (kkElem && kkElem.value) ? parseInt(kkElem.value) : null;
 
       if (roleCode !== 'ROMO_ORDO') {
         const kElem = document.getElementById('editKeuskupanId');
-        if (kElem && kElem.value) payload.keuskupanId = parseInt(kElem.value);
+        payload.keuskupanId = (kElem && kElem.value) ? parseInt(kElem.value) : null;
 
         const pElem = document.getElementById('editParokiId');
-        if (pElem && pElem.value) payload.parokiId = parseInt(pElem.value);
+        payload.parokiId = (pElem && pElem.value) ? parseInt(pElem.value) : null;
 
         const wElem = document.getElementById('editWilayahId');
-        if (wElem && wElem.value) payload.wilayahId = parseInt(wElem.value);
+        payload.wilayahId = (wElem && wElem.value) ? parseInt(wElem.value) : null;
 
         const lElem = document.getElementById('editLingkunganId');
-        if (lElem && lElem.value) payload.lingkunganId = parseInt(lElem.value);
+        payload.lingkunganId = (lElem && lElem.value) ? parseInt(lElem.value) : null;
       } else {
         const oElem = document.getElementById('editOrdoId');
-        if (oElem && oElem.value) payload.ordoId = parseInt(oElem.value);
+        payload.ordoId = (oElem && oElem.value) ? parseInt(oElem.value) : null;
       }
 
       if (roleCode === 'PENGURUS_LINGKUNGAN') {
