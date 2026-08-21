@@ -56,6 +56,14 @@ export class AuthController implements OnModuleInit {
         ALTER TABLE user_profiles ALTER COLUMN romo_position TYPE VARCHAR(100) USING romo_position::text;
 
         ALTER TABLE orders ADD COLUMN IF NOT EXISTS attachment_url TEXT, ADD COLUMN IF NOT EXISTS accepted_romo_id INT;
+
+        -- Auto-sync PostgreSQL sequences to prevent duplicate key errors on insert
+        SELECT setval('keuskupan_id_seq', (SELECT COALESCE(MAX(id), 1) FROM keuskupan));
+        SELECT setval('paroki_id_seq', (SELECT COALESCE(MAX(id), 1) FROM paroki));
+        SELECT setval('wilayah_id_seq', (SELECT COALESCE(MAX(id), 1) FROM wilayah));
+        SELECT setval('lingkungan_id_seq', (SELECT COALESCE(MAX(id), 1) FROM lingkungan));
+        SELECT setval('ordo_id_seq', (SELECT COALESCE(MAX(id), 1) FROM ordo));
+        SELECT setval('service_categories_id_seq', (SELECT COALESCE(MAX(id), 1) FROM service_categories));
       `);
 
       for (const val of ['CONFIRMED', 'DONE', 'CLOSE', 'FAIL']) {
