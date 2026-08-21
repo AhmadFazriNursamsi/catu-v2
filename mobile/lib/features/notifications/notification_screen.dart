@@ -4,6 +4,7 @@ import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/notification_service.dart';
 import '../orders/order_detail_screen.dart';
+import '../admin/pengurus_approval_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   final String role; // 'UMAT', 'ROMO_ORDO', 'ROMO_PAROKI', 'PENGURUS'
@@ -517,6 +518,21 @@ class _NotificationScreenState extends State<NotificationScreen> {
               HapticFeedback.selectionClick();
               await NotificationService.markRead(item.id);
               if (mounted) setState(() => item.isRead = true);
+
+              final isApprovalNotification = item.type == 'USER_APPROVAL' ||
+                  item.title.toLowerCase().contains('pendaftaran') ||
+                  item.body.toLowerCase().contains('menunggu persetujuan') ||
+                  item.body.toLowerCase().contains('approval');
+
+              if (isApprovalNotification) {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PengurusApprovalScreen(user: widget.user),
+                  ),
+                );
+                return;
+              }
 
               // Navigate to order detail — fetch fresh from backend
               if (item.orderId == null || !mounted) return;

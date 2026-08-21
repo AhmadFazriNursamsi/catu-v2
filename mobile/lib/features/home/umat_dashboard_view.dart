@@ -14,6 +14,7 @@ import '../orders/schedule_screen.dart';
 import '../profile/main_menu_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../notifications/notification_screen.dart';
+import '../admin/pengurus_approval_screen.dart';
 
 List<LiquidNavItem> _buildNavItems() => [
       LiquidNavItem(
@@ -444,6 +445,88 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                         ],
                       ),
                     ),
+
+                    if (widget.user['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
+                        widget.user['role_code'] == 'PENGURUS_LINGKUNGAN' ||
+                        (widget.user['pengurusPosition'] != null &&
+                            widget.user['pengurusPosition'].toString().trim().isNotEmpty) ||
+                        (widget.user['pengurus_position'] != null &&
+                            widget.user['pengurus_position'].toString().trim().isNotEmpty)) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(18),
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => PengurusApprovalScreen(user: widget.user),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF1E3A8A).withOpacity(0.3),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.18),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.how_to_reg_rounded, color: Colors.white, size: 24),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: const [
+                                        Text(
+                                          'Persetujuan Umat Lingkungan',
+                                          style: TextStyle(
+                                            fontSize: 14.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        SizedBox(height: 2),
+                                        Text(
+                                          'Verifikasi & setujui pendaftaran umat baru',
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            color: Color(0xFFBFDBFE),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 16),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
 
                     // ── 4. Daftar Permintaan Pelayanan ──
                     Padding(

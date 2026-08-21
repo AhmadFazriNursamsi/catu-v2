@@ -93,6 +93,52 @@ class ApiService {
     }
   }
 
+  // ── Pengurus Lingkungan Approval API Methods ──
+
+  static Future<List<Map<String, dynamic>>> getPengurusPendingUmat({int? lingkunganId, int? pengurusUserId}) async {
+    try {
+      final queryParams = <String, String>{};
+      if (lingkunganId != null) queryParams['lingkunganId'] = lingkunganId.toString();
+      if (pengurusUserId != null) queryParams['pengurusUserId'] = pengurusUserId.toString();
+
+      final uri = Uri.parse('$baseUrl/auth/pengurus/pending-umat').replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error getPengurusPendingUmat: $e');
+    }
+    return [];
+  }
+
+  static Future<Map<String, dynamic>> processPengurusApproval({
+    required int targetUserId,
+    required int approverUserId,
+    required String action, // 'APPROVE' or 'REJECT'
+    String? rejectionReason,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/pengurus/process-approval'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'targetUserId': targetUserId,
+          'approverUserId': approverUserId,
+          'action': action,
+          'rejectionReason': rejectionReason,
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'statusCode': 500, 'message': 'Gagal memproses persetujuan: $e'};
+    }
+  }
+
   // ── Admin Dashboard API Methods ──
 
   static Future<Map<String, dynamic>> getAdminAnalytics() async {

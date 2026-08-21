@@ -8,6 +8,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import 'edit_profile_screen.dart';
+import '../admin/pengurus_approval_screen.dart';
 
 class MainMenuScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -458,6 +459,29 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       ),
       child: Column(
         children: [
+          if (_userData['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
+              _userData['role_code'] == 'PENGURUS_LINGKUNGAN' ||
+              (_userData['pengurusPosition'] != null &&
+                  _userData['pengurusPosition'].toString().trim().isNotEmpty) ||
+              (_userData['pengurus_position'] != null &&
+                  _userData['pengurus_position'].toString().trim().isNotEmpty)) ...[
+            _buildMenuItem(
+              icon: Icons.how_to_reg_rounded,
+              title: 'Persetujuan Umat Lingkungan',
+              subtitle: 'Verifikasi pendaftaran umat baru di lingkungan Anda',
+              onTap: () {
+                HapticFeedback.selectionClick();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PengurusApprovalScreen(user: _userData),
+                  ),
+                );
+              },
+            ),
+            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          ],
+
           // ── Section 1: 👤 AKUN (Expandable Accordion) ──
           _buildAccordionHeader(
             icon: Icons.account_circle_rounded,

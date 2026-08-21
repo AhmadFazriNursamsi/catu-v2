@@ -653,6 +653,92 @@ export class AuthController implements OnModuleInit {
     };
   }
 
+  @Get('pengurus/pending-umat')
+  @ApiOperation({ summary: 'Daftar Umat Baru yang Menunggu Persetujuan Pengurus Lingkungan' })
+  async getPengurusPendingUmat(
+    @Query('lingkunganId') lingkunganId?: string,
+    @Query('pengurusUserId') pengurusUserId?: string,
+  ) {
+    let resolvedLingkunganId = lingkunganId ? parseInt(lingkunganId, 10) : null;
+    if (!resolvedLingkunganId && pengurusUserId) {
+      const p = await this.dataSource.query(
+        'SELECT lingkungan_id FROM user_profiles WHERE user_id = $1',
+        [parseInt(pengurusUserId, 10)],
+      );
+      if (p.length > 0 && p[0].lingkungan_id) resolvedLingkunganId = p[0].lingkungan_id;
+    }
+
+    if (!resolvedLingkunganId) {
+      const rows = await this.dataSource.query(
+        `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.created_at,
+                p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+                k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name,
+                kk.name as kota_name
+         FROM auth_users u
+         JOIN roles r ON u.role_id = r.id
+         JOIN user_profiles p ON u.id = p.user_id
+         LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
+         LEFT JOIN paroki par ON p.paroki_id = par.id
+         LEFT JOIN wilayah w ON p.wilayah_id = w.id
+         LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+         LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
+         WHERE r.code = 'UMAT' AND u.account_status = 'PENDING_APPROVAL'
+         ORDER BY u.created_at DESC`,
+      );
+      return rows;
+    }
+
+    const rows = await this.dataSource.query(
+      `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.created_at,
+              p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+              k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name,
+              kk.name as kota_name
+       FROM auth_users u
+       JOIN roles r ON u.role_id = r.id
+       JOIN user_profiles p ON p.user_id = u.id
+       LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
+       LEFT JOIN paroki par ON p.paroki_id = par.id
+       LEFT JOIN wilayah w ON p.wilayah_id = w.id
+       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+       LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
+       WHERE r.code = 'UMAT'
+         AND u.account_status = 'PENDING_APPROVAL'
+         AND p.lingkungan_id = $1
+       ORDER BY u.created_at DESC`,
+      [resolvedLingkunganId],
+    );
+    return rows;
+  }
+
+  @Post('pengurus/process-approval')
+  @ApiOperation({ summary: 'Proses Persetujuan Umat oleh Pengurus Lingkungan' })
+  async processPengurusApproval(
+    @Body() body: { targetUserId: number; approverUserId: number; action: 'APPROVE' | 'REJECT'; rejectionReason?: string },
+  ) {
+    const { targetUserId, approverUserId, action, rejectionReason } = body;
+    if (!targetUserId || !approverUserId || !action) {
+      throw new BadRequestException('Parameter targetUserId, approverUserId, dan action wajib diisi.');
+    }
+
+    const newStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+    await this.dataSource.query(
+      'UPDATE auth_users SET account_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [newStatus, targetUserId],
+    );
+
+    await this.dataSource.query(
+      `INSERT INTO user_approvals (target_user_id, approver_user_id, action, rejection_reason)
+       VALUES ($1, $2, $3, $4)`,
+      [targetUserId, approverUserId, action, rejectionReason || null],
+    );
+
+    return {
+      statusCode: 200,
+      message: action === 'APPROVE' ? 'Umat berhasil disetujui!' : 'Pendaftaran umat berhasil ditolak.',
+      accountStatus: newStatus,
+    };
+  }
+
   @Post('register')
   @ApiOperation({
     summary: 'Registrasi User Baru (Terpisah Antara auth_users & user_profiles)',
@@ -670,16 +756,22 @@ export class AuthController implements OnModuleInit {
       const roleId = role[0]?.id || 1;
 
       let approverName = 'Admin Aplikasi CATU';
+      let assignedPengurusId: number | null = null;
       if (dto.roleCode === 'UMAT' && dto.lingkunganId) {
         const pengurus = await queryRunner.query(
-          `SELECT p.full_name, u.phone_number 
+          `SELECT u.id, p.full_name, u.phone_number 
            FROM user_profiles p 
            JOIN auth_users u ON p.user_id = u.id 
            JOIN roles r ON u.role_id = r.id
-           WHERE p.lingkungan_id = $1 AND r.code = 'PENGURUS_LINGKUNGAN' AND u.account_status = 'APPROVED' LIMIT 1`,
+           WHERE p.lingkungan_id = $1 
+             AND (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
+             AND u.account_status = 'APPROVED'
+           ORDER BY CASE WHEN LOWER(p.pengurus_position) LIKE '%ketua%' THEN 1 ELSE 2 END
+           LIMIT 1`,
           [dto.lingkunganId],
         );
         if (pengurus.length > 0) {
+          assignedPengurusId = pengurus[0].id;
           approverName = `${pengurus[0].full_name} (${pengurus[0].phone_number})`;
         }
       }
@@ -736,9 +828,9 @@ export class AuthController implements OnModuleInit {
 
       // 1. Insert ke auth_users
       const authResult = await queryRunner.query(
-        `INSERT INTO auth_users (phone_number, password_hash, role_id, account_status)
-         VALUES ($1, $2, $3, 'PENDING_APPROVAL') RETURNING id, uuid, phone_number, account_status`,
-        [dto.phoneNumber, hashedPassword, roleId],
+        `INSERT INTO auth_users (phone_number, password_hash, role_id, account_status, approval_assigned_to_user_id)
+         VALUES ($1, $2, $3, 'PENDING_APPROVAL', $4) RETURNING id, uuid, phone_number, account_status`,
+        [dto.phoneNumber, hashedPassword, roleId, assignedPengurusId],
       );
       const authUser = authResult[0];
 
@@ -791,6 +883,32 @@ export class AuthController implements OnModuleInit {
       if (dto.lingkunganId) {
         const lRes = await this.dataSource.query('SELECT name FROM lingkungan WHERE id = $1', [dto.lingkunganId]);
         if (lRes.length > 0) lingkunganName = lRes[0].name;
+      }
+
+      if (dto.roleCode === 'UMAT' && dto.lingkunganId) {
+        const pengurusUsers = await this.dataSource.query(
+          `SELECT u.id FROM auth_users u
+           JOIN user_profiles p ON u.id = p.user_id
+           JOIN roles r ON u.role_id = r.id
+           WHERE p.lingkungan_id = $1
+             AND (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
+             AND u.account_status = 'APPROVED'`,
+          [dto.lingkunganId],
+        );
+
+        for (const pg of pengurusUsers) {
+          try {
+            await this.dataSource.query(
+              `INSERT INTO notifications (user_id, title, body, type)
+               VALUES ($1, $2, $3, 'NEW_ORDER_MONITOR')`,
+              [
+                pg.id,
+                `Pendaftaran Umat Baru: ${dto.fullName}`,
+                `Umat baru ${dto.fullName} (${dto.phoneNumber}) telah mendaftar di ${lingkunganName || 'Lingkungan Anda'} dan menunggu persetujuan (approval).`,
+              ],
+            );
+          } catch (_) {}
+        }
       }
 
       const isPengurusOrLeader = Boolean(dto.pengurusPosition || (isRomo && dto.romoPosition === 'KETUA_ROMO'));
