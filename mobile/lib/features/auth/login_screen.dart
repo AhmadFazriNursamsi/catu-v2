@@ -177,14 +177,13 @@ class _LoginScreenState extends State<LoginScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF0A1128),
-                    Color(0xFF0F172A),
-                    Color(0xFF1E293B),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                image: DecorationImage(
+                  image: AssetImage('assets/images/church_1.jpg'),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Color(0xE60A1128),
+                    BlendMode.darken,
+                  ),
                 ),
               ),
               child: Column(
@@ -194,22 +193,24 @@ class _LoginScreenState extends State<LoginScreen>
                   Row(
                     children: [
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: 50,
+                        height: 50,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E3A8A),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFD97706), width: 1.5),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFD97706), width: 2),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFD97706).withOpacity(0.3),
-                              blurRadius: 12,
+                              color: const Color(0xFFD97706).withOpacity(0.4),
+                              blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: const Center(
-                          child: Text('✝', style: TextStyle(fontSize: 24, color: Colors.white)),
+                        padding: const EdgeInsets.all(6),
+                        child: Image.asset(
+                          'assets/images/logoCatu.png',
+                          fit: BoxFit.contain,
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -219,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen>
                           Text(
                             'CATU WEB PORTAL',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 19,
                               fontWeight: FontWeight.w900,
                               color: Colors.white,
                               letterSpacing: 1.2,
@@ -230,7 +231,7 @@ class _LoginScreenState extends State<LoginScreen>
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFFD97706),
+                              color: Color(0xFFF59E0B),
                               letterSpacing: 0.8,
                             ),
                           ),
@@ -238,15 +239,15 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withOpacity(0.2)),
+                          border: Border.all(color: Colors.white.withOpacity(0.25)),
                         ),
                         child: const Text(
                           '🔐 Admin & Staff Portal',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white70),
+                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Colors.white),
                         ),
                       ),
                     ],
@@ -269,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen>
                     'Platform terpadu untuk monitoring pelayanan Misa Kedukaan, Sakramen Perminyakan, serta tata kelola persetujuan umat dan koordinasi lintas paroki.',
                     style: TextStyle(
                       fontSize: 14.5,
-                      color: Color(0xFF94A3B8),
+                      color: Color(0xFFCBD5E1),
                       height: 1.5,
                     ),
                   ),
@@ -298,11 +299,11 @@ class _LoginScreenState extends State<LoginScreen>
                   // Bottom Version Footer
                   Row(
                     children: const [
-                      Icon(Icons.shield_rounded, size: 14, color: Color(0xFF64748B)),
+                      Icon(Icons.shield_rounded, size: 14, color: Color(0xFF94A3B8)),
                       SizedBox(width: 8),
                       Text(
                         'CATU Platform ${AppConstants.appVersion} • PostgreSQL 16 & NestJS v10 Secure Backend',
-                        style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                        style: TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
@@ -314,267 +315,279 @@ class _LoginScreenState extends State<LoginScreen>
           // ── Sisi Kanan: Clean Admin Login Form Card (48% width) ──
           Expanded(
             flex: 48,
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 440),
-                  padding: const EdgeInsets.all(36),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFF8FAFC),
+                image: DecorationImage(
+                  image: AssetImage('assets/images/cross_banner.jpg'),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Color(0xF5F8FAFC),
+                    BlendMode.srcOver,
                   ),
-                  child: Form(
-                    key: _formKey,
-                    autovalidateMode: _autovalidateMode,
-                    child: AutofillGroup(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Header Form
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1E3A8A).withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    padding: const EdgeInsets.all(36),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF1E3A8A).withOpacity(0.08),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      autovalidateMode: _autovalidateMode,
+                      child: AutofillGroup(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Official CATU Logo
+                            Center(
+                              child: Image.asset(
+                                'assets/images/logoCatu.png',
+                                height: 60,
+                                fit: BoxFit.contain,
+                              ),
                             ),
-                            child: const Icon(
-                              Icons.admin_panel_settings_rounded,
-                              color: Color(0xFF1E3A8A),
-                              size: 28,
-                            ),
-                          ),
-                          const SizedBox(height: 18),
+                            const SizedBox(height: 18),
 
-                          const Text(
-                            'Masuk Portal Admin',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF0F172A),
-                              letterSpacing: -0.3,
+                            const Center(
+                              child: Text(
+                                'Masuk Portal Admin',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF0F172A),
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'Masukkan nomor WhatsApp / HP dan kata sandi Anda untuk mengakses dashboard manajemen.',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF64748B),
-                              height: 1.4,
+                            const SizedBox(height: 6),
+                            const Center(
+                              child: Text(
+                                'Masukkan nomor WhatsApp / HP dan kata sandi Anda untuk mengakses dashboard manajemen.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF64748B),
+                                  height: 1.4,
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 24),
+                            const SizedBox(height: 24),
 
-                          // Error Banner
-                          if (_backendError != null) ...[
+                            // Error Banner
+                            if (_backendError != null) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFFECACA)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 20),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        _backendError!,
+                                        style: const TextStyle(color: Color(0xFFB91C1C), fontSize: 12.5, fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                            ],
+
+                            // Nomor WhatsApp Field
+                            TextFormField(
+                              controller: _phoneController,
+                              keyboardType: TextInputType.phone,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600, color: AppConstants.textDark),
+                              decoration: InputDecoration(
+                                labelText: 'Nomor WhatsApp / HP',
+                                hintText: '89999999999',
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                prefixIcon: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text('🇮🇩', style: TextStyle(fontSize: 18)),
+                                      const SizedBox(width: 6),
+                                      const Text(
+                                        '+62',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppConstants.primaryBlue,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(height: 22, width: 1, color: Colors.grey.shade300),
+                                    ],
+                                  ),
+                                ),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 2)),
+                              ),
+                              autofillHints: const [AutofillHints.telephoneNumberNational],
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Nomor WhatsApp wajib diisi';
+                                }
+                                var clean = value.trim();
+                                if (clean.startsWith('0')) clean = clean.substring(1);
+                                if (clean.startsWith('62')) clean = clean.substring(2);
+                                if (!clean.startsWith('8')) return 'Nomor HP harus diawali angka 8';
+                                if (clean.length < 9) return 'Nomor HP minimal 9 digit';
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Password Field
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              style: const TextStyle(fontSize: 14, color: AppConstants.textDark),
+                              decoration: InputDecoration(
+                                labelText: 'Kata Sandi',
+                                hintText: '••••••••',
+                                prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF1E3A8A), size: 20),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                    color: Colors.grey.shade500,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 2)),
+                              ),
+                              autofillHints: const [AutofillHints.password],
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Kata sandi wajib diisi';
+                                }
+                                if (value.trim().length < 6) {
+                                  return 'Kata sandi minimal 6 karakter';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Lupa Kata Sandi Link
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () {
+                                  HapticFeedback.lightImpact();
+                                  Navigator.push(
+                                    context,
+                                    FadeSlideRoute(page: const ForgotPasswordScreen()),
+                                  );
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text(
+                                  'Lupa kata sandi?',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1E3A8A),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Tombol Masuk Portal
+                            SizedBox(
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _handleLogin,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1E3A8A),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  elevation: 2,
+                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: const [
+                                          Icon(Icons.login_rounded, color: Colors.white, size: 18),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'MASUK KE PORTAL',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Info Box: Hanya Bisa Login (Tidak Ada Registrasi Web)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFEF2F2),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFFECACA)),
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFBFDBFE)),
                               ),
                               child: Row(
-                                children: [
-                                  const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 20),
-                                  const SizedBox(width: 10),
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Icon(Icons.info_outline_rounded, color: Color(0xFF2563EB), size: 16),
+                                  SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      _backendError!,
-                                      style: const TextStyle(color: Color(0xFFB91C1C), fontSize: 12.5, fontWeight: FontWeight.w600),
+                                      'Pendaftaran akun umat baru hanya dapat dilakukan melalui Aplikasi Mobile CATU.',
+                                      style: TextStyle(fontSize: 11.5, color: Color(0xFF1E40AF), height: 1.35),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 18),
                           ],
-
-                          // Nomor WhatsApp Field
-                          TextFormField(
-                            controller: _phoneController,
-                            keyboardType: TextInputType.phone,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600, color: AppConstants.textDark),
-                            decoration: InputDecoration(
-                              labelText: 'Nomor WhatsApp / HP',
-                              hintText: '89999999999',
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                              prefixIcon: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Text('🇮🇩', style: TextStyle(fontSize: 18)),
-                                    const SizedBox(width: 6),
-                                    const Text(
-                                      '+62',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppConstants.primaryBlue,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(height: 22, width: 1, color: Colors.grey.shade300),
-                                  ],
-                                ),
-                              ),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 2)),
-                            ),
-                            autofillHints: const [AutofillHints.telephoneNumberNational],
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Nomor WhatsApp wajib diisi';
-                              }
-                              var clean = value.trim();
-                              if (clean.startsWith('0')) clean = clean.substring(1);
-                              if (clean.startsWith('62')) clean = clean.substring(2);
-                              if (!clean.startsWith('8')) return 'Nomor HP harus diawali angka 8';
-                              if (clean.length < 9) return 'Nomor HP minimal 9 digit';
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Password Field
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            style: const TextStyle(fontSize: 14, color: AppConstants.textDark),
-                            decoration: InputDecoration(
-                              labelText: 'Kata Sandi',
-                              hintText: '••••••••',
-                              prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF1E3A8A), size: 20),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                  color: Colors.grey.shade500,
-                                  size: 20,
-                                ),
-                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                              ),
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 2)),
-                            ),
-                            autofillHints: const [AutofillHints.password],
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Kata sandi wajib diisi';
-                              }
-                              if (value.trim().length < 6) {
-                                return 'Kata sandi minimal 6 karakter';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Lupa Kata Sandi Link
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                Navigator.push(
-                                  context,
-                                  FadeSlideRoute(page: const ForgotPasswordScreen()),
-                                );
-                              },
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Lupa kata sandi?',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1E3A8A),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Tombol Masuk Portal
-                          SizedBox(
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _handleLogin,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1E3A8A),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                elevation: 2,
-                              ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2),
-                                    )
-                                  : Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: const [
-                                        Icon(Icons.login_rounded, color: Colors.white, size: 18),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'MASUK KE PORTAL',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Info Box: Hanya Bisa Login (Tidak Ada Registrasi Web)
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFFBFDBFE)),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Icon(Icons.info_outline_rounded, color: Color(0xFF2563EB), size: 16),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Pendaftaran akun umat baru hanya dapat dilakukan melalui Aplikasi Mobile CATU.',
-                                    style: TextStyle(fontSize: 11.5, color: Color(0xFF1E40AF), height: 1.35),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
