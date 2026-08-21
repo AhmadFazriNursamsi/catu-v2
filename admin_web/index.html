@@ -2671,7 +2671,7 @@
     }
 
     async function handleSaveMaster(event) {
-      event.preventDefault();
+      if (event) event.preventDefault();
       const modal = state.activeMasterModal;
       if (!modal) return;
 
@@ -2687,44 +2687,54 @@
 
         if (type === 'keuskupan') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/keuskupan` : `${API_BASE}/master/keuskupan/${data.id}`;
-          payload = {
-            name: document.getElementById('masterNameInput').value.trim(),
-            code: document.getElementById('masterCodeInput')?.value.trim() || undefined
-          };
+          const nameVal = document.getElementById('masterNameInput')?.value?.trim();
+          const codeVal = document.getElementById('masterCodeInput')?.value?.trim();
+          if (!nameVal) throw new Error('Nama Keuskupan wajib diisi');
+          payload = { name: nameVal };
+          if (codeVal) payload.code = codeVal;
         } else if (type === 'paroki') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/paroki` : `${API_BASE}/master/paroki/${data.id}`;
-          payload = {
-            keuskupanId: parseInt(document.getElementById('masterKeuskupanIdInput').value),
-            name: document.getElementById('masterNameInput').value.trim(),
-            address: document.getElementById('masterAddressInput')?.value.trim() || undefined
-          };
+          const keuskupanIdVal = parseInt(document.getElementById('masterKeuskupanIdInput')?.value);
+          const nameVal = document.getElementById('masterNameInput')?.value?.trim();
+          const addressVal = document.getElementById('masterAddressInput')?.value?.trim();
+          if (!keuskupanIdVal || isNaN(keuskupanIdVal)) throw new Error('Silakan pilih Keuskupan terlebih dahulu');
+          if (!nameVal) throw new Error('Nama Paroki wajib diisi');
+          payload = { keuskupanId: keuskupanIdVal, name: nameVal };
+          if (addressVal) payload.address = addressVal;
         } else if (type === 'wilayah') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/wilayah` : `${API_BASE}/master/wilayah/${data.id}`;
-          payload = {
-            parokiId: parseInt(document.getElementById('masterParokiIdInput').value),
-            name: document.getElementById('masterNameInput').value.trim()
-          };
+          const parokiIdVal = parseInt(document.getElementById('masterParokiIdInput')?.value);
+          const nameVal = document.getElementById('masterNameInput')?.value?.trim();
+          if (!parokiIdVal || isNaN(parokiIdVal)) throw new Error('Silakan pilih Paroki terlebih dahulu');
+          if (!nameVal) throw new Error('Nama Wilayah wajib diisi');
+          payload = { parokiId: parokiIdVal, name: nameVal };
         } else if (type === 'lingkungan') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/lingkungan` : `${API_BASE}/master/lingkungan/${data.id}`;
-          payload = {
-            wilayahId: parseInt(document.getElementById('masterWilayahIdInput').value),
-            name: document.getElementById('masterNameInput').value.trim()
-          };
+          const wilayahIdVal = parseInt(document.getElementById('masterWilayahIdInput')?.value);
+          const nameVal = document.getElementById('masterNameInput')?.value?.trim();
+          if (!wilayahIdVal || isNaN(wilayahIdVal)) throw new Error('Silakan pilih Wilayah terlebih dahulu');
+          if (!nameVal) throw new Error('Nama Lingkungan wajib diisi');
+          payload = { wilayahId: wilayahIdVal, name: nameVal };
         } else if (type === 'ordo') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/ordo` : `${API_BASE}/master/ordo/${data.id}`;
-          payload = {
-            name: document.getElementById('masterNameInput').value.trim(),
-            code: document.getElementById('masterCodeInput')?.value.trim() || undefined,
-            address: document.getElementById('masterAddressInput')?.value.trim() || undefined
-          };
+          const nameVal = document.getElementById('masterNameInput')?.value?.trim();
+          const codeVal = document.getElementById('masterCodeInput')?.value?.trim();
+          const addressVal = document.getElementById('masterAddressInput')?.value?.trim();
+          if (!nameVal) throw new Error('Nama Ordo / Kongregasi wajib diisi');
+          payload = { name: nameVal };
+          if (codeVal) payload.code = codeVal;
+          if (addressVal) payload.address = addressVal;
         } else if (type === 'services') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/service-categories` : `${API_BASE}/master/service-categories/${data.id}`;
+          const nameVal = document.getElementById('masterNameInput')?.value?.trim();
+          const descVal = document.getElementById('masterDescInput')?.value?.trim();
+          if (!nameVal) throw new Error('Nama Sakramen / Pelayanan wajib diisi');
           payload = {
-            name: document.getElementById('masterNameInput').value.trim(),
-            description: document.getElementById('masterDescInput')?.value.trim() || undefined,
+            name: nameVal,
             isUrgentByDefault: document.getElementById('masterIsUrgentInput')?.checked || false,
             isActive: document.getElementById('masterIsActiveInput')?.checked !== false
           };
+          if (descVal) payload.description = descVal;
         }
 
         const res = await fetch(endpoint, {
@@ -2735,23 +2745,26 @@
 
         const result = await res.json();
         if (!res.ok) {
-          throw new Error(result.message || 'Gagal menyimpan data.');
+          const errMsg = Array.isArray(result.message) ? result.message.join(', ') : (result.message || 'Gagal menyimpan data.');
+          throw new Error(errMsg);
         }
 
         state.activeMasterModal = null;
         await loadMasterData(state.masterSubTab);
 
         // Also refresh global lookups
-        const [kRes, pRes, oRes, scRes] = await Promise.all([
-          fetch(`${API_BASE}/master/keuskupan`),
-          fetch(`${API_BASE}/master/paroki`),
-          fetch(`${API_BASE}/master/ordo`),
-          fetch(`${API_BASE}/master/service-categories`)
-        ]);
-        state.keuskupan = await kRes.json();
-        state.paroki = await pRes.json();
-        state.ordo = await oRes.json();
-        state.serviceCategories = await scRes.json();
+        try {
+          const [kRes, pRes, oRes, scRes] = await Promise.all([
+            fetch(`${API_BASE}/master/keuskupan`),
+            fetch(`${API_BASE}/master/paroki`),
+            fetch(`${API_BASE}/master/ordo`),
+            fetch(`${API_BASE}/master/service-categories`)
+          ]);
+          state.keuskupan = await kRes.json();
+          state.paroki = await pRes.json();
+          state.ordo = await oRes.json();
+          state.serviceCategories = await scRes.json();
+        } catch (_) {}
         renderApp();
       } catch (err) {
         state.masterModalError = err.message || 'Terjadi kesalahan sistem.';
