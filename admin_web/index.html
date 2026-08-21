@@ -155,8 +155,21 @@
       }
     };
 
-    // Render Main App Dispatcher
+    // Render Main App Dispatcher (Preserving Active Input Focus & Caret Position)
     function renderApp() {
+      const activeEl = document.activeElement;
+      let focusedId = null;
+      let selectionStart = null;
+      let selectionEnd = null;
+
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') && activeEl.id) {
+        focusedId = activeEl.id;
+        try {
+          selectionStart = activeEl.selectionStart;
+          selectionEnd = activeEl.selectionEnd;
+        } catch (_) {}
+      }
+
       const app = document.getElementById('app');
       if (!state.currentUser || (state.currentUser.roleCode !== 'ADMIN' && state.currentUser.role_code !== 'ADMIN')) {
         app.innerHTML = renderLoginPage();
@@ -169,6 +182,19 @@
         lucide.createIcons();
       } catch(e) {}
       renderAgentationPins();
+
+      // Restore focus and cursor position to the input smoothly
+      if (focusedId) {
+        const newEl = document.getElementById(focusedId);
+        if (newEl && (newEl.tagName === 'INPUT' || newEl.tagName === 'TEXTAREA')) {
+          newEl.focus();
+          if (selectionStart !== null && selectionEnd !== null) {
+            try {
+              newEl.setSelectionRange(selectionStart, selectionEnd);
+            } catch (_) {}
+          }
+        }
+      }
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -699,7 +725,7 @@
             <div class="flex items-center space-x-3 flex-1 min-w-[280px]">
               <div class="relative w-full">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-                <input type="text" placeholder="Cari nomor order, pemohon, paroki..." value="${state.orderSearch}"
+                <input type="text" id="orderSearchInput" placeholder="Cari nomor order, pemohon, paroki..." value="${state.orderSearch}"
                   oninput="state.orderSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
               </div>
@@ -762,7 +788,7 @@
             <div class="p-5 border-b border-slate-200 flex items-center justify-between">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-                <input type="text" placeholder="Cari nama umat, email, no. WhatsApp, paroki, lingkungan..." value="${state.umatSearch}"
+                <input type="text" id="umatSearchInput" placeholder="Cari nama umat, email, no. WhatsApp, paroki, lingkungan..." value="${state.umatSearch}"
                   oninput="state.umatSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
               </div>
@@ -841,7 +867,7 @@
             <div class="p-5 border-b border-slate-200 flex items-center justify-between">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-                <input type="text" placeholder="Cari nama pengurus, email, jabatan, paroki..." value="${state.pengurusSearch}"
+                <input type="text" id="pengurusSearchInput" placeholder="Cari nama pengurus, email, jabatan, paroki..." value="${state.pengurusSearch}"
                   oninput="state.pengurusSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
               </div>
@@ -934,7 +960,7 @@
       return `
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
           <div class="p-5 border-b border-slate-200">
-            <input type="text" placeholder="Cari Romo Paroki..." value="${state.romoParokiSearch}"
+            <input type="text" id="romoParokiSearchInput" placeholder="Cari Romo Paroki..." value="${state.romoParokiSearch}"
               oninput="state.romoParokiSearch = this.value; renderApp();"
               class="w-full max-w-md pl-4 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
           </div>
@@ -998,7 +1024,7 @@
       return `
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
           <div class="p-5 border-b border-slate-200">
-            <input type="text" placeholder="Cari Romo Ordo..." value="${state.romoOrdoSearch}"
+            <input type="text" id="romoOrdoSearchInput" placeholder="Cari Romo Ordo..." value="${state.romoOrdoSearch}"
               oninput="state.romoOrdoSearch = this.value; renderApp();"
               class="w-full max-w-md pl-4 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
           </div>
@@ -1059,7 +1085,7 @@
       return `
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
           <div class="p-5 border-b border-slate-200 flex items-center justify-between">
-            <input type="text" placeholder="Cari pendaftaran..." value="${state.approvalsSearch}"
+            <input type="text" id="approvalsSearchInput" placeholder="Cari pendaftaran..." value="${state.approvalsSearch}"
               oninput="state.approvalsSearch = this.value; renderApp();"
               class="w-full max-w-md pl-4 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
             <span class="text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
@@ -1191,7 +1217,7 @@
                 <!-- Search Input -->
                 <div class="relative">
                   <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                  <input type="text" value="${state.masterSearch || ''}" oninput="state.masterSearch = this.value; renderApp();"
+                  <input type="text" id="masterSearchInput" value="${state.masterSearch || ''}" oninput="state.masterSearch = this.value; renderApp();"
                     placeholder="Cari ${getEntityLabel(sub)}..."
                     class="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 w-52 lg:w-64 shadow-xs" />
                 </div>
