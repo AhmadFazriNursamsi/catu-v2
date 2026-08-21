@@ -5,6 +5,7 @@ import '../../core/services/api_service.dart';
 import '../../core/utils/fade_slide_route.dart';
 import '../../widgets/searchable_select_field.dart';
 import 'login_screen.dart';
+import 'pending_approval_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -331,27 +332,16 @@ class _RegisterScreenState extends State<RegisterScreen>
         res['user'] != null;
 
     if (isSuccess) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white),
-            const SizedBox(width: 10),
-            Expanded(child: Text(responseMsg)),
-          ]),
-          backgroundColor: const Color(0xFF059669),
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
+      final registeredUser = res['user'] ?? {
+        'fullName': fullName,
+        'phoneNumber': fullPhone,
+        'roleCode': finalRoleCode,
+        'accountStatus': 'PENDING_APPROVAL',
+      };
+      Navigator.pushReplacement(
+        context,
+        FadeSlideRoute(page: PendingApprovalScreen(user: registeredUser)),
       );
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      } else {
-        Navigator.pushReplacement(
-          context,
-          FadeSlideRoute(page: const LoginScreen()),
-        );
-      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

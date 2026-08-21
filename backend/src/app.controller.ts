@@ -585,6 +585,74 @@ export class AuthController implements OnModuleInit {
     return await this.dataSource.query('SELECT id, code, name FROM ordo ORDER BY id ASC');
   }
 
+  @Get('check-status')
+  @ApiOperation({ summary: 'Cek Status Akun Terbaru Berdasarkan Nomor HP' })
+  async checkAccountStatus(@Query('phone') phone: string) {
+    if (!phone) return { statusCode: 400, message: 'Nomor HP wajib disertakan' };
+    let cleanPhone = phone.trim();
+    if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
+    if (cleanPhone.startsWith('+62')) cleanPhone = cleanPhone.substring(3);
+    if (cleanPhone.startsWith('62')) cleanPhone = cleanPhone.substring(2);
+    const fullPhone = `62${cleanPhone}`;
+
+    const users = await this.dataSource.query(
+      `SELECT u.id, u.uuid, u.phone_number, u.account_status, r.code as role_code, 
+              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id, kk.provinsi_id,
+              k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, kk.name as kota_name,
+              p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
+       FROM auth_users u 
+       JOIN roles r ON u.role_id = r.id 
+       JOIN user_profiles p ON p.user_id = u.id
+       LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
+       LEFT JOIN paroki par ON p.paroki_id = par.id
+       LEFT JOIN wilayah w ON p.wilayah_id = w.id
+       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+       LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
+       WHERE u.phone_number = $1`,
+      [fullPhone],
+    );
+
+    if (!users.length) {
+      return { statusCode: 404, message: 'Akun tidak ditemukan' };
+    }
+
+    const user = users[0];
+    return {
+      statusCode: 200,
+      accountStatus: user.account_status,
+      user: {
+        id: user.id,
+        uuid: user.uuid,
+        fullName: user.full_name,
+        phoneNumber: user.phone_number,
+        email: user.email,
+        birthDate: user.birth_date,
+        address: user.address,
+        avatarUrl: user.avatar_url,
+        roleCode: user.role_code,
+        accountStatus: user.account_status,
+        keuskupanId: user.keuskupan_id,
+        parokiId: user.paroki_id,
+        wilayahId: user.wilayah_id,
+        lingkunganId: user.lingkungan_id,
+        kabupatenKotaId: user.kabupaten_kota_id,
+        provinsiId: user.provinsi_id,
+        keuskupanName: user.keuskupan_name,
+        parokiName: user.paroki_name,
+        wilayahName: user.wilayah_name,
+        lingkunganName: user.lingkungan_name,
+        kabupatenKotaName: user.kota_name,
+        pengurusPosition: user.pengurus_position,
+        romoPosition: user.romo_position,
+        jabatanStartYear: user.jabatan_start_year,
+        jabatanEndYear: user.jabatan_end_year,
+        jabatanStartDate: user.jabatan_start_date,
+        jabatanEndDate: user.jabatan_end_date,
+        isJabatanActive: user.is_jabatan_active !== null ? user.is_jabatan_active : false,
+      },
+    };
+  }
+
   @Post('register')
   @ApiOperation({
     summary: 'Registrasi User Baru (Terpisah Antara auth_users & user_profiles)',

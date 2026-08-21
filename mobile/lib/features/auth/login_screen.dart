@@ -7,6 +7,7 @@ import '../../core/utils/fade_slide_route.dart';
 import '../home/home_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
+import 'pending_approval_screen.dart';
 import '../../core/services/language_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -98,10 +99,49 @@ class _LoginScreenState extends State<LoginScreen>
 
     if (res['statusCode'] == 200 && res['user'] != null) {
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        FadeSlideRoute(page: HomeScreen(user: res['user'])),
-      );
+      final user = res['user'];
+      final status = user['accountStatus'] ?? 'APPROVED';
+
+      if (status == 'PENDING_APPROVAL') {
+        Navigator.pushReplacement(
+          context,
+          FadeSlideRoute(page: PendingApprovalScreen(user: user)),
+        );
+      } else if (status == 'REJECTED') {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            title: Row(
+              children: const [
+                Icon(Icons.cancel, color: Colors.red, size: 28),
+                SizedBox(width: 10),
+                Text('Pendaftaran Ditolak', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: const Text(
+              'Mohon maaf, pendaftaran akun Anda tidak disetujui oleh Pengurus Lingkungan atau Administrator. Silakan hubungi pengurus lingkungan Anda untuk konfirmasi.',
+              style: TextStyle(fontSize: 13.5, height: 1.4),
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConstants.primaryBlue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Tutup'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          FadeSlideRoute(page: HomeScreen(user: user)),
+        );
+      }
     } else {
       if (!mounted) return;
       setState(() {
