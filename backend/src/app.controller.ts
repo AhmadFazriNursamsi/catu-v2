@@ -1552,6 +1552,11 @@ export class AuthController implements OnModuleInit {
          WHERE u.id = $1`,
         [dto.targetUserId],
       );
+
+      if (targetProf.length > 0 && targetProf[0].role_code === 'UMAT') {
+        throw new BadRequestException('Pendaftaran akun Umat harus diverifikasi dan disetujui oleh Pengurus Lingkungan setempat melalui aplikasi mobile CATU.');
+      }
+
       if (targetProf.length > 0 && targetProf[0].role_code === 'PENGURUS_LINGKUNGAN' && targetProf[0].lingkungan_id && targetProf[0].pengurus_position) {
         const existingApproved = await this.dataSource.query(
           `SELECT u.id, p.full_name, p.pengurus_position 

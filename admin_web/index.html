@@ -1612,23 +1612,31 @@
                         </div>
                       </td>
                       <td class="px-6 py-4 text-right">
-                        <div class="inline-flex items-center justify-end space-x-2">
-                          <button onclick="approveUserAction('${u.id}', 'APPROVED')" 
-                            class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center space-x-1 transition shadow-md shadow-emerald-600/20 transform hover:-translate-y-0.5 cursor-pointer">
-                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                            <span>Setujui</span>
-                          </button>
-                          <button onclick="approveUserAction('${u.id}', 'REJECTED')" 
-                            class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center space-x-1 transition shadow-md shadow-rose-600/20 transform hover:-translate-y-0.5 cursor-pointer">
-                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                            <span>Tolak</span>
-                          </button>
-                          <button onclick="openEditUserModal('${u.id}')" 
-                            class="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold border border-amber-200 text-xs flex items-center space-x-1.5 transition shadow-sm transform hover:-translate-y-0.5 cursor-pointer">
-                            <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-600"></i>
-                            <span>Edit</span>
-                          </button>
-                        </div>
+                        ${(() => {
+                          const r = (u.role_code || u.roleCode || '').toUpperCase();
+                          if (r === 'UMAT') {
+                            return `
+                              <div class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80 font-bold text-[11px] shadow-2xs" title="Persetujuan pendaftaran Umat dilakukan oleh Pengurus Lingkungan masing-masing via aplikasi mobile CATU">
+                                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-600"></i>
+                                <span>Verifikasi Pengurus Lingkungan</span>
+                              </div>
+                            `;
+                          }
+                          return `
+                            <div class="inline-flex items-center justify-end space-x-2">
+                              <button onclick="approveUserAction('${u.id}', 'APPROVED')" 
+                                class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center space-x-1 transition shadow-md shadow-emerald-600/20 transform hover:-translate-y-0.5 cursor-pointer">
+                                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                <span>Setujui</span>
+                              </button>
+                              <button onclick="approveUserAction('${u.id}', 'REJECTED')" 
+                                class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center space-x-1 transition shadow-md shadow-rose-600/20 transform hover:-translate-y-0.5 cursor-pointer">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                <span>Tolak</span>
+                              </button>
+                            </div>
+                          `;
+                        })()}
                       </td>
                     </tr>
                   `).join('')}
@@ -4633,6 +4641,11 @@
       const targetUser = state.users.find(u => String(u.id) === String(userId));
       const userName = targetUser?.full_name || targetUser?.fullName || 'Pengguna Baru';
       const isApprove = action === 'APPROVED';
+
+      if ((targetUser?.role_code || targetUser?.roleCode || '').toUpperCase() === 'UMAT') {
+        showToast('Pendaftaran akun Umat diverifikasi dan disetujui oleh Pengurus Lingkungan setempat via aplikasi mobile CATU.', 'warning', 'Persetujuan Khusus Pengurus');
+        return;
+      }
 
       state.actionConfirmModal = {
         title: isApprove ? 'Konfirmasi Persetujuan Akun' : 'Konfirmasi Penolakan Pendaftaran',
