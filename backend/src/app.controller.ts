@@ -573,6 +573,32 @@ export class AuthController implements OnModuleInit {
       const pengurusPositionVal = (dto.pengurusPosition && dto.pengurusPosition.trim() !== '') ? dto.pengurusPosition : null;
       const romoPositionVal = isRomo ? ((dto.romoPosition && dto.romoPosition.trim() !== '') ? dto.romoPosition : 'ROMO_BIASA') : null;
 
+      // Check if position already taken for that Lingkungan
+      if ((dto.roleCode === 'PENGURUS_LINGKUNGAN' || pengurusPositionVal) && dto.lingkunganId && pengurusPositionVal) {
+        const existingPengurus = await queryRunner.query(
+          `SELECT u.id, p.full_name, p.pengurus_position, u.account_status 
+           FROM user_profiles p 
+           JOIN auth_users u ON p.user_id = u.id 
+           WHERE p.lingkungan_id = $1 
+             AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+             AND (
+               LOWER(p.pengurus_position) = LOWER($2)
+               OR (LOWER($2) LIKE '%ketua%' AND LOWER($2) NOT LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%ketua%' AND LOWER(p.pengurus_position) NOT LIKE '%wakil%')
+               OR (LOWER($2) LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%wakil%')
+               OR (LOWER($2) LIKE '%sekretaris%' AND LOWER(p.pengurus_position) LIKE '%sekretaris%')
+               OR (LOWER($2) LIKE '%bendahara%' AND LOWER(p.pengurus_position) LIKE '%bendahara%')
+             )`,
+          [dto.lingkunganId, pengurusPositionVal],
+        );
+        if (existingPengurus.length > 0) {
+          const existingName = existingPengurus[0].full_name;
+          const existingPos = existingPengurus[0].pengurus_position;
+          throw new BadRequestException(
+            `Jabatan ${pengurusPositionVal} untuk lingkungan ini sudah terisi / diajukan oleh ${existingName} (${existingPos}). Pengurus dengan jabatan yang sama tidak boleh ganda dalam satu lingkungan.`,
+          );
+        }
+      }
+
       // Flag Jabatan applies ONLY to leadership positions. Ordinary Umat & ordinary Romo have NO leadership position (null).
       const isLeadershipPos = Boolean(pengurusPositionVal || (isRomo && romoPositionVal === 'KETUA_ROMO'));
       const initialActiveFlag = isLeadershipPos ? false : null;
@@ -680,7 +706,12 @@ export class AuthController implements OnModuleInit {
         approvalAssignedTo: approverName,
       };
     } catch (err: any) {
-      await queryRunner.rollbackTransaction();
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+      if (err instanceof BadRequestException || err.status === 400) {
+        throw err;
+      }
       const errMessage = err.message || '';
       if (err.code === '23505' || errMessage.includes('auth_users_phone_number_key') || errMessage.includes('unique constraint') || errMessage.includes('phone_number')) {
         throw new BadRequestException('Nomor WhatsApp / HP ini sudah terdaftar. Silakan gunakan nomor lain atau login.');
@@ -1073,6 +1104,50 @@ export class AuthController implements OnModuleInit {
     );
     const activeRoleCode = dto.roleCode || (userRoleRes[0] ? userRoleRes[0].code : '');
 
+    const targetLingkunganId = (dto.lingkunganId !== undefined || (dto as any).lingkungan_id !== undefined) 
+      ? (dto.lingkunganId ?? (dto as any).lingkungan_id)
+      : null;
+    const targetPengurusPos = (dto as any).pengurusPosition ?? (dto as any).pengurus_position;
+
+    if (activeRoleCode === 'PENGURUS_LINGKUNGAN' || targetPengurusPos) {
+      let checkLingkunganId = targetLingkunganId;
+      if (!checkLingkunganId) {
+        const curProf = await this.dataSource.query(`SELECT lingkungan_id FROM user_profiles WHERE user_id = $1`, [uid]);
+        checkLingkunganId = curProf[0]?.lingkungan_id;
+      }
+      let checkPos = targetPengurusPos;
+      if (!checkPos) {
+        const curProf = await this.dataSource.query(`SELECT pengurus_position FROM user_profiles WHERE user_id = $1`, [uid]);
+        checkPos = curProf[0]?.pengurus_position;
+      }
+
+      if (checkLingkunganId && checkPos) {
+        const existingPengurus = await this.dataSource.query(
+          `SELECT u.id, p.full_name, p.pengurus_position 
+           FROM user_profiles p 
+           JOIN auth_users u ON p.user_id = u.id 
+           WHERE p.lingkungan_id = $1 
+             AND u.id != $2
+             AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+             AND (
+               LOWER(p.pengurus_position) = LOWER($3)
+               OR (LOWER($3) LIKE '%ketua%' AND LOWER($3) NOT LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%ketua%' AND LOWER(p.pengurus_position) NOT LIKE '%wakil%')
+               OR (LOWER($3) LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%wakil%')
+               OR (LOWER($3) LIKE '%sekretaris%' AND LOWER(p.pengurus_position) LIKE '%sekretaris%')
+               OR (LOWER($3) LIKE '%bendahara%' AND LOWER(p.pengurus_position) LIKE '%bendahara%')
+             )`,
+          [checkLingkunganId, uid, checkPos],
+        );
+        if (existingPengurus.length > 0) {
+          const existingName = existingPengurus[0].full_name;
+          const existingPos = existingPengurus[0].pengurus_position;
+          throw new BadRequestException(
+            `Jabatan ${checkPos} untuk lingkungan ini sudah terisi oleh ${existingName} (${existingPos}). Pengurus dengan jabatan yang sama tidak boleh ganda dalam satu lingkungan.`,
+          );
+        }
+      }
+    }
+
     const fields: string[] = [];
     const values: any[] = [];
     let idx = 1;
@@ -1231,17 +1306,49 @@ export class AuthController implements OnModuleInit {
   })
   @ApiResponse({ status: 200, description: 'Status persetujuan akun berhasil diperbarui.', type: ApproveUserResponseDto })
   async approveRegistration(@Body() dto: ApproveUserDto) {
-    const updated = await this.dataSource.query(
-      `UPDATE auth_users SET account_status = $1 WHERE id = $2 RETURNING id, account_status`,
-      [dto.action, dto.targetUserId],
-    );
-
     if (dto.action === 'APPROVED') {
+      const targetProf = await this.dataSource.query(
+        `SELECT u.role_id, r.code as role_code, p.lingkungan_id, p.pengurus_position, p.full_name
+         FROM auth_users u 
+         JOIN roles r ON u.role_id = r.id 
+         LEFT JOIN user_profiles p ON u.id = p.user_id 
+         WHERE u.id = $1`,
+        [dto.targetUserId],
+      );
+      if (targetProf.length > 0 && targetProf[0].role_code === 'PENGURUS_LINGKUNGAN' && targetProf[0].lingkungan_id && targetProf[0].pengurus_position) {
+        const existingApproved = await this.dataSource.query(
+          `SELECT u.id, p.full_name, p.pengurus_position 
+           FROM user_profiles p 
+           JOIN auth_users u ON p.user_id = u.id 
+           WHERE p.lingkungan_id = $1 
+             AND u.id != $2
+             AND u.account_status = 'APPROVED'
+             AND (
+               LOWER(p.pengurus_position) = LOWER($3)
+               OR (LOWER($3) LIKE '%ketua%' AND LOWER($3) NOT LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%ketua%' AND LOWER(p.pengurus_position) NOT LIKE '%wakil%')
+               OR (LOWER($3) LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%wakil%')
+               OR (LOWER($3) LIKE '%sekretaris%' AND LOWER(p.pengurus_position) LIKE '%sekretaris%')
+               OR (LOWER($3) LIKE '%bendahara%' AND LOWER(p.pengurus_position) LIKE '%bendahara%')
+             )`,
+          [targetProf[0].lingkungan_id, dto.targetUserId, targetProf[0].pengurus_position],
+        );
+        if (existingApproved.length > 0) {
+          throw new BadRequestException(
+            `Gagal menyetujui akun: Jabatan ${targetProf[0].pengurus_position} pada lingkungan ini sudah terisi dan aktif oleh ${existingApproved[0].full_name}. Tidak boleh ada jabatan pengurus yang ganda dalam satu lingkungan.`,
+          );
+        }
+      }
+
       await this.dataSource.query(
         `UPDATE user_profiles SET is_jabatan_active = TRUE WHERE user_id = $1`,
         [dto.targetUserId],
       );
     }
+
+    const updated = await this.dataSource.query(
+      `UPDATE auth_users SET account_status = $1 WHERE id = $2 RETURNING id, account_status`,
+      [dto.action, dto.targetUserId],
+    );
 
     const userProfile = await this.dataSource.query(`SELECT full_name FROM user_profiles WHERE user_id = $1`, [dto.targetUserId]);
 

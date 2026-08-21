@@ -93,7 +93,8 @@ class _RegisterScreenState extends State<RegisterScreen>
         _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
       if (_selectedUmatPosition == 'KETUA' ||
           _selectedUmatPosition == 'WAKIL' ||
-          _selectedUmatPosition == 'SEKRETARIS') {
+          _selectedUmatPosition == 'SEKRETARIS' ||
+          _selectedUmatPosition == 'BENDAHARA') {
         return true;
       }
     }
@@ -568,6 +569,11 @@ class _RegisterScreenState extends State<RegisterScreen>
           DropdownMenuItem<String?>(
               value: 'SEKRETARIS',
               child: Text('Sekretaris Lingkungan',
+                  style: TextStyle(fontSize: 13),
+                  overflow: TextOverflow.ellipsis)),
+          DropdownMenuItem<String?>(
+              value: 'BENDAHARA',
+              child: Text('Bendahara Lingkungan',
                   style: TextStyle(fontSize: 13),
                   overflow: TextOverflow.ellipsis)),
         ],

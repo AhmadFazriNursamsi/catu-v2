@@ -75,15 +75,15 @@ export class RegisterUserDto {
   @IsOptional()
   kabupatenKotaId?: number;
 
-  @ApiPropertyOptional({ enum: PengurusPositionEnum, description: 'Jabatan Pengurus (KETUA, WAKIL, SEKRETARIS)' })
-  @IsEnum(PengurusPositionEnum)
+  @ApiPropertyOptional({ example: 'Ketua Lingkungan', description: 'Jabatan Pengurus Lingkungan' })
+  @IsString()
   @IsOptional()
-  pengurusPosition?: PengurusPositionEnum;
+  pengurusPosition?: string;
 
-  @ApiPropertyOptional({ enum: RomoPositionEnum, description: 'Jabatan Romo (KETUA_ROMO, ROMO_BIASA)' })
-  @IsEnum(RomoPositionEnum)
+  @ApiPropertyOptional({ example: 'Pastor Kepala Paroki', description: 'Posisi Pastoral Romo' })
+  @IsString()
   @IsOptional()
-  romoPosition?: RomoPositionEnum;
+  romoPosition?: string;
 
   @ApiPropertyOptional({ example: 2024, description: 'Tahun Mulai Masa Jabatan' })
   @IsOptional()

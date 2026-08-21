@@ -1875,6 +1875,31 @@
         const ey = document.getElementById('editJabatanEndYear');
         if (ey && ey.value) payload.jabatanEndYear = parseInt(ey.value);
         payload.isJabatanActive = true;
+
+        // Check if another active/pending user already holds this position in the same lingkungan
+        const checkLingkunganId = payload.lingkunganId || u.lingkungan_id;
+        if (checkLingkunganId && payload.pengurusPosition) {
+          const duplicatePengurus = state.users.find(other => {
+            if (String(other.id) === String(u.id)) return false;
+            const oStatus = (other.account_status || other.accountStatus || '').toUpperCase();
+            if (oStatus !== 'APPROVED' && oStatus !== 'PENDING_APPROVAL') return false;
+            const oLing = other.lingkungan_id || other.lingkunganId;
+            if (String(oLing) !== String(checkLingkunganId)) return false;
+            const oPos = (other.pengurus_position || other.pengurusPosition || '').toLowerCase();
+            const myPos = payload.pengurusPosition.toLowerCase();
+            if (oPos === myPos) return true;
+            if (myPos.includes('ketua') && !myPos.includes('wakil') && oPos.includes('ketua') && !oPos.includes('wakil')) return true;
+            if (myPos.includes('wakil') && oPos.includes('wakil')) return true;
+            if (myPos.includes('sekretaris') && oPos.includes('sekretaris')) return true;
+            if (myPos.includes('bendahara') && oPos.includes('bendahara')) return true;
+            return false;
+          });
+          if (duplicatePengurus) {
+            state.editFormError = `Jabatan ${payload.pengurusPosition} pada lingkungan ini sudah diisi oleh ${duplicatePengurus.full_name || duplicatePengurus.fullName}. Pengurus dengan jabatan yang sama tidak boleh ganda dalam satu lingkungan.`;
+            renderApp();
+            return;
+          }
+        }
       }
 
       if (roleCode === 'ROMO_PAROKI') {
