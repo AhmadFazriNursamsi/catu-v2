@@ -805,7 +805,6 @@
     }
 
     // ── Tab: Umat Katolik ──
-    // ── Tab: Umat Katolik ──
     function renderUmatTab() {
       const q = (state.umatSearch || '').toLowerCase().trim();
       const hasFilter = state.umatSearch || state.umatFilterParoki || state.umatFilterLingkungan;
@@ -841,7 +840,9 @@
           const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
           const par = (u.paroki_name || u.parokiName || '').toLowerCase();
           const ling = (u.lingkungan_name || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !par.includes(q) && !ling.includes(q)) return false;
+          const kota = (u.kota_name || u.address || '').toLowerCase();
+          const prov = (u.provinsi_name || '').toLowerCase();
+          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !par.includes(q) && !ling.includes(q) && !kota.includes(q) && !prov.includes(q)) return false;
         }
         return true;
       });
@@ -854,7 +855,7 @@
               <!-- Search Input -->
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="umatSearchInput" placeholder="Cari nama umat, email, no. WhatsApp, paroki..." value="${state.umatSearch}"
+                <input type="text" id="umatSearchInput" placeholder="Cari nama umat, kota, no. WhatsApp, paroki..." value="${state.umatSearch}"
                   oninput="state.umatSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
                 ${state.umatSearch ? `
@@ -911,6 +912,7 @@
                   <tr>
                     <th class="px-6 py-4">NAMA LENGKAP UMAT</th>
                     <th class="px-6 py-4">NO. WHATSAPP</th>
+                    <th class="px-6 py-4">KOTA / DOMISILI</th>
                     <th class="px-6 py-4">PAROKI</th>
                     <th class="px-6 py-4">LINGKUNGAN & WILAYAH</th>
                     <th class="px-6 py-4 text-center">STATUS AKUN</th>
@@ -920,7 +922,7 @@
                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                   ${umats.length === 0 ? `
                     <tr>
-                      <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
+                      <td colspan="7" class="text-center py-16 text-slate-400 space-y-3">
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
                           <i data-lucide="users" class="w-7 h-7"></i>
                         </div>
@@ -946,6 +948,12 @@
                           <i data-lucide="phone" class="w-3.5 h-3.5 text-emerald-600"></i>
                           <span>${u.phone_number}</span>
                         </span>
+                      </td>
+                      <td class="px-6 py-4">
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
+                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i>
+                          <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                        </div>
                       </td>
                       <td class="px-6 py-4">
                         <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-blue-50 text-blue-950 font-bold border border-blue-200 text-xs shadow-2xs">
@@ -1020,7 +1028,9 @@
           const pos = (u.pengurus_position || '').toLowerCase();
           const par = (u.paroki_name || u.parokiName || '').toLowerCase();
           const ling = (u.lingkungan_name || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !pos.includes(q) && !par.includes(q) && !ling.includes(q)) return false;
+          const kota = (u.kota_name || u.address || '').toLowerCase();
+          const prov = (u.provinsi_name || '').toLowerCase();
+          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !pos.includes(q) && !par.includes(q) && !ling.includes(q) && !kota.includes(q) && !prov.includes(q)) return false;
         }
         return true;
       });
@@ -1033,7 +1043,7 @@
               <!-- Search Input -->
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="pengurusSearchInput" placeholder="Cari nama pengurus, email, jabatan, paroki..." value="${state.pengurusSearch}"
+                <input type="text" id="pengurusSearchInput" placeholder="Cari nama pengurus, kota, email, jabatan, paroki..." value="${state.pengurusSearch}"
                   oninput="state.pengurusSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
                 ${state.pengurusSearch ? `
@@ -1090,6 +1100,7 @@
                   <tr>
                     <th class="px-6 py-4">NAMA PENGURUS</th>
                     <th class="px-6 py-4">JABATAN</th>
+                    <th class="px-6 py-4">KOTA / DOMISILI</th>
                     <th class="px-6 py-4">LINGKUNGAN & PAROKI</th>
                     <th class="px-6 py-4">MASA JABATAN</th>
                     <th class="px-6 py-4">NO. WHATSAPP</th>
@@ -1099,7 +1110,7 @@
                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                   ${list.length === 0 ? `
                     <tr>
-                      <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
+                      <td colspan="7" class="text-center py-16 text-slate-400 space-y-3">
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
                           <i data-lucide="award" class="w-7 h-7"></i>
                         </div>
@@ -1130,6 +1141,12 @@
                             <i data-lucide="${isLead ? 'crown' : 'award'}" class="w-3.5 h-3.5 ${isLead ? 'text-amber-600' : 'text-indigo-600'}"></i>
                             <span>${u.pengurus_position || 'Ketua Lingkungan'}</span>
                           </span>
+                        </td>
+                        <td class="px-6 py-4">
+                          <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i>
+                            <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                          </div>
                         </td>
                         <td class="px-6 py-4">
                           <p class="font-extrabold text-slate-900 text-xs">${u.lingkungan_name || '-'}</p>
@@ -1206,7 +1223,9 @@
           const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
           const pos = (u.romo_position || '').toLowerCase();
           const par = (u.paroki_name || u.parokiName || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !pos.includes(q) && !par.includes(q)) return false;
+          const kota = (u.kota_name || u.address || '').toLowerCase();
+          const prov = (u.provinsi_name || '').toLowerCase();
+          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !pos.includes(q) && !par.includes(q) && !kota.includes(q) && !prov.includes(q)) return false;
         }
         return true;
       });
@@ -1219,7 +1238,7 @@
               <!-- Search Input -->
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="romoParokiSearchInput" placeholder="Cari Romo Paroki, nama, email, paroki..." value="${state.romoParokiSearch}"
+                <input type="text" id="romoParokiSearchInput" placeholder="Cari Romo Paroki, nama, kota, email, paroki..." value="${state.romoParokiSearch}"
                   oninput="state.romoParokiSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
                 ${state.romoParokiSearch ? `
@@ -1275,6 +1294,7 @@
                 <thead class="bg-gradient-to-r from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-600 font-black border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
                   <tr>
                     <th class="px-6 py-4">NAMA ROMO</th>
+                    <th class="px-6 py-4">KOTA / DOMISILI</th>
                     <th class="px-6 py-4">PAROKI</th>
                     <th class="px-6 py-4">JABATAN PASTORAL</th>
                     <th class="px-6 py-4">NO. WHATSAPP</th>
@@ -1284,7 +1304,7 @@
                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                   ${list.length === 0 ? `
                     <tr>
-                      <td colspan="5" class="text-center py-16 text-slate-400 space-y-3">
+                      <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
                           <i data-lucide="church" class="w-7 h-7"></i>
                         </div>
@@ -1305,6 +1325,12 @@
                               <p class="font-extrabold text-slate-900 text-xs">${u.full_name || 'Romo Paroki'}</p>
                               <p class="text-[10.5px] text-slate-400 font-semibold truncate max-w-xs">${u.email || '-'}</p>
                             </div>
+                          </div>
+                        </td>
+                        <td class="px-6 py-4">
+                          <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i>
+                            <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
                           </div>
                         </td>
                         <td class="px-6 py-4">
@@ -1380,7 +1406,9 @@
           const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
           const pos = (u.romo_position || '').toLowerCase();
           const ordo = (u.ordo_name || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !pos.includes(q) && !ordo.includes(q)) return false;
+          const kota = (u.kota_name || u.address || '').toLowerCase();
+          const prov = (u.provinsi_name || '').toLowerCase();
+          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !pos.includes(q) && !ordo.includes(q) && !kota.includes(q) && !prov.includes(q)) return false;
         }
         return true;
       });
@@ -1393,7 +1421,7 @@
               <!-- Search Input -->
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="romoOrdoSearchInput" placeholder="Cari Romo Ordo, nama, email, ordo..." value="${state.romoOrdoSearch}"
+                <input type="text" id="romoOrdoSearchInput" placeholder="Cari Romo Ordo, nama, kota, email, ordo..." value="${state.romoOrdoSearch}"
                   oninput="state.romoOrdoSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
                 ${state.romoOrdoSearch ? `
@@ -1449,6 +1477,7 @@
                 <thead class="bg-gradient-to-r from-slate-100/90 via-slate-50 to-slate-100/80 text-slate-600 font-black border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
                   <tr>
                     <th class="px-6 py-4">NAMA ROMO</th>
+                    <th class="px-6 py-4">KOTA / DOMISILI</th>
                     <th class="px-6 py-4">ORDO RELIGIUS</th>
                     <th class="px-6 py-4">JABATAN STRUKTUR</th>
                     <th class="px-6 py-4">NO. WHATSAPP</th>
@@ -1458,7 +1487,7 @@
                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                   ${list.length === 0 ? `
                     <tr>
-                      <td colspan="5" class="text-center py-16 text-slate-400 space-y-3">
+                      <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
                           <i data-lucide="cross" class="w-7 h-7"></i>
                         </div>
@@ -1479,6 +1508,12 @@
                               <p class="font-extrabold text-slate-900 text-xs">${u.full_name || 'Romo Ordo'}</p>
                               <p class="text-[10.5px] text-slate-400 font-semibold truncate max-w-xs">${u.email || '-'}</p>
                             </div>
+                          </div>
+                        </td>
+                        <td class="px-6 py-4">
+                          <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i>
+                            <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
                           </div>
                         </td>
                         <td class="px-6 py-4">
@@ -1558,7 +1593,9 @@
           const email = (u.email || '').toLowerCase();
           const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
           const par = (u.paroki_name || u.kota_name || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !par.includes(q)) return false;
+          const kota = (u.kota_name || u.address || '').toLowerCase();
+          const prov = (u.provinsi_name || '').toLowerCase();
+          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !par.includes(q) && !kota.includes(q) && !prov.includes(q)) return false;
         }
         return true;
       });
@@ -1571,7 +1608,7 @@
               <!-- Search Input -->
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="approvalsSearchInput" placeholder="Cari pemohon, nama, email, nomor HP..." value="${state.approvalsSearch}"
+                <input type="text" id="approvalsSearchInput" placeholder="Cari pemohon, nama, kota, nomor HP..." value="${state.approvalsSearch}"
                   oninput="state.approvalsSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs transition" />
                 ${state.approvalsSearch ? `
@@ -1629,6 +1666,7 @@
                     <th class="px-6 py-4">PEMOHON AKUN</th>
                     <th class="px-6 py-4">NO. WHATSAPP</th>
                     <th class="px-6 py-4">PERAN DIAJUKAN</th>
+                    <th class="px-6 py-4">KOTA / DOMISILI</th>
                     <th class="px-6 py-4">PAROKI & DOMISILI</th>
                     <th class="px-6 py-4 text-right">AKSI VERIFIKASI</th>
                   </tr>
@@ -1636,7 +1674,7 @@
                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                   ${pendings.length === 0 ? `
                     <tr>
-                      <td colspan="5" class="text-center py-16 text-slate-400 space-y-3">
+                      <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
                         <div class="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto">
                           <i data-lucide="check-circle-2" class="w-7 h-7"></i>
                         </div>
@@ -1670,8 +1708,14 @@
                         </span>
                       </td>
                       <td class="px-6 py-4">
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
+                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i>
+                          <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4">
                         <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-50 text-slate-800 font-bold border border-slate-200 text-xs shadow-2xs">
-                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-500"></i>
+                          <i data-lucide="church" class="w-3.5 h-3.5 text-slate-500"></i>
                           <span>${u.paroki_name || u.kota_name || '-'}</span>
                         </div>
                       </td>
