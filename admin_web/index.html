@@ -112,6 +112,8 @@
       masterDataList: [],
       isMasterLoading: false,
       activeMasterModal: null,
+      modalParokiList: [],
+      modalWilayahList: [],
       isSavingMaster: false,
       masterModalError: '',
       deleteConfirmModal: null,
@@ -1315,6 +1317,28 @@
           ${renderMasterTableColumns(sub, item)}
           <td class="py-3.5 px-4 text-center">
             <div class="flex items-center justify-center space-x-1.5">
+              ${sub === 'keuskupan' ? `
+                <button onclick='openCreateMasterModal("paroki", { keuskupan_id: ${item.id} })'
+                  class="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 font-bold text-[11px] flex items-center space-x-1 transition shadow-2xs" title="Tambah Paroki Baru di Keuskupan Ini">
+                  <i data-lucide="plus" class="w-3.5 h-3.5 text-blue-600"></i>
+                  <span>+ Paroki</span>
+                </button>
+              ` : ''}
+              ${sub === 'paroki' ? `
+                <button onclick='openCreateMasterModal("wilayah", { keuskupan_id: ${item.keuskupan_id || 'null'}, paroki_id: ${item.id} })'
+                  class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-bold text-[11px] flex items-center space-x-1 transition shadow-2xs" title="Tambah Wilayah Baru di Paroki Ini">
+                  <i data-lucide="plus" class="w-3.5 h-3.5 text-emerald-600"></i>
+                  <span>+ Wilayah</span>
+                </button>
+              ` : ''}
+              ${sub === 'wilayah' ? `
+                <button onclick='openCreateMasterModal("lingkungan", { paroki_id: ${item.paroki_id || 'null'}, wilayah_id: ${item.id} })'
+                  class="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 font-bold text-[11px] flex items-center space-x-1 transition shadow-2xs" title="Tambah Lingkungan Baru di Wilayah Ini">
+                  <i data-lucide="plus" class="w-3.5 h-3.5 text-indigo-600"></i>
+                  <span>+ Lingkungan</span>
+                </button>
+              ` : ''}
+
               <button onclick='openEditMasterModal("${sub}", ${escapedItem})'
                 class="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-[11px] flex items-center space-x-1 transition shadow-2xs" title="Edit Data">
                 <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
@@ -1567,37 +1591,101 @@
           </div>
         `;
       } else if (type === 'wilayah') {
+        const modal = state.activeMasterModal || {};
+        const parokiList = (state.modalParokiList && state.modalParokiList.length > 0) ? state.modalParokiList : (state.paroki || []);
+        const selectedParokiId = data.paroki_id || data.parokiId;
         return `
-          <div>
-            <label class="block font-extrabold text-slate-700 mb-1.5">Pilih Paroki *</label>
-            <select id="masterParokiIdInput" required
-              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
-              <option value="">-- Pilih Paroki --</option>
-              ${(state.paroki || []).map(p => `
-                <option value="${p.id}" ${String(data.paroki_id || data.parokiId) === String(p.id) ? 'selected' : ''}>${p.name} (${p.keuskupan_name || 'Keuskupan'})</option>
+          <!-- 1. Filter Keuskupan -->
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label class="block font-bold text-slate-700 text-xs">🏛️ 1. Filter Keuskupan (Opsional)</label>
+              <span class="text-[10px] text-slate-400 font-semibold">${state.keuskupan.length} Keuskupan</span>
+            </div>
+            <select onchange="onMasterModalKeuskupanChangedForWilayah(this.value)"
+              class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
+              <option value="">-- Tampilkan Semua Paroki --</option>
+              ${(state.keuskupan || []).map(k => `
+                <option value="${k.id}" ${String(modal.filterKeuskupanId || data.keuskupan_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
               `).join('')}
             </select>
           </div>
+
+          <!-- 2. Pilih Paroki -->
           <div>
-            <label class="block font-extrabold text-slate-700 mb-1.5">Nama Wilayah *</label>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block font-extrabold text-slate-800">⛪ 2. Pilih Paroki Induk *</label>
+              <span class="text-[10px] font-bold text-amber-600">${parokiList.length} Paroki Tersedia</span>
+            </div>
+            <select id="masterParokiIdInput" required
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
+              <option value="">-- Pilih Paroki Induk --</option>
+              ${parokiList.map(p => `
+                <option value="${p.id}" ${String(selectedParokiId) === String(p.id) ? 'selected' : ''}>${p.name} (${p.keuskupan_name || 'Keuskupan'})</option>
+              `).join('')}
+            </select>
+          </div>
+
+          <!-- 3. Nama Wilayah -->
+          <div>
+            <label class="block font-extrabold text-slate-800 mb-1.5">📍 3. Nama Wilayah Baru *</label>
             <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Wilayah St. Fransiskus Xaverius"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
         `;
       } else if (type === 'lingkungan') {
+        const modal = state.activeMasterModal || {};
+        const parokiList = (state.modalParokiList && state.modalParokiList.length > 0) ? state.modalParokiList : (state.paroki || []);
+        const wilayahList = (state.modalWilayahList && state.modalWilayahList.length > 0) ? state.modalWilayahList : (state.wilayah || []);
+        const selectedWilayahId = data.wilayah_id || data.wilayahId;
         return `
-          <div>
-            <label class="block font-extrabold text-slate-700 mb-1.5">Pilih Wilayah *</label>
-            <select id="masterWilayahIdInput" required
-              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
-              <option value="">-- Pilih Wilayah --</option>
-              ${(state.wilayah || []).map(w => `
-                <option value="${w.id}" ${String(data.wilayah_id || data.wilayahId) === String(w.id) ? 'selected' : ''}>${w.name} (${w.paroki_name || 'Paroki'})</option>
+          <!-- 1. Filter Keuskupan -->
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label class="block font-bold text-slate-700 text-xs">🏛️ 1. Filter Keuskupan (Opsional)</label>
+              <span class="text-[10px] text-slate-400 font-semibold">${state.keuskupan.length} Keuskupan</span>
+            </div>
+            <select onchange="onMasterModalKeuskupanChangedForLingkungan(this.value)"
+              class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
+              <option value="">-- Semua Keuskupan --</option>
+              ${(state.keuskupan || []).map(k => `
+                <option value="${k.id}" ${String(modal.filterKeuskupanId || data.keuskupan_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
               `).join('')}
             </select>
           </div>
+
+          <!-- 2. Filter Paroki -->
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label class="block font-bold text-slate-700 text-xs">⛪ 2. Filter Paroki (Pilih untuk menyaring Wilayah)</label>
+              <span class="text-[10px] font-bold text-amber-600">${parokiList.length} Paroki</span>
+            </div>
+            <select onchange="onMasterModalParokiChangedForLingkungan(this.value)"
+              class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
+              <option value="">-- Pilih Paroki Induk --</option>
+              ${parokiList.map(p => `
+                <option value="${p.id}" ${String(modal.filterParokiId || data.paroki_id) === String(p.id) ? 'selected' : ''}>${p.name} (${p.keuskupan_name || 'Keuskupan'})</option>
+              `).join('')}
+            </select>
+          </div>
+
+          <!-- 3. Pilih Wilayah -->
           <div>
-            <label class="block font-extrabold text-slate-700 mb-1.5">Nama Lingkungan *</label>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block font-extrabold text-slate-800">📍 3. Pilih Wilayah Induk *</label>
+              <span class="text-[10px] font-bold text-amber-600">${wilayahList.length} Wilayah Tersedia</span>
+            </div>
+            <select id="masterWilayahIdInput" required
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
+              <option value="">-- ${wilayahList.length === 0 ? 'Pilih Paroki terlebih dahulu' : 'Pilih Wilayah Induk'} --</option>
+              ${wilayahList.map(w => `
+                <option value="${w.id}" ${String(selectedWilayahId) === String(w.id) ? 'selected' : ''}>${w.name} (${w.paroki_name || 'Paroki'})</option>
+              `).join('')}
+            </select>
+          </div>
+
+          <!-- 4. Nama Lingkungan -->
+          <div>
+            <label class="block font-extrabold text-slate-800 mb-1.5">🏘️ 4. Nama Lingkungan Baru *</label>
             <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Lingkungan St. Gabriel 1"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
@@ -2606,25 +2694,84 @@
       }
     }
 
-    async function openCreateMasterModal(type) {
+    // ── Master Modal Cascading Filter Handlers ──
+    async function onMasterModalKeuskupanChangedForWilayah(keuskupanId) {
+      if (!state.activeMasterModal) return;
+      state.activeMasterModal.filterKeuskupanId = keuskupanId;
+      try {
+        const url = keuskupanId ? `${API_BASE}/master/paroki?keuskupanId=${keuskupanId}` : `${API_BASE}/master/paroki`;
+        const res = await fetch(url);
+        state.modalParokiList = await res.json();
+      } catch (e) {
+        console.error(e);
+      }
+      renderApp();
+    }
+
+    async function onMasterModalKeuskupanChangedForLingkungan(keuskupanId) {
+      if (!state.activeMasterModal) return;
+      state.activeMasterModal.filterKeuskupanId = keuskupanId;
+      state.activeMasterModal.filterParokiId = '';
+      try {
+        const url = keuskupanId ? `${API_BASE}/master/paroki?keuskupanId=${keuskupanId}` : `${API_BASE}/master/paroki`;
+        const res = await fetch(url);
+        state.modalParokiList = await res.json();
+        state.modalWilayahList = [];
+      } catch (e) {
+        console.error(e);
+      }
+      renderApp();
+    }
+
+    async function onMasterModalParokiChangedForLingkungan(parokiId) {
+      if (!state.activeMasterModal) return;
+      state.activeMasterModal.filterParokiId = parokiId;
+      try {
+        const url = parokiId ? `${API_BASE}/master/wilayah?parokiId=${parokiId}` : `${API_BASE}/master/wilayah`;
+        const res = await fetch(url);
+        state.modalWilayahList = await res.json();
+      } catch (e) {
+        console.error(e);
+      }
+      renderApp();
+    }
+
+    async function openCreateMasterModal(type, prefillData = {}) {
       state.masterModalError = '';
       const activeType = type || state.masterSubTab || 'paroki';
+      const initialData = { ...prefillData };
+
+      // Pre-fill active table filter if available
+      if (activeType === 'paroki' && state.masterFilterKeuskupanId && !initialData.keuskupan_id) {
+        initialData.keuskupan_id = parseInt(state.masterFilterKeuskupanId);
+      }
+      if (activeType === 'wilayah' && state.masterFilterParokiId && !initialData.paroki_id) {
+        initialData.paroki_id = parseInt(state.masterFilterParokiId);
+      }
+
+      let filterKId = initialData.keuskupan_id || '';
+      let filterPId = initialData.paroki_id || '';
 
       try {
-        if (activeType === 'paroki' || activeType === 'wilayah') {
+        if (activeType === 'paroki') {
+          const res = await fetch(`${API_BASE}/master/keuskupan`);
+          state.keuskupan = await res.json();
+        } else if (activeType === 'wilayah') {
           const [kRes, pRes] = await Promise.all([
             fetch(`${API_BASE}/master/keuskupan`),
-            fetch(`${API_BASE}/master/paroki`)
+            fetch(`${API_BASE}/master/paroki${filterKId ? '?keuskupanId=' + filterKId : ''}`)
           ]);
           state.keuskupan = await kRes.json();
-          state.paroki = await pRes.json();
+          state.modalParokiList = await pRes.json();
         } else if (activeType === 'lingkungan') {
-          const [pRes, wRes] = await Promise.all([
-            fetch(`${API_BASE}/master/paroki`),
-            fetch(`${API_BASE}/master/wilayah`)
+          const [kRes, pRes, wRes] = await Promise.all([
+            fetch(`${API_BASE}/master/keuskupan`),
+            fetch(`${API_BASE}/master/paroki${filterKId ? '?keuskupanId=' + filterKId : ''}`),
+            fetch(`${API_BASE}/master/wilayah${filterPId ? '?parokiId=' + filterPId : ''}`)
           ]);
-          state.paroki = await pRes.json();
-          state.wilayah = await wRes.json();
+          state.keuskupan = await kRes.json();
+          state.modalParokiList = await pRes.json();
+          state.modalWilayahList = await wRes.json();
         }
       } catch (err) {
         console.error('Error preloading lookup data for modal:', err);
@@ -2633,7 +2780,9 @@
       state.activeMasterModal = {
         type: activeType,
         mode: 'CREATE',
-        data: {}
+        data: initialData,
+        filterKeuskupanId: filterKId,
+        filterParokiId: filterPId
       };
       renderApp();
     }
@@ -2641,22 +2790,31 @@
     async function openEditMasterModal(type, item) {
       state.masterModalError = '';
       const activeType = type || state.masterSubTab || 'paroki';
+      const initialData = { ...item };
+
+      let filterKId = initialData.keuskupan_id || '';
+      let filterPId = initialData.paroki_id || '';
 
       try {
-        if (activeType === 'paroki' || activeType === 'wilayah') {
+        if (activeType === 'paroki') {
+          const res = await fetch(`${API_BASE}/master/keuskupan`);
+          state.keuskupan = await res.json();
+        } else if (activeType === 'wilayah') {
           const [kRes, pRes] = await Promise.all([
             fetch(`${API_BASE}/master/keuskupan`),
             fetch(`${API_BASE}/master/paroki`)
           ]);
           state.keuskupan = await kRes.json();
-          state.paroki = await pRes.json();
+          state.modalParokiList = await pRes.json();
         } else if (activeType === 'lingkungan') {
-          const [pRes, wRes] = await Promise.all([
+          const [kRes, pRes, wRes] = await Promise.all([
+            fetch(`${API_BASE}/master/keuskupan`),
             fetch(`${API_BASE}/master/paroki`),
             fetch(`${API_BASE}/master/wilayah`)
           ]);
-          state.paroki = await pRes.json();
-          state.wilayah = await wRes.json();
+          state.keuskupan = await kRes.json();
+          state.modalParokiList = await pRes.json();
+          state.modalWilayahList = await wRes.json();
         }
       } catch (err) {
         console.error('Error preloading lookup data for modal:', err);
@@ -2665,7 +2823,9 @@
       state.activeMasterModal = {
         type: activeType,
         mode: 'EDIT',
-        data: { ...item }
+        data: initialData,
+        filterKeuskupanId: filterKId,
+        filterParokiId: filterPId
       };
       renderApp();
     }
