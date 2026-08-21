@@ -30,9 +30,9 @@
       position: fixed;
       pointer-events: none;
       border: 2px dashed #f59e0b;
-      background-color: rgba(245, 158, 11, 0.12);
+      background-color: rgba(245, 158, 11, 0.15);
       border-radius: 6px;
-      z-index: 9990;
+      z-index: 99990;
       transition: all 0.05s ease;
       display: none;
     }
@@ -51,7 +51,7 @@
     }
     .agentation-pin {
       position: absolute;
-      z-index: 9995;
+      z-index: 99995;
       transform: translate(-50%, -50%);
       cursor: pointer;
       animation: pinPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -1595,7 +1595,7 @@
       if (!p) return '';
 
       return `
-        <div class="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+        <div data-agentation-dialog class="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-300 space-y-4 font-sans text-xs">
             <div class="flex items-center justify-between border-b border-slate-200 pb-3">
               <div class="flex items-center space-x-2">
@@ -1778,7 +1778,7 @@
       }
 
       const target = document.elementFromPoint(e.clientX, e.clientY);
-      if (!target || target.closest('[data-feedback-toolbar]') || target.closest('.agentation-pin') || target.id === 'agentation-inspector-box') {
+      if (!target || target.closest('[data-feedback-toolbar]') || target.closest('.agentation-pin') || target.closest('[data-agentation-dialog]') || target.id === 'agentation-inspector-box') {
         return;
       }
 
@@ -1793,8 +1793,9 @@
         box.style.height = `${rect.height}px`;
 
         const tag = target.tagName.toLowerCase();
-        const cls = target.className ? ('.' + String(target.className).split(' ')[0]) : '';
-        label.textContent = `${tag}${cls} (${Math.round(rect.width)}x${Math.round(rect.height)})`;
+        const idStr = target.id ? ('#' + target.id) : '';
+        const cls = target.className && typeof target.className === 'string' ? ('.' + target.className.trim().split(' ')[0]) : '';
+        label.textContent = `${tag}${idStr || cls} (${Math.round(rect.width)}x${Math.round(rect.height)})`;
       }
     });
 
@@ -1802,17 +1803,26 @@
       if (!state.agentation.enabled) return;
 
       const target = document.elementFromPoint(e.clientX, e.clientY);
-      if (!target || target.closest('[data-feedback-toolbar]') || target.closest('.agentation-pin') || target.closest('#editUserForm') || target.closest('.fixed')) {
+      if (!target || target.closest('[data-feedback-toolbar]') || target.closest('.agentation-pin') || target.closest('[data-agentation-dialog]') || target.id === 'agentation-inspector-box') {
         return;
       }
 
       e.preventDefault();
       e.stopPropagation();
 
+      // Check if target is inside a popup / modal
+      const modalParent = target.closest('.fixed:not([data-agentation-dialog])');
+      let modalPrefix = '';
+      if (modalParent) {
+        const modalTitle = modalParent.querySelector('h3, h4')?.innerText?.trim() || 'Popup Modal';
+        modalPrefix = `[Popup: ${modalTitle}] > `;
+      }
+
       // Compute unique CSS selector path
       let path = [];
       let el = target;
       while (el && el.nodeType === Node.ELEMENT_NODE && path.length < 4) {
+        if (el === modalParent) break;
         let sel = el.nodeName.toLowerCase();
         if (el.id) {
           sel += '#' + el.id;
@@ -1829,12 +1839,14 @@
         el = el.parentNode;
       }
 
+      const fullSelector = modalPrefix + (path.join(' > ') || target.tagName.toLowerCase());
+
       state.agentation.pendingPin = {
         x: e.clientX,
         y: e.clientY,
-        selector: path.join(' > '),
+        selector: fullSelector,
         tag: target.tagName.toLowerCase(),
-        text: (target.innerText || target.textContent || '').trim().substring(0, 100),
+        text: (target.value || target.placeholder || target.innerText || target.textContent || '').trim().substring(0, 100),
       };
 
       const box = document.getElementById('agentation-inspector-box');
