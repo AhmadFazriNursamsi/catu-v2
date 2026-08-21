@@ -1747,7 +1747,25 @@
       prompt += `Tolong revisi dan perbaiki elemen-elemen UI di atas sesuai catatan tepat sasaran.`;
 
       navigator.clipboard.writeText(prompt).then(() => {
-        alert('✓ Seluruh catatan revisi Agentation berhasil disalin ke clipboard! Anda dapat langsung menempelkannya (Paste) ke chat AI.');
+        // Automatically clear annotations after copying
+        state.agentation.annotations = [];
+        localStorage.setItem('catu_agentation_annotations', JSON.stringify([]));
+        state.agentation.enabled = false;
+        state.agentation.expanded = false;
+        
+        const box = document.getElementById('agentation-inspector-box');
+        if (box) box.style.display = 'none';
+
+        renderApp();
+        alert('✓ Seluruh catatan revisi Agentation berhasil disalin ke clipboard & pin otomatis dibersihkan!\nSilakan langsung tempelkan (Paste) prompt ke chat AI.');
+      }).catch(err => {
+        // Fallback if clipboard API fails
+        state.agentation.annotations = [];
+        localStorage.setItem('catu_agentation_annotations', JSON.stringify([]));
+        state.agentation.enabled = false;
+        state.agentation.expanded = false;
+        renderApp();
+        alert('✓ Pin revisi telah dibersihkan.');
       });
     }
 
