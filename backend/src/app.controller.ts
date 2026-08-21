@@ -1314,7 +1314,7 @@ export class AuthController implements OnModuleInit {
              p.paroki_id, par.name as paroki_name,
              p.wilayah_id, w.name as wilayah_name,
              p.lingkungan_id, l.name as lingkungan_name,
-             p.kabupaten_kota_id, kk.name as kota_name,
+             p.kabupaten_kota_id, kk.name as kota_name, kk.provinsi_id, prov.name as provinsi_name,
              p.ordo_id, ord.name as ordo_name,
              p.pengurus_position, p.romo_position,
              p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
@@ -1326,6 +1326,7 @@ export class AuthController implements OnModuleInit {
       LEFT JOIN wilayah w ON p.wilayah_id = w.id
       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
       LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
+      LEFT JOIN provinsi prov ON kk.provinsi_id = prov.id
       LEFT JOIN ordo ord ON p.ordo_id = ord.id
     `;
 
