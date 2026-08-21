@@ -144,6 +144,7 @@
       editParokiList: [],
       editWilayahList: [],
       editLingkunganList: [],
+      comboboxFilters: {},
       isSavingProfile: false,
       editFormError: '',
 
@@ -1707,16 +1708,30 @@
           </div>
         `;
       } else if (type === 'paroki') {
+        const kQ = (state.comboboxFilters?.modalParokiKeuskupan || '').toLowerCase().trim();
+        const filteredKeuskupan = (state.keuskupan || []).filter(k => !kQ || (k.name && k.name.toLowerCase().includes(kQ)));
         return `
           <div>
-            <label class="block font-extrabold text-slate-700 mb-1.5">Keuskupan *</label>
-            <select id="masterKeuskupanIdInput" required
-              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
-              <option value="">-- Pilih Keuskupan --</option>
-              ${(state.keuskupan || []).map(k => `
-                <option value="${k.id}" ${String(data.keuskupan_id || data.keuskupanId) === String(k.id) ? 'selected' : ''}>${k.name}</option>
-              `).join('')}
-            </select>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block font-extrabold text-slate-700 text-xs">🏛️ Keuskupan *</label>
+              <span class="text-[10px] text-slate-400 font-bold">${filteredKeuskupan.length} Keuskupan</span>
+            </div>
+            <div class="space-y-1.5">
+              <div class="relative">
+                <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="searchFilter_modalParokiKeuskupan" placeholder="Ketik cari Keuskupan..."
+                  value="${state.comboboxFilters?.modalParokiKeuskupan || ''}"
+                  oninput="onComboboxSearchInput('modalParokiKeuskupan', this.value)"
+                  class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs" />
+              </div>
+              <select id="masterKeuskupanIdInput" required
+                class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
+                <option value="">-- Pilih Keuskupan --</option>
+                ${filteredKeuskupan.map(k => `
+                  <option value="${k.id}" ${String(data.keuskupan_id || data.keuskupanId) === String(k.id) ? 'selected' : ''}>${k.name}</option>
+                `).join('')}
+              </select>
+            </div>
           </div>
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Nama Paroki *</label>
@@ -1731,19 +1746,32 @@
         `;
       } else if (type === 'wilayah') {
         const modal = state.activeMasterModal || {};
-        const parokiList = (state.modalParokiList && state.modalParokiList.length > 0) ? state.modalParokiList : (state.paroki || []);
+        const kQ = (state.comboboxFilters?.modalWilayahKeuskupan || '').toLowerCase().trim();
+        const filteredKeuskupan = (state.keuskupan || []).filter(k => !kQ || (k.name && k.name.toLowerCase().includes(kQ)));
+
+        const pQ = (state.comboboxFilters?.modalWilayahParoki || '').toLowerCase().trim();
+        const parokiSource = (state.modalParokiList && state.modalParokiList.length > 0) ? state.modalParokiList : (state.paroki || []);
+        const filteredParoki = parokiSource.filter(p => !pQ || (p.name && p.name.toLowerCase().includes(pQ)));
+
         const selectedParokiId = data.paroki_id || data.parokiId;
         return `
           <!-- 1. Filter Keuskupan -->
-          <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1.5">
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
             <div class="flex items-center justify-between">
               <label class="block font-bold text-slate-700 text-xs">🏛️ 1. Filter Keuskupan (Opsional)</label>
-              <span class="text-[10px] text-slate-400 font-semibold">${state.keuskupan.length} Keuskupan</span>
+              <span class="text-[10px] text-slate-400 font-semibold">${filteredKeuskupan.length} Keuskupan</span>
+            </div>
+            <div class="relative">
+              <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input type="text" id="searchFilter_modalWilayahKeuskupan" placeholder="Ketik cari Keuskupan..."
+                value="${state.comboboxFilters?.modalWilayahKeuskupan || ''}"
+                oninput="onComboboxSearchInput('modalWilayahKeuskupan', this.value)"
+                class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs" />
             </div>
             <select onchange="onMasterModalKeuskupanChangedForWilayah(this.value)"
               class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
               <option value="">-- Tampilkan Semua Paroki --</option>
-              ${(state.keuskupan || []).map(k => `
+              ${filteredKeuskupan.map(k => `
                 <option value="${k.id}" ${String(modal.filterKeuskupanId || data.keuskupan_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
               `).join('')}
             </select>
@@ -1753,15 +1781,24 @@
           <div>
             <div class="flex items-center justify-between mb-1.5">
               <label class="block font-extrabold text-slate-800">⛪ 2. Pilih Paroki Induk *</label>
-              <span class="text-[10px] font-bold text-amber-600">${parokiList.length} Paroki Tersedia</span>
+              <span class="text-[10px] font-bold text-amber-600">${filteredParoki.length} Paroki Tersedia</span>
             </div>
-            <select id="masterParokiIdInput" required
-              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
-              <option value="">-- Pilih Paroki Induk --</option>
-              ${parokiList.map(p => `
-                <option value="${p.id}" ${String(selectedParokiId) === String(p.id) ? 'selected' : ''}>${p.name} (${p.keuskupan_name || 'Keuskupan'})</option>
-              `).join('')}
-            </select>
+            <div class="space-y-1.5">
+              <div class="relative">
+                <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="searchFilter_modalWilayahParoki" placeholder="Ketik cari Paroki..."
+                  value="${state.comboboxFilters?.modalWilayahParoki || ''}"
+                  oninput="onComboboxSearchInput('modalWilayahParoki', this.value)"
+                  class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs" />
+              </div>
+              <select id="masterParokiIdInput" required
+                class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
+                <option value="">-- Pilih Paroki Induk --</option>
+                ${filteredParoki.map(p => `
+                  <option value="${p.id}" ${String(selectedParokiId) === String(p.id) ? 'selected' : ''}>${p.name} (${p.keuskupan_name || 'Keuskupan'})</option>
+                `).join('')}
+              </select>
+            </div>
           </div>
 
           <!-- 3. Nama Wilayah -->
@@ -1773,35 +1810,58 @@
         `;
       } else if (type === 'lingkungan') {
         const modal = state.activeMasterModal || {};
-        const parokiList = (state.modalParokiList && state.modalParokiList.length > 0) ? state.modalParokiList : (state.paroki || []);
-        const wilayahList = (state.modalWilayahList && state.modalWilayahList.length > 0) ? state.modalWilayahList : (state.wilayah || []);
+        const kQ = (state.comboboxFilters?.modalLingkunganKeuskupan || '').toLowerCase().trim();
+        const filteredKeuskupan = (state.keuskupan || []).filter(k => !kQ || (k.name && k.name.toLowerCase().includes(kQ)));
+
+        const pQ = (state.comboboxFilters?.modalLingkunganParoki || '').toLowerCase().trim();
+        const parokiSource = (state.modalParokiList && state.modalParokiList.length > 0) ? state.modalParokiList : (state.paroki || []);
+        const filteredParoki = parokiSource.filter(p => !pQ || (p.name && p.name.toLowerCase().includes(pQ)));
+
+        const wQ = (state.comboboxFilters?.modalLingkunganWilayah || '').toLowerCase().trim();
+        const wilayahSource = (state.modalWilayahList && state.modalWilayahList.length > 0) ? state.modalWilayahList : (state.wilayah || []);
+        const filteredWilayah = wilayahSource.filter(w => !wQ || (w.name && w.name.toLowerCase().includes(wQ)));
+
         const selectedWilayahId = data.wilayah_id || data.wilayahId;
         return `
           <!-- 1. Filter Keuskupan -->
-          <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1.5">
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
             <div class="flex items-center justify-between">
               <label class="block font-bold text-slate-700 text-xs">🏛️ 1. Filter Keuskupan (Opsional)</label>
-              <span class="text-[10px] text-slate-400 font-semibold">${state.keuskupan.length} Keuskupan</span>
+              <span class="text-[10px] text-slate-400 font-semibold">${filteredKeuskupan.length} Keuskupan</span>
+            </div>
+            <div class="relative">
+              <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input type="text" id="searchFilter_modalLingkunganKeuskupan" placeholder="Ketik cari Keuskupan..."
+                value="${state.comboboxFilters?.modalLingkunganKeuskupan || ''}"
+                oninput="onComboboxSearchInput('modalLingkunganKeuskupan', this.value)"
+                class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs" />
             </div>
             <select onchange="onMasterModalKeuskupanChangedForLingkungan(this.value)"
               class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
               <option value="">-- Semua Keuskupan --</option>
-              ${(state.keuskupan || []).map(k => `
+              ${filteredKeuskupan.map(k => `
                 <option value="${k.id}" ${String(modal.filterKeuskupanId || data.keuskupan_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
               `).join('')}
             </select>
           </div>
 
           <!-- 2. Filter Paroki -->
-          <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1.5">
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
             <div class="flex items-center justify-between">
               <label class="block font-bold text-slate-700 text-xs">⛪ 2. Filter Paroki (Pilih untuk menyaring Wilayah)</label>
-              <span class="text-[10px] font-bold text-amber-600">${parokiList.length} Paroki</span>
+              <span class="text-[10px] font-bold text-amber-600">${filteredParoki.length} Paroki</span>
+            </div>
+            <div class="relative">
+              <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input type="text" id="searchFilter_modalLingkunganParoki" placeholder="Ketik cari Paroki..."
+                value="${state.comboboxFilters?.modalLingkunganParoki || ''}"
+                oninput="onComboboxSearchInput('modalLingkunganParoki', this.value)"
+                class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs" />
             </div>
             <select onchange="onMasterModalParokiChangedForLingkungan(this.value)"
               class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs">
               <option value="">-- Pilih Paroki Induk --</option>
-              ${parokiList.map(p => `
+              ${filteredParoki.map(p => `
                 <option value="${p.id}" ${String(modal.filterParokiId || data.paroki_id) === String(p.id) ? 'selected' : ''}>${p.name} (${p.keuskupan_name || 'Keuskupan'})</option>
               `).join('')}
             </select>
@@ -1811,15 +1871,24 @@
           <div>
             <div class="flex items-center justify-between mb-1.5">
               <label class="block font-extrabold text-slate-800">📍 3. Pilih Wilayah Induk *</label>
-              <span class="text-[10px] font-bold text-amber-600">${wilayahList.length} Wilayah Tersedia</span>
+              <span class="text-[10px] font-bold text-amber-600">${filteredWilayah.length} Wilayah Tersedia</span>
             </div>
-            <select id="masterWilayahIdInput" required
-              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
-              <option value="">-- ${wilayahList.length === 0 ? 'Pilih Paroki terlebih dahulu' : 'Pilih Wilayah Induk'} --</option>
-              ${wilayahList.map(w => `
-                <option value="${w.id}" ${String(selectedWilayahId) === String(w.id) ? 'selected' : ''}>${w.name} (${w.paroki_name || 'Paroki'})</option>
-              `).join('')}
-            </select>
+            <div class="space-y-1.5">
+              <div class="relative">
+                <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="searchFilter_modalLingkunganWilayah" placeholder="Ketik cari Wilayah..."
+                  value="${state.comboboxFilters?.modalLingkunganWilayah || ''}"
+                  oninput="onComboboxSearchInput('modalLingkunganWilayah', this.value)"
+                  class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs" />
+              </div>
+              <select id="masterWilayahIdInput" required
+                class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">
+                <option value="">-- ${filteredWilayah.length === 0 ? 'Pilih Paroki terlebih dahulu' : 'Pilih Wilayah Induk'} --</option>
+                ${filteredWilayah.map(w => `
+                  <option value="${w.id}" ${String(selectedWilayahId) === String(w.id) ? 'selected' : ''}>${w.name} (${w.paroki_name || 'Paroki'})</option>
+                `).join('')}
+              </select>
+            </div>
           </div>
 
           <!-- 4. Nama Lingkungan -->
@@ -2232,6 +2301,30 @@
 
       const uName = u.full_name || u.fullName || 'Pengguna';
 
+      // Combobox search filters
+      const provQ = (state.comboboxFilters?.editProvinsi || '').toLowerCase().trim();
+      const filteredProvinsi = (state.provinsi || []).filter(p => !provQ || (p.name && p.name.toLowerCase().includes(provQ)));
+
+      const kkQ = (state.comboboxFilters?.editKabupatenKota || '').toLowerCase().trim();
+      const kkSource = (state.editKabupatenKotaList && state.editKabupatenKotaList.length > 0 ? state.editKabupatenKotaList : (state.kabupatenKota || []));
+      const filteredKabupatenKota = kkSource.filter(k => !kkQ || (k.name && k.name.toLowerCase().includes(kkQ)));
+
+      const kQ = (state.comboboxFilters?.editKeuskupan || '').toLowerCase().trim();
+      const filteredKeuskupan = (state.keuskupan || []).filter(k => !kQ || (k.name && k.name.toLowerCase().includes(kQ)));
+
+      const pQ = (state.comboboxFilters?.editParoki || '').toLowerCase().trim();
+      const parokiSource = (state.editParokiList && state.editParokiList.length > 0 ? state.editParokiList : (state.paroki || []));
+      const filteredParoki = parokiSource.filter(p => !pQ || (p.name && p.name.toLowerCase().includes(pQ)));
+
+      const wQ = (state.comboboxFilters?.editWilayah || '').toLowerCase().trim();
+      const filteredWilayah = (state.editWilayahList || []).filter(w => !wQ || (w.name && w.name.toLowerCase().includes(wQ)));
+
+      const lQ = (state.comboboxFilters?.editLingkungan || '').toLowerCase().trim();
+      const filteredLingkungan = (state.editLingkunganList || []).filter(l => !lQ || (l.name && l.name.toLowerCase().includes(lQ)));
+
+      const ordoQ = (state.comboboxFilters?.editOrdo || '').toLowerCase().trim();
+      const filteredOrdo = (state.ordo || []).filter(o => !ordoQ || (o.name && o.name.toLowerCase().includes(ordoQ)) || (o.code && o.code.toLowerCase().includes(ordoQ)));
+
       return `
         <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
           <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 custom-scrollbar my-8 overflow-hidden">
@@ -2337,7 +2430,7 @@
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label class="block font-extrabold text-slate-700 mb-1.5">Peran / Role Pengguna</label>
-                      <select id="editRoleCode" onchange="state.activeEditUser.role_code = this.value; renderApp();"
+                      <select id="editRoleCode" onchange="syncEditFormToState(); state.activeEditUser.role_code = this.value; renderApp();"
                         class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black text-blue-950 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
                         <option value="UMAT" ${roleCode === 'UMAT' ? 'selected' : ''}>Umat Katolik</option>
                         <option value="PENGURUS_LINGKUNGAN" ${roleCode === 'PENGURUS_LINGKUNGAN' ? 'selected' : ''}>Pengurus Lingkungan</option>
@@ -2349,7 +2442,7 @@
 
                     <div>
                       <label class="block font-extrabold text-slate-700 mb-1.5">Status Akun</label>
-                      <select id="editAccountStatus"
+                      <select id="editAccountStatus" onchange="syncEditFormToState(); state.activeEditUser.account_status = this.value;"
                         class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
                         <option value="APPROVED" ${status === 'APPROVED' ? 'selected' : ''}>APPROVED (Aktif & Terverifikasi)</option>
                         <option value="PENDING_APPROVAL" ${status === 'PENDING_APPROVAL' ? 'selected' : ''}>PENDING_APPROVAL (Menunggu Persetujuan)</option>
@@ -2360,104 +2453,186 @@
                   </div>
                 </div>
 
-                <!-- Section 3: Domisili Wilayah & Gereja -->
+                <!-- Section 3: Domisili Wilayah & Gereja (Searchable Combobox) -->
                 <div class="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/80 space-y-4 shadow-xs">
-                  <h4 class="font-extrabold text-blue-950 flex items-center text-xs pb-1 border-b border-slate-200/60">
-                    <i data-lucide="church" class="w-4 h-4 mr-1.5 text-blue-700"></i>
-                    3. Domisili Wilayah Administratif & Gereja (Cascading Dropdown)
-                  </h4>
+                  <div class="flex items-center justify-between pb-1 border-b border-slate-200/60">
+                    <h4 class="font-extrabold text-blue-950 flex items-center text-xs">
+                      <i data-lucide="church" class="w-4 h-4 mr-1.5 text-blue-700"></i>
+                      3. Domisili Wilayah Administratif & Gereja (Searchable Combobox)
+                    </h4>
+                    <span class="text-[10px] text-amber-700 font-extrabold bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                      🔍 Pilihan dapat difilter & dicari
+                    </span>
+                  </div>
 
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Provinsi -->
                     <div>
-                      <label class="block font-extrabold text-slate-700 mb-1.5">Provinsi</label>
-                      <select id="editProvinsiId" onchange="onEditProvinsiChanged(this.value)"
-                        class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
-                        <option value="">-- Pilih Provinsi --</option>
-                        ${(state.provinsi || []).map(prov => `
-                          <option value="${prov.id}" ${String(u.provinsi_id) === String(prov.id) ? 'selected' : ''}>${prov.name}</option>
-                        `).join('')}
-                      </select>
+                      <div class="flex items-center justify-between mb-1">
+                        <label class="block font-extrabold text-slate-700 text-[11px]">🗺️ Provinsi</label>
+                        <span class="text-[10px] text-slate-400 font-bold">${filteredProvinsi.length} Pilihan</span>
+                      </div>
+                      <div class="space-y-1.5">
+                        <div class="relative">
+                          <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                          <input type="text" id="searchFilter_provinsi" placeholder="Ketik cari Provinsi..."
+                            value="${state.comboboxFilters?.editProvinsi || ''}"
+                            oninput="onComboboxSearchInput('editProvinsi', this.value)"
+                            class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs" />
+                        </div>
+                        <select id="editProvinsiId" onchange="onEditProvinsiChanged(this.value)"
+                          class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition">
+                          <option value="">-- Pilih Provinsi --</option>
+                          ${filteredProvinsi.map(prov => `
+                            <option value="${prov.id}" ${String(u.provinsi_id) === String(prov.id) ? 'selected' : ''}>${prov.name}</option>
+                          `).join('')}
+                        </select>
+                      </div>
                     </div>
 
+                    <!-- Kabupaten / Kota -->
                     <div>
-                      <label class="block font-extrabold text-slate-700 mb-1.5">Kabupaten / Kota</label>
-                      <select id="editKabupatenKotaId" onchange="syncEditFormToState(); state.activeEditUser.kabupaten_kota_id = this.value ? parseInt(this.value) : null;"
-                        class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
-                        <option value="">-- Pilih Kabupaten/Kota --</option>
-                        ${(state.editKabupatenKotaList && state.editKabupatenKotaList.length > 0 ? state.editKabupatenKotaList : (state.kabupatenKota || [])).map(k => `
-                          <option value="${k.id}" ${String(u.kabupaten_kota_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
-                        `).join('')}
-                      </select>
+                      <div class="flex items-center justify-between mb-1">
+                        <label class="block font-extrabold text-slate-700 text-[11px]">🌆 Kabupaten / Kota</label>
+                        <span class="text-[10px] text-slate-400 font-bold">${filteredKabupatenKota.length} Pilihan</span>
+                      </div>
+                      <div class="space-y-1.5">
+                        <div class="relative">
+                          <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                          <input type="text" id="searchFilter_kabupatenKota" placeholder="Ketik cari Kota/Kab..."
+                            value="${state.comboboxFilters?.editKabupatenKota || ''}"
+                            oninput="onComboboxSearchInput('editKabupatenKota', this.value)"
+                            class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs" />
+                        </div>
+                        <select id="editKabupatenKotaId" onchange="syncEditFormToState(); state.activeEditUser.kabupaten_kota_id = this.value ? parseInt(this.value) : null;"
+                          class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition">
+                          <option value="">-- Pilih Kabupaten/Kota --</option>
+                          ${filteredKabupatenKota.map(k => `
+                            <option value="${k.id}" ${String(u.kabupaten_kota_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
+                          `).join('')}
+                        </select>
+                      </div>
                     </div>
 
                     ${roleCode !== 'ROMO_ORDO' ? `
+                      <!-- Keuskupan -->
                       <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                          <label class="block font-extrabold text-slate-700">🏛️ Keuskupan</label>
-                          <span class="text-[10px] text-slate-400 font-bold">${state.keuskupan?.length || 0} Tersedia</span>
+                        <div class="flex items-center justify-between mb-1">
+                          <label class="block font-extrabold text-slate-700 text-[11px]">🏛️ Keuskupan</label>
+                          <span class="text-[10px] text-blue-800 font-bold">${filteredKeuskupan.length} Tersedia</span>
                         </div>
-                        <select id="editKeuskupanId" onchange="onEditKeuskupanChanged(this.value)"
-                          class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
-                          <option value="">-- Pilih Keuskupan --</option>
-                          ${(state.keuskupan || []).map(k => `
-                            <option value="${k.id}" ${String(u.keuskupan_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
-                          `).join('')}
-                        </select>
+                        <div class="space-y-1.5">
+                          <div class="relative">
+                            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="searchFilter_keuskupan" placeholder="Ketik cari Keuskupan..."
+                              value="${state.comboboxFilters?.editKeuskupan || ''}"
+                              oninput="onComboboxSearchInput('editKeuskupan', this.value)"
+                              class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs" />
+                          </div>
+                          <select id="editKeuskupanId" onchange="onEditKeuskupanChanged(this.value)"
+                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition">
+                            <option value="">-- Pilih Keuskupan --</option>
+                            ${filteredKeuskupan.map(k => `
+                              <option value="${k.id}" ${String(u.keuskupan_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
+                            `).join('')}
+                          </select>
+                        </div>
                       </div>
 
+                      <!-- Paroki -->
                       <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                          <label class="block font-extrabold text-slate-700">⛪ Paroki</label>
-                          <span class="text-[10px] text-emerald-700 font-bold">${(state.editParokiList && state.editParokiList.length > 0 ? state.editParokiList : (state.paroki || [])).length} Paroki</span>
+                        <div class="flex items-center justify-between mb-1">
+                          <label class="block font-extrabold text-slate-700 text-[11px]">⛪ Paroki</label>
+                          <span class="text-[10px] text-emerald-800 font-bold">${filteredParoki.length} Paroki</span>
                         </div>
-                        <select id="editParokiId" onchange="onEditParokiChanged(this.value)"
-                          class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
-                          <option value="">-- Pilih Paroki --</option>
-                          ${(state.editParokiList && state.editParokiList.length > 0 ? state.editParokiList : (state.paroki || [])).map(p => `
-                            <option value="${p.id}" ${String(u.paroki_id) === String(p.id) ? 'selected' : ''}>${p.name}</option>
-                          `).join('')}
-                        </select>
+                        <div class="space-y-1.5">
+                          <div class="relative">
+                            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="searchFilter_paroki" placeholder="Ketik cari Paroki..."
+                              value="${state.comboboxFilters?.editParoki || ''}"
+                              oninput="onComboboxSearchInput('editParoki', this.value)"
+                              class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs" />
+                          </div>
+                          <select id="editParokiId" onchange="onEditParokiChanged(this.value)"
+                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition">
+                            <option value="">-- Pilih Paroki --</option>
+                            ${filteredParoki.map(p => `
+                              <option value="${p.id}" ${String(u.paroki_id) === String(p.id) ? 'selected' : ''}>${p.name}</option>
+                            `).join('')}
+                          </select>
+                        </div>
                       </div>
 
-                      <!-- COMBOBOX WILAYAH -->
+                      <!-- Wilayah -->
                       <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                          <label class="block font-extrabold text-slate-700">📍 Wilayah</label>
-                          <span class="text-[10px] text-indigo-700 font-bold">${(state.editWilayahList || []).length} Wilayah</span>
+                        <div class="flex items-center justify-between mb-1">
+                          <label class="block font-extrabold text-slate-700 text-[11px]">📍 Wilayah</label>
+                          <span class="text-[10px] text-indigo-800 font-bold">${filteredWilayah.length} Wilayah</span>
                         </div>
-                        <select id="editWilayahId" onchange="onEditWilayahChanged(this.value)"
-                          class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
-                          <option value="">-- ${(state.editWilayahList || []).length === 0 ? 'Pilih Paroki terlebih dahulu' : 'Pilih Wilayah'} --</option>
-                          ${(state.editWilayahList || []).map(w => `
-                            <option value="${w.id}" ${String(u.wilayah_id) === String(w.id) ? 'selected' : ''}>${w.name}</option>
-                          `).join('')}
-                        </select>
+                        <div class="space-y-1.5">
+                          <div class="relative">
+                            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="searchFilter_wilayah" placeholder="Ketik cari Wilayah..."
+                              value="${state.comboboxFilters?.editWilayah || ''}"
+                              oninput="onComboboxSearchInput('editWilayah', this.value)"
+                              class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs" />
+                          </div>
+                          <select id="editWilayahId" onchange="onEditWilayahChanged(this.value)"
+                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition">
+                            <option value="">-- ${filteredWilayah.length === 0 ? 'Tidak ada wilayah (pilih Paroki dulu)' : 'Pilih Wilayah'} --</option>
+                            ${filteredWilayah.map(w => `
+                              <option value="${w.id}" ${String(u.wilayah_id) === String(w.id) ? 'selected' : ''}>${w.name}</option>
+                            `).join('')}
+                          </select>
+                        </div>
                       </div>
 
-                      <!-- COMBOBOX LINGKUNGAN -->
+                      <!-- Lingkungan -->
                       <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                          <label class="block font-extrabold text-slate-700">🏘️ Lingkungan</label>
-                          <span class="text-[10px] text-cyan-700 font-bold">${(state.editLingkunganList || []).length} Lingkungan</span>
+                        <div class="flex items-center justify-between mb-1">
+                          <label class="block font-extrabold text-slate-700 text-[11px]">🏘️ Lingkungan</label>
+                          <span class="text-[10px] text-cyan-800 font-bold">${filteredLingkungan.length} Lingkungan</span>
                         </div>
-                        <select id="editLingkunganId" onchange="onEditLingkunganChanged(this.value)"
-                          class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
-                          <option value="">-- ${(state.editLingkunganList || []).length === 0 ? 'Pilih Wilayah terlebih dahulu' : 'Pilih Lingkungan'} --</option>
-                          ${(state.editLingkunganList || []).map(l => `
-                            <option value="${l.id}" ${String(u.lingkungan_id) === String(l.id) ? 'selected' : ''}>${l.name}</option>
-                          `).join('')}
-                        </select>
+                        <div class="space-y-1.5">
+                          <div class="relative">
+                            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="searchFilter_lingkungan" placeholder="Ketik cari Lingkungan..."
+                              value="${state.comboboxFilters?.editLingkungan || ''}"
+                              oninput="onComboboxSearchInput('editLingkungan', this.value)"
+                              class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs" />
+                          </div>
+                          <select id="editLingkunganId" onchange="onEditLingkunganChanged(this.value)"
+                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition">
+                            <option value="">-- ${filteredLingkungan.length === 0 ? 'Tidak ada lingkungan (pilih Wilayah dulu)' : 'Pilih Lingkungan'} --</option>
+                            ${filteredLingkungan.map(l => `
+                              <option value="${l.id}" ${String(u.lingkungan_id) === String(l.id) ? 'selected' : ''}>${l.name}</option>
+                            `).join('')}
+                          </select>
+                        </div>
                       </div>
                     ` : `
+                      <!-- Ordo -->
                       <div class="md:col-span-2">
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Ordo / Kongregasi *</label>
-                        <select id="editOrdoId" onchange="syncEditFormToState(); state.activeEditUser.ordo_id = this.value ? parseInt(this.value) : null;"
-                          class="w-full px-4 py-2.5 bg-white border border-purple-200 rounded-xl font-black text-purple-950 text-xs focus:outline-none focus:ring-2 focus:ring-purple-600 shadow-xs transition">
-                          <option value="">-- Pilih Ordo --</option>
-                          ${(state.ordo || []).map(o => `
-                            <option value="${o.id}" ${String(u.ordo_id) === String(o.id) ? 'selected' : ''}>${o.name}</option>
-                          `).join('')}
-                        </select>
+                        <div class="flex items-center justify-between mb-1">
+                          <label class="block font-extrabold text-slate-700 text-[11px]">✝️ Ordo / Kongregasi *</label>
+                          <span class="text-[10px] text-purple-800 font-bold">${filteredOrdo.length} Ordo</span>
+                        </div>
+                        <div class="space-y-1.5">
+                          <div class="relative">
+                            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="searchFilter_ordo" placeholder="Ketik cari nama atau singkatan Ordo..."
+                              value="${state.comboboxFilters?.editOrdo || ''}"
+                              oninput="onComboboxSearchInput('editOrdo', this.value)"
+                              class="w-full pl-8 pr-3 py-1.5 bg-white border border-purple-200 rounded-lg text-[11px] font-semibold text-purple-950 focus:outline-none focus:ring-2 focus:ring-purple-600 shadow-2xs" />
+                          </div>
+                          <select id="editOrdoId" onchange="syncEditFormToState(); state.activeEditUser.ordo_id = this.value ? parseInt(this.value) : null;"
+                            class="w-full px-3 py-2 bg-white border border-purple-200 rounded-xl font-black text-purple-950 text-xs focus:outline-none focus:ring-2 focus:ring-purple-600 shadow-xs transition">
+                            <option value="">-- Pilih Ordo --</option>
+                            ${filteredOrdo.map(o => `
+                              <option value="${o.id}" ${String(u.ordo_id) === String(o.id) ? 'selected' : ''}>${o.name} ${o.code ? '(' + o.code + ')' : ''}</option>
+                            `).join('')}
+                          </select>
+                        </div>
                       </div>
                     `}
                   </div>
@@ -2889,6 +3064,7 @@
 
     async function openCreateMasterModal(type, prefillData = {}) {
       state.masterModalError = '';
+      state.comboboxFilters = {};
       const activeType = type || state.masterSubTab || 'paroki';
       const initialData = { ...prefillData };
 
@@ -2940,6 +3116,7 @@
 
     async function openEditMasterModal(type, item) {
       state.masterModalError = '';
+      state.comboboxFilters = {};
       const activeType = type || state.masterSubTab || 'paroki';
       const initialData = { ...item };
 
@@ -3262,11 +3439,21 @@
       state.activeEditUser.lingkungan_id = lingkunganId ? parseInt(lingkunganId) : null;
     }
 
+    function onComboboxSearchInput(field, value) {
+      if (state.activeEditUser) {
+        syncEditFormToState();
+      }
+      if (!state.comboboxFilters) state.comboboxFilters = {};
+      state.comboboxFilters[field] = value;
+      renderApp();
+    }
+
     async function openEditUserModal(userId) {
       const u = state.users.find(x => String(x.id) === String(userId));
       if (!u) return;
       state.activeEditUser = { ...u };
       state.editFormError = '';
+      state.comboboxFilters = {};
 
       try {
         // Preload lookups if needed
