@@ -1333,8 +1333,9 @@
     // ══════════════════════════════════════════════════════════════════════════
     function renderEditUserModal() {
       const u = state.activeEditUser;
+      if (!u) return '';
       const roleCode = (u.role_code || u.roleCode || 'UMAT').toUpperCase();
-      const status = u.account_status || u.accountStatus || 'APPROVED';
+      const status = (u.account_status || u.accountStatus || 'APPROVED').toUpperCase();
       const birthDateVal = u.birth_date ? String(u.birth_date).substring(0, 10) : '';
 
       // Normalize phone number to strip leading 62 or 0
@@ -1343,268 +1344,292 @@
       else if (rawPhone.startsWith('62')) rawPhone = rawPhone.substring(2);
       else if (rawPhone.startsWith('0')) rawPhone = rawPhone.substring(1);
 
+      const uName = u.full_name || u.fullName || 'Pengguna';
+
       return `
-        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-6 lg:p-8 shadow-2xl border border-slate-200 custom-scrollbar space-y-5">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-4">
-              <div class="flex items-center space-x-3">
-                <div class="p-2.5 rounded-xl bg-amber-500 text-white shadow-md shadow-amber-500/20">
-                  <i data-lucide="user-cog" class="w-6 h-6"></i>
+        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 custom-scrollbar my-8 overflow-hidden">
+            
+            <!-- Modern Gradient Header -->
+            <div class="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 p-6 text-white relative">
+              <button onclick="state.activeEditUser = null; renderApp();" 
+                class="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition">
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+              
+              <div class="flex items-center space-x-4">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-white font-black text-2xl flex items-center justify-center shadow-lg border-2 border-white/20">
+                  <i data-lucide="user-cog" class="w-7 h-7"></i>
                 </div>
                 <div>
-                  <h3 class="text-lg font-extrabold text-slate-900">Perbarui Profil Pengguna</h3>
-                  <p class="text-xs text-slate-500">ID: #${u.id} • ${u.full_name || 'Pengguna'} (${roleCode})</p>
+                  <div class="flex items-center space-x-2 mb-1">
+                    <h3 class="text-lg font-extrabold text-white leading-tight">Perbarui Profil Pengguna</h3>
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide ${status === 'APPROVED' ? 'bg-emerald-500 text-white' : 'bg-amber-400 text-slate-900'}">
+                      ${status}
+                    </span>
+                  </div>
+                  <div class="flex items-center space-x-2 text-xs text-slate-300">
+                    <span class="font-extrabold text-amber-300">${uName}</span>
+                    <span>•</span>
+                    <span class="px-2 py-0.5 rounded bg-white/10 text-white font-bold text-[10px]">${roleCode}</span>
+                    <span>•</span>
+                    <span>ID #${u.id}</span>
+                  </div>
                 </div>
               </div>
-              <button onclick="state.activeEditUser = null; renderApp();" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 transition">
-                <i data-lucide="x" class="w-5 h-5"></i>
-              </button>
             </div>
 
-            ${state.editFormError ? `
-              <div class="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center space-x-2">
-                <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-red-600"></i>
-                <span>${state.editFormError}</span>
-              </div>
-            ` : ''}
+            <!-- Form Content -->
+            <div class="p-6 lg:p-7 space-y-5 text-xs">
+              ${state.editFormError ? `
+                <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start space-x-2.5 shadow-xs">
+                  <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-rose-600 mt-0.5"></i>
+                  <div class="flex-1">
+                    <p class="font-black text-rose-900">Peringatan Validasi</p>
+                    <p class="text-rose-700 font-semibold mt-0.5">${state.editFormError}</p>
+                  </div>
+                </div>
+              ` : ''}
 
-            <form id="editUserForm" onsubmit="handleSaveProfile(event)" class="space-y-4 text-xs">
-              <!-- Section 1: Identitas & Kontak -->
-              <div class="bg-slate-50/80 p-4 rounded-2xl border border-slate-200 space-y-3.5">
-                <h4 class="font-extrabold text-blue-950 flex items-center text-xs">
-                  <i data-lucide="user" class="w-4 h-4 mr-1.5 text-blue-900"></i>
-                  1. Data Identitas Pribadi & Kontak
-                </h4>
+              <form id="editUserForm" onsubmit="handleSaveProfile(event)" class="space-y-5">
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  <div class="md:col-span-2">
-                    <label class="block font-bold text-slate-700 mb-1">Nama Lengkap *</label>
-                    <input type="text" id="editFullName" required value="${u.full_name || u.fullName || ''}" placeholder="Nama lengkap..."
-                      class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
-                  </div>
-
-                  <div>
-                    <label class="block font-bold text-slate-700 mb-1">Alamat Email *</label>
-                    <input type="email" id="editEmail" required value="${u.email || ''}" placeholder="nama@email.com"
-                      class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
-                  </div>
-
-                  <!-- WhatsApp with +62 Badge & Realtime Validation -->
-                  <div>
-                    <label class="block font-bold text-slate-700 mb-1">Nomor WhatsApp / HP *</label>
-                    <div class="relative rounded-xl shadow-xs">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span class="text-sm mr-1">🇮🇩</span>
-                        <span class="text-xs font-bold text-blue-900 border-r border-slate-300 pr-2">+62</span>
-                      </div>
-                      <input type="tel" id="editPhone" required value="${rawPhone}" placeholder="81234567890"
-                        oninput="onEditPhoneInput(this)"
-                        class="block w-full pl-16 pr-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label class="block font-bold text-slate-700 mb-1">Tanggal Lahir</label>
-                    <input type="date" id="editBirthDate" value="${birthDateVal}"
-                      class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
-                  </div>
-
-                  <div class="md:col-span-2">
-                    <label class="block font-bold text-slate-700 mb-1">Alamat Lengkap Domisili</label>
-                    <input type="text" id="editAddress" value="${u.address || ''}" placeholder="Jl. Mawar No. 12..."
-                      class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Section 2: Peran & Status -->
-              <div class="bg-slate-50/80 p-4 rounded-2xl border border-slate-200 space-y-3.5">
-                <h4 class="font-extrabold text-blue-950 flex items-center text-xs">
-                  <i data-lucide="shield" class="w-4 h-4 mr-1.5 text-blue-900"></i>
-                  2. Peran & Status Akun
-                </h4>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  <div>
-                    <label class="block font-bold text-slate-700 mb-1">Peran / Role Pengguna</label>
-                    <select id="editRoleCode" onchange="state.activeEditUser.role_code = this.value; renderApp();"
-                      class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-950">
-                      <option value="UMAT" ${roleCode === 'UMAT' ? 'selected' : ''}>Umat Katolik</option>
-                      <option value="PENGURUS_LINGKUNGAN" ${roleCode === 'PENGURUS_LINGKUNGAN' ? 'selected' : ''}>Pengurus Lingkungan</option>
-                      <option value="ROMO_PAROKI" ${roleCode === 'ROMO_PAROKI' ? 'selected' : ''}>Romo Paroki (Diosesan)</option>
-                      <option value="ROMO_ORDO" ${roleCode === 'ROMO_ORDO' ? 'selected' : ''}>Romo Ordo (Religius)</option>
-                      <option value="ADMIN" ${roleCode === 'ADMIN' ? 'selected' : ''}>Administrator</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label class="block font-bold text-slate-700 mb-1">Status Verifikasi</label>
-                    <select id="editAccountStatus"
-                      class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950">
-                      <option value="APPROVED" ${status === 'APPROVED' ? 'selected' : ''}>APPROVED (Aktif & Terverifikasi)</option>
-                      <option value="PENDING_APPROVAL" ${status === 'PENDING_APPROVAL' ? 'selected' : ''}>PENDING_APPROVAL (Menunggu Persetujuan)</option>
-                      <option value="REJECTED" ${status === 'REJECTED' ? 'selected' : ''}>REJECTED (Ditolak)</option>
-                      <option value="BLOCKED" ${status === 'BLOCKED' ? 'selected' : ''}>BLOCKED (Diblokir)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Section 3: Domisili Wilayah & Gereja (ALL COMBOBOXES!) -->
-              <div class="bg-slate-50/80 p-4 rounded-2xl border border-slate-200 space-y-3.5">
-                <h4 class="font-extrabold text-blue-950 flex items-center text-xs">
-                  <i data-lucide="church" class="w-4 h-4 mr-1.5 text-blue-900"></i>
-                  3. Domisili Wilayah Administratif & Gereja (Cascading Dropdown)
-                </h4>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  <div>
-                    <label class="block font-bold text-slate-700 mb-1">Provinsi</label>
-                    <select id="editProvinsiId" onchange="onEditProvinsiChanged(this.value)"
-                      class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950">
-                      <option value="">-- Pilih Provinsi --</option>
-                      ${state.provinsi.map(prov => `
-                        <option value="${prov.id}" ${String(u.provinsi_id) === String(prov.id) ? 'selected' : ''}>${prov.name}</option>
-                      `).join('')}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label class="block font-bold text-slate-700 mb-1">Kabupaten / Kota</label>
-                    <select id="editKabupatenKotaId"
-                      class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950">
-                      <option value="">-- Pilih Kabupaten/Kota --</option>
-                      ${state.kabupatenKota.map(k => `
-                        <option value="${k.id}" ${String(u.kabupaten_kota_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
-                      `).join('')}
-                    </select>
-                  </div>
-
-                  ${roleCode !== 'ROMO_ORDO' ? `
-                    <div>
-                      <label class="block font-bold text-slate-700 mb-1">Keuskupan</label>
-                      <select id="editKeuskupanId" onchange="onEditKeuskupanChanged(this.value)"
-                        class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950">
-                        <option value="">-- Pilih Keuskupan --</option>
-                        ${state.keuskupan.map(k => `
-                          <option value="${k.id}" ${String(u.keuskupan_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
-                        `).join('')}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label class="block font-bold text-slate-700 mb-1">Paroki</label>
-                      <select id="editParokiId" onchange="onEditParokiChanged(this.value)"
-                        class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950">
-                        <option value="">-- Pilih Paroki --</option>
-                        ${state.paroki.map(p => `
-                          <option value="${p.id}" ${String(u.paroki_id) === String(p.id) ? 'selected' : ''}>${p.name}</option>
-                        `).join('')}
-                      </select>
-                    </div>
-
-                    <!-- COMBOBOX WILAYAH -->
-                    <div>
-                      <label class="block font-bold text-slate-700 mb-1">Wilayah (Combobox)</label>
-                      <select id="editWilayahId" onchange="onEditWilayahChanged(this.value)"
-                        class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950">
-                        <option value="">-- Pilih Wilayah --</option>
-                        ${state.wilayah.map(w => `
-                          <option value="${w.id}" ${String(u.wilayah_id) === String(w.id) ? 'selected' : ''}>${w.name}</option>
-                        `).join('')}
-                      </select>
-                    </div>
-
-                    <!-- COMBOBOX LINGKUNGAN -->
-                    <div>
-                      <label class="block font-bold text-slate-700 mb-1">Lingkungan (Combobox)</label>
-                      <select id="editLingkunganId"
-                        class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-950">
-                        <option value="">-- Pilih Lingkungan --</option>
-                        ${state.lingkungan.map(l => `
-                          <option value="${l.id}" ${String(u.lingkungan_id) === String(l.id) ? 'selected' : ''}>${l.name}</option>
-                        `).join('')}
-                      </select>
-                    </div>
-                  ` : `
+                <!-- Section 1: Identitas Pribadi & Kontak -->
+                <div class="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/80 space-y-4 shadow-xs">
+                  <h4 class="font-extrabold text-blue-950 flex items-center text-xs pb-1 border-b border-slate-200/60">
+                    <i data-lucide="user" class="w-4 h-4 mr-1.5 text-blue-700"></i>
+                    1. Data Identitas Pribadi & Kontak
+                  </h4>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="md:col-span-2">
-                      <label class="block font-bold text-slate-700 mb-1">Ordo / Kongregasi *</label>
-                      <select id="editOrdoId"
-                        class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-600">
-                        <option value="">-- Pilih Ordo --</option>
-                        ${state.ordo.map(o => `
-                          <option value="${o.id}" ${String(u.ordo_id) === String(o.id) ? 'selected' : ''}>${o.name}</option>
+                      <label class="block font-extrabold text-slate-700 mb-1.5">Nama Lengkap *</label>
+                      <input type="text" id="editFullName" required value="${u.full_name || u.fullName || ''}" placeholder="Masukkan nama lengkap..."
+                        class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition" />
+                    </div>
+
+                    <div>
+                      <label class="block font-extrabold text-slate-700 mb-1.5">Alamat Email *</label>
+                      <input type="email" id="editEmail" required value="${u.email || ''}" placeholder="nama@email.com"
+                        class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition" />
+                    </div>
+
+                    <!-- WhatsApp with +62 Badge & Realtime Validation -->
+                    <div>
+                      <label class="block font-extrabold text-slate-700 mb-1.5">Nomor WhatsApp / HP *</label>
+                      <div class="relative rounded-xl shadow-xs">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                          <span class="text-xs mr-1">🇮🇩</span>
+                          <span class="text-xs font-black text-slate-800 border-r border-slate-200 pr-2">+62</span>
+                        </div>
+                        <input type="tel" id="editPhone" required value="${rawPhone}" placeholder="81234567890"
+                          oninput="onEditPhoneInput(this)"
+                          class="block w-full pl-16 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label class="block font-extrabold text-slate-700 mb-1.5">Tanggal Lahir</label>
+                      <input type="date" id="editBirthDate" value="${birthDateVal}"
+                        class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition" />
+                    </div>
+
+                    <div>
+                      <label class="block font-extrabold text-slate-700 mb-1.5">Alamat Lengkap Domisili</label>
+                      <input type="text" id="editAddress" value="${u.address || ''}" placeholder="Jl. Mawar No. 12..."
+                        class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Section 2: Peran & Status Akun -->
+                <div class="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/80 space-y-4 shadow-xs">
+                  <h4 class="font-extrabold text-blue-950 flex items-center text-xs pb-1 border-b border-slate-200/60">
+                    <i data-lucide="shield" class="w-4 h-4 mr-1.5 text-blue-700"></i>
+                    2. Peran & Status Verifikasi Akun
+                  </h4>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block font-extrabold text-slate-700 mb-1.5">Peran / Role Pengguna</label>
+                      <select id="editRoleCode" onchange="state.activeEditUser.role_code = this.value; renderApp();"
+                        class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black text-blue-950 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
+                        <option value="UMAT" ${roleCode === 'UMAT' ? 'selected' : ''}>Umat Katolik</option>
+                        <option value="PENGURUS_LINGKUNGAN" ${roleCode === 'PENGURUS_LINGKUNGAN' ? 'selected' : ''}>Pengurus Lingkungan</option>
+                        <option value="ROMO_PAROKI" ${roleCode === 'ROMO_PAROKI' ? 'selected' : ''}>Romo Paroki (Diosesan)</option>
+                        <option value="ROMO_ORDO" ${roleCode === 'ROMO_ORDO' ? 'selected' : ''}>Romo Ordo (Religius)</option>
+                        <option value="ADMIN" ${roleCode === 'ADMIN' ? 'selected' : ''}>Administrator</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label class="block font-extrabold text-slate-700 mb-1.5">Status Akun</label>
+                      <select id="editAccountStatus"
+                        class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
+                        <option value="APPROVED" ${status === 'APPROVED' ? 'selected' : ''}>APPROVED (Aktif & Terverifikasi)</option>
+                        <option value="PENDING_APPROVAL" ${status === 'PENDING_APPROVAL' ? 'selected' : ''}>PENDING_APPROVAL (Menunggu Persetujuan)</option>
+                        <option value="REJECTED" ${status === 'REJECTED' ? 'selected' : ''}>REJECTED (Ditolak)</option>
+                        <option value="BLOCKED" ${status === 'BLOCKED' ? 'selected' : ''}>BLOCKED (Diblokir)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Section 3: Domisili Wilayah & Gereja -->
+                <div class="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/80 space-y-4 shadow-xs">
+                  <h4 class="font-extrabold text-blue-950 flex items-center text-xs pb-1 border-b border-slate-200/60">
+                    <i data-lucide="church" class="w-4 h-4 mr-1.5 text-blue-700"></i>
+                    3. Domisili Wilayah Administratif & Gereja (Cascading Dropdown)
+                  </h4>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block font-extrabold text-slate-700 mb-1.5">Provinsi</label>
+                      <select id="editProvinsiId" onchange="onEditProvinsiChanged(this.value)"
+                        class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
+                        <option value="">-- Pilih Provinsi --</option>
+                        ${state.provinsi.map(prov => `
+                          <option value="${prov.id}" ${String(u.provinsi_id) === String(prov.id) ? 'selected' : ''}>${prov.name}</option>
                         `).join('')}
                       </select>
                     </div>
-                  `}
-                </div>
-              </div>
 
-              <!-- Section 4: Data Kepengurusan (Kondisional) -->
-              ${roleCode === 'PENGURUS_LINGKUNGAN' ? `
-                <div class="bg-indigo-50/80 p-4 rounded-2xl border border-indigo-200 space-y-3.5">
-                  <h4 class="font-extrabold text-indigo-950 flex items-center text-xs">
-                    <i data-lucide="briefcase" class="w-4 h-4 mr-1.5 text-indigo-700"></i>
-                    4. Data Kepengurusan Lingkungan
-                  </h4>
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                     <div>
-                      <label class="block font-bold text-slate-700 mb-1">Jabatan</label>
-                      <select id="editPengurusPosition" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900">
-                        <option value="Ketua Lingkungan" ${u.pengurus_position === 'Ketua Lingkungan' ? 'selected' : ''}>Ketua Lingkungan</option>
-                        <option value="Wakil Ketua" ${u.pengurus_position === 'Wakil Ketua' ? 'selected' : ''}>Wakil Ketua</option>
-                        <option value="Sekretaris" ${u.pengurus_position === 'Sekretaris' ? 'selected' : ''}>Sekretaris</option>
-                        <option value="Bendahara" ${u.pengurus_position === 'Bendahara' ? 'selected' : ''}>Bendahara</option>
-                        <option value="Seksi Liturgi" ${u.pengurus_position === 'Seksi Liturgi' ? 'selected' : ''}>Seksi Liturgi</option>
+                      <label class="block font-extrabold text-slate-700 mb-1.5">Kabupaten / Kota</label>
+                      <select id="editKabupatenKotaId"
+                        class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
+                        <option value="">-- Pilih Kabupaten/Kota --</option>
+                        ${state.kabupatenKota.map(k => `
+                          <option value="${k.id}" ${String(u.kabupaten_kota_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
+                        `).join('')}
                       </select>
                     </div>
-                    <div>
-                      <label class="block font-bold text-slate-700 mb-1">Tahun Mulai</label>
-                      <input type="number" id="editJabatanStartYear" value="${u.jabatan_start_year || 2024}" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900" />
-                    </div>
-                    <div>
-                      <label class="block font-bold text-slate-700 mb-1">Tahun Selesai</label>
-                      <input type="number" id="editJabatanEndYear" value="${u.jabatan_end_year || 2027}" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900" />
-                    </div>
+
+                    ${roleCode !== 'ROMO_ORDO' ? `
+                      <div>
+                        <label class="block font-extrabold text-slate-700 mb-1.5">Keuskupan</label>
+                        <select id="editKeuskupanId" onchange="onEditKeuskupanChanged(this.value)"
+                          class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
+                          <option value="">-- Pilih Keuskupan --</option>
+                          ${state.keuskupan.map(k => `
+                            <option value="${k.id}" ${String(u.keuskupan_id) === String(k.id) ? 'selected' : ''}>${k.name}</option>
+                          `).join('')}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label class="block font-extrabold text-slate-700 mb-1.5">Paroki</label>
+                        <select id="editParokiId" onchange="onEditParokiChanged(this.value)"
+                          class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
+                          <option value="">-- Pilih Paroki --</option>
+                          ${state.paroki.map(p => `
+                            <option value="${p.id}" ${String(u.paroki_id) === String(p.id) ? 'selected' : ''}>${p.name}</option>
+                          `).join('')}
+                        </select>
+                      </div>
+
+                      <!-- COMBOBOX WILAYAH -->
+                      <div>
+                        <label class="block font-extrabold text-slate-700 mb-1.5">Wilayah (Combobox)</label>
+                        <select id="editWilayahId" onchange="onEditWilayahChanged(this.value)"
+                          class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
+                          <option value="">-- Pilih Wilayah --</option>
+                          ${state.wilayah.map(w => `
+                            <option value="${w.id}" ${String(u.wilayah_id) === String(w.id) ? 'selected' : ''}>${w.name}</option>
+                          `).join('')}
+                        </select>
+                      </div>
+
+                      <!-- COMBOBOX LINGKUNGAN -->
+                      <div>
+                        <label class="block font-extrabold text-slate-700 mb-1.5">Lingkungan (Combobox)</label>
+                        <select id="editLingkunganId"
+                          class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs transition">
+                          <option value="">-- Pilih Lingkungan --</option>
+                          ${state.lingkungan.map(l => `
+                            <option value="${l.id}" ${String(u.lingkungan_id) === String(l.id) ? 'selected' : ''}>${l.name}</option>
+                          `).join('')}
+                        </select>
+                      </div>
+                    ` : `
+                      <div class="md:col-span-2">
+                        <label class="block font-extrabold text-slate-700 mb-1.5">Ordo / Kongregasi *</label>
+                        <select id="editOrdoId"
+                          class="w-full px-4 py-2.5 bg-white border border-purple-200 rounded-xl font-black text-purple-950 text-xs focus:outline-none focus:ring-2 focus:ring-purple-600 shadow-xs transition">
+                          <option value="">-- Pilih Ordo --</option>
+                          ${state.ordo.map(o => `
+                            <option value="${o.id}" ${String(u.ordo_id) === String(o.id) ? 'selected' : ''}>${o.name}</option>
+                          `).join('')}
+                        </select>
+                      </div>
+                    `}
                   </div>
                 </div>
-              ` : ''}
 
-              ${roleCode === 'ROMO_PAROKI' ? `
-                <div class="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-200 space-y-3.5">
-                  <h4 class="font-extrabold text-emerald-950 flex items-center text-xs">
-                    <i data-lucide="church" class="w-4 h-4 mr-1.5 text-emerald-700"></i>
-                    4. Posisi Pastoral Romo Paroki
-                  </h4>
-                  <div>
-                    <label class="block font-bold text-slate-700 mb-1">Jabatan Pastoral</label>
-                    <select id="editRomoPosition" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900">
-                      <option value="Pastor Kepala Paroki" ${u.romo_position === 'Pastor Kepala Paroki' ? 'selected' : ''}>Pastor Kepala Paroki</option>
-                      <option value="Pastor Rekan" ${u.romo_position === 'Pastor Rekan' ? 'selected' : ''}>Pastor Rekan</option>
-                      <option value="Vikaris Paroki" ${u.romo_position === 'Vikaris Paroki' ? 'selected' : ''}>Vikaris Paroki</option>
-                    </select>
+                <!-- Section 4: Data Kepengurusan (Kondisional) -->
+                ${roleCode === 'PENGURUS_LINGKUNGAN' ? `
+                  <div class="bg-indigo-50/80 p-5 rounded-2xl border border-indigo-200/80 space-y-4 shadow-xs">
+                    <h4 class="font-extrabold text-indigo-950 flex items-center text-xs pb-1 border-b border-indigo-200/60">
+                      <i data-lucide="briefcase" class="w-4 h-4 mr-1.5 text-indigo-700"></i>
+                      4. Data Kepengurusan Lingkungan
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan</label>
+                        <select id="editPengurusPosition" class="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl font-black text-indigo-950 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs">
+                          <option value="Ketua Lingkungan" ${u.pengurus_position === 'Ketua Lingkungan' ? 'selected' : ''}>Ketua Lingkungan</option>
+                          <option value="Wakil Ketua" ${u.pengurus_position === 'Wakil Ketua' ? 'selected' : ''}>Wakil Ketua</option>
+                          <option value="Sekretaris" ${u.pengurus_position === 'Sekretaris' ? 'selected' : ''}>Sekretaris</option>
+                          <option value="Bendahara" ${u.pengurus_position === 'Bendahara' ? 'selected' : ''}>Bendahara</option>
+                          <option value="Seksi Liturgi" ${u.pengurus_position === 'Seksi Liturgi' ? 'selected' : ''}>Seksi Liturgi</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Mulai</label>
+                        <input type="number" id="editJabatanStartYear" value="${u.jabatan_start_year || 2024}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
+                      </div>
+                      <div>
+                        <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Selesai</label>
+                        <input type="number" id="editJabatanEndYear" value="${u.jabatan_end_year || 2027}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ` : ''}
+                ` : ''}
 
-              <div class="pt-4 border-t border-slate-200 flex items-center justify-end space-x-3">
-                <button type="button" onclick="state.activeEditUser = null; renderApp();"
-                  class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">
-                  Batal
-                </button>
-                <button type="submit" ${state.isSavingProfile ? 'disabled' : ''}
-                  class="px-6 py-2.5 rounded-xl bg-blue-950 hover:bg-blue-900 text-white font-bold flex items-center space-x-2 shadow-lg shadow-blue-950/20 transition disabled:opacity-50">
-                  ${state.isSavingProfile ? `
-                    <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    <span>Menyimpan...</span>
-                  ` : `
-                    <i data-lucide="save" class="w-4 h-4"></i>
-                    <span>Simpan Perubahan</span>
-                  `}
-                </button>
-              </div>
-            </form>
+                ${roleCode === 'ROMO_PAROKI' ? `
+                  <div class="bg-emerald-50/80 p-5 rounded-2xl border border-emerald-200/80 space-y-4 shadow-xs">
+                    <h4 class="font-extrabold text-emerald-950 flex items-center text-xs pb-1 border-b border-emerald-200/60">
+                      <i data-lucide="church" class="w-4 h-4 mr-1.5 text-emerald-700"></i>
+                      4. Posisi Pastoral Romo Paroki
+                    </h4>
+                    <div>
+                      <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pastoral</label>
+                      <select id="editRomoPosition" class="w-full px-3.5 py-2.5 bg-white border border-emerald-200 rounded-xl font-black text-emerald-950 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs">
+                        <option value="Pastor Kepala Paroki" ${u.romo_position === 'Pastor Kepala Paroki' ? 'selected' : ''}>Pastor Kepala Paroki</option>
+                        <option value="Pastor Rekan" ${u.romo_position === 'Pastor Rekan' ? 'selected' : ''}>Pastor Rekan</option>
+                        <option value="Vikaris Paroki" ${u.romo_position === 'Vikaris Paroki' ? 'selected' : ''}>Vikaris Paroki</option>
+                      </select>
+                    </div>
+                  </div>
+                ` : ''}
+
+                <div class="pt-5 border-t border-slate-200 flex items-center justify-end space-x-3">
+                  <button type="button" onclick="state.activeEditUser = null; renderApp();"
+                    class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs transition">
+                    Batal
+                  </button>
+                  <button type="submit" ${state.isSavingProfile ? 'disabled' : ''}
+                    class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-xs flex items-center space-x-2 shadow-md shadow-amber-500/20 transition transform hover:-translate-y-0.5 disabled:opacity-50">
+                    ${state.isSavingProfile ? `
+                      <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Menyimpan Perubahan...</span>
+                    ` : `
+                      <i data-lucide="save" class="w-4 h-4"></i>
+                      <span>Simpan Perubahan</span>
+                    `}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       `;
