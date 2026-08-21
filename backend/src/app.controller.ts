@@ -1107,6 +1107,31 @@ export class AuthController implements OnModuleInit {
       fields.push(`ordo_id = $${idx++}`);
       values.push(dto.ordoId ?? (dto as any).ordo_id);
     }
+    if ((dto as any).pengurusPosition !== undefined || (dto as any).pengurus_position !== undefined) {
+      fields.push(`pengurus_position = $${idx++}`);
+      values.push((dto as any).pengurusPosition ?? (dto as any).pengurus_position);
+    }
+    if ((dto as any).romoPosition !== undefined || (dto as any).romo_position !== undefined) {
+      fields.push(`romo_position = $${idx++}`);
+      values.push((dto as any).romoPosition ?? (dto as any).romo_position);
+    }
+    if ((dto as any).jabatanStartYear !== undefined || (dto as any).jabatan_start_year !== undefined) {
+      fields.push(`jabatan_start_year = $${idx++}`);
+      values.push((dto as any).jabatanStartYear ?? (dto as any).jabatan_start_year);
+    }
+    if ((dto as any).jabatanEndYear !== undefined || (dto as any).jabatan_end_year !== undefined) {
+      fields.push(`jabatan_end_year = $${idx++}`);
+      values.push((dto as any).jabatanEndYear ?? (dto as any).jabatan_end_year);
+    }
+    if ((dto as any).isJabatanActive !== undefined || (dto as any).is_jabatan_active !== undefined) {
+      fields.push(`is_jabatan_active = $${idx++}`);
+      values.push((dto as any).isJabatanActive ?? (dto as any).is_jabatan_active);
+    }
+
+    if ((dto as any).accountStatus !== undefined || (dto as any).account_status !== undefined) {
+      const targetStatus = (dto as any).accountStatus ?? (dto as any).account_status;
+      await this.dataSource.query(`UPDATE auth_users SET account_status = $1 WHERE id = $2`, [targetStatus, uid]);
+    }
 
     if (fields.length > 0) {
       fields.push(`updated_at = NOW()`);
