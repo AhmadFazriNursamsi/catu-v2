@@ -1090,8 +1090,7 @@
                           <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
                         </td>
                         <td class="px-6 py-4">
-                          <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs">
-                            <i data-lucide="award" class="w-3.5 h-3.5 text-slate-500"></i>
+                          <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs">
                             <span>${u.pengurus_position || 'Ketua Lingkungan'}</span>
                           </span>
                         </td>
@@ -1103,25 +1102,23 @@
                         </td>
                         <td class="px-6 py-4">
                           <div class="space-y-1">
-                            <div class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
-                              <i data-lucide="home" class="w-3.5 h-3.5 text-slate-400"></i>
+                            <div class="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
                               <span class="truncate max-w-[170px]">${u.lingkungan_name || '-'}</span>
                             </div>
-                            <div class="flex items-center space-x-1 text-[11px] font-bold text-slate-500 pl-1">
-                              <i data-lucide="church" class="w-3.5 h-3.5 text-slate-400"></i>
+                            <div class="text-[11px] font-bold text-slate-500 pl-1">
                               <span class="truncate max-w-[170px]">${u.paroki_name || '-'}</span>
                             </div>
                           </div>
                         </td>
                         <td class="px-6 py-4 text-center">
                           ${isExpired ? `
-                            <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200 font-bold text-[11px] shadow-sm">
-                              <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                            <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold text-[11px] shadow-sm">
+                              <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                               <span>TIDAK AKTIF</span>
                             </span>
                           ` : `
-                            <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-bold text-[11px] shadow-sm">
-                              <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                            <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px] shadow-sm">
+                              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                               <span>AKTIF</span>
                             </span>
                           `}
@@ -1135,13 +1132,13 @@
                         <td class="px-6 py-4 text-right">
                           <div class="inline-flex items-center justify-end space-x-2">
                             <button onclick="openEditUserModal('${u.id}')"
-                              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 text-xs transition">
-                              <i data-lucide="edit" class="w-3.5 h-3.5 text-slate-500"></i>
+                              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold border border-amber-200 text-xs transition shadow-sm transform hover:-translate-y-0.5">
+                              <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-600"></i>
                               <span>Edit</span>
                             </button>
                             <button onclick="viewUserProfileModal('${u.id}')"
-                              class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 text-xs transition">
-                              <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-500"></i>
+                              class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold border border-blue-200 text-xs transition shadow-sm transform hover:-translate-y-0.5">
+                              <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-600"></i>
                               <span>Detail</span>
                             </button>
                           </div>
