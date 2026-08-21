@@ -32,6 +32,8 @@ import {
   UpdateOrdoDto,
   CreateServiceCategoryDto,
   UpdateServiceCategoryDto,
+  CreateRoleDto,
+  UpdateRoleDto,
 } from './orders.dto';
 
 @ApiTags('Auth & Registration')
@@ -2564,5 +2566,65 @@ export class MasterDataController {
     await this.dataSource.query('DELETE FROM service_categories WHERE id = $1', [id]);
     return { success: true, message: 'Kategori Pelayanan berhasil dihapus' };
   }
+
+  // 7. ROLES (JENIS PENGGUNA / PERAN USER)
+  @Get('roles')
+  @ApiOperation({ summary: 'Daftar Semua Jenis Role / Pengguna dari Database' })
+  async getAllRoles() {
+    return await this.dataSource.query(`
+      SELECT r.id, r.code, r.name,
+        COUNT(DISTINCT u.id)::int as total_users
+      FROM roles r
+      LEFT JOIN auth_users u ON u.role_id = r.id
+      GROUP BY r.id
+      ORDER BY r.id ASC
+    `);
+  }
+
+  @Post('roles')
+  @ApiOperation({ summary: 'Tambah Jenis Role / Pengguna Baru ke Database' })
+  async createRole(@Body() dto: CreateRoleDto) {
+    if (!dto.name || !dto.name.trim()) throw new BadRequestException('Nama Jenis Role tidak boleh kosong');
+    if (!dto.code || !dto.code.trim()) throw new BadRequestException('Kode Role tidak boleh kosong');
+    const code = dto.code.trim().toUpperCase().replace(/\s+/g, '_');
+    const existing = await this.dataSource.query('SELECT id FROM roles WHERE code = $1', [code]);
+    if (existing.length > 0) throw new BadRequestException(`Kode Role "${code}" sudah terdaftar`);
+    const res = await this.dataSource.query(
+      `INSERT INTO roles (code, name) VALUES ($1, $2) RETURNING *`,
+      [code, dto.name.trim()]
+    );
+    return { success: true, message: 'Jenis Role berhasil ditambahkan', data: res[0] };
+  }
+
+  @Put('roles/:id')
+  @ApiOperation({ summary: 'Update Data Jenis Role / Pengguna di Database' })
+  async updateRole(@Param('id') id: number, @Body() dto: UpdateRoleDto) {
+    const existing = await this.dataSource.query('SELECT * FROM roles WHERE id = $1', [id]);
+    if (!existing.length) throw new BadRequestException('Jenis Role tidak ditemukan');
+    const name = dto.name !== undefined ? dto.name.trim() : existing[0].name;
+    let code = existing[0].code;
+    if (dto.code !== undefined && dto.code.trim()) {
+      code = dto.code.trim().toUpperCase().replace(/\s+/g, '_');
+      const duplicate = await this.dataSource.query('SELECT id FROM roles WHERE code = $1 AND id != $2', [code, id]);
+      if (duplicate.length > 0) throw new BadRequestException(`Kode Role "${code}" sudah digunakan oleh role lain`);
+    }
+    const res = await this.dataSource.query(
+      `UPDATE roles SET name = $1, code = $2 WHERE id = $3 RETURNING *`,
+      [name, code, id]
+    );
+    return { success: true, message: 'Jenis Role berhasil diperbarui', data: res[0] };
+  }
+
+  @Delete('roles/:id')
+  @ApiOperation({ summary: 'Hapus Jenis Role / Pengguna dari Database' })
+  async deleteRole(@Param('id') id: number) {
+    const userCount = await this.dataSource.query('SELECT COUNT(*)::int as count FROM auth_users WHERE role_id = $1', [id]);
+    if (userCount[0]?.count > 0) {
+      throw new BadRequestException(`Tidak dapat menghapus Jenis Role ini karena masih digunakan oleh ${userCount[0].count} pengguna.`);
+    }
+    await this.dataSource.query('DELETE FROM roles WHERE id = $1', [id]);
+    return { success: true, message: 'Jenis Role berhasil dihapus' };
+  }
 }
+
 

@@ -103,6 +103,7 @@
       wilayah: [],
       lingkungan: [],
       ordo: [],
+      roles: [],
       masterSubTab: 'paroki',
       masterSearch: '',
       masterFilterKeuskupanId: '',
@@ -1169,6 +1170,7 @@
         if (s === 'lingkungan') return 'Lingkungan';
         if (s === 'ordo') return 'Ordo / Kongregasi';
         if (s === 'services') return 'Kategori Pelayanan';
+        if (s === 'roles') return 'Jenis User / Peran Pengguna';
         return s;
       };
 
@@ -1179,6 +1181,7 @@
         if (s === 'lingkungan') return 'home';
         if (s === 'ordo') return 'cross';
         if (s === 'services') return 'clipboard-list';
+        if (s === 'roles') return 'shield-check';
         return 'database';
       };
 
@@ -1192,7 +1195,8 @@
               { id: 'wilayah', icon: 'map-pin', label: 'Wilayah', color: 'text-indigo-600' },
               { id: 'lingkungan', icon: 'home', label: 'Lingkungan', color: 'text-cyan-600' },
               { id: 'ordo', icon: 'cross', label: 'Ordo / Kongregasi', count: state.ordo?.length, color: 'text-purple-600' },
-              { id: 'services', icon: 'clipboard-list', label: 'Kategori Pelayanan', count: state.serviceCategories?.length, color: 'text-amber-600' }
+              { id: 'services', icon: 'clipboard-list', label: 'Kategori Pelayanan', count: state.serviceCategories?.length, color: 'text-amber-600' },
+              { id: 'roles', icon: 'shield-check', label: 'Jenis User / Role', count: state.roles?.length, color: 'text-rose-600' }
             ].map(tab => {
               const active = sub === tab.id;
               return `
@@ -1379,6 +1383,13 @@
           <th class="py-4 px-5 text-center">URGENT DEFAULT</th>
           <th class="py-4 px-5 text-center">STATUS AKTIF</th>
           <th class="py-4 px-5 text-center">TOTAL ORDER</th>
+        `;
+      } else if (sub === 'roles') {
+        return `
+          <th class="py-4 px-5">KODE ROLE</th>
+          <th class="py-4 px-5">NAMA PERAN / JENIS USER</th>
+          <th class="py-4 px-5 text-center">TOTAL PENGGUNA TERHUBUNG</th>
+          <th class="py-4 px-5">TIPE AKSES</th>
         `;
       }
       return '';
@@ -1612,6 +1623,35 @@
           </td>
           <td class="py-4 px-5 text-center font-black text-slate-800 text-xs">
             ${item.total_orders || 0} Order
+          </td>
+        `;
+      } else if (sub === 'roles') {
+        return `
+          <td class="py-4 px-5">
+            <span class="px-2.5 py-1 rounded-xl bg-slate-900 text-amber-300 font-mono font-black text-xs border border-slate-800 shadow-2xs">
+              ${item.code || '-'}
+            </span>
+          </td>
+          <td class="py-4 px-5 font-black text-slate-900 text-xs">
+            <div class="flex items-center space-x-2.5">
+              <div class="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 flex items-center justify-center font-bold shadow-xs">
+                <i data-lucide="shield-check" class="w-4 h-4 text-rose-600"></i>
+              </div>
+              <div>
+                <p class="font-extrabold text-slate-900 text-xs">${item.name || '-'}</p>
+                <p class="text-[10px] text-slate-400 font-semibold">Role Akun</p>
+              </div>
+            </div>
+          </td>
+          <td class="py-4 px-5 text-center">
+            <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-black ${(item.total_users || 0) > 0 ? 'bg-blue-50 text-blue-900 border border-blue-200 shadow-2xs' : 'bg-slate-100 text-slate-500'}">
+              <span>👥 ${item.total_users || 0} Pengguna</span>
+            </span>
+          </td>
+          <td class="py-4 px-5">
+            <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-extrabold ${item.code === 'ADMIN' ? 'text-amber-900 bg-amber-50 border border-amber-200' : 'text-slate-700 bg-slate-100 border border-slate-200'}">
+              <span>${item.code === 'ADMIN' ? '🛡️ Portal Administrator Web' : '📱 Aplikasi Mobile CATU'}</span>
+            </span>
           </td>
         `;
       }
@@ -1877,6 +1917,20 @@
               <input type="checkbox" id="masterIsActiveInput" ${data.is_active !== false ? 'checked' : ''} class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500" />
               <span class="font-bold text-slate-800">✓ Status Aktif</span>
             </label>
+          </div>
+        `;
+      } else if (type === 'roles') {
+        return `
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Kode Role (Singkatan Unik) *</label>
+            <input type="text" id="masterCodeInput" required value="${data.code || ''}" placeholder="misal: PETUGAS_LITURGI, KOORDINATOR_WILAYAH"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs uppercase" />
+            <p class="text-[10px] text-slate-400 mt-1">Gunakan huruf kapital dan garis bawah (misal: UMAT, ROMO_PAROKI, ADMIN)</p>
+          </div>
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Nama Peran / Jenis Pengguna *</label>
+            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Petugas Liturgi Gereja"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
         `;
       }
@@ -2918,6 +2972,7 @@
           fetch(`${API_BASE}/master/paroki`),
           fetch(`${API_BASE}/master/ordo`),
           fetch(`${API_BASE}/master/service-categories`),
+          fetch(`${API_BASE}/master/roles`),
         ]);
 
         state.analytics = await anRes.json();
@@ -2931,6 +2986,7 @@
         state.paroki = await pRes.json();
         state.ordo = await oRes.json();
         state.serviceCategories = await scRes.json();
+        state.roles = await (await fetch(`${API_BASE}/master/roles`)).json();
 
         // Also fetch initial master list for active subtab
         await loadMasterData(state.masterSubTab || 'paroki');
@@ -2967,6 +3023,8 @@
           url = `${API_BASE}/master/ordo`;
         } else if (tab === 'services') {
           url = `${API_BASE}/master/service-categories`;
+        } else if (tab === 'roles') {
+          url = `${API_BASE}/master/roles`;
         }
 
         const res = await fetch(url);
@@ -2978,6 +3036,7 @@
         if (tab === 'paroki') state.paroki = state.masterDataList;
         if (tab === 'ordo') state.ordo = state.masterDataList;
         if (tab === 'services') state.serviceCategories = state.masterDataList;
+        if (tab === 'roles') state.roles = state.masterDataList;
       } catch (err) {
         console.error('Error loading master data:', err);
       } finally {
@@ -3204,6 +3263,15 @@
           modal.data.description = descVal;
           modal.data.is_urgent_by_default = isUrgent;
           modal.data.is_active = isActive;
+        } else if (type === 'roles') {
+          endpoint = mode === 'CREATE' ? `${API_BASE}/master/roles` : `${API_BASE}/master/roles/${data.id}`;
+          const codeVal = document.getElementById('masterCodeInput')?.value?.trim().toUpperCase().replace(/\s+/g, '_');
+          const nameVal = document.getElementById('masterNameInput')?.value?.trim();
+          if (!codeVal) throw new Error('Kode Role wajib diisi');
+          if (!nameVal) throw new Error('Nama Jenis Role wajib diisi');
+          payload = { code: codeVal, name: nameVal };
+          modal.data.code = codeVal;
+          modal.data.name = nameVal;
         }
 
         // 2. Now set loading state and render spinner
@@ -3229,16 +3297,18 @@
 
         // Also refresh global lookups
         try {
-          const [kRes, pRes, oRes, scRes] = await Promise.all([
+          const [kRes, pRes, oRes, scRes, rRes] = await Promise.all([
             fetch(`${API_BASE}/master/keuskupan`),
             fetch(`${API_BASE}/master/paroki`),
             fetch(`${API_BASE}/master/ordo`),
-            fetch(`${API_BASE}/master/service-categories`)
+            fetch(`${API_BASE}/master/service-categories`),
+            fetch(`${API_BASE}/master/roles`),
           ]);
           state.keuskupan = await kRes.json();
           state.paroki = await pRes.json();
           state.ordo = await oRes.json();
           state.serviceCategories = await scRes.json();
+          state.roles = await rRes.json();
         } catch (_) {}
         renderApp();
       } catch (err) {
@@ -3271,6 +3341,7 @@
       else if (del.type === 'lingkungan') endpoint = `${API_BASE}/master/lingkungan/${del.id}`;
       else if (del.type === 'ordo') endpoint = `${API_BASE}/master/ordo/${del.id}`;
       else if (del.type === 'services') endpoint = `${API_BASE}/master/service-categories/${del.id}`;
+      else if (del.type === 'roles') endpoint = `${API_BASE}/master/roles/${del.id}`;
 
       try {
         const res = await fetch(endpoint, { method: 'DELETE' });

@@ -438,3 +438,27 @@ export class UpdateServiceCategoryDto {
   isActive?: boolean;
 }
 
+export class CreateRoleDto {
+  @ApiProperty({ example: 'PETUGAS_LITURGI' })
+  @IsString()
+  @IsNotEmpty()
+  code: string;
+
+  @ApiProperty({ example: 'Petugas Liturgi' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+}
+
+export class UpdateRoleDto {
+  @ApiPropertyOptional({ example: 'PETUGAS_LITURGI' })
+  @IsString()
+  @IsOptional()
+  code?: string;
+
+  @ApiPropertyOptional({ example: 'Petugas Liturgi' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+}
+
