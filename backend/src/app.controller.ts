@@ -1291,7 +1291,8 @@ export class AuthController implements OnModuleInit {
              p.lingkungan_id, l.name as lingkungan_name,
              p.kabupaten_kota_id, kk.name as kota_name,
              p.ordo_id, ord.name as ordo_name,
-             p.pengurus_position, p.romo_position
+             p.pengurus_position, p.romo_position,
+             p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
       FROM auth_users u
       JOIN roles r ON u.role_id = r.id
       LEFT JOIN user_profiles p ON p.user_id = u.id

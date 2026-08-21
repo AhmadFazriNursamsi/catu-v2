@@ -48,12 +48,18 @@
       paroki: [],
       ordo: [],
       masterSubTab: 'paroki',
+      
+      // Searches
       orderSearch: '',
       orderStatusFilter: 'ALL',
       orderCategoryFilter: 'ALL',
-      userSearch: '',
-      userRoleFilter: 'ALL',
-      userStatusFilter: 'ALL',
+      
+      umatSearch: '',
+      pengurusSearch: '',
+      romoParokiSearch: '',
+      romoOrdoSearch: '',
+      approvalsSearch: '',
+
       isLoading: false,
       loginLoading: false,
       loginError: '',
@@ -61,6 +67,7 @@
       isRunningTests: false,
       activeChatOrder: null,
       activeOrderDetail: null,
+      activeUserProfile: null,
     };
 
     // Render Main App Dispatcher
@@ -273,15 +280,21 @@
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // 2. DASHBOARD MAIN LAYOUT & TABS
+    // 2. DASHBOARD MAIN LAYOUT & ENHANCED SIDEBAR
     // ══════════════════════════════════════════════════════════════════════════
     function renderDashboardLayout() {
       const adminName = state.currentUser?.fullName || state.currentUser?.full_name || 'Super Admin CATU';
+      const pendingApprovalsCount = state.users.filter(u => (u.account_status || u.accountStatus) === 'PENDING_APPROVAL').length;
+      const activeUmatCount = state.users.filter(u => (u.role_code || u.roleCode) === 'UMAT' && (u.account_status || u.accountStatus) === 'APPROVED').length;
+      const activePengurusCount = state.users.filter(u => (u.role_code || u.roleCode) === 'PENGURUS_LINGKUNGAN' && (u.account_status || u.accountStatus) === 'APPROVED').length;
+      const activeRomoParokiCount = state.users.filter(u => (u.role_code || u.roleCode) === 'ROMO_PAROKI' && (u.account_status || u.accountStatus) === 'APPROVED').length;
+      const activeRomoOrdoCount = state.users.filter(u => (u.role_code || u.roleCode) === 'ROMO_ORDO' && (u.account_status || u.accountStatus) === 'APPROVED').length;
+
       return `
         <div class="h-full flex">
           <!-- Sidebar Nav (Left) -->
           <div class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between flex-shrink-0">
-            <div>
+            <div class="overflow-y-auto custom-scrollbar">
               <div class="p-5 flex items-center space-x-3 border-b border-slate-800">
                 <div class="w-9 h-9 rounded-xl bg-white p-1 shadow border border-amber-500 flex items-center justify-center">
                   <img src="assets/images/logoCatu.png" alt="CATU" class="h-full object-contain" />
@@ -292,13 +305,37 @@
                 </div>
               </div>
 
-              <nav class="p-3 space-y-1">
-                ${renderNavItem('overview', 'layout-dashboard', 'Ringkasan & Analytics')}
-                ${renderNavItem('orders', 'clipboard-list', 'Manajemen Pelayanan', state.analytics?.orders?.pending)}
-                ${renderNavItem('users', 'users', 'Pengguna & Persetujuan', state.analytics?.users?.pending_approvals, 'bg-amber-500')}
-                ${renderNavItem('master', 'church', 'Master Data Gereja')}
-                ${renderNavItem('chat', 'messages-square', 'Monitoring Chat')}
-                ${renderNavItem('qa', 'flask-conical', 'QA & Live Test Runner')}
+              <nav class="p-3 space-y-4">
+                <!-- Section 1: Dashboard -->
+                <div>
+                  <p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Utama</p>
+                  <div class="space-y-1">
+                    ${renderNavItem('overview', 'layout-dashboard', 'Ringkasan & Analytics')}
+                    ${renderNavItem('orders', 'clipboard-list', 'Manajemen Pelayanan', state.analytics?.orders?.pending)}
+                  </div>
+                </div>
+
+                <!-- Section 2: Stakeholders Aktif -->
+                <div>
+                  <p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Pengguna Aktif</p>
+                  <div class="space-y-1">
+                    ${renderNavItem('umat', 'users', 'Umat Katolik', activeUmatCount, 'bg-blue-600')}
+                    ${renderNavItem('pengurus', 'briefcase', 'Pengurus Lingkungan', activePengurusCount, 'bg-indigo-600')}
+                    ${renderNavItem('romo_paroki', 'church', 'Romo Paroki', activeRomoParokiCount, 'bg-emerald-600')}
+                    ${renderNavItem('romo_ordo', 'cross', 'Romo Ordo (On-Demand)', activeRomoOrdoCount, 'bg-purple-600')}
+                  </div>
+                </div>
+
+                <!-- Section 3: Approvals & Data -->
+                <div>
+                  <p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Tata Kelola & Data</p>
+                  <div class="space-y-1">
+                    ${renderNavItem('approvals', 'shield-check', 'Persetujuan Pendaftaran', pendingApprovalsCount, 'bg-amber-500')}
+                    ${renderNavItem('master', 'map-pin', 'Master Data Gereja')}
+                    ${renderNavItem('chat', 'messages-square', 'Monitoring Chat')}
+                    ${renderNavItem('qa', 'flask-conical', 'QA & Live Tests')}
+                  </div>
+                </div>
               </nav>
             </div>
 
@@ -315,7 +352,7 @@
             <!-- Top Header -->
             <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between flex-shrink-0">
               <div>
-                <p class="text-xs font-semibold text-slate-500">Admin Portal / <span class="text-blue-950 font-bold capitalize">${state.currentTab}</span></p>
+                <p class="text-xs font-semibold text-slate-500">Admin Portal / <span class="text-blue-950 font-bold capitalize">${state.currentTab.replace('_', ' ')}</span></p>
                 <h1 class="text-xl font-extrabold text-slate-900 tracking-tight capitalize">${getTabTitle(state.currentTab)}</h1>
               </div>
 
@@ -350,6 +387,7 @@
 
         ${state.activeOrderDetail ? renderOrderDetailModal() : ''}
         ${state.activeChatOrder ? renderChatModal() : ''}
+        ${state.activeUserProfile ? renderUserProfileModal() : ''}
       `;
     }
 
@@ -362,7 +400,7 @@
           }">
           <div class="flex items-center space-x-3">
             <i data-lucide="${icon}" class="w-4 h-4 ${active ? 'text-amber-400' : ''}"></i>
-            <span>${label}</span>
+            <span class="truncate">${label}</span>
           </div>
           ${badge && parseInt(badge) > 0 ? `
             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${badgeColor}">${badge}</span>
@@ -374,9 +412,13 @@
     function getTabTitle(tab) {
       if (tab === 'overview') return 'Ringkasan & Analytics';
       if (tab === 'orders') return 'Manajemen Pelayanan';
-      if (tab === 'users') return 'Manajemen Pengguna & Persetujuan';
+      if (tab === 'umat') return 'Daftar Umat Katolik Aktif';
+      if (tab === 'pengurus') return 'Daftar Pengurus Lingkungan Aktif';
+      if (tab === 'romo_paroki') return 'Daftar Romo Paroki Aktif';
+      if (tab === 'romo_ordo') return 'Daftar Romo Ordo Aktif (On-Demand)';
+      if (tab === 'approvals') return 'Persetujuan Akun Pendaftaran Baru';
       if (tab === 'master') return 'Master Data Wilayah & Gereja';
-      if (tab === 'chat') return 'Monitoring Group Chat';
+      if (tab === 'chat') return 'Monitoring Group Chat Pelayanan';
       if (tab === 'qa') return 'QA & Live Test Runner';
       return tab;
     }
@@ -412,14 +454,18 @@
     function renderActiveTab() {
       if (state.currentTab === 'overview') return renderOverviewTab();
       if (state.currentTab === 'orders') return renderOrdersTab();
-      if (state.currentTab === 'users') return renderUsersTab();
+      if (state.currentTab === 'umat') return renderUmatTab();
+      if (state.currentTab === 'pengurus') return renderPengurusTab();
+      if (state.currentTab === 'romo_paroki') return renderRomoParokiTab();
+      if (state.currentTab === 'romo_ordo') return renderRomoOrdoTab();
+      if (state.currentTab === 'approvals') return renderApprovalsTab();
       if (state.currentTab === 'master') return renderMasterTab();
       if (state.currentTab === 'chat') return renderChatTab();
       if (state.currentTab === 'qa') return renderQATab();
       return '';
     }
 
-    // Tab 0: Overview
+    // ── Tab: Overview ──
     function renderOverviewTab() {
       const orders = state.analytics?.orders || {};
       const users = state.analytics?.users || {};
@@ -430,7 +476,7 @@
         <div class="space-y-8">
           <!-- 4 Stat Cards -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition" onclick="setTab('orders')">
               <div class="flex items-center justify-between mb-4">
                 <div class="p-3 rounded-xl bg-blue-50 text-blue-950">
                   <i data-lucide="clipboard-list" class="w-6 h-6"></i>
@@ -442,19 +488,19 @@
               <p class="text-[11px] text-slate-400 mt-1">${orders.confirmed || 0} Aktif • ${orders.done || 0} Selesai</p>
             </div>
 
-            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition" onclick="setTab('umat')">
               <div class="flex items-center justify-between mb-4">
                 <div class="p-3 rounded-xl bg-emerald-50 text-emerald-700">
                   <i data-lucide="users" class="w-6 h-6"></i>
                 </div>
-                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200">${users.pending_approvals || 0} Approval</span>
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">${users.total_umat || 0} Umat</span>
               </div>
               <h3 class="text-2xl font-extrabold text-slate-900">${users.total || state.users.length}</h3>
               <p class="text-xs font-bold text-slate-600">Total Pengguna Terdaftar</p>
-              <p class="text-[11px] text-slate-400 mt-1">${users.total_umat || 0} Umat • ${users.total_pengurus || 0} Pengurus</p>
+              <p class="text-[11px] text-slate-400 mt-1">${users.pending_approvals || 0} Menunggu Persetujuan</p>
             </div>
 
-            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 transition" onclick="setTab('romo_paroki')">
               <div class="flex items-center justify-between mb-4">
                 <div class="p-3 rounded-xl bg-purple-50 text-purple-700">
                   <i data-lucide="church" class="w-6 h-6"></i>
@@ -463,7 +509,7 @@
               </div>
               <h3 class="text-2xl font-extrabold text-slate-900">${(parseInt(users.total_romo_paroki || 0) + parseInt(users.total_romo_ordo || 0))}</h3>
               <p class="text-xs font-bold text-slate-600">Total Romo Paroki & Ordo</p>
-              <p class="text-[11px] text-slate-400 mt-1">${users.total_romo_paroki || 0} Romo Paroki • ${users.total_romo_ordo || 0} Romo Ordo</p>
+              <p class="text-[11px] text-slate-400 mt-1">${users.total_romo_paroki || 0} Paroki • ${users.total_romo_ordo || 0} Ordo</p>
             </div>
 
             <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
@@ -532,7 +578,7 @@
       `;
     }
 
-    // Tab 1: Orders
+    // ── Tab 1: Orders ──
     function renderOrdersTab() {
       const q = state.orderSearch.toLowerCase();
       const filtered = state.orders.filter(o => {
@@ -636,108 +682,487 @@
       `;
     }
 
-    // Tab 2: Users & Approvals
-    function renderUsersTab() {
-      const q = state.userSearch.toLowerCase();
-      const filtered = state.users.filter(u => {
-        const uRole = (u.role_code || u.roleCode || '').toUpperCase();
-        const uStatus = (u.account_status || u.accountStatus || '').toUpperCase();
-        const uName = (u.full_name || u.fullName || '').toLowerCase();
-        const uPhone = (u.phone_number || u.phoneNumber || '').toLowerCase();
-        const uPar = (u.paroki_name || u.parokiName || '').toLowerCase();
-
-        if (state.userRoleFilter !== 'ALL' && uRole !== state.userRoleFilter) return false;
-        if (state.userStatusFilter !== 'ALL' && uStatus !== state.userStatusFilter) return false;
+    // ── Tab 2: Umat Katolik Aktif ──
+    function renderUmatTab() {
+      const q = state.umatSearch.toLowerCase();
+      const umats = state.users.filter(u => {
+        const role = (u.role_code || u.roleCode || '').toUpperCase();
+        const status = (u.account_status || u.accountStatus || '').toUpperCase();
+        if (role !== 'UMAT' || status !== 'APPROVED') return false;
         if (q) {
-          if (!uName.includes(q) && !uPhone.includes(q) && !uPar.includes(q)) return false;
+          const name = (u.full_name || u.fullName || '').toLowerCase();
+          const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
+          const par = (u.paroki_name || u.parokiName || '').toLowerCase();
+          const ling = (u.lingkungan_name || '').toLowerCase();
+          if (!name.includes(q) && !phone.includes(q) && !par.includes(q) && !ling.includes(q)) return false;
+        }
+        return true;
+      });
+
+      return `
+        <div class="space-y-6">
+          <!-- Top Metric Banner -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+              <div class="p-3 rounded-xl bg-blue-50 text-blue-900"><i data-lucide="users" class="w-6 h-6"></i></div>
+              <div>
+                <h4 class="text-2xl font-extrabold text-slate-900">${umats.length}</h4>
+                <p class="text-xs font-semibold text-slate-500">Total Umat Aktif Terverifikasi</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+              <div class="p-3 rounded-xl bg-emerald-50 text-emerald-700"><i data-lucide="shield-check" class="w-6 h-6"></i></div>
+              <div>
+                <h4 class="text-2xl font-extrabold text-slate-900">100%</h4>
+                <p class="text-xs font-semibold text-slate-500">Status Akun Approved</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+              <div class="p-3 rounded-xl bg-purple-50 text-purple-700"><i data-lucide="church" class="w-6 h-6"></i></div>
+              <div>
+                <h4 class="text-2xl font-extrabold text-slate-900">${state.paroki.length}</h4>
+                <p class="text-xs font-semibold text-slate-500">Paroki Terdaftar</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+              <div class="relative w-full max-w-md">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                <input type="text" placeholder="Cari nama umat, nomor WhatsApp, paroki, lingkungan..." value="${state.umatSearch}"
+                  oninput="state.umatSearch = this.value; renderApp();"
+                  class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                  <tr>
+                    <th class="px-6 py-3.5">NAMA UMAT</th>
+                    <th class="px-6 py-3.5">WHATSAPP / HP</th>
+                    <th class="px-6 py-3.5">PAROKI & DOMISILI</th>
+                    <th class="px-6 py-3.5">LINGKUNGAN / WILAYAH</th>
+                    <th class="px-6 py-3.5">STATUS</th>
+                    <th class="px-6 py-3.5 text-right">AKSI</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                  ${umats.length === 0 ? `
+                    <tr><td colspan="6" class="text-center py-10 text-slate-400">Tidak ada data umat aktif ditemukan</td></tr>
+                  ` : umats.map(u => `
+                    <tr class="hover:bg-slate-50 transition">
+                      <td class="px-6 py-4">
+                        <div class="flex items-center space-x-3">
+                          <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-bold text-xs">
+                            ${(u.full_name || 'U').substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <p class="font-bold text-slate-900">${u.full_name || 'Umat'}</p>
+                            <p class="text-[11px] text-slate-400">${u.email || '-'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
+                      <td class="px-6 py-4">${u.paroki_name || u.kota_name || '-'}</td>
+                      <td class="px-6 py-4">${u.lingkungan_name || u.wilayah_name || '-'}</td>
+                      <td class="px-6 py-4">
+                        <span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px]">AKTIF</span>
+                      </td>
+                      <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="viewUserProfileModal('${u.id}')" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-950 font-bold hover:bg-blue-100 transition">Detail</button>
+                        <button onclick="toggleUserStatusPrompt('${u.id}', '${u.full_name}', 'APPROVED')" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition">Status</button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Tab 3: Pengurus Lingkungan Aktif ──
+    function renderPengurusTab() {
+      const q = state.pengurusSearch.toLowerCase();
+      const list = state.users.filter(u => {
+        const role = (u.role_code || u.roleCode || '').toUpperCase();
+        const status = (u.account_status || u.accountStatus || '').toUpperCase();
+        if (role !== 'PENGURUS_LINGKUNGAN' || status !== 'APPROVED') return false;
+        if (q) {
+          const name = (u.full_name || u.fullName || '').toLowerCase();
+          const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
+          const par = (u.paroki_name || u.parokiName || '').toLowerCase();
+          const pos = (u.pengurus_position || '').toLowerCase();
+          if (!name.includes(q) && !phone.includes(q) && !par.includes(q) && !pos.includes(q)) return false;
+        }
+        return true;
+      });
+
+      return `
+        <div class="space-y-6">
+          <!-- Metric Banner -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+              <div class="p-3 rounded-xl bg-indigo-50 text-indigo-900"><i data-lucide="briefcase" class="w-6 h-6"></i></div>
+              <div>
+                <h4 class="text-2xl font-extrabold text-slate-900">${list.length}</h4>
+                <p class="text-xs font-semibold text-slate-500">Pengurus Lingkungan Aktif</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+              <div class="p-3 rounded-xl bg-emerald-50 text-emerald-700"><i data-lucide="award" class="w-6 h-6"></i></div>
+              <div>
+                <h4 class="text-2xl font-extrabold text-slate-900">Aktif</h4>
+                <p class="text-xs font-semibold text-slate-500">Masa Jabatan Berjalan</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+              <div class="p-3 rounded-xl bg-amber-50 text-amber-700"><i data-lucide="map-pin" class="w-6 h-6"></i></div>
+              <div>
+                <h4 class="text-2xl font-extrabold text-slate-900">${new Set(list.map(p => p.paroki_id)).size}</h4>
+                <p class="text-xs font-semibold text-slate-500">Paroki Terjangkau</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+              <div class="relative w-full max-w-md">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                <input type="text" placeholder="Cari nama pengurus, jabatan, paroki, lingkungan..." value="${state.pengurusSearch}"
+                  oninput="state.pengurusSearch = this.value; renderApp();"
+                  class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                  <tr>
+                    <th class="px-6 py-3.5">NAMA PENGURUS</th>
+                    <th class="px-6 py-3.5">JABATAN</th>
+                    <th class="px-6 py-3.5">LINGKUNGAN & PAROKI</th>
+                    <th class="px-6 py-3.5">PERIODE JABATAN</th>
+                    <th class="px-6 py-3.5">WHATSAPP</th>
+                    <th class="px-6 py-3.5">STATUS</th>
+                    <th class="px-6 py-3.5 text-right">AKSI</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                  ${list.length === 0 ? `
+                    <tr><td colspan="7" class="text-center py-10 text-slate-400">Tidak ada pengurus lingkungan aktif ditemukan</td></tr>
+                  ` : list.map(u => {
+                    const periode = (u.jabatan_start_year && u.jabatan_end_year) ? `${u.jabatan_start_year} - ${u.jabatan_end_year}` : 'Aktif';
+                    return `
+                      <tr class="hover:bg-slate-50 transition">
+                        <td class="px-6 py-4">
+                          <p class="font-bold text-slate-900">${u.full_name || 'Pengurus'}</p>
+                          <p class="text-[11px] text-slate-400">${u.email || '-'}</p>
+                        </td>
+                        <td class="px-6 py-4">
+                          <span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-900 font-bold text-[11px]">${u.pengurus_position || 'Ketua Lingkungan'}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                          <p class="font-bold text-slate-800">${u.lingkungan_name || 'Lingkungan'}</p>
+                          <p class="text-[11px] text-slate-500">${u.paroki_name || '-'}</p>
+                        </td>
+                        <td class="px-6 py-4 font-semibold text-slate-700">${periode}</td>
+                        <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
+                        <td class="px-6 py-4">
+                          <span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px]">MENJABAT</span>
+                        </td>
+                        <td class="px-6 py-4 text-right space-x-2">
+                          <button onclick="viewUserProfileModal('${u.id}')" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-950 font-bold hover:bg-blue-100 transition">Detail</button>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Tab 4: Romo Paroki Aktif ──
+    function renderRomoParokiTab() {
+      const q = state.romoParokiSearch.toLowerCase();
+      const list = state.users.filter(u => {
+        const role = (u.role_code || u.roleCode || '').toUpperCase();
+        const status = (u.account_status || u.accountStatus || '').toUpperCase();
+        if (role !== 'ROMO_PAROKI' || status !== 'APPROVED') return false;
+        if (q) {
+          const name = (u.full_name || u.fullName || '').toLowerCase();
+          const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
+          const par = (u.paroki_name || u.parokiName || '').toLowerCase();
+          if (!name.includes(q) && !phone.includes(q) && !par.includes(q)) return false;
+        }
+        return true;
+      });
+
+      return `
+        <div class="space-y-6">
+          <!-- Metric Banner -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+              <div class="p-3 rounded-xl bg-emerald-50 text-emerald-900"><i data-lucide="church" class="w-6 h-6"></i></div>
+              <div>
+                <h4 class="text-2xl font-extrabold text-slate-900">${list.length}</h4>
+                <p class="text-xs font-semibold text-slate-500">Romo Paroki Aktif Terverifikasi</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+              <div class="p-3 rounded-xl bg-blue-50 text-blue-700"><i data-lucide="check-circle" class="w-6 h-6"></i></div>
+              <div>
+                <h4 class="text-2xl font-extrabold text-slate-900">Siap</h4>
+                <p class="text-xs font-semibold text-slate-500">Kesiapan Melayani Misa</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+              <div class="p-3 rounded-xl bg-purple-50 text-purple-700"><i data-lucide="map-pin" class="w-6 h-6"></i></div>
+              <div>
+                <h4 class="text-2xl font-extrabold text-slate-900">${new Set(list.map(r => r.paroki_id)).size}</h4>
+                <p class="text-xs font-semibold text-slate-500">Paroki Penugasan</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+              <div class="relative w-full max-w-md">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                <input type="text" placeholder="Cari nama Romo, paroki, keuskupan..." value="${state.romoParokiSearch}"
+                  oninput="state.romoParokiSearch = this.value; renderApp();"
+                  class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                  <tr>
+                    <th class="px-6 py-3.5">NAMA ROMO</th>
+                    <th class="px-6 py-3.5">PAROKI PENUGASAN</th>
+                    <th class="px-6 py-3.5">KEUSKUPAN</th>
+                    <th class="px-6 py-3.5">JABATAN PASTORAL</th>
+                    <th class="px-6 py-3.5">NO. WHATSAPP</th>
+                    <th class="px-6 py-3.5">STATUS</th>
+                    <th class="px-6 py-3.5 text-right">AKSI</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                  ${list.length === 0 ? `
+                    <tr><td colspan="7" class="text-center py-10 text-slate-400">Tidak ada Romo Paroki aktif ditemukan</td></tr>
+                  ` : list.map(u => `
+                    <tr class="hover:bg-slate-50 transition">
+                      <td class="px-6 py-4 font-bold text-slate-900">
+                        <div class="flex items-center space-x-3">
+                          <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-xs">✝</div>
+                          <div>
+                            <p class="font-bold text-slate-900">${u.full_name || 'Romo Paroki'}</p>
+                            <p class="text-[11px] text-slate-400">Pr (Diosesan)</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 font-bold text-blue-950">${u.paroki_name || '-'}</td>
+                      <td class="px-6 py-4">${u.keuskupan_name || 'Keuskupan'}</td>
+                      <td class="px-6 py-4">
+                        <span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 font-bold text-[11px]">${u.romo_position || 'Pastor Rekan'}</span>
+                      </td>
+                      <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
+                      <td class="px-6 py-4">
+                        <span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px]">AKTIF MELAYANI</span>
+                      </td>
+                      <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="viewUserProfileModal('${u.id}')" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-950 font-bold hover:bg-blue-100 transition">Detail</button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Tab 5: Romo Ordo Aktif (On-Demand) ──
+    function renderRomoOrdoTab() {
+      const q = state.romoOrdoSearch.toLowerCase();
+      const list = state.users.filter(u => {
+        const role = (u.role_code || u.roleCode || '').toUpperCase();
+        const status = (u.account_status || u.accountStatus || '').toUpperCase();
+        if (role !== 'ROMO_ORDO' || status !== 'APPROVED') return false;
+        if (q) {
+          const name = (u.full_name || u.fullName || '').toLowerCase();
+          const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
+          const ordo = (u.ordo_name || '').toLowerCase();
+          if (!name.includes(q) && !phone.includes(q) && !ordo.includes(q)) return false;
+        }
+        return true;
+      });
+
+      return `
+        <div class="space-y-6">
+          <!-- Metric Banner -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+              <div class="p-3 rounded-xl bg-purple-50 text-purple-900"><i data-lucide="cross" class="w-6 h-6"></i></div>
+              <div>
+                <h4 class="text-2xl font-extrabold text-slate-900">${list.length}</h4>
+                <p class="text-xs font-semibold text-slate-500">Total Romo Ordo Aktif</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+              <div class="p-3 rounded-xl bg-amber-50 text-amber-700"><i data-lucide="zap" class="w-6 h-6"></i></div>
+              <div>
+                <h4 class="text-2xl font-extrabold text-slate-900">On-Demand</h4>
+                <p class="text-xs font-semibold text-slate-500">Kesiapan Misa Kedukaan Lintas Paroki</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+              <div class="p-3 rounded-xl bg-blue-50 text-blue-700"><i data-lucide="shield" class="w-6 h-6"></i></div>
+              <div>
+                <h4 class="text-2xl font-extrabold text-slate-900">${state.ordo.length}</h4>
+                <p class="text-xs font-semibold text-slate-500">Ordo Terdaftar di Sistem</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+              <div class="relative w-full max-w-md">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                <input type="text" placeholder="Cari nama Romo Ordo, nama ordo (SJ, OFM, MSF, SVD...)..." value="${state.romoOrdoSearch}"
+                  oninput="state.romoOrdoSearch = this.value; renderApp();"
+                  class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                  <tr>
+                    <th class="px-6 py-3.5">NAMA ROMO</th>
+                    <th class="px-6 py-3.5">ORDO / KONGREGASI</th>
+                    <th class="px-6 py-3.5">KOMUNITAS / BIARA</th>
+                    <th class="px-6 py-3.5">NO. WHATSAPP</th>
+                    <th class="px-6 py-3.5">PELAYANAN ON-DEMAND</th>
+                    <th class="px-6 py-3.5">STATUS</th>
+                    <th class="px-6 py-3.5 text-right">AKSI</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                  ${list.length === 0 ? `
+                    <tr><td colspan="7" class="text-center py-10 text-slate-400">Tidak ada Romo Ordo aktif ditemukan</td></tr>
+                  ` : list.map(u => `
+                    <tr class="hover:bg-slate-50 transition">
+                      <td class="px-6 py-4 font-bold text-slate-900">
+                        <div class="flex items-center space-x-3">
+                          <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-900 flex items-center justify-center font-bold text-xs">✝</div>
+                          <div>
+                            <p class="font-bold text-slate-900">${u.full_name || 'Romo Ordo'}</p>
+                            <p class="text-[11px] text-purple-700 font-bold">${u.ordo_name || 'Ordo Religius'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4">
+                        <span class="px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 font-bold text-[11px]">${u.ordo_name || 'Ordo Religius'}</span>
+                      </td>
+                      <td class="px-6 py-4">${u.kota_name || 'Komunitas / Biara'}</td>
+                      <td class="px-6 py-4 font-semibold text-slate-900">${u.phone_number}</td>
+                      <td class="px-6 py-4">
+                        <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[10.5px]">⚡ Lintas Paroki</span>
+                      </td>
+                      <td class="px-6 py-4">
+                        <span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px]">SIAP MELAYANI</span>
+                      </td>
+                      <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="viewUserProfileModal('${u.id}')" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-950 font-bold hover:bg-blue-100 transition">Detail</button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Tab 6: Approvals / Persetujuan Pendaftaran ──
+    function renderApprovalsTab() {
+      const q = state.approvalsSearch.toLowerCase();
+      const pendings = state.users.filter(u => {
+        const status = (u.account_status || u.accountStatus || '').toUpperCase();
+        if (status !== 'PENDING_APPROVAL') return false;
+        if (q) {
+          const name = (u.full_name || u.fullName || '').toLowerCase();
+          const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
+          const par = (u.paroki_name || u.parokiName || '').toLowerCase();
+          if (!name.includes(q) && !phone.includes(q) && !par.includes(q)) return false;
         }
         return true;
       });
 
       return `
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
-          <!-- Filter Bar -->
-          <div class="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center space-x-3 flex-1 min-w-[280px]">
-              <div class="relative w-full">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-                <input type="text" placeholder="Cari nama umat, no. HP, paroki..." value="${state.userSearch}"
-                  oninput="state.userSearch = this.value; renderApp();"
-                  class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
-              </div>
+          <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+            <div class="relative w-full max-w-md">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+              <input type="text" placeholder="Cari nama pemohon pendaftaran..." value="${state.approvalsSearch}"
+                oninput="state.approvalsSearch = this.value; renderApp();"
+                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
             </div>
-
-            <div class="flex items-center space-x-3">
-              <select onchange="state.userRoleFilter = this.value; renderApp();" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none">
-                <option value="ALL" ${state.userRoleFilter === 'ALL' ? 'selected' : ''}>Semua Role</option>
-                <option value="UMAT" ${state.userRoleFilter === 'UMAT' ? 'selected' : ''}>Umat</option>
-                <option value="ROMO_PAROKI" ${state.userRoleFilter === 'ROMO_PAROKI' ? 'selected' : ''}>Romo Paroki</option>
-                <option value="ROMO_ORDO" ${state.userRoleFilter === 'ROMO_ORDO' ? 'selected' : ''}>Romo Ordo</option>
-                <option value="PENGURUS_LINGKUNGAN" ${state.userRoleFilter === 'PENGURUS_LINGKUNGAN' ? 'selected' : ''}>Pengurus Lingkungan</option>
-                <option value="ADMIN" ${state.userRoleFilter === 'ADMIN' ? 'selected' : ''}>Admin</option>
-              </select>
-
-              <select onchange="state.userStatusFilter = this.value; renderApp();" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none">
-                <option value="ALL" ${state.userStatusFilter === 'ALL' ? 'selected' : ''}>Semua Status</option>
-                <option value="PENDING_APPROVAL" ${state.userStatusFilter === 'PENDING_APPROVAL' ? 'selected' : ''}>Menunggu Approval</option>
-                <option value="APPROVED" ${state.userStatusFilter === 'APPROVED' ? 'selected' : ''}>Approved</option>
-                <option value="REJECTED" ${state.userStatusFilter === 'REJECTED' ? 'selected' : ''}>Rejected</option>
-              </select>
-            </div>
+            <span class="text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+              ${pendings.length} Pendaftaran Menunggu Persetujuan
+            </span>
           </div>
 
-          <!-- Table -->
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                 <tr>
-                  <th class="px-6 py-3.5">PENGGUNA</th>
-                  <th class="px-6 py-3.5">NO. WHATSAPP</th>
-                  <th class="px-6 py-3.5">ROLE</th>
+                  <th class="px-6 py-3.5">PEMOHON AKUN</th>
+                  <th class="px-6 py-3.5">WHATSAPP / HP</th>
+                  <th class="px-6 py-3.5">PERAN DIAJUKAN</th>
                   <th class="px-6 py-3.5">PAROKI / DOMISILI</th>
-                  <th class="px-6 py-3.5">STATUS AKUN</th>
-                  <th class="px-6 py-3.5 text-right">AKSI APPROVAL</th>
+                  <th class="px-6 py-3.5">STATUS</th>
+                  <th class="px-6 py-3.5 text-right">AKSI VERIFIKASI</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                ${filtered.length === 0 ? `
-                  <tr><td colspan="6" class="text-center py-10 text-slate-400">Tidak ada pengguna ditemukan</td></tr>
-                ` : filtered.map(u => {
-                  const uId = u.id;
-                  const uName = u.full_name || u.fullName || 'Pengguna';
-                  const uPhone = u.phone_number || u.phoneNumber;
-                  const uRole = u.role_name || u.role_code || u.roleCode;
-                  const uPar = u.paroki_name || u.kota_name || u.parokiName || '-';
-                  const uStatus = u.account_status || u.accountStatus;
-                  return `
-                    <tr class="hover:bg-slate-50 transition">
-                      <td class="px-6 py-4">
-                        <p class="font-bold text-slate-900">${uName}</p>
-                        <p class="text-[11px] text-slate-400">${u.email || '-'}</p>
-                      </td>
-                      <td class="px-6 py-4 font-semibold">${uPhone}</td>
-                      <td class="px-6 py-4">
-                        <span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-950 font-bold text-[11px]">${uRole}</span>
-                      </td>
-                      <td class="px-6 py-4">${uPar}</td>
-                      <td class="px-6 py-4">
-                        <span class="px-2.5 py-1 rounded-md font-bold text-[11px] ${
-                          uStatus === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                          uStatus === 'PENDING_APPROVAL' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                          'bg-red-50 text-red-700 border border-red-200'
-                        }">${uStatus}</span>
-                      </td>
-                      <td class="px-6 py-4 text-right space-x-2">
-                        ${uStatus === 'PENDING_APPROVAL' ? `
-                          <button onclick="approveUserAction('${uId}', 'APPROVED')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition">Setujui</button>
-                          <button onclick="approveUserAction('${uId}', 'REJECTED')" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold transition">Tolak</button>
-                        ` : `
-                          <button onclick="toggleUserStatusPrompt('${uId}', '${uName}', '${uStatus}')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition">Ubah Status</button>
-                        `}
-                      </td>
-                    </tr>
-                  `;
-                }).join('')}
+                ${pendings.length === 0 ? `
+                  <tr><td colspan="6" class="text-center py-12 text-slate-400">
+                    <i data-lucide="check-circle-2" class="w-10 h-10 mx-auto mb-2 text-emerald-500 opacity-60"></i>
+                    <p class="font-bold text-slate-700">Semua pendaftaran telah diverifikasi</p>
+                    <p class="text-xs text-slate-400">Tidak ada antrian persetujuan akun baru saat ini.</p>
+                  </td></tr>
+                ` : pendings.map(u => `
+                  <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-4 font-bold text-slate-900">${u.full_name || 'Pengguna Baru'}</td>
+                    <td class="px-6 py-4 font-semibold">${u.phone_number}</td>
+                    <td class="px-6 py-4">
+                      <span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-950 font-bold text-[11px]">${u.role_name || u.role_code}</span>
+                    </td>
+                    <td class="px-6 py-4">${u.paroki_name || u.kota_name || '-'}</td>
+                    <td class="px-6 py-4">
+                      <span class="px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[11px]">PENDING APPROVAL</span>
+                    </td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                      <button onclick="approveUserAction('${u.id}', 'APPROVED')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition">✓ Setujui</button>
+                      <button onclick="approveUserAction('${u.id}', 'REJECTED')" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold transition">✗ Tolak</button>
+                    </td>
+                  </tr>
+                `).join('')}
               </tbody>
             </table>
           </div>
@@ -745,7 +1170,7 @@
       `;
     }
 
-    // Tab 3: Master Data
+    // ── Tab 7: Master Data ──
     function renderMasterTab() {
       return `
         <div class="space-y-6">
@@ -774,7 +1199,7 @@
       `;
     }
 
-    // Tab 4: Chat Monitoring
+    // ── Tab 8: Chat Monitoring ──
     function renderChatTab() {
       return `
         <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
@@ -809,7 +1234,7 @@
       `;
     }
 
-    // Tab 5: QA Test Runner
+    // ── Tab 9: QA Test Runner ──
     function renderQATab() {
       return `
         <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
@@ -858,7 +1283,53 @@
       `;
     }
 
-    // Modal Helpers
+    // ══════════════════════════════════════════════════════════════════════════
+    // 4. MODALS & POPUPS
+    // ══════════════════════════════════════════════════════════════════════════
+    function renderUserProfileModal() {
+      const u = state.activeUserProfile;
+      const uName = u.full_name || u.fullName || 'Pengguna';
+      const uPhone = u.phone_number || u.phoneNumber;
+      const uRole = u.role_name || u.role_code || u.roleCode;
+      const uPar = u.paroki_name || u.parokiName || '-';
+      const uStatus = u.account_status || u.accountStatus;
+
+      return `
+        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-blue-950 text-white flex items-center justify-center font-bold text-sm">
+                  ${uName.substring(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <h3 class="text-base font-extrabold text-slate-900">${uName}</h3>
+                  <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-950 font-bold text-[10.5px]">${uRole}</span>
+                </div>
+              </div>
+              <button onclick="state.activeUserProfile = null; renderApp();" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Nomor WhatsApp:</span><span class="font-bold">${uPhone}</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Email:</span><span class="font-bold">${u.email || '-'}</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Paroki Asal:</span><span class="font-bold">${uPar}</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Lingkungan:</span><span class="font-bold">${u.lingkungan_name || '-'}</span></div>
+              ${u.ordo_name ? `<div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Ordo / Kongregasi:</span><span class="font-bold text-purple-700">${u.ordo_name}</span></div>` : ''}
+              ${u.pengurus_position ? `<div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Jabatan Pengurus:</span><span class="font-bold">${u.pengurus_position}</span></div>` : ''}
+              ${u.romo_position ? `<div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Posisi Pastoral:</span><span class="font-bold">${u.romo_position}</span></div>` : ''}
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Status Akun:</span><span class="font-bold px-2 py-0.5 rounded ${uStatus === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">${uStatus}</span></div>
+            </div>
+
+            <div class="pt-2 flex justify-end space-x-2">
+              <button onclick="toggleUserStatusPrompt('${u.id}', '${uName}', '${uStatus}')" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200">Ubah Status</button>
+              <button onclick="state.activeUserProfile = null; renderApp();" class="px-4 py-2 rounded-xl bg-blue-950 text-white text-xs font-bold">Tutup</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     function renderOrderDetailModal() {
       const o = state.activeOrderDetail;
       const oNum = o.order_number || o.orderNumber;
@@ -945,7 +1416,7 @@
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // 4. API ACTIONS
+    // 5. API ACTIONS
     // ══════════════════════════════════════════════════════════════════════════
     async function loadDashboardData() {
       try {
@@ -1006,7 +1477,7 @@
     }
 
     async function toggleUserStatusPrompt(userId, userName, currentStatus) {
-      const newStatus = prompt(`Ubah status akun ${userName} (APPROVED, PENDING_APPROVAL, REJECTED):`, currentStatus);
+      const newStatus = prompt(`Ubah status akun ${userName} (APPROVED, PENDING_APPROVAL, REJECTED, BLOCKED):`, currentStatus);
       if (!newStatus) return;
       try {
         const res = await fetch(`${API_BASE}/auth/admin/users/${userId}/status`, {
@@ -1042,6 +1513,11 @@
 
     function viewChatModal(orderId) {
       state.activeChatOrder = state.orders.find(o => String(o.id) === String(orderId));
+      renderApp();
+    }
+
+    function viewUserProfileModal(userId) {
+      state.activeUserProfile = state.users.find(u => String(u.id) === String(userId));
       renderApp();
     }
 
