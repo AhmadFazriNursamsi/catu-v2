@@ -32,8 +32,13 @@
   <script>
     // Config & State
     const API_BASE = `http://${window.location.hostname}:3005`;
+    let rawStoredUser = null;
+    try {
+      rawStoredUser = JSON.parse(localStorage.getItem('catu_admin_user') || 'null');
+    } catch(e) { rawStoredUser = null; }
+
     const state = {
-      currentUser: JSON.parse(localStorage.getItem('catu_admin_user') || 'null'),
+      currentUser: (rawStoredUser && (rawStoredUser.roleCode === 'ADMIN' || rawStoredUser.role_code === 'ADMIN')) ? rawStoredUser : null,
       token: localStorage.getItem('catu_admin_token') || '',
       currentTab: 'overview',
       analytics: null,
@@ -61,14 +66,16 @@
     // Render Main App Dispatcher
     function renderApp() {
       const app = document.getElementById('app');
-      if (!state.currentUser || state.currentUser.roleCode !== 'ADMIN') {
+      if (!state.currentUser || (state.currentUser.roleCode !== 'ADMIN' && state.currentUser.role_code !== 'ADMIN')) {
         app.innerHTML = renderLoginPage();
         attachLoginListeners();
       } else {
         app.innerHTML = renderDashboardLayout();
         attachDashboardListeners();
       }
-      lucide.createIcons();
+      try {
+        lucide.createIcons();
+      } catch(e) {}
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -168,7 +175,7 @@
                       <span class="text-sm mr-1">🇮🇩</span>
                       <span class="text-xs font-bold text-blue-900 border-r border-slate-300 pr-2">+62</span>
                     </div>
-                    <input type="tel" id="phoneInput" required placeholder="89999999999"
+                    <input type="tel" id="phoneInput" required placeholder="89999999999" value="89999999999"
                       class="block w-full pl-16 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white" />
                   </div>
                 </div>
@@ -179,7 +186,7 @@
                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                       <i data-lucide="lock" class="w-4 h-4 text-blue-900"></i>
                     </div>
-                    <input type="password" id="passwordInput" required placeholder="••••••••"
+                    <input type="password" id="passwordInput" required placeholder="••••••••" value="password123"
                       class="block w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white" />
                     <button type="button" id="togglePasswordBtn" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
                       <i data-lucide="eye" class="w-4 h-4"></i>
@@ -188,7 +195,7 @@
                 </div>
 
                 <div class="pt-2">
-                  <button type="submit" id="submitBtn"
+                  <button type="submit" id="submitBtn" ${state.loginLoading ? 'disabled' : ''}
                     class="w-full py-3.5 px-4 bg-blue-950 hover:bg-blue-900 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-950/20 flex items-center justify-center space-x-2 transition duration-200 disabled:opacity-50">
                     ${state.loginLoading ? `
                       <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -239,12 +246,16 @@
             });
             const data = await res.json();
 
-            if (res.status === 200 && data.user && data.user.roleCode === 'ADMIN') {
+            const isSuccess = (res.ok || res.status === 200 || data.statusCode === 200) &&
+                              data.user && (data.user.roleCode === 'ADMIN' || data.user.role_code === 'ADMIN');
+
+            if (isSuccess) {
               state.currentUser = data.user;
-              state.token = data.accessToken;
+              state.token = data.accessToken || '';
               localStorage.setItem('catu_admin_user', JSON.stringify(data.user));
-              localStorage.setItem('catu_admin_token', data.accessToken);
+              localStorage.setItem('catu_admin_token', data.accessToken || '');
               state.loginLoading = false;
+              state.loginError = '';
               renderApp();
               loadDashboardData();
             } else {
@@ -265,6 +276,7 @@
     // 2. DASHBOARD MAIN LAYOUT & TABS
     // ══════════════════════════════════════════════════════════════════════════
     function renderDashboardLayout() {
+      const adminName = state.currentUser?.fullName || state.currentUser?.full_name || 'Super Admin CATU';
       return `
         <div class="h-full flex">
           <!-- Sidebar Nav (Left) -->
@@ -281,7 +293,7 @@
               </div>
 
               <nav class="p-3 space-y-1">
-                ${renderNavItem('overview', 'dashboard', 'Ringkasan & Analytics')}
+                ${renderNavItem('overview', 'layout-dashboard', 'Ringkasan & Analytics')}
                 ${renderNavItem('orders', 'clipboard-list', 'Manajemen Pelayanan', state.analytics?.orders?.pending)}
                 ${renderNavItem('users', 'users', 'Pengguna & Persetujuan', state.analytics?.users?.pending_approvals, 'bg-amber-500')}
                 ${renderNavItem('master', 'church', 'Master Data Gereja')}
@@ -322,7 +334,7 @@
                     SA
                   </div>
                   <div>
-                    <p class="text-xs font-bold text-slate-900">${state.currentUser.fullName || 'Super Admin'}</p>
+                    <p class="text-xs font-bold text-slate-900">${adminName}</p>
                     <p class="text-[10px] font-bold text-amber-600">SUPER ADMINISTRATOR</p>
                   </div>
                 </div>
@@ -507,8 +519,8 @@
                 ${recentOrders.map(o => `
                   <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
                     <div>
-                      <p class="font-bold text-slate-900">${o.order_number} • <span class="text-blue-950">${o.category_name}</span></p>
-                      <p class="text-slate-500">Pemohon: ${o.pemohon_name}</p>
+                      <p class="font-bold text-slate-900">${o.order_number || o.orderNumber} • <span class="text-blue-950">${o.category_name || o.categoryName}</span></p>
+                      <p class="text-slate-500">Pemohon: ${o.pemohon_name || o.pemohonName}</p>
                     </div>
                     <span class="px-2.5 py-1 rounded-md font-bold ${getStatusBadgeClass(o.status)}">${o.status}</span>
                   </div>
@@ -524,13 +536,16 @@
     function renderOrdersTab() {
       const q = state.orderSearch.toLowerCase();
       const filtered = state.orders.filter(o => {
-        if (state.orderStatusFilter !== 'ALL' && o.status.toUpperCase() !== state.orderStatusFilter) return false;
-        if (state.orderCategoryFilter !== 'ALL' && !o.categoryName.toLowerCase().includes(state.orderCategoryFilter.toLowerCase())) return false;
+        const oStatus = (o.status || '').toUpperCase();
+        const oCat = (o.category_name || o.categoryName || '').toLowerCase();
+        const oNum = (o.order_number || o.orderNumber || '').toLowerCase();
+        const oPem = (o.pemohon_name || o.pemohonName || '').toLowerCase();
+        const oPar = (o.paroki_name || o.parokiName || o.location_name || o.locationName || '').toLowerCase();
+
+        if (state.orderStatusFilter !== 'ALL' && oStatus !== state.orderStatusFilter) return false;
+        if (state.orderCategoryFilter !== 'ALL' && !oCat.includes(state.orderCategoryFilter.toLowerCase())) return false;
         if (q) {
-          const matchNum = o.orderNumber.toLowerCase().includes(q);
-          const matchPem = o.pemohonName.toLowerCase().includes(q);
-          const matchPar = (o.parokiName || '').toLowerCase().includes(q);
-          if (!matchNum && !matchPem && !matchPar) return false;
+          if (!oNum.includes(q) && !oPem.includes(q) && !oPar.includes(q)) return false;
         }
         return true;
       });
@@ -583,28 +598,37 @@
               <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
                 ${filtered.length === 0 ? `
                   <tr><td colspan="8" class="text-center py-10 text-slate-400">Tidak ada permintaan pelayanan ditemukan</td></tr>
-                ` : filtered.map(o => `
-                  <tr class="hover:bg-slate-50 transition">
-                    <td class="px-6 py-4 font-bold text-blue-950">${o.orderNumber}</td>
-                    <td class="px-6 py-4">
-                      <p class="font-bold text-slate-900">${o.categoryName}</p>
-                      ${o.items && o.items.length > 0 ? `<p class="text-[11px] text-slate-500">${o.items.length} misa: ${o.items.map(i => i.itemName).join(', ')}</p>` : ''}
-                    </td>
-                    <td class="px-6 py-4">${o.pemohonName || '-'}</td>
-                    <td class="px-6 py-4">${o.parokiName || o.locationName || '-'}</td>
-                    <td class="px-6 py-4">${o.scheduledDate || '-'}</td>
-                    <td class="px-6 py-4">
-                      ${o.acceptedRomoName ? `<span class="font-bold text-emerald-700">Romo ${o.acceptedRomoName}</span>` : '<span class="text-slate-400 italic">Belum ada</span>'}
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="px-2.5 py-1 rounded-md font-bold text-[11px] ${getStatusBadgeClass(o.status)}">${o.status}</span>
-                    </td>
-                    <td class="px-6 py-4 text-right space-x-2">
-                      <button onclick="viewOrderDetail(${o.id})" class="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-950 font-bold hover:bg-blue-100 transition">Detail</button>
-                      <button onclick="updateOrderStatusPrompt(${o.id})" class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition">Ubah Status</button>
-                    </td>
-                  </tr>
-                `).join('')}
+                ` : filtered.map(o => {
+                  const oId = o.id;
+                  const oNum = o.order_number || o.orderNumber;
+                  const oCat = o.category_name || o.categoryName;
+                  const oPem = o.pemohon_name || o.pemohonName || '-';
+                  const oPar = o.paroki_name || o.parokiName || o.location_name || o.locationName || '-';
+                  const oDate = (o.scheduled_date || o.scheduledDate || '').substring(0, 10);
+                  const oRomo = o.accepted_romo_name || o.acceptedRomoName;
+                  return `
+                    <tr class="hover:bg-slate-50 transition">
+                      <td class="px-6 py-4 font-bold text-blue-950">${oNum}</td>
+                      <td class="px-6 py-4">
+                        <p class="font-bold text-slate-900">${oCat}</p>
+                        ${o.items && o.items.length > 0 ? `<p class="text-[11px] text-slate-500">${o.items.length} misa: ${o.items.map(i => i.itemName || i.item_name).join(', ')}</p>` : ''}
+                      </td>
+                      <td class="px-6 py-4">${oPem}</td>
+                      <td class="px-6 py-4">${oPar}</td>
+                      <td class="px-6 py-4">${oDate}</td>
+                      <td class="px-6 py-4">
+                        ${oRomo ? `<span class="font-bold text-emerald-700">Romo ${oRomo}</span>` : '<span class="text-slate-400 italic">Belum ada</span>'}
+                      </td>
+                      <td class="px-6 py-4">
+                        <span class="px-2.5 py-1 rounded-md font-bold text-[11px] ${getStatusBadgeClass(o.status)}">${o.status}</span>
+                      </td>
+                      <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="viewOrderDetail('${oId}')" class="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-950 font-bold hover:bg-blue-100 transition">Detail</button>
+                        <button onclick="updateOrderStatusPrompt('${oId}')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition">Ubah Status</button>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
               </tbody>
             </table>
           </div>
@@ -616,13 +640,16 @@
     function renderUsersTab() {
       const q = state.userSearch.toLowerCase();
       const filtered = state.users.filter(u => {
-        if (state.userRoleFilter !== 'ALL' && (u.role_code || '').toUpperCase() !== state.userRoleFilter) return false;
-        if (state.userStatusFilter !== 'ALL' && (u.account_status || '').toUpperCase() !== state.userStatusFilter) return false;
+        const uRole = (u.role_code || u.roleCode || '').toUpperCase();
+        const uStatus = (u.account_status || u.accountStatus || '').toUpperCase();
+        const uName = (u.full_name || u.fullName || '').toLowerCase();
+        const uPhone = (u.phone_number || u.phoneNumber || '').toLowerCase();
+        const uPar = (u.paroki_name || u.parokiName || '').toLowerCase();
+
+        if (state.userRoleFilter !== 'ALL' && uRole !== state.userRoleFilter) return false;
+        if (state.userStatusFilter !== 'ALL' && uStatus !== state.userStatusFilter) return false;
         if (q) {
-          const matchName = (u.full_name || '').toLowerCase().includes(q);
-          const matchPhone = (u.phone_number || '').toLowerCase().includes(q);
-          const matchPar = (u.paroki_name || '').toLowerCase().includes(q);
-          if (!matchName && !matchPhone && !matchPar) return false;
+          if (!uName.includes(q) && !uPhone.includes(q) && !uPar.includes(q)) return false;
         }
         return true;
       });
@@ -675,34 +702,42 @@
               <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
                 ${filtered.length === 0 ? `
                   <tr><td colspan="6" class="text-center py-10 text-slate-400">Tidak ada pengguna ditemukan</td></tr>
-                ` : filtered.map(u => `
-                  <tr class="hover:bg-slate-50 transition">
-                    <td class="px-6 py-4">
-                      <p class="font-bold text-slate-900">${u.full_name || 'Pengguna'}</p>
-                      <p class="text-[11px] text-slate-400">${u.email || '-'}</p>
-                    </td>
-                    <td class="px-6 py-4 font-semibold">${u.phone_number}</td>
-                    <td class="px-6 py-4">
-                      <span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-950 font-bold text-[11px]">${u.role_name || u.role_code}</span>
-                    </td>
-                    <td class="px-6 py-4">${u.paroki_name || u.kota_name || '-'}</td>
-                    <td class="px-6 py-4">
-                      <span class="px-2.5 py-1 rounded-md font-bold text-[11px] ${
-                        u.account_status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                        u.account_status === 'PENDING_APPROVAL' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                        'bg-red-50 text-red-700 border border-red-200'
-                      }">${u.account_status}</span>
-                    </td>
-                    <td class="px-6 py-4 text-right space-x-2">
-                      ${u.account_status === 'PENDING_APPROVAL' ? `
-                        <button onclick="approveUserAction(${u.id}, 'APPROVED')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition">Setujui</button>
-                        <button onclick="approveUserAction(${u.id}, 'REJECTED')" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold transition">Tolak</button>
-                      ` : `
-                        <button onclick="toggleUserStatusPrompt(${u.id}, '${u.full_name}', '${u.account_status}')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition">Ubah Status</button>
-                      `}
-                    </td>
-                  </tr>
-                `).join('')}
+                ` : filtered.map(u => {
+                  const uId = u.id;
+                  const uName = u.full_name || u.fullName || 'Pengguna';
+                  const uPhone = u.phone_number || u.phoneNumber;
+                  const uRole = u.role_name || u.role_code || u.roleCode;
+                  const uPar = u.paroki_name || u.kota_name || u.parokiName || '-';
+                  const uStatus = u.account_status || u.accountStatus;
+                  return `
+                    <tr class="hover:bg-slate-50 transition">
+                      <td class="px-6 py-4">
+                        <p class="font-bold text-slate-900">${uName}</p>
+                        <p class="text-[11px] text-slate-400">${u.email || '-'}</p>
+                      </td>
+                      <td class="px-6 py-4 font-semibold">${uPhone}</td>
+                      <td class="px-6 py-4">
+                        <span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-950 font-bold text-[11px]">${uRole}</span>
+                      </td>
+                      <td class="px-6 py-4">${uPar}</td>
+                      <td class="px-6 py-4">
+                        <span class="px-2.5 py-1 rounded-md font-bold text-[11px] ${
+                          uStatus === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                          uStatus === 'PENDING_APPROVAL' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                          'bg-red-50 text-red-700 border border-red-200'
+                        }">${uStatus}</span>
+                      </td>
+                      <td class="px-6 py-4 text-right space-x-2">
+                        ${uStatus === 'PENDING_APPROVAL' ? `
+                          <button onclick="approveUserAction('${uId}', 'APPROVED')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition">Setujui</button>
+                          <button onclick="approveUserAction('${uId}', 'REJECTED')" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold transition">Tolak</button>
+                        ` : `
+                          <button onclick="toggleUserStatusPrompt('${uId}', '${uName}', '${uStatus}')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition">Ubah Status</button>
+                        `}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
               </tbody>
             </table>
           </div>
@@ -748,20 +783,27 @@
             Daftar Grup Chat Koordinasi Pelayanan
           </h3>
           <div class="space-y-3">
-            ${state.orders.map(o => `
-              <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200">
-                <div class="flex items-center space-x-3.5">
-                  <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center">
-                    <i data-lucide="message-circle" class="w-5 h-5"></i>
+            ${state.orders.map(o => {
+              const oId = o.id;
+              const oNum = o.order_number || o.orderNumber;
+              const oCat = o.category_name || o.categoryName;
+              const oPem = o.pemohon_name || o.pemohonName;
+              const oRomo = o.accepted_romo_name || o.acceptedRomoName;
+              return `
+                <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200">
+                  <div class="flex items-center space-x-3.5">
+                    <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+                      <i data-lucide="message-circle" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                      <h4 class="text-xs font-bold text-slate-900">Grup Koordinasi Pelayanan ${oCat} (${oNum})</h4>
+                      <p class="text-[11px] text-slate-500">Pemohon: ${oPem} • Romo: ${oRomo || 'Menunggu Penugasan'}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 class="text-xs font-bold text-slate-900">Grup Koordinasi Pelayanan ${o.categoryName} (${o.orderNumber})</h4>
-                    <p class="text-[11px] text-slate-500">Pemohon: ${o.pemohonName} • Romo: ${o.acceptedRomoName || 'Menunggu Penugasan'}</p>
-                  </div>
+                  <button onclick="viewChatModal('${oId}')" class="px-3 py-1.5 rounded-lg bg-blue-950 text-white text-xs font-bold hover:bg-blue-900 transition">Buka Chat</button>
                 </div>
-                <button onclick="viewChatModal(${o.id})" class="px-3 py-1.5 rounded-lg bg-blue-950 text-white text-xs font-bold hover:bg-blue-900 transition">Buka Chat</button>
-              </div>
-            `).join('')}
+              `;
+            }).join('')}
           </div>
         </div>
       `;
@@ -819,22 +861,30 @@
     // Modal Helpers
     function renderOrderDetailModal() {
       const o = state.activeOrderDetail;
+      const oNum = o.order_number || o.orderNumber;
+      const oCat = o.category_name || o.categoryName;
+      const oPem = o.pemohon_name || o.pemohonName;
+      const oPar = o.paroki_name || o.parokiName || o.location_name || o.locationName || '-';
+      const oDate = (o.scheduled_date || o.scheduledDate || '').substring(0, 10);
+      const oTime = o.scheduled_time || o.scheduledTime || '';
+      const oRomo = o.accepted_romo_name || o.acceptedRomoName;
+
       return `
         <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5">
             <div class="flex items-center justify-between border-b border-slate-200 pb-4">
               <div>
-                <h3 class="text-base font-extrabold text-slate-900">${o.orderNumber}</h3>
-                <p class="text-xs font-semibold text-blue-950">${o.categoryName}</p>
+                <h3 class="text-base font-extrabold text-slate-900">${oNum}</h3>
+                <p class="text-xs font-semibold text-blue-950">${oCat}</p>
               </div>
               <button onclick="state.activeOrderDetail = null; renderApp();" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
 
             <div class="space-y-3 text-xs">
-              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Pemohon:</span><span class="font-bold">${o.pemohonName}</span></div>
-              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Paroki / Lokasi:</span><span class="font-bold">${o.parokiName || o.locationName || '-'}</span></div>
-              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Jadwal Misa:</span><span class="font-bold">${o.scheduledDate || '-'} ${o.scheduledTime || ''}</span></div>
-              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Romo:</span><span class="font-bold text-emerald-700">${o.acceptedRomoName ? 'Romo ' + o.acceptedRomoName : 'Belum Ditugaskan'}</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Pemohon:</span><span class="font-bold">${oPem}</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Paroki / Lokasi:</span><span class="font-bold">${oPar}</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Jadwal Misa:</span><span class="font-bold">${oDate} ${oTime}</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Romo:</span><span class="font-bold text-emerald-700">${oRomo ? 'Romo ' + oRomo : 'Belum Ditugaskan'}</span></div>
               <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500">Status:</span><span class="font-bold px-2 py-0.5 rounded ${getStatusBadgeClass(o.status)}">${o.status}</span></div>
               ${o.notes ? `<div><span class="text-slate-500">Catatan Khusus:</span><p class="mt-1 p-2.5 rounded-lg bg-slate-50 text-slate-700">${o.notes}</p></div>` : ''}
             </div>
@@ -849,25 +899,30 @@
 
     function renderChatModal() {
       const o = state.activeChatOrder;
+      const oNum = o.order_number || o.orderNumber;
+      const oCat = o.category_name || o.categoryName;
+      const oPem = o.pemohon_name || o.pemohonName;
+      const oRomo = o.accepted_romo_name || o.acceptedRomoName;
+
       return `
         <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
-                <h3 class="text-sm font-extrabold text-slate-900">Chat Pelayanan: ${o.orderNumber}</h3>
-                <p class="text-[11px] text-slate-500">${o.categoryName} • Pemohon: ${o.pemohonName}</p>
+                <h3 class="text-sm font-extrabold text-slate-900">Chat Pelayanan: ${oNum}</h3>
+                <p class="text-[11px] text-slate-500">${oCat} • Pemohon: ${oPem}</p>
               </div>
               <button onclick="state.activeChatOrder = null; renderApp();" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
 
             <div class="h-64 overflow-y-auto bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 custom-scrollbar text-xs">
               <div class="p-2.5 rounded-xl bg-blue-100 text-blue-900 mr-8">
-                <p class="font-bold text-[10px] text-blue-950">${o.pemohonName} (Pemohon)</p>
-                <p class="mt-0.5">Berkah Dalem, permohonan pelayanan ${o.categoryName} telah kami ajukan.</p>
+                <p class="font-bold text-[10px] text-blue-950">${oPem} (Pemohon)</p>
+                <p class="mt-0.5">Berkah Dalem, permohonan pelayanan ${oCat} telah kami ajukan.</p>
               </div>
-              ${o.acceptedRomoName ? `
+              ${oRomo ? `
                 <div class="p-2.5 rounded-xl bg-emerald-100 text-emerald-900 ml-8 text-right">
-                  <p class="font-bold text-[10px] text-emerald-950">Romo ${o.acceptedRomoName}</p>
+                  <p class="font-bold text-[10px] text-emerald-950">Romo ${oRomo}</p>
                   <p class="mt-0.5">Berkah Dalem, permohonan telah diterima. Kami akan hadir tepat waktu.</p>
                 </div>
               ` : ''}
@@ -905,9 +960,9 @@
 
         state.analytics = await anRes.json();
         const ordData = await ordRes.json();
-        state.orders = ordData.orders || ordData || [];
+        state.orders = Array.isArray(ordData) ? ordData : (ordData.orders || []);
         const usrData = await usrRes.json();
-        state.users = usrData.users || [];
+        state.users = usrData.users || (Array.isArray(usrData) ? usrData : []);
         state.keuskupan = await kRes.json();
         state.paroki = await pRes.json();
         state.ordo = await oRes.json();
@@ -923,7 +978,7 @@
         const res = await fetch(`${API_BASE}/auth/approve-registration`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ targetUserId: userId, action }),
+          body: JSON.stringify({ targetUserId: parseInt(userId), action }),
         });
         const data = await res.json();
         alert(data.message || 'Status akun berhasil diperbarui!');
@@ -981,18 +1036,18 @@
     }
 
     function viewOrderDetail(orderId) {
-      state.activeOrderDetail = state.orders.find(o => o.id === orderId);
+      state.activeOrderDetail = state.orders.find(o => String(o.id) === String(orderId));
       renderApp();
     }
 
     function viewChatModal(orderId) {
-      state.activeChatOrder = state.orders.find(o => o.id === orderId);
+      state.activeChatOrder = state.orders.find(o => String(o.id) === String(orderId));
       renderApp();
     }
 
     // Init
     renderApp();
-    if (state.currentUser && state.currentUser.roleCode === 'ADMIN') {
+    if (state.currentUser && (state.currentUser.roleCode === 'ADMIN' || state.currentUser.role_code === 'ADMIN')) {
       loadDashboardData();
     }
   </script>

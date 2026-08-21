@@ -1,4 +1,4 @@
-import { Controller, Post, Put, Body, Get, Param, Query, OnModuleInit, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Put, Body, Get, Param, Query, OnModuleInit, BadRequestException, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -689,6 +689,7 @@ export class AuthController implements OnModuleInit {
   }
 
   @Post('login')
+  @HttpCode(200)
   @ApiOperation({
     summary: 'Login User & Ambil Access Token',
     description: 'Login menggunakan nomor HP terdaftar (auth_users JOIN user_profiles). Nomor HP: 6281234567890, Password: password123',
@@ -767,6 +768,7 @@ export class AuthController implements OnModuleInit {
   }
 
   @Post('admin/login')
+  @HttpCode(200)
   @ApiOperation({
     summary: 'Login Khusus Administrator Web Portal',
     description: 'Hanya mengizinkan akun dengan peran ADMIN. User peran lain (UMAT, ROMO, PENGURUS) akan ditolak dengan status 403.',
