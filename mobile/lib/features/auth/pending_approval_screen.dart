@@ -192,28 +192,30 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: const Color(0xFFFCD34D)),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFD97706),
-                        shape: BoxShape.circle,
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Color(0xFFD97706),
+                          shape: BoxShape.circle,
+                        ),
+                        child: SizedBox(width: 8, height: 8),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'STATUS: MENUNGGU PERSETUJUAN',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF92400E),
-                        letterSpacing: 0.6,
+                      SizedBox(width: 8),
+                      Text(
+                        'STATUS: MENUNGGU PERSETUJUAN',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF92400E),
+                          letterSpacing: 0.6,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 14),

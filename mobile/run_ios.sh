@@ -5,14 +5,12 @@
 # install & launch via simctl (bypass Flutter CLI bug)
 # ================================================
 
-SIMULATOR_ID="AD34C126-B786-46F3-BBCE-06A06AD21752"
+BOOTED_SIM=$(xcrun simctl list devices | grep -i "Booted" | head -1 | grep -oE "[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}")
+SIMULATOR_ID="${BOOTED_SIM:-AD34C126-B786-46F3-BBCE-06A06AD21752}"
 BUNDLE_ID="com.example.catuMobile"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 IOS_DIR="$PROJECT_DIR/ios"
 
-echo "🗑️ Step 0: Uninstalling old app from simulator..."
-xcrun simctl uninstall "$SIMULATOR_ID" "$BUNDLE_ID" 2>/dev/null || true
-xcrun simctl uninstall "$SIMULATOR_ID" "com.example.myApp" 2>/dev/null || true
 
 echo "🏷️ Step 0.5: Auto-updating app version & build timestamp..."
 BUILD_TS=$(date +"%Y%m%d.%H%M%S")
@@ -41,6 +39,7 @@ EOF
 
 echo "🔨 Step 1: flutter pub get..."
 cd "$PROJECT_DIR" && flutter pub get
+xcrun simctl terminate "$SIMULATOR_ID" "$BUNDLE_ID" 2>/dev/null || true
 
 echo ""
 echo "📦 Step 2: Building with Xcode..."

@@ -520,14 +520,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
               await NotificationService.markRead(item.id);
               if (mounted) setState(() => item.isRead = true);
 
+              // 1. Check if strictly a user registration approval notification
               final isApprovalNotification = item.type == 'USER_APPROVAL' ||
-                  item.title.toLowerCase().contains('pendaftaran') ||
-                  item.body.toLowerCase().contains('menunggu persetujuan') ||
-                  item.body.toLowerCase().contains('approval');
+                  (item.orderId == null && item.title.toLowerCase().contains('pendaftaran'));
 
               if (isApprovalNotification) {
                 final isRomoApproval = item.title.toLowerCase().contains('romo') ||
-                    widget.role.toUpperCase().contains('ROMO');
+                    (widget.role.toUpperCase().contains('ROMO') && item.title.toLowerCase().contains('romo'));
                 if (isRomoApproval) {
                   await Navigator.push(
                     context,
@@ -546,12 +545,48 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 return;
               }
 
-              // Navigate to order detail — fetch fresh from backend
-              if (item.orderId == null || !mounted) return;
-              final orderId = int.tryParse(item.orderId!);
-              if (orderId == null) return;
+              // 2. Order service notification routing
+              int? orderId;
+              if (item.orderId != null && item.orderId!.trim().isNotEmpty) {
+                orderId = int.tryParse(item.orderId!.trim());
+              }
 
-              // Show loading dialog
+              // Fallback: search widget.orders if orderId is missing or unparsed
+              if (orderId == null) {
+                for (final o in widget.orders) {
+                  if (item.itemTitle != null && item.itemTitle!.isNotEmpty) {
+                    if (o.items.any((i) => i.itemName.toLowerCase() == item.itemTitle!.toLowerCase())) {
+                      orderId = o.id;
+                      break;
+                    }
+                  }
+                  if (item.categoryName != null && o.categoryName.toLowerCase() == item.categoryName!.toLowerCase()) {
+                    orderId = o.id;
+                    break;
+                  }
+                }
+                // If still null and there are orders, pick the first available order
+                if (orderId == null && widget.orders.isNotEmpty) {
+                  orderId = widget.orders.first.id;
+                }
+              }
+
+              if (orderId == null) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Detail pelayanan tidak ditemukan.'),
+                      backgroundColor: Colors.amber.shade800,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      margin: const EdgeInsets.all(16),
+                    ),
+                  );
+                }
+                return;
+              }
+
+              // Show loading dialog while fetching fresh order data
               showDialog(
                 context: context,
                 barrierDismissible: false,
@@ -560,16 +595,29 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 ),
               );
 
-              final Order? order = await ApiService.getOrderById(orderId);
+              Order? order;
+              try {
+                order = await ApiService.getOrderById(orderId);
+              } catch (_) {}
 
-              // Dismiss loading
+              // Dismiss loading dialog safely
               if (mounted) Navigator.of(context).pop();
+
+              // Fallback to local widget.orders list if backend lookup returned null
+              if (order == null) {
+                for (final o in widget.orders) {
+                  if (o.id == orderId) {
+                    order = o;
+                    break;
+                  }
+                }
+              }
 
               if (order == null) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Detail pelayanan tidak ditemukan.'),
+                      content: const Text('Detail pelayanan tidak ditemukan di server.'),
                       backgroundColor: Colors.red.shade700,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -581,12 +629,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
               }
 
               if (mounted) {
-                final userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Pengguna';
+                final userName = widget.user['fullName'] ?? widget.user['full_name'] ?? (widget.isRomo ? 'Romo' : 'Pengguna');
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => OrderDetailScreen(
-                      order: order,
+                      order: order!,
                       userName: userName,
                       selectedItemTitle: item.itemTitle,
                       isRomo: widget.isRomo,

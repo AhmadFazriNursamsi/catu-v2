@@ -39,6 +39,9 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   bool _notifyPelayanan = true;
   bool _notifyChatRomo = true;
 
+  int _pendingPengurusCount = 0;
+  int _pendingRomoCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -59,6 +62,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
 
     _fetchFreshUser();
+    _fetchApprovalCounts();
   }
 
   void _onLanguageChanged() {
@@ -77,11 +81,54 @@ class _MainMenuScreenState extends State<MainMenuScreen>
           setState(() {
             _userData = Map<String, dynamic>.from(resData['user']);
           });
+          _fetchApprovalCounts();
         }
       }
     } catch (e) {
       debugPrint('Error fetching fresh user in MainMenuScreen: $e');
     }
+  }
+
+  Future<void> _fetchApprovalCounts() async {
+    try {
+      final isPengurus = _userData['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
+          _userData['role_code'] == 'PENGURUS_LINGKUNGAN' ||
+          (_userData['pengurusPosition'] != null &&
+              _userData['pengurusPosition'].toString().trim().isNotEmpty) ||
+          (_userData['pengurus_position'] != null &&
+              _userData['pengurus_position'].toString().trim().isNotEmpty);
+
+      final isKetuaRomo = (_userData['romoPosition'] ?? _userData['romo_position'] ?? '').toString().toUpperCase() == 'KETUA_ROMO';
+
+      if (isPengurus) {
+        final rawLingkungan = _userData['lingkunganId'] ?? _userData['lingkungan_id'];
+        final int? lingkunganId = rawLingkungan != null ? int.tryParse(rawLingkungan.toString()) : null;
+        final rawUserId = _userData['id'] ?? _userData['userId'] ?? _userData['user_id'];
+        final int? pengurusUserId = rawUserId != null ? int.tryParse(rawUserId.toString()) : null;
+
+        final list = await ApiService.getPengurusPendingUmat(
+          lingkunganId: lingkunganId,
+          pengurusUserId: pengurusUserId,
+        );
+        if (mounted) setState(() => _pendingPengurusCount = list.length);
+      }
+
+      if (isKetuaRomo) {
+        final rawUserId = _userData['id'] ?? _userData['userId'] ?? _userData['user_id'];
+        final int? romoUserId = rawUserId != null ? int.tryParse(rawUserId.toString()) : null;
+        final rawParoki = _userData['parokiId'] ?? _userData['paroki_id'];
+        final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
+        final rawOrdo = _userData['ordoId'] ?? _userData['ordo_id'];
+        final int? ordoId = rawOrdo != null ? int.tryParse(rawOrdo.toString()) : null;
+
+        final list = await ApiService.getPendingRomoList(
+          romoUserId: romoUserId,
+          parokiId: parokiId,
+          ordoId: ordoId,
+        );
+        if (mounted) setState(() => _pendingRomoCount = list.length);
+      }
+    } catch (_) {}
   }
 
   @override
@@ -460,45 +507,80 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       ),
       child: Column(
         children: [
-          if (_userData['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
+          // ── Pengurus Lingkungan Approval Tile (ONLY if pending count > 0) ──
+          if ((_userData['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
               _userData['role_code'] == 'PENGURUS_LINGKUNGAN' ||
               (_userData['pengurusPosition'] != null &&
                   _userData['pengurusPosition'].toString().trim().isNotEmpty) ||
               (_userData['pengurus_position'] != null &&
-                  _userData['pengurus_position'].toString().trim().isNotEmpty)) ...[
+                  _userData['pengurus_position'].toString().trim().isNotEmpty)) &&
+              _pendingPengurusCount > 0) ...[
             _buildMenuItem(
               icon: Icons.how_to_reg_rounded,
               title: 'Persetujuan Umat Lingkungan',
-              subtitle: 'Verifikasi pendaftaran umat baru di lingkungan Anda',
-              onTap: () {
+              subtitle: '$_pendingPengurusCount umat baru menunggu verifikasi Anda',
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$_pendingPengurusCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              onTap: () async {
                 HapticFeedback.selectionClick();
-                Navigator.push(
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => PengurusApprovalScreen(user: _userData),
                   ),
                 );
+                _fetchApprovalCounts();
               },
             ),
             const Divider(height: 1, color: Color(0xFFF1F5F9)),
           ],
 
-          // ── Ketua Romo Approval Tile ──
-          if ((_userData['romoPosition'] ?? _userData['romo_position'] ?? '').toString().toUpperCase() == 'KETUA_ROMO') ...[
+          // ── Ketua Romo Approval Tile (ONLY if pending count > 0) ──
+          if (((_userData['romoPosition'] ?? _userData['romo_position'] ?? '').toString().toUpperCase() == 'KETUA_ROMO') &&
+              _pendingRomoCount > 0) ...[
             _buildMenuItem(
               icon: Icons.verified_user_rounded,
               title: (_userData['roleCode'] ?? _userData['role_code'] ?? '').toString().toUpperCase().contains('ORDO')
                   ? 'Persetujuan Romo Ordo'
                   : 'Persetujuan Romo Paroki',
-              subtitle: 'Verifikasi pendaftaran romo baru untuk wilayah pelayanan Anda',
-              onTap: () {
+              subtitle: '$_pendingRomoCount romo baru menunggu verifikasi Anda',
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$_pendingRomoCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              onTap: () async {
                 HapticFeedback.selectionClick();
-                Navigator.push(
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => RomoApprovalScreen(user: _userData),
                   ),
                 );
+                _fetchApprovalCounts();
               },
             ),
             const Divider(height: 1, color: Color(0xFFF1F5F9)),
@@ -642,6 +724,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    Widget? trailing,
     Color titleColor = const Color(0xFF0F172A),
     Color iconColor = const Color(0xFF1D4ED8),
     Color? iconBgColor,
@@ -690,8 +773,9 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 20, color: Color(0xFFCBD5E1)),
+            trailing ??
+                const Icon(Icons.chevron_right_rounded,
+                    size: 20, color: Color(0xFFCBD5E1)),
           ],
         ),
       ),

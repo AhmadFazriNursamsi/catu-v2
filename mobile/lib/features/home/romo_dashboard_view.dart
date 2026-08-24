@@ -11,6 +11,7 @@ import '../orders/schedule_screen.dart';
 import '../profile/main_menu_screen.dart';
 import '../notifications/notification_screen.dart';
 import '../admin/romo_approval_screen.dart';
+import '../../core/services/api_service.dart';
 
 class RomoDashboardCardItem {
   final Order parentOrder;
@@ -51,11 +52,37 @@ class RomoDashboardView extends StatefulWidget {
 class _RomoDashboardViewState extends State<RomoDashboardView> {
   int _currentNavIndex = 0;
   int _unreadNotifCount = 0;
+  int _pendingRomoApprovalsCount = 0;
 
   @override
   void initState() {
     super.initState();
     _refreshUnreadCount();
+    _refreshPendingApprovals();
+  }
+
+  Future<void> _refreshPendingApprovals() async {
+    if (!_isKetuaRomo) return;
+    try {
+      final romoUserId = widget.user['id'] != null
+          ? int.tryParse(widget.user['id'].toString())
+          : (widget.user['userId'] != null ? int.tryParse(widget.user['userId'].toString()) : null);
+      final rawParoki = widget.user['parokiId'] ?? widget.user['paroki_id'];
+      final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
+      final rawOrdo = widget.user['ordoId'] ?? widget.user['ordo_id'];
+      final int? ordoId = rawOrdo != null ? int.tryParse(rawOrdo.toString()) : null;
+
+      final list = await ApiService.getPendingRomoList(
+        romoUserId: romoUserId,
+        parokiId: parokiId,
+        ordoId: ordoId,
+      );
+      if (mounted) {
+        setState(() {
+          _pendingRomoApprovalsCount = list.length;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _refreshUnreadCount() async {
@@ -104,6 +131,9 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       ),
     );
     _refreshUnreadCount();
+    _refreshPendingApprovals();
+    widget.onRefresh();
+    if (mounted) setState(() {});
   }
 
   List<LiquidNavItem> _buildNavItems() {
@@ -371,43 +401,51 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
             // ── 2. Scrollable Body Content ──
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header Cross Banner with Shadow Depth
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF1E5399).withOpacity(0.18),
-                              blurRadius: 24,
-                              spreadRadius: 2,
-                              offset: const Offset(0, 8),
-                            ),
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(22),
-                          child: AspectRatio(
-                            aspectRatio: 16 / 9,
-                            child: Image.asset(
-                              'assets/images/cross_banner.jpg',
-                              fit: BoxFit.cover,
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  widget.onRefresh();
+                  _refreshUnreadCount();
+                  _refreshPendingApprovals();
+                },
+                color: const Color(0xFF1E5399),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header Cross Banner with Shadow Depth
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(22),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF1E5399).withOpacity(0.18),
+                                blurRadius: 24,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 8),
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(22),
+                            child: AspectRatio(
+                              aspectRatio: 16 / 9,
+                              child: Image.asset(
+                                'assets/images/cross_banner.jpg',
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
 
               // ── 3. Spiritual Quote ──
               Padding(
@@ -437,19 +475,20 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                 ),
               ),
 
-              // ── Ketua Romo Approval Action Banner (if KETUA_ROMO) ──
-              if (_isKetuaRomo)
+              // ── Ketua Romo Approval Action Banner (ONLY if KETUA_ROMO and pending > 0) ──
+              if (_isKetuaRomo && _pendingRomoApprovalsCount > 0)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                   child: InkWell(
-                    onTap: () {
+                    onTap: () async {
                       HapticFeedback.selectionClick();
-                      Navigator.push(
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => RomoApprovalScreen(user: widget.user),
                         ),
                       );
+                      _refreshPendingApprovals();
                     },
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
@@ -484,15 +523,39 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  _romoRole == 'ROMO_ORDO'
-                                      ? 'Persetujuan Romo Ordo'
-                                      : 'Persetujuan Romo Paroki',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        _romoRole == 'ROMO_ORDO'
+                                            ? 'Persetujuan Romo Ordo'
+                                            : 'Persetujuan Romo Paroki',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFEF4444),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        '$_pendingRomoApprovalsCount Baru',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
@@ -653,8 +716,9 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           ),
         ),
       ),
-    ],
-  ),
+    ),
+  ],
+),
 ),
 
       // ── Liquid Floating Bottom Navigation Bar ──
@@ -696,6 +760,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                 onTap: () {
                   Navigator.pop(ctx);
                   widget.onRefresh();
+                  _refreshPendingApprovals();
+                  _refreshUnreadCount();
                 },
               ),
               ListTile(
@@ -815,15 +881,17 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
-          // ONLY display items accepted by THIS Romo that are NOT yet DONE!
-          if (romoId == null || item.acceptedRomoId != romoId) continue;
+          final itemAcceptedId = item.acceptedRomoId ?? order.acceptedRomoId;
+          if (romoId != null && itemAcceptedId != null && itemAcceptedId != romoId) continue;
+          if (itemAcceptedId == null && item.status.toUpperCase() != 'CONFIRMED' && order.status.toUpperCase() != 'CONFIRMED') continue;
+
           final itemSt = item.status.toUpperCase();
           if (itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL') continue;
-          if (_isDateBeforeToday(item.scheduledDate)) continue;
+          if (_isDateBeforeToday(item.scheduledDate.isNotEmpty ? item.scheduledDate : order.scheduledDate)) continue;
 
-          String scheduleStr = item.scheduledDate;
+          String scheduleStr = item.scheduledDate.isNotEmpty ? item.scheduledDate : order.scheduledDate;
           if (item.scheduledTimeStart.isNotEmpty) {
-            scheduleStr = '${item.scheduledDate} • ${item.scheduledTimeStart}';
+            scheduleStr = '$scheduleStr • ${item.scheduledTimeStart}';
             if (item.scheduledTimeEnd.isNotEmpty) {
               scheduleStr += ' - ${item.scheduledTimeEnd} WIB';
             } else {
@@ -845,7 +913,9 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           );
         }
       } else {
-        if (romoId == null || order.acceptedRomoId != romoId) continue;
+        if (romoId != null && order.acceptedRomoId != null && order.acceptedRomoId != romoId) continue;
+        if (order.acceptedRomoId == null && order.status.toUpperCase() != 'CONFIRMED') continue;
+
         final st = order.status.toUpperCase();
         if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') continue;
         if (_isDateBeforeToday(order.scheduledDate)) continue;

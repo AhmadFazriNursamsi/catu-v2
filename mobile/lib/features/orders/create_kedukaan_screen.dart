@@ -574,8 +574,16 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     setState(() => _isLoading = false);
     if (!mounted) return;
 
-    final bool isSuccess =
-        res['message']?.toString().toLowerCase().contains('gagal') != true;
+    final dynamic rawOrderId = res['order'] != null
+        ? res['order']['id']
+        : (res['id'] ?? res['orderId']);
+    final String orderId = rawOrderId?.toString() ?? '';
+
+    final bool isSuccess = orderId.isNotEmpty &&
+        res['statusCode'] != 500 &&
+        res['statusCode'] != 400 &&
+        res['message']?.toString().toLowerCase().contains('gagal') != true &&
+        res['message']?.toString().toLowerCase().contains('error') != true;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -590,7 +598,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                res['message'] ?? 'Permintaan Misa Kedukaan berhasil dikirim',
+                isSuccess ? 'Permintaan Misa Kedukaan berhasil dikirim' : (res['message'] ?? 'Gagal membuat pesanan misa'),
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
@@ -604,10 +612,6 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     );
 
     if (isSuccess) {
-      final dynamic rawOrderId = res['order'] != null
-          ? res['order']['id']
-          : (res['id'] ?? res['orderId']);
-      final String orderId = rawOrderId?.toString() ?? '';
       final umatName = widget.user?['fullName'] ?? widget.user?['full_name'] ?? 'Umat';
 
       final userParokiRaw = widget.user?['parokiId'] ?? widget.user?['paroki_id'];

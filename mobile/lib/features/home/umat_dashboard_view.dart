@@ -15,6 +15,7 @@ import '../profile/main_menu_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../notifications/notification_screen.dart';
 import '../admin/pengurus_approval_screen.dart';
+import '../../core/services/api_service.dart';
 
 List<LiquidNavItem> _buildNavItems() => [
       LiquidNavItem(
@@ -60,16 +61,46 @@ class UmatDashboardView extends StatefulWidget {
 class _UmatDashboardViewState extends State<UmatDashboardView> {
   int _currentNavIndex = 0;
   int _unreadNotifCount = 0;
+  int _pendingPengurusApprovalsCount = 0;
 
   @override
   void initState() {
     super.initState();
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
     _refreshUnreadCount();
+    _refreshPendingPengurusApprovals();
   }
 
   void _onLanguageChanged() {
     if (mounted) setState(() {});
+  }
+
+  bool get _isPengurus {
+    return widget.user['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
+        widget.user['role_code'] == 'PENGURUS_LINGKUNGAN' ||
+        (widget.user['pengurusPosition'] != null &&
+            widget.user['pengurusPosition'].toString().trim().isNotEmpty) ||
+        (widget.user['pengurus_position'] != null &&
+            widget.user['pengurus_position'].toString().trim().isNotEmpty);
+  }
+
+  Future<void> _refreshPendingPengurusApprovals() async {
+    if (!_isPengurus) return;
+    try {
+      final rawLingkungan = widget.user['lingkunganId'] ?? widget.user['lingkungan_id'];
+      final int? lingkunganId = rawLingkungan != null ? int.tryParse(rawLingkungan.toString()) : null;
+      final int? pengurusUserId = _userId;
+
+      final list = await ApiService.getPengurusPendingUmat(
+        lingkunganId: lingkunganId,
+        pengurusUserId: pengurusUserId,
+      );
+      if (mounted) {
+        setState(() {
+          _pendingPengurusApprovalsCount = list.length;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _refreshUnreadCount() async {
@@ -91,6 +122,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
       ),
     );
     _refreshUnreadCount();
+    _refreshPendingPengurusApprovals();
   }
 
   @override
@@ -446,26 +478,22 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                       ),
                     ),
 
-                    if (widget.user['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
-                        widget.user['role_code'] == 'PENGURUS_LINGKUNGAN' ||
-                        (widget.user['pengurusPosition'] != null &&
-                            widget.user['pengurusPosition'].toString().trim().isNotEmpty) ||
-                        (widget.user['pengurus_position'] != null &&
-                            widget.user['pengurus_position'].toString().trim().isNotEmpty)) ...[
+                    if (_isPengurus && _pendingPengurusApprovalsCount > 0) ...[
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(18),
-                            onTap: () {
+                            onTap: () async {
                               HapticFeedback.selectionClick();
-                              Navigator.push(
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => PengurusApprovalScreen(user: widget.user),
                                 ),
                               );
+                              _refreshPendingPengurusApprovals();
                             },
                             child: Container(
                               padding: const EdgeInsets.all(16),
@@ -498,17 +526,41 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: const [
-                                        Text(
-                                          'Persetujuan Umat Lingkungan',
-                                          style: TextStyle(
-                                            fontSize: 14.5,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Expanded(
+                                              child: Text(
+                                                'Persetujuan Umat Lingkungan',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFEF4444),
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              child: Text(
+                                                '$_pendingPengurusApprovalsCount Baru',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        SizedBox(height: 2),
-                                        Text(
+                                        const SizedBox(height: 2),
+                                        const Text(
                                           'Verifikasi & setujui pendaftaran umat baru',
                                           style: TextStyle(
                                             fontSize: 11.5,

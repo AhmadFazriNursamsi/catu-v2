@@ -93,6 +93,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     );
     _fadeIn = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
+
+    _refreshLocalOrders();
   }
 
   @override
@@ -105,6 +107,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
   Future<void> _refreshLocalOrders() async {
     try {
+      widget.onRefresh();
       final fetched = await ApiService.getOrders(
         romoId: widget.romoId,
       );
@@ -113,7 +116,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           _localOrders = fetched;
         });
       } else if (mounted) {
-        setState(() {});
+        setState(() {
+          _localOrders = List.from(widget.orders);
+        });
       }
     } catch (_) {
       if (mounted) setState(() {});
@@ -152,12 +157,14 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           if (widget.isRomo) {
             if (widget.showPendingOnly) {
               // Permintaan Masuk: Only show unaccepted items with status PENDING
-              if (item.acceptedRomoId != null || itemSt != 'PENDING') continue;
+              final itemAcceptedId = item.acceptedRomoId ?? order.acceptedRomoId;
+              if (itemAcceptedId != null || (itemSt != 'PENDING' && order.status.toUpperCase() != 'PENDING')) continue;
             } else {
               // Jadwal Dikonfirmasi: Only show items accepted by THIS Romo with CONFIRMED/IN_PROGRESS status
-              if (widget.romoId != null && item.acceptedRomoId != widget.romoId) continue;
-              if (item.acceptedRomoId == null) continue;
-              if (itemSt != 'CONFIRMED' && itemSt != 'IN_PROGRESS' && itemSt != 'ACCEPTED') continue;
+              final itemAcceptedId = item.acceptedRomoId ?? order.acceptedRomoId;
+              if (widget.romoId != null && itemAcceptedId != null && itemAcceptedId != widget.romoId) continue;
+              if (itemAcceptedId == null && itemSt != 'CONFIRMED' && itemSt != 'IN_PROGRESS' && itemSt != 'ACCEPTED' && order.status.toUpperCase() != 'CONFIRMED') continue;
+              if (itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL') continue;
             }
           }
 
@@ -206,8 +213,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           if (widget.showPendingOnly) {
             if (st != 'PENDING' || order.acceptedRomoId != null) continue;
           } else {
-            if (widget.romoId != null && order.acceptedRomoId != widget.romoId) continue;
-            if (order.acceptedRomoId == null) continue;
+            if (widget.romoId != null && order.acceptedRomoId != null && order.acceptedRomoId != widget.romoId) continue;
+            if (order.acceptedRomoId == null && st != 'CONFIRMED' && st != 'IN_PROGRESS' && st != 'ACCEPTED') continue;
           }
         }
 

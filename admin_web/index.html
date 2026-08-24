@@ -488,7 +488,7 @@
                 <div>
                   ${isOpen ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Tata Kelola & Data</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
-                    ${renderNavItem('approvals', 'shield-check', 'Persetujuan Pendaftaran', pendingApprovalsCount, 'bg-amber-500')}
+                    ${(pendingApprovalsCount > 0 || state.currentTab === 'approvals') ? renderNavItem('approvals', 'shield-check', 'Persetujuan Pendaftaran', pendingApprovalsCount, 'bg-amber-500') : ''}
                     ${renderNavItem('master', 'map-pin', 'Master Data Gereja')}
                     ${renderNavItem('chat', 'messages-square', 'Monitoring Chat')}
                     ${renderNavItem('qa', 'flask-conical', 'QA & Live Tests')}

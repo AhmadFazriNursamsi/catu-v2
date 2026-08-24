@@ -416,8 +416,16 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     setState(() => _isLoading = false);
     if (!mounted) return;
 
-    final bool isSuccess =
-        res['message']?.toString().toLowerCase().contains('gagal') != true;
+    final dynamic rawOrderId = res['order'] != null
+        ? res['order']['id']
+        : (res['id'] ?? res['orderId']);
+    final String orderId = rawOrderId?.toString() ?? '';
+
+    final bool isSuccess = orderId.isNotEmpty &&
+        res['statusCode'] != 500 &&
+        res['statusCode'] != 400 &&
+        res['message']?.toString().toLowerCase().contains('gagal') != true &&
+        res['message']?.toString().toLowerCase().contains('error') != true;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -432,7 +440,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                res['message'] ?? 'Permintaan berhasil dikirim',
+                isSuccess ? 'Permintaan Sakramen Perminyakan berhasil dikirim' : (res['message'] ?? 'Gagal membuat pesanan pelayanan'),
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
@@ -446,10 +454,6 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     );
 
     if (isSuccess) {
-      final dynamic rawOrderId = res['order'] != null
-          ? res['order']['id']
-          : (res['id'] ?? res['orderId']);
-      final String orderId = rawOrderId?.toString() ?? '';
       final umatName = widget.user?['fullName'] ?? widget.user?['full_name'] ?? 'Umat';
 
       final userParokiRaw = widget.user?['parokiId'] ?? widget.user?['paroki_id'];

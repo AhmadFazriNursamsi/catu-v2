@@ -235,27 +235,34 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(10),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.how_to_reg_rounded, color: Color(0xFF2563EB), size: 20),
                             ),
-                            child: const Icon(Icons.how_to_reg_rounded, color: Color(0xFF2563EB), size: 20),
-                          ),
-                          const SizedBox(width: 10),
-                          const Text(
-                            'Menunggu Persetujuan',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: Color(0xFF0F172A),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                'Menunggu Persetujuan',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Color(0xFF0F172A),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
@@ -459,18 +466,24 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF0F172A),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Row(
                         children: [
                           const Icon(Icons.phone_iphone_rounded, size: 14, color: Color(0xFF64748B)),
                           const SizedBox(width: 4),
-                          Text(
-                            '+$phone',
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF64748B),
+                          Expanded(
+                            child: Text(
+                              '+$phone',
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF64748B),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -524,6 +537,8 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
                     child: Text(
                       email.toString(),
                       style: const TextStyle(fontSize: 12, color: Color(0xFF475569)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -556,12 +571,16 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFFFCA5A5)),
                         foregroundColor: const Color(0xFFDC2626),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: isProcessing ? null : () => _showRejectDialog(item),
-                      child: const Text(
-                        'Tolak',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'Tolak',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
                       ),
                     ),
                   ),
@@ -576,6 +595,7 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
                         backgroundColor: const Color(0xFF059669),
                         foregroundColor: Colors.white,
                         elevation: 2,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: isProcessing ? null : () => _handleApproval(item, 'APPROVE'),
@@ -585,16 +605,20 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
                               height: 18,
                               child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                             )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(Icons.check_circle_outline_rounded, size: 18),
-                                SizedBox(width: 6),
-                                Text(
-                                  'Setujui Umat',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                ),
-                              ],
+                          : const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.check_circle_outline_rounded, size: 18),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Setujui Umat',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                ],
+                              ),
                             ),
                     ),
                   ),

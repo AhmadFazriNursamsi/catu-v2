@@ -2022,7 +2022,15 @@ export class OrdersController {
   })
   async createOrder(@Body() dto: CreateOrderDto) {
     const orderNum = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const userId = dto.userId && dto.userId > 0 ? dto.userId : 1;
+    let userId = dto.userId && dto.userId > 0 ? dto.userId : null;
+    if (userId) {
+      const uCheck = await this.dataSource.query('SELECT id FROM auth_users WHERE id = $1', [userId]);
+      if (uCheck.length === 0) userId = null;
+    }
+    if (!userId) {
+      const uFirst = await this.dataSource.query('SELECT id FROM auth_users ORDER BY id ASC LIMIT 1');
+      userId = uFirst.length > 0 ? uFirst[0].id : null;
+    }
 
     // Fetch user profile default hierarchy if DTO doesn't specify custom location hierarchy
     let kId = dto.keuskupanId;
@@ -2092,18 +2100,27 @@ export class OrdersController {
 
     const groupId = groupResult[0].id;
 
-    const initialMembers = [
-      { userId: userId, role: 'UMAT' },
-      { userId: 4, role: 'PENGURUS_LINGKUNGAN' },
-      { userId: 5, role: 'PENGURUS_LINGKUNGAN' },
-      { userId: 6, role: 'KOORDINATOR_KEUSKUPAN' },
-    ];
+    // 1. Add order creator (Umat) to chat group
+    await this.dataSource.query(
+      `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'UMAT') ON CONFLICT DO NOTHING`,
+      [groupId, userId],
+    );
 
-    for (const member of initialMembers) {
-      await this.dataSource.query(
-        `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-        [groupId, member.userId, member.role],
+    // 2. Add actual Pengurus Lingkungan for this lingkungan if available
+    if (lId) {
+      const pengurus = await this.dataSource.query(
+        `SELECT u.id FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         WHERE r.code = 'PENGURUS_LINGKUNGAN' AND p.lingkungan_id = $1`,
+        [lId],
       );
+      for (const p of pengurus) {
+        await this.dataSource.query(
+          `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'PENGURUS_LINGKUNGAN') ON CONFLICT DO NOTHING`,
+          [groupId, p.id],
+        );
+      }
     }
 
     await this.dataSource.query(
@@ -2265,7 +2282,11 @@ export class AssignmentsController {
     @Body() dto: RespondOrderAssignmentDto,
   ) {
     const orderId = parseInt(orderIdParam, 10) || 0;
-    const romoId = dto.romoId ? dto.romoId : 2;
+    let romoId = dto.romoId ? dto.romoId : null;
+    if (romoId) {
+      const rCheck = await this.dataSource.query('SELECT id FROM auth_users WHERE id = $1', [romoId]);
+      if (rCheck.length === 0) romoId = null;
+    }
     const itemId = (dto as any).itemId || (dto as any).item_id;
 
     const validStatuses = ['CONFIRMED', 'IN_PROGRESS', 'DONE', 'CLOSE', 'FAIL'];
@@ -2277,7 +2298,7 @@ export class AssignmentsController {
 
     if (newStatus === 'DECLINED') {
       return {
-        message: `Romo (ID ${romoId}) menolak tugas pelayanan untuk Order ID ${orderId}`,
+        message: `Romo${romoId ? ` (ID ${romoId})` : ''} menolak tugas pelayanan untuk Order ID ${orderId}`,
         status: 'DECLINED',
       };
     }
@@ -2310,8 +2331,8 @@ export class AssignmentsController {
         );
       } else if (anyActive) {
         await this.dataSource.query(
-          `UPDATE orders SET status = 'CONFIRMED' WHERE id = $1`,
-          [orderId],
+          `UPDATE orders SET status = 'CONFIRMED', accepted_romo_id = COALESCE($2, accepted_romo_id) WHERE id = $1`,
+          [orderId, romoId],
         );
       } else {
         await this.dataSource.query(
@@ -2330,10 +2351,10 @@ export class AssignmentsController {
       );
     }
 
-    const romoProf = await this.dataSource.query(
+    const romoProf = romoId ? await this.dataSource.query(
       `SELECT full_name FROM user_profiles WHERE user_id = $1`,
       [romoId],
-    );
+    ) : [];
     const romoName = romoProf.length > 0 ? romoProf[0].full_name : 'Romo';
 
     const statusMessages: Record<string, string> = {
@@ -2348,7 +2369,7 @@ export class AssignmentsController {
     if (groups.length > 0) {
       const groupId = groups[0].id;
 
-      if (newStatus === 'CONFIRMED') {
+      if (newStatus === 'CONFIRMED' && romoId) {
         await this.dataSource.query(
           `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'ROMO_PAROKI') ON CONFLICT DO NOTHING`,
           [groupId, romoId],
