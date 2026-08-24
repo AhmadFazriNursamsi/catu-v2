@@ -2505,6 +2505,16 @@ export class OrdersController {
            WHERE id = $1 AND order_id = $2`,
           [itemId, orderId],
         );
+      } else {
+        await this.dataSource.query(
+          `UPDATE order_items 
+           SET scheduled_date = COALESCE(reschedule_new_date, scheduled_date),
+               scheduled_time_start = COALESCE(reschedule_new_time_start, scheduled_time_start),
+               scheduled_time_end = COALESCE(reschedule_new_time_end, scheduled_time_end),
+               reschedule_status = 'ACCEPTED'
+           WHERE order_id = $1`,
+          [orderId],
+        );
       }
       await this.dataSource.query(
         `UPDATE orders 
@@ -2549,6 +2559,11 @@ export class OrdersController {
         await this.dataSource.query(
           `UPDATE order_items SET reschedule_status = 'REJECTED' WHERE id = $1 AND order_id = $2`,
           [itemId, orderId],
+        );
+      } else {
+        await this.dataSource.query(
+          `UPDATE order_items SET reschedule_status = 'REJECTED' WHERE order_id = $1`,
+          [orderId],
         );
       }
       await this.dataSource.query(

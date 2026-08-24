@@ -1296,9 +1296,20 @@ penerimaName: order.penerimaName,
   }
 
   Widget _buildRomoAcceptedBottomActions(Order order, {OrderItem? displayItem}) {
-    final String reschStatus = (displayItem?.rescheduleStatus ?? order.rescheduleStatus).toUpperCase();
-    final bool hasPendingProposal = reschStatus == 'PENDING_UMAT' || (displayItem?.hasPendingReschedule ?? false) || order.hasPendingReschedule;
-    final bool isRescheduleRejected = reschStatus == 'REJECTED';
+    final String itemResch = (displayItem?.rescheduleStatus ?? 'NONE').toUpperCase();
+    final String orderResch = order.rescheduleStatus.toUpperCase();
+    final String historyLatestResch = order.rescheduleHistory.isNotEmpty
+        ? order.rescheduleHistory.first.status.toUpperCase()
+        : 'NONE';
+
+    final bool hasPendingProposal = itemResch == 'PENDING_UMAT' ||
+        orderResch == 'PENDING_UMAT' ||
+        historyLatestResch == 'PENDING_UMAT' ||
+        (displayItem?.hasPendingReschedule ?? false) ||
+        order.hasPendingReschedule;
+
+    final bool isRescheduleRejected = !hasPendingProposal &&
+        (itemResch == 'REJECTED' || orderResch == 'REJECTED' || historyLatestResch == 'REJECTED');
 
     return Column(
       mainAxisSize: MainAxisSize.min,
