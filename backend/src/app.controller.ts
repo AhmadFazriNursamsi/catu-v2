@@ -2279,11 +2279,13 @@ export class OrdersController {
   async getAvailableRomos(@Query('parokiId') parokiId?: string) {
     const query = `
       SELECT u.id, u.phone_number as "phoneNumber", p.full_name as "fullName", r.code as "roleCode", 
-             p.paroki_id as "parokiId", par.name as "parokiName"
+             p.paroki_id as "parokiId", par.name as "parokiName",
+             p.ordo_id as "ordoId", ord.name as "ordoName", ord.code as "ordoCode"
       FROM auth_users u
       JOIN user_profiles p ON u.id = p.user_id
       JOIN roles r ON u.role_id = r.id
       LEFT JOIN paroki par ON p.paroki_id = par.id
+      LEFT JOIN ordo ord ON p.ordo_id = ord.id
       WHERE (r.code LIKE '%ROMO%' OR r.code = 'ROMO_PAROKI' OR r.code = 'ROMO_ORDO')
         AND u.is_active = true
       ORDER BY p.full_name ASC
