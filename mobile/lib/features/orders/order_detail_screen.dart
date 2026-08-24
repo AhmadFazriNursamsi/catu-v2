@@ -75,7 +75,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       case 'DONE':
         return const Color(0xFF059669);  // hijau
       case 'CLOSE':
-        return const Color(0xFF92400E);  // coklat
+        return const Color(0xFF0D9488);  // teal (selesai otomatis/ditutup sistem)
       case 'FAIL':
         return const Color(0xFFDC2626);  // merah
       case 'PENDING':
@@ -112,7 +112,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       case 'DONE':
         return Icons.check_circle_rounded;
       case 'CLOSE':
-        return Icons.block_rounded;
+        return Icons.task_alt_rounded;
       case 'FAIL':
         return Icons.cancel_rounded;
       case 'PENDING':
@@ -402,24 +402,50 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           locationName: order.displayAddress,
         );
 
-    final bool isItemAccepted = order.items.isNotEmpty
-        ? (displayItem.acceptedRomoId != null)
-        : (order.acceptedRomoId != null || order.status.toUpperCase() != 'PENDING');
+    final int? assignedRomoId = order.items.isNotEmpty
+        ? (displayItem.acceptedRomoId ?? order.acceptedRomoId)
+        : order.acceptedRomoId;
 
-    final bool isRomoAccepted = displayItem.acceptedRomoId != null || order.acceptedRomoId != null;
-    final bool datePassed = _isDateBeforeToday(displayItem.scheduledDate) || _isDateBeforeToday(order.scheduledDate);
+    final String assignedRomoName = order.items.isNotEmpty
+        ? ((displayItem.acceptedRomoName != null && displayItem.acceptedRomoName!.isNotEmpty)
+            ? displayItem.acceptedRomoName!
+            : (order.acceptedRomoName ?? ''))
+        : (order.acceptedRomoName ?? '');
 
-    String rawStatus = order.items.isNotEmpty
+    final String currentStatus = order.items.isNotEmpty
         ? displayItem.status.toUpperCase()
-        : (isItemAccepted
-            ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
-            : order.status.toUpperCase());
+        : order.status.toUpperCase();
 
-    if (!isRomoAccepted && rawStatus != 'DONE' && rawStatus != 'CLOSE' && rawStatus != 'FAIL' && datePassed) {
-      rawStatus = 'FAIL';
+    final bool isRomoAccepted = assignedRomoId != null;
+    final bool datePassed = _isDateBeforeToday(displayItem.scheduledDate.isNotEmpty ? displayItem.scheduledDate : order.scheduledDate);
+
+    String computedStatus = currentStatus;
+    if (computedStatus != 'DONE' && computedStatus != 'CLOSE' && computedStatus != 'FAIL') {
+      if (datePassed) {
+        computedStatus = isRomoAccepted ? 'CLOSE' : 'FAIL';
+      } else if (isRomoAccepted && computedStatus == 'PENDING') {
+        computedStatus = 'CONFIRMED';
+      }
     }
 
-    final String effectiveStatus = rawStatus;
+    final String effectiveStatus = computedStatus;
+
+    final bool isItemAccepted = isRomoAccepted ||
+        effectiveStatus == 'CONFIRMED' ||
+        effectiveStatus == 'IN_PROGRESS' ||
+        effectiveStatus == 'DONE' ||
+        effectiveStatus == 'CLOSE';
+
+    final bool isAssignedToCurrentRomo = widget.isRomo &&
+        widget.romoId != null &&
+        assignedRomoId != null &&
+        widget.romoId == assignedRomoId;
+
+    final bool isAssignedToOtherRomo = widget.isRomo &&
+        isItemAccepted &&
+        assignedRomoId != null &&
+        widget.romoId != null &&
+        widget.romoId != assignedRomoId;
 
     final statusColor = _getStatusColor(effectiveStatus);
     final statusLabel = _getStatusLabel(effectiveStatus);
@@ -511,6 +537,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
 
                             const SizedBox(height: 12),
 
+                            // ── Reschedule Proposal Card for Umat ──
+                            if (!widget.isRomo && (displayItem.hasPendingReschedule || order.hasPendingReschedule)) ...[
+                              _buildRescheduleProposalCard(order, displayItem),
+                              const SizedBox(height: 12),
+                            ],
+
                             // ── Romo yang Bertugas Info Card ──
                             if (isItemAccepted) ...[
                               _buildInfoCard(
@@ -521,11 +553,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                   _buildInfoTile(
                                     icon: Icons.verified_user_rounded,
                                     label: 'Romo / Pastor',
-                                    value: (displayItem.acceptedRomoName != null && displayItem.acceptedRomoName!.isNotEmpty)
-                                        ? displayItem.acceptedRomoName!
-                                        : ((order.acceptedRomoName != null && order.acceptedRomoName!.isNotEmpty)
-                                            ? order.acceptedRomoName!
-                                            : (widget.isRomo ? widget.userName : 'Romo')),
+                                    value: assignedRomoName.isNotEmpty
+                                        ? assignedRomoName
+                                        : (isAssignedToCurrentRomo ? widget.userName : 'Romo yang Bertugas'),
                                     valueColor: const Color(0xFF059669),
                                   ),
                                   _buildInfoTile(
@@ -691,20 +721,84 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
             ),
 
             // ── Floating Action Bar ──
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 24,
-              child: widget.isRomo && !isItemAccepted
-                  ? _buildRomoAcceptButtonBar(order, displayItem)
-                  : (widget.isRomo && (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS')
-                      ? _buildRomoAcceptedBottomActions(order, displayItem: displayItem)
-                      : _buildFloatingChatButton(order)),
-            ),
+            if (_shouldShowBottomActions(
+              effectiveStatus: effectiveStatus,
+              isItemAccepted: isItemAccepted,
+              isAssignedToCurrentRomo: isAssignedToCurrentRomo,
+              isAssignedToOtherRomo: isAssignedToOtherRomo,
+            ))
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 24,
+                child: _buildBottomActions(
+                  order: order,
+                  displayItem: displayItem,
+                  effectiveStatus: effectiveStatus,
+                  isItemAccepted: isItemAccepted,
+                  isAssignedToCurrentRomo: isAssignedToCurrentRomo,
+                  isAssignedToOtherRomo: isAssignedToOtherRomo,
+                ),
+              ),
           ],
         ),
       ),
     );
+  }
+
+  bool _shouldShowBottomActions({
+    required String effectiveStatus,
+    required bool isItemAccepted,
+    required bool isAssignedToCurrentRomo,
+    required bool isAssignedToOtherRomo,
+  }) {
+    if (widget.isRomo) {
+      // If taken by another Romo, DO NOT show any actions (no Selesai, no Chat)
+      if (isAssignedToOtherRomo) return false;
+      // If service is pending/unaccepted, show Accept/Reject buttons
+      if (!isItemAccepted && effectiveStatus == 'PENDING') return true;
+      // If this Romo is the assigned one and service is active
+      if (isAssignedToCurrentRomo &&
+          (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS')) {
+        return true;
+      }
+      // If this Romo is the assigned one and service is done, allow opening chat
+      if (isAssignedToCurrentRomo && effectiveStatus == 'DONE') return true;
+      return false;
+    } else {
+      // Non-Romo (Umat/Admin): Show chat if confirmed, in_progress, or done
+      return effectiveStatus == 'CONFIRMED' ||
+          effectiveStatus == 'IN_PROGRESS' ||
+          effectiveStatus == 'DONE';
+    }
+  }
+
+  Widget _buildBottomActions({
+    required Order order,
+    required OrderItem displayItem,
+    required String effectiveStatus,
+    required bool isItemAccepted,
+    required bool isAssignedToCurrentRomo,
+    required bool isAssignedToOtherRomo,
+  }) {
+    if (widget.isRomo) {
+      if (isAssignedToOtherRomo) {
+        return const SizedBox.shrink();
+      }
+      if (!isItemAccepted && effectiveStatus == 'PENDING') {
+        return _buildRomoAcceptButtonBar(order, displayItem);
+      }
+      if (isAssignedToCurrentRomo &&
+          (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS')) {
+        return _buildRomoAcceptedBottomActions(order, displayItem: displayItem);
+      }
+      if (isAssignedToCurrentRomo && effectiveStatus == 'DONE') {
+        return _buildFloatingChatButton(order);
+      }
+      return const SizedBox.shrink();
+    } else {
+      return _buildFloatingChatButton(order);
+    }
   }
 
   Future<void> _completeService(Order order, {OrderItem? targetItem}) async {
@@ -766,7 +860,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         await NotificationService.notifyServiceCompleted(
           orderId: order.id.toString(),
           categoryName: order.categoryName,
-          penerimaName: order.penerimaName,
+penerimaName: order.penerimaName,
           targetRole: 'UMAT',
           misaItemName: targetItem?.itemName,
         );
@@ -792,118 +886,661 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     }
   }
 
-  Widget _buildRomoAcceptedBottomActions(Order order, {OrderItem? displayItem}) {
-    return Row(
-      children: [
-        // Chat Button (Left)
-        Expanded(
-          child: Container(
+  Widget _buildRescheduleProposalCard(Order order, OrderItem displayItem) {
+    final String proposedDate = displayItem.rescheduleNewDate ?? order.rescheduleNewDate ?? order.scheduledDate;
+    final String proposedTimeStart = displayItem.rescheduleNewTimeStart ?? order.rescheduleNewTime ?? order.scheduledTime;
+    final String? proposedTimeEnd = displayItem.rescheduleNewTimeEnd ?? order.rescheduleNewTimeEnd;
+    final String reason = displayItem.rescheduleReason ?? order.rescheduleReason ?? '';
+
+    final String timeDisplay = proposedTimeEnd != null && proposedTimeEnd.isNotEmpty
+        ? '$proposedTimeStart - $proposedTimeEnd WIB'
+        : '$proposedTimeStart WIB';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.alarm_on_rounded, color: Color(0xFFB45309), size: 20),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Pengajuan Perubahan Jam Pelayanan',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF92400E),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Romo yang bertugas mengajukan penyesuaian waktu pelaksanaan pelayanan:',
+            style: TextStyle(fontSize: 13, color: Color(0xFF78350F)),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppConstants.primaryBlue.withValues(alpha: 0.25),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFFDE68A)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.event_rounded, size: 16, color: Color(0xFFD97706)),
+                const SizedBox(width: 6),
+                Text(
+                  proposedDate,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                ),
+                const SizedBox(width: 12),
+                const Icon(Icons.access_time_rounded, size: 16, color: Color(0xFFD97706)),
+                const SizedBox(width: 6),
+                Text(
+                  timeDisplay,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
                 ),
               ],
             ),
-            child: Material(
-              color: AppConstants.primaryBlue,
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ChatScreen(
-                        groupId: order.id,
-                        orderNumber: order.orderNumber,
-                        userName: widget.userName,
-                        userId: order.userId,
-                        groupItem: ChatGroupItem(
-                          groupId: order.id,
-                          orderId: order.id,
-                          groupTitle: 'Group Pelayanan ${order.categoryName}',
-                          orderTitle: order.categoryName,
-                          orderCategory: order.categoryName,
-                          orderStatus: order.status,
-                          scheduledDate: order.scheduledDate,
-                          scheduledTimeStart: order.jamMulaiLabel,
-                          scheduledTimeEnd: order.jamSelesaiLabel,
-                          penerimaName: order.penerimaName,
-                          requesterName: widget.userName,
+          ),
+          if (reason.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Alasan: "$reason"',
+              style: const TextStyle(fontSize: 12.5, fontStyle: FontStyle.italic, color: Color(0xFF92400E)),
+            ),
+          ],
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              // Tolak Button
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => _respondReschedule(order, displayItem: displayItem, accept: false),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFDC2626),
+                    side: const BorderSide(color: Color(0xFFDC2626), width: 1.2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                  ),
+                  child: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Terima Button
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => _respondReschedule(order, displayItem: displayItem, accept: true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF059669),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                  ),
+                  child: const Text('Terima Jadwal Baru', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _respondReschedule(Order order, {required OrderItem displayItem, required bool accept}) async {
+    final rawUserId = widget.order.userId;
+    if (rawUserId == null) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      final res = await ApiService.respondReschedule(
+        order.id,
+        userId: rawUserId,
+        itemId: displayItem.id,
+        action: accept ? 'ACCEPT' : 'REJECT',
+      );
+
+      if (mounted) {
+        if (accept) {
+          final newDate = displayItem.rescheduleNewDate ?? order.rescheduleNewDate;
+          final newTime = displayItem.rescheduleNewTimeStart ?? order.rescheduleNewTime;
+          if (newDate != null && newDate.isNotEmpty) {
+            order.scheduledDate = newDate;
+          }
+          if (newTime != null && newTime.isNotEmpty) {
+            order.scheduledTime = newTime;
+          }
+          order.rescheduleStatus = 'ACCEPTED';
+          displayItem.rescheduleStatus = 'ACCEPTED';
+        } else {
+          order.rescheduleStatus = 'REJECTED';
+          displayItem.rescheduleStatus = 'REJECTED';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message'] ?? (accept ? 'Jadwal baru berhasil disetujui!' : 'Pengajuan perubahan jadwal ditolak.')),
+            backgroundColor: accept ? const Color(0xFF059669) : const Color(0xFFDC2626),
+          ),
+        );
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Terjadi kesalahan: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Widget _buildRomoAcceptedBottomActions(Order order, {OrderItem? displayItem}) {
+    final bool hasPendingProposal = (displayItem?.hasPendingReschedule ?? false) || order.hasPendingReschedule;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (hasPendingProposal)
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFF59E0B)),
+            ),
+            child: Row(
+              children: const [
+                Icon(Icons.pending_actions_rounded, color: Color(0xFFB45309), size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Pengajuan ubah jam sedang menunggu persetujuan Umat.',
+                    style: TextStyle(color: Color(0xFF92400E), fontSize: 12.5, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        Row(
+          children: [
+            // Chat Button (Left)
+            Expanded(
+              flex: 3,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppConstants.primaryBlue.withValues(alpha: 0.25),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: AppConstants.primaryBlue,
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatScreen(
+                            groupId: order.id,
+                            orderNumber: order.orderNumber,
+                            userName: widget.userName,
+                            userId: order.userId,
+                            groupItem: ChatGroupItem(
+                              groupId: order.id,
+                              orderId: order.id,
+                              groupTitle: 'Group Pelayanan ${order.categoryName}',
+                              orderTitle: order.categoryName,
+                              orderCategory: order.categoryName,
+                              orderStatus: order.status,
+                              scheduledDate: order.scheduledDate,
+                              scheduledTimeStart: order.jamMulaiLabel,
+                              scheduledTimeEnd: order.jamSelesaiLabel,
+                              penerimaName: order.penerimaName,
+                              requesterName: widget.userName,
+                            ),
+                          ),
                         ),
+                      );
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 18),
+                          SizedBox(width: 6),
+                          Text(
+                            'Chat',
+                            style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 18),
-                      SizedBox(width: 8),
-                      Text(
-                        'Diskusi Chat',
-                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                      ),
-                    ],
                   ),
                 ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        // Complete Service Button (Right)
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF059669).withValues(alpha: 0.25),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Material(
-              color: const Color(0xFF059669),
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
+            const SizedBox(width: 8),
+
+            // Reschedule Button (Middle)
+            Container(
+              decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                onTap: _isSubmitting ? null : () => _completeService(order, targetItem: displayItem),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _isSubmitting
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                            )
-                          : const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Selesaikan',
-                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFD97706).withValues(alpha: 0.25),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: const Color(0xFFD97706),
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => _showRescheduleBottomSheet(order, targetItem: displayItem),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    child: Icon(Icons.edit_calendar_rounded, color: Colors.white, size: 20),
                   ),
                 ),
               ),
             ),
-          ),
+            const SizedBox(width: 8),
+
+            // Complete Service Button (Right)
+            Expanded(
+              flex: 4,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF059669).withValues(alpha: 0.25),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: const Color(0xFF059669),
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: _isSubmitting ? null : () => _completeService(order, targetItem: displayItem),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _isSubmitting
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Selesaikan',
+                            style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
+  }
+
+  void _showRescheduleBottomSheet(Order order, {OrderItem? targetItem}) {
+    String selectedDate = targetItem?.scheduledDate.isNotEmpty == true ? targetItem!.scheduledDate : order.scheduledDate;
+    TimeOfDay selectedTimeStart = const TimeOfDay(hour: 18, minute: 0);
+    TimeOfDay? selectedTimeEnd = const TimeOfDay(hour: 19, minute: 30);
+    final TextEditingController reasonController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD97706).withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.edit_calendar_rounded, color: Color(0xFFD97706), size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Ajukan Perubahan Jam Pelayanan',
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Ajukan penyesuaian jam atau tanggal pelayanan kepada Umat pemohon. Perubahan akan aktif setelah disetujui Umat.',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.3),
+                  ),
+                  const SizedBox(height: 18),
+                  
+                  // Pick Date
+                  const Text('Tanggal Pelayanan Baru', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                  const SizedBox(height: 6),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.tryParse(selectedDate) ?? DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 60)),
+                      );
+                      if (picked != null) {
+                        setModalState(() {
+                          selectedDate = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                        });
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(selectedDate, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                          const Icon(Icons.calendar_today_rounded, size: 18, color: Color(0xFF64748B)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Pick Start & End Time
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Jam Mulai Baru', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                            const SizedBox(height: 6),
+                            InkWell(
+                              onTap: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: selectedTimeStart,
+                                );
+                                if (picked != null) {
+                                  setModalState(() => selectedTimeStart = picked);
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '${selectedTimeStart.hour.toString().padLeft(2, '0')}:${selectedTimeStart.minute.toString().padLeft(2, '0')}',
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                    ),
+                                    const Icon(Icons.access_time_rounded, size: 18, color: Color(0xFF64748B)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Jam Selesai (Opsional)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                            const SizedBox(height: 6),
+                            InkWell(
+                              onTap: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: selectedTimeEnd ?? const TimeOfDay(hour: 19, minute: 30),
+                                );
+                                if (picked != null) {
+                                  setModalState(() => selectedTimeEnd = picked);
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      selectedTimeEnd != null
+                                          ? '${selectedTimeEnd!.hour.toString().padLeft(2, '0')}:${selectedTimeEnd!.minute.toString().padLeft(2, '0')}'
+                                          : 'Selesai',
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                    ),
+                                    const Icon(Icons.access_time_rounded, size: 18, color: Color(0xFF64748B)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Reason text field
+                  const Text('Alasan Perubahan Jam', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: reasonController,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText: 'Contoh: Ada misa konselebrasi mendadak di paroki...',
+                      hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Submit button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final reasonText = reasonController.text.trim();
+                        if (reasonText.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Silakan masukkan alasan perubahan jam.')),
+                          );
+                          return;
+                        }
+                        Navigator.pop(ctx);
+                        _submitRescheduleProposal(
+                          order: order,
+                          targetItem: targetItem,
+                          newDate: selectedDate,
+                          newTimeStart: '${selectedTimeStart.hour.toString().padLeft(2, '0')}:${selectedTimeStart.minute.toString().padLeft(2, '0')}',
+                          newTimeEnd: selectedTimeEnd != null
+                              ? '${selectedTimeEnd!.hour.toString().padLeft(2, '0')}:${selectedTimeEnd!.minute.toString().padLeft(2, '0')}'
+                              : null,
+                          reason: reasonText,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD97706),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Kirim Pengajuan ke Umat', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _submitRescheduleProposal({
+    required Order order,
+    OrderItem? targetItem,
+    required String newDate,
+    required String newTimeStart,
+    String? newTimeEnd,
+    required String reason,
+  }) async {
+    final romoId = widget.romoId;
+    if (romoId == null) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      final res = await ApiService.proposeReschedule(
+        order.id,
+        romoId: romoId,
+        itemId: targetItem?.id,
+        newDate: newDate,
+        newTimeStart: newTimeStart,
+        newTimeEnd: newTimeEnd,
+        reason: reason,
+      );
+
+      if (mounted) {
+        order.rescheduleStatus = 'PENDING_UMAT';
+        order.rescheduleNewDate = newDate;
+        order.rescheduleNewTime = newTimeStart;
+        order.rescheduleNewTimeEnd = newTimeEnd;
+        order.rescheduleReason = reason;
+
+        if (targetItem != null) {
+          targetItem.rescheduleStatus = 'PENDING_UMAT';
+          targetItem.rescheduleNewDate = newDate;
+          targetItem.rescheduleNewTimeStart = newTimeStart;
+          targetItem.rescheduleNewTimeEnd = newTimeEnd;
+          targetItem.rescheduleReason = reason;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message'] ?? 'Pengajuan perubahan jadwal berhasil dikirimkan ke Umat.'),
+            backgroundColor: const Color(0xFFD97706),
+          ),
+        );
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengajukan perubahan jadwal: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   Future<void> _acceptService(Order order, {OrderItem? targetItem}) async {

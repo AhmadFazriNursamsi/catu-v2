@@ -33,6 +33,12 @@ class OrderItem {
   String status;
   int? acceptedRomoId;
   String? acceptedRomoName;
+  String rescheduleStatus;
+  int? rescheduleProposedBy;
+  String? rescheduleNewDate;
+  String? rescheduleNewTimeStart;
+  String? rescheduleNewTimeEnd;
+  String? rescheduleReason;
 
   OrderItem({
     this.id,
@@ -44,7 +50,15 @@ class OrderItem {
     this.status = 'PENDING',
     this.acceptedRomoId,
     this.acceptedRomoName,
+    this.rescheduleStatus = 'NONE',
+    this.rescheduleProposedBy,
+    this.rescheduleNewDate,
+    this.rescheduleNewTimeStart,
+    this.rescheduleNewTimeEnd,
+    this.rescheduleReason,
   });
+
+  bool get hasPendingReschedule => rescheduleStatus.toUpperCase() == 'PENDING_UMAT';
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     String rawDate = json['scheduledDate'] ?? json['scheduled_date'] ?? '';
@@ -58,6 +72,7 @@ class OrderItem {
 
     final rawItemId = json['id'];
     final rawRomoId = json['acceptedRomoId'] ?? json['accepted_romo_id'];
+    final rawProposedBy = json['rescheduleProposedBy'] ?? json['reschedule_proposed_by'];
 
     return OrderItem(
       id: rawItemId != null ? int.tryParse(rawItemId.toString()) : null,
@@ -69,6 +84,12 @@ class OrderItem {
       status: (json['status'] ?? 'PENDING').toString().toUpperCase(),
       acceptedRomoId: rawRomoId != null ? int.tryParse(rawRomoId.toString()) : null,
       acceptedRomoName: json['acceptedRomoName'] ?? json['accepted_romo_name'],
+      rescheduleStatus: (json['rescheduleStatus'] ?? json['reschedule_status'] ?? 'NONE').toString().toUpperCase(),
+      rescheduleProposedBy: rawProposedBy != null ? int.tryParse(rawProposedBy.toString()) : null,
+      rescheduleNewDate: json['rescheduleNewDate'] ?? json['reschedule_new_date'],
+      rescheduleNewTimeStart: json['rescheduleNewTimeStart'] ?? json['reschedule_new_time_start'],
+      rescheduleNewTimeEnd: json['rescheduleNewTimeEnd'] ?? json['reschedule_new_time_end'],
+      rescheduleReason: json['rescheduleReason'] ?? json['reschedule_reason'],
     );
   }
 
@@ -95,8 +116,8 @@ class Order {
   final String categoryName;
   final String urgencyName;
   String status;
-  final String scheduledDate;
-  final String scheduledTime;
+  String scheduledDate;
+  String scheduledTime;
   final String locationName;
   final String addressDetail;
   final String pemohonName;
@@ -106,6 +127,12 @@ class Order {
   final String lingkunganName;
   final List<OrderItem> items;
   final String? attachmentUrl;
+  String rescheduleStatus;
+  int? rescheduleProposedBy;
+  String? rescheduleNewDate;
+  String? rescheduleNewTime;
+  String? rescheduleNewTimeEnd;
+  String? rescheduleReason;
 
   Order({
     required this.id,
@@ -127,7 +154,15 @@ class Order {
     this.lingkunganName = '',
     this.items = const [],
     this.attachmentUrl,
+    this.rescheduleStatus = 'NONE',
+    this.rescheduleProposedBy,
+    this.rescheduleNewDate,
+    this.rescheduleNewTime,
+    this.rescheduleNewTimeEnd,
+    this.rescheduleReason,
   });
+
+  bool get hasPendingReschedule => rescheduleStatus.toUpperCase() == 'PENDING_UMAT';
 
   /// Parse "Jam Mulai" from notes
   String get jamMulaiLabel {
@@ -347,6 +382,7 @@ class Order {
     final rawAcceptedRomo = json['acceptedRomoId'] ?? json['accepted_romo_id'];
     final int? parsedAcceptedRomoId = rawAcceptedRomo != null ? int.tryParse(rawAcceptedRomo.toString()) : null;
     final String? parsedAcceptedRomoName = json['acceptedRomoName'] ?? json['accepted_romo_name'];
+    final rawProposedBy = json['rescheduleProposedBy'] ?? json['reschedule_proposed_by'];
 
     return Order(
       id: parsedId,
@@ -368,6 +404,12 @@ class Order {
       lingkunganName: json['lingkungan_name'] ?? json['lingkunganName'] ?? 'St. Angela Merici',
       items: parsedItems,
       attachmentUrl: json['attachment_url'] ?? json['attachmentUrl'],
+      rescheduleStatus: (json['rescheduleStatus'] ?? json['reschedule_status'] ?? 'NONE').toString().toUpperCase(),
+      rescheduleProposedBy: rawProposedBy != null ? int.tryParse(rawProposedBy.toString()) : null,
+      rescheduleNewDate: json['rescheduleNewDate'] ?? json['reschedule_new_date'],
+      rescheduleNewTime: json['rescheduleNewTime'] ?? json['reschedule_new_time'],
+      rescheduleNewTimeEnd: json['rescheduleNewTimeEnd'] ?? json['reschedule_new_time_end'],
+      rescheduleReason: json['rescheduleReason'] ?? json['reschedule_reason'],
     );
   }
 }

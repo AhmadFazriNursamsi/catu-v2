@@ -35,6 +35,28 @@ class ScheduleTimelineEntry {
     final today = DateTime(now.year, now.month, now.day);
     return DateTime(d.year, d.month, d.day).isBefore(today);
   }
+
+  String get effectiveStatus {
+    if (item != null) {
+      final st = item!.status.toUpperCase();
+      if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
+      final bool romoAccepted = item!.acceptedRomoId != null || parentOrder.acceptedRomoId != null;
+      if (isPastDate) {
+        return romoAccepted ? 'CLOSE' : 'FAIL';
+      }
+      if (romoAccepted && st == 'PENDING') return 'CONFIRMED';
+      return st;
+    } else {
+      final st = parentOrder.status.toUpperCase();
+      if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
+      final bool romoAccepted = parentOrder.acceptedRomoId != null;
+      if (isPastDate) {
+        return romoAccepted ? 'CLOSE' : 'FAIL';
+      }
+      if (romoAccepted && st == 'PENDING') return 'CONFIRMED';
+      return st;
+    }
+  }
 }
 
 class ScheduleScreen extends StatefulWidget {
@@ -373,6 +395,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
         return const Color(0xFF1D4ED8);
       case 'DONE':
         return const Color(0xFF2563EB);
+      case 'CLOSE':
+        return const Color(0xFF0D9488);
       case 'REJECTED':
       case 'FAIL':
         return const Color(0xFFDC2626);
@@ -391,6 +415,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
         return 'Sedang Berlangsung';
       case 'DONE':
         return 'Telah Selesai';
+      case 'CLOSE':
+        return 'Closed (Ditutup Sistem)';
       case 'REJECTED':
       case 'FAIL':
         return 'Ditolak / Gagal';
@@ -408,6 +434,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
       case 'IN_PROGRESS':
         return Icons.directions_run_rounded;
       case 'DONE':
+        return Icons.task_alt_rounded;
+      case 'CLOSE':
         return Icons.task_alt_rounded;
       case 'REJECTED':
       case 'FAIL':
@@ -1310,17 +1338,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
   Widget _buildScheduleCard(ScheduleTimelineEntry entry) {
     final order = entry.parentOrder;
-    final bool isSubItemAccepted = entry.item != null
-        ? (entry.item!.acceptedRomoId != null || entry.item!.status.toUpperCase() == 'ACCEPTED' || entry.item!.status.toUpperCase() == 'CONFIRMED' || entry.item!.status.toUpperCase() == 'DONE')
-        : (order.acceptedRomoId != null && order.status.toUpperCase() != 'PENDING');
-
-    final String effectiveStatus = entry.item != null
-        ? (isSubItemAccepted
-            ? (entry.item!.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
-            : 'PENDING')
-        : (isSubItemAccepted
-            ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
-            : order.status.toUpperCase());
+    final String effectiveStatus = entry.effectiveStatus;
     final statusColor = _statusColor(effectiveStatus);
     final statusLabel = _statusLabel(effectiveStatus);
     final statusIcon = _statusIcon(effectiveStatus);

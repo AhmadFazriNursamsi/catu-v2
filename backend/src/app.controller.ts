@@ -2106,7 +2106,7 @@ export class OrdersController {
       [groupId, userId],
     );
 
-    // 2. Add actual Pengurus Lingkungan for this lingkungan if available
+    // 2. Add actual Pengurus Lingkungan for this lingkungan if available & send monitoring notification
     if (lId) {
       const pengurus = await this.dataSource.query(
         `SELECT u.id FROM auth_users u
@@ -2119,6 +2119,11 @@ export class OrdersController {
         await this.dataSource.query(
           `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'PENGURUS_LINGKUNGAN') ON CONFLICT DO NOTHING`,
           [groupId, p.id],
+        );
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+           VALUES ($1, $2, 'Pemantauan Pelayanan Warga', $3, 'NEW_ORDER_MONITOR', false)`,
+          [p.id, order.id, `Ada permintaan pelayanan baru (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.`],
         );
       }
     }
@@ -2153,7 +2158,13 @@ export class OrdersController {
              COALESCE(o.paroki_id, p.paroki_id) as paroki_id,
              COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id,
              COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) as "acceptedRomoId",
-             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) LIMIT 1) as "acceptedRomoName"
+             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) LIMIT 1) as "acceptedRomoName",
+             COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus",
+             o.reschedule_proposed_by as "rescheduleProposedBy",
+             o.reschedule_new_date as "rescheduleNewDate",
+             o.reschedule_new_time as "rescheduleNewTime",
+             o.reschedule_new_time_end as "rescheduleNewTimeEnd",
+             o.reschedule_reason as "rescheduleReason"
       FROM orders o
       JOIN service_categories sc ON o.service_category_id = sc.id
       JOIN urgency_levels ul ON o.urgency_level_id = ul.id
@@ -2212,7 +2223,13 @@ export class OrdersController {
         `SELECT id, item_name as "itemName", scheduled_date as "scheduledDate", 
                 scheduled_time_start as "scheduledTimeStart", scheduled_time_end as "scheduledTimeEnd", 
                 location_name as "locationName", COALESCE(status, 'PENDING') as status, accepted_romo_id as "acceptedRomoId",
-                (SELECT full_name FROM user_profiles WHERE user_id = accepted_romo_id) as "acceptedRomoName"
+                (SELECT full_name FROM user_profiles WHERE user_id = accepted_romo_id) as "acceptedRomoName",
+                COALESCE(reschedule_status, 'NONE') as "rescheduleStatus",
+                reschedule_proposed_by as "rescheduleProposedBy",
+                reschedule_new_date as "rescheduleNewDate",
+                reschedule_new_time_start as "rescheduleNewTimeStart",
+                reschedule_new_time_end as "rescheduleNewTimeEnd",
+                reschedule_reason as "rescheduleReason"
          FROM order_items 
          WHERE order_id = $1 
          ORDER BY id ASC`,
@@ -2237,7 +2254,13 @@ export class OrdersController {
              k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
              o.user_id,
              COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) as "acceptedRomoId",
-             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) LIMIT 1) as "acceptedRomoName"
+             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) LIMIT 1) as "acceptedRomoName",
+             COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus",
+             o.reschedule_proposed_by as "rescheduleProposedBy",
+             o.reschedule_new_date as "rescheduleNewDate",
+             o.reschedule_new_time as "rescheduleNewTime",
+             o.reschedule_new_time_end as "rescheduleNewTimeEnd",
+             o.reschedule_reason as "rescheduleReason"
       FROM orders o
       JOIN service_categories sc ON o.service_category_id = sc.id
       JOIN urgency_levels ul ON o.urgency_level_id = ul.id
@@ -2254,7 +2277,13 @@ export class OrdersController {
         `SELECT id, item_name as "itemName", scheduled_date as "scheduledDate", 
                 scheduled_time_start as "scheduledTimeStart", scheduled_time_end as "scheduledTimeEnd", 
                 location_name as "locationName", COALESCE(status, 'PENDING') as status, accepted_romo_id as "acceptedRomoId",
-                (SELECT full_name FROM user_profiles WHERE user_id = accepted_romo_id) as "acceptedRomoName"
+                (SELECT full_name FROM user_profiles WHERE user_id = accepted_romo_id) as "acceptedRomoName",
+                COALESCE(reschedule_status, 'NONE') as "rescheduleStatus",
+                reschedule_proposed_by as "rescheduleProposedBy",
+                reschedule_new_date as "rescheduleNewDate",
+                reschedule_new_time_start as "rescheduleNewTimeStart",
+                reschedule_new_time_end as "rescheduleNewTimeEnd",
+                reschedule_reason as "rescheduleReason"
          FROM order_items 
          WHERE order_id = $1 
          ORDER BY id ASC`,
@@ -2264,6 +2293,233 @@ export class OrdersController {
       return order;
     }
     return { statusCode: 404, message: 'Order tidak ditemukan' };
+  }
+
+  @Post(':id/reschedule/propose')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Romo mengajukan perubahan jadwal (reschedule) ke Umat' })
+  async proposeReschedule(
+    @Param('id') idParam: string,
+    @Body() dto: {
+      romoId: number;
+      itemId?: number;
+      newDate?: string;
+      newTimeStart: string;
+      newTimeEnd?: string;
+      reason: string;
+    },
+  ) {
+    const orderId = parseInt(idParam, 10) || 0;
+    const { romoId, itemId, newDate, newTimeStart, newTimeEnd, reason } = dto;
+
+    if (!romoId || !newTimeStart) {
+      return { statusCode: 400, message: 'Data pengajuan perubahan jadwal tidak lengkap.' };
+    }
+
+    const orderRes = await this.dataSource.query(
+      `SELECT id, order_number, user_id, status, scheduled_date, scheduled_time, accepted_romo_id FROM orders WHERE id = $1`,
+      [orderId],
+    );
+    if (orderRes.length === 0) {
+      return { statusCode: 404, message: 'Order tidak ditemukan.' };
+    }
+    const order = orderRes[0];
+
+    // Check Romo authorization
+    let isAuthorized = false;
+    let targetItemName = '';
+    if (itemId) {
+      const itemRes = await this.dataSource.query(
+        `SELECT id, item_name, accepted_romo_id, status FROM order_items WHERE id = $1 AND order_id = $2`,
+        [itemId, orderId],
+      );
+      if (itemRes.length > 0) {
+        const it = itemRes[0];
+        targetItemName = it.item_name;
+        isAuthorized = Number(it.accepted_romo_id ?? order.accepted_romo_id) === Number(romoId);
+      }
+    } else {
+      isAuthorized = Number(order.accepted_romo_id) === Number(romoId);
+    }
+
+    if (!isAuthorized) {
+      return { statusCode: 403, message: 'Hanya Romo yang bertugas yang dapat mengajukan perubahan jadwal pelayanan ini.' };
+    }
+
+    const romoProf = await this.dataSource.query(
+      `SELECT full_name FROM user_profiles WHERE user_id = $1`,
+      [romoId],
+    );
+    const romoName = romoProf.length > 0 ? romoProf[0].full_name : 'Romo';
+
+    const proposedDate = newDate || order.scheduled_date;
+
+    if (itemId) {
+      await this.dataSource.query(
+        `UPDATE order_items 
+         SET reschedule_status = 'PENDING_UMAT', 
+             reschedule_proposed_by = $1, 
+             reschedule_new_date = $2, 
+             reschedule_new_time_start = $3, 
+             reschedule_new_time_end = $4, 
+             reschedule_reason = $5
+         WHERE id = $6 AND order_id = $7`,
+        [romoId, proposedDate, newTimeStart, newTimeEnd || null, reason || '', itemId, orderId],
+      );
+    }
+
+    await this.dataSource.query(
+      `UPDATE orders 
+       SET reschedule_status = 'PENDING_UMAT', 
+           reschedule_proposed_by = $1, 
+           reschedule_new_date = $2, 
+           reschedule_new_time = $3, 
+           reschedule_new_time_end = $4, 
+           reschedule_reason = $5
+       WHERE id = $6`,
+      [romoId, proposedDate, newTimeStart, newTimeEnd || null, reason || '', orderId],
+    );
+
+    // Format display string
+    const timeDisplay = newTimeEnd ? `${newTimeStart} - ${newTimeEnd} WIB` : `${newTimeStart} WIB`;
+    const itemPrefix = targetItemName ? `[${targetItemName}] ` : '';
+
+    // Insert Chat System Event
+    const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
+    if (groups.length > 0) {
+      const groupId = groups[0].id;
+      await this.dataSource.query(
+        `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
+        [groupId, `Romo ${romoName} mengajukan perubahan jadwal ${itemPrefix}menjadi ${timeDisplay}. Alasan: "${reason || 'Penyesuaian agenda'}". Menunggu persetujuan Umat pemohon.`],
+      );
+    }
+
+    // Send Notification to Umat
+    await this.dataSource.query(
+      `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+       VALUES ($1, $2, 'Pengajuan Perubahan Jadwal', $3, 'RESCHEDULE_PROPOSED', false)`,
+      [
+        order.user_id,
+        orderId,
+        `Romo ${romoName} mengajukan perubahan jam pelayanan ${itemPrefix}menjadi ${timeDisplay}. Alasan: ${reason || '-'}. Ketuk untuk menanggapi.`,
+      ],
+    );
+
+    return {
+      statusCode: 200,
+      success: true,
+      message: 'Pengajuan perubahan jadwal berhasil dikirimkan ke Umat pemohon.',
+    };
+  }
+
+  @Post(':id/reschedule/respond')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Umat merespon (terima / tolak) pengajuan reschedule dari Romo' })
+  async respondReschedule(
+    @Param('id') idParam: string,
+    @Body() dto: {
+      userId: number;
+      itemId?: number;
+      action: 'ACCEPT' | 'REJECT' | 'ACCEPTED' | 'REJECTED';
+    },
+  ) {
+    const orderId = parseInt(idParam, 10) || 0;
+    const { userId, itemId, action } = dto;
+    const isAccept = action.toUpperCase().startsWith('ACCEPT');
+
+    const orderRes = await this.dataSource.query(
+      `SELECT id, order_number, user_id, status, scheduled_date, scheduled_time, 
+              reschedule_status, reschedule_proposed_by, reschedule_new_date, reschedule_new_time, reschedule_new_time_end, reschedule_reason, accepted_romo_id 
+       FROM orders WHERE id = $1`,
+      [orderId],
+    );
+    if (orderRes.length === 0) {
+      return { statusCode: 404, message: 'Order tidak ditemukan.' };
+    }
+    const order = orderRes[0];
+
+    if (Number(order.user_id) !== Number(userId)) {
+      return { statusCode: 403, message: 'Hanya pemohon (Umat) yang dapat menyetujui atau menolak perubahan jadwal ini.' };
+    }
+
+    const romoId = order.reschedule_proposed_by || order.accepted_romo_id;
+
+    if (isAccept) {
+      if (itemId) {
+        await this.dataSource.query(
+          `UPDATE order_items 
+           SET scheduled_date = COALESCE(reschedule_new_date, scheduled_date),
+               scheduled_time_start = COALESCE(reschedule_new_time_start, scheduled_time_start),
+               scheduled_time_end = COALESCE(reschedule_new_time_end, scheduled_time_end),
+               reschedule_status = 'ACCEPTED'
+           WHERE id = $1 AND order_id = $2`,
+          [itemId, orderId],
+        );
+      }
+      await this.dataSource.query(
+        `UPDATE orders 
+         SET scheduled_date = COALESCE(reschedule_new_date, scheduled_date),
+             scheduled_time = COALESCE(reschedule_new_time, scheduled_time),
+             reschedule_status = 'ACCEPTED'
+         WHERE id = $1`,
+        [orderId],
+      );
+
+      const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
+      if (groups.length > 0) {
+        await this.dataSource.query(
+          `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
+          [groups[0].id, `Umat pemohon telah MENYETUJUI pengajuan perubahan jadwal. Jadwal pelayanan resmi diperbarui.`],
+        );
+      }
+
+      if (romoId) {
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+           VALUES ($1, $2, 'Perubahan Jadwal Disetujui', $3, 'RESCHEDULE_ACCEPTED', false)`,
+          [romoId, orderId, `Umat telah menyetujui jadwal baru untuk pelayanan (${order.order_number}).`],
+        );
+      }
+
+      return {
+        statusCode: 200,
+        success: true,
+        message: 'Perubahan jadwal berhasil disetujui dan diperbarui.',
+      };
+    } else {
+      if (itemId) {
+        await this.dataSource.query(
+          `UPDATE order_items SET reschedule_status = 'REJECTED' WHERE id = $1 AND order_id = $2`,
+          [itemId, orderId],
+        );
+      }
+      await this.dataSource.query(
+        `UPDATE orders SET reschedule_status = 'REJECTED' WHERE id = $1`,
+        [orderId],
+      );
+
+      const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
+      if (groups.length > 0) {
+        await this.dataSource.query(
+          `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
+          [groups[0].id, `Umat pemohon MENOLAK pengajuan perubahan jadwal. Pelayanan tetap dilaksanakan sesuai jadwal awal.`],
+        );
+      }
+
+      if (romoId) {
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+           VALUES ($1, $2, 'Perubahan Jadwal Ditolak', $3, 'RESCHEDULE_REJECTED', false)`,
+          [romoId, orderId, `Umat tidak menyetujui perubahan jadwal (${order.order_number}). Pelayanan tetap pada jadwal semula.`],
+        );
+      }
+
+      return {
+        statusCode: 200,
+        success: true,
+        message: 'Pengajuan perubahan jadwal telah ditolak.',
+      };
+    }
   }
 }
 
@@ -2301,6 +2557,38 @@ export class AssignmentsController {
         message: `Romo${romoId ? ` (ID ${romoId})` : ''} menolak tugas pelayanan untuk Order ID ${orderId}`,
         status: 'DECLINED',
       };
+    }
+
+    const existingOrders = await this.dataSource.query(
+      `SELECT id, status, accepted_romo_id FROM orders WHERE id = $1`,
+      [orderId],
+    );
+    if (existingOrders.length === 0) {
+      return { message: 'Order tidak ditemukan', status: 'FAIL' };
+    }
+
+    if (itemId) {
+      const existingItems = await this.dataSource.query(
+        `SELECT id, status, accepted_romo_id FROM order_items WHERE id = $1 AND order_id = $2`,
+        [itemId, orderId],
+      );
+      if (existingItems.length > 0) {
+        const itemAcceptedRomo = existingItems[0].accepted_romo_id;
+        if (newStatus === 'CONFIRMED' && itemAcceptedRomo && romoId && Number(itemAcceptedRomo) !== Number(romoId)) {
+          return { message: 'Pelayanan ini sudah diterima oleh Romo lain.', status: existingItems[0].status };
+        }
+        if ((newStatus === 'DONE' || newStatus === 'IN_PROGRESS') && itemAcceptedRomo && romoId && Number(itemAcceptedRomo) !== Number(romoId)) {
+          return { message: 'Hanya Romo yang bertugas yang dapat menyelesaikan pelayanan ini.', status: existingItems[0].status };
+        }
+      }
+    } else {
+      const orderAcceptedRomo = existingOrders[0].accepted_romo_id;
+      if (newStatus === 'CONFIRMED' && orderAcceptedRomo && romoId && Number(orderAcceptedRomo) !== Number(romoId)) {
+        return { message: 'Pelayanan ini sudah diterima oleh Romo lain.', status: existingOrders[0].status };
+      }
+      if ((newStatus === 'DONE' || newStatus === 'IN_PROGRESS') && orderAcceptedRomo && romoId && Number(orderAcceptedRomo) !== Number(romoId)) {
+        return { message: 'Hanya Romo yang bertugas yang dapat menyelesaikan pelayanan ini.', status: existingOrders[0].status };
+      }
     }
 
     if (itemId) {

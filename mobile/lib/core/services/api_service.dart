@@ -596,6 +596,62 @@ class ApiService {
     }
   }
 
+  // 4.1. Romo Propose Reschedule
+  static Future<Map<String, dynamic>> proposeReschedule(
+    int orderId, {
+    required int romoId,
+    int? itemId,
+    String? newDate,
+    required String newTimeStart,
+    String? newTimeEnd,
+    required String reason,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'romoId': romoId,
+        'newTimeStart': newTimeStart,
+        'reason': reason,
+      };
+      if (itemId != null) body['itemId'] = itemId;
+      if (newDate != null && newDate.isNotEmpty) body['newDate'] = newDate;
+      if (newTimeEnd != null && newTimeEnd.isNotEmpty) body['newTimeEnd'] = newTimeEnd;
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/orders/$orderId/reschedule/propose'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'statusCode': 500, 'message': 'Gagal mengajukan perubahan jadwal: $e'};
+    }
+  }
+
+  // 4.2. Umat Respond Reschedule (ACCEPT / REJECT)
+  static Future<Map<String, dynamic>> respondReschedule(
+    int orderId, {
+    required int userId,
+    int? itemId,
+    required String action,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'userId': userId,
+        'action': action,
+      };
+      if (itemId != null) body['itemId'] = itemId;
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/orders/$orderId/reschedule/respond'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'statusCode': 500, 'message': 'Gagal merespon perubahan jadwal: $e'};
+    }
+  }
+
   // 5. Fetch WhatsApp Group Messages
   static Future<List<ChatMessage>> getGroupMessages(int groupId) async {
     try {

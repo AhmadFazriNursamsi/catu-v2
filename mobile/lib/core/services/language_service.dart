@@ -138,10 +138,10 @@ class LanguageService {
       // Status Labels
       'status_pending': 'Menunggu Konfirmasi',
       'status_confirmed': 'Kehadiran Dikonfirmasi',
-      'status_in_progress': 'Berlangsung',
-      'status_done': 'Selesai',
-      'status_closed': 'Ditutup',
-      'status_failed': 'Gagal',
+      'status_in_progress': 'Sedang Berlangsung',
+      'status_done': 'Telah Selesai',
+      'status_closed': 'Closed (Ditutup Sistem)',
+      'status_failed': 'Gagal / Kadaluarsa',
       'status_pending_short': 'Menunggu',
 
       // Orders / Services

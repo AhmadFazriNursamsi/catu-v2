@@ -51,8 +51,8 @@ class HistoriEntryItem {
       if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
       final bool romoAccepted = subItem!.acceptedRomoId != null || parentOrder.acceptedRomoId != null;
       final bool datePassed = _isDatePassed(subItem!.scheduledDate) || _isDatePassed(parentOrder.scheduledDate);
-      if (!romoAccepted && datePassed) {
-        return 'FAIL';
+      if (datePassed) {
+        return romoAccepted ? 'CLOSE' : 'FAIL';
       }
       return st;
     } else {
@@ -60,8 +60,8 @@ class HistoriEntryItem {
       if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
       final bool romoAccepted = parentOrder.acceptedRomoId != null;
       final bool datePassed = _isDatePassed(parentOrder.scheduledDate);
-      if (!romoAccepted && datePassed) {
-        return 'FAIL';
+      if (datePassed) {
+        return romoAccepted ? 'CLOSE' : 'FAIL';
       }
       return st;
     }
@@ -124,6 +124,8 @@ class _HistoriScreenState extends State<HistoriScreen>
         return const Color(0xFF1D4ED8);
       case 'DONE':
         return const Color(0xFF2563EB);
+      case 'CLOSE':
+        return const Color(0xFF0D9488);
       case 'FAIL':
       case 'DECLINED':
       case 'REJECTED':
@@ -144,8 +146,10 @@ class _HistoriScreenState extends State<HistoriScreen>
         return 'Sedang Berlangsung';
       case 'DONE':
         return 'Telah Selesai';
+      case 'CLOSE':
+        return 'Closed (Ditutup Sistem)';
       case 'FAIL':
-        return 'Gagal / Batal';
+        return 'Gagal / Kadaluarsa';
       case 'DECLINED':
       case 'REJECTED':
         return 'Ditolak';
@@ -164,6 +168,8 @@ class _HistoriScreenState extends State<HistoriScreen>
       case 'IN_PROGRESS':
         return Icons.directions_run_rounded;
       case 'DONE':
+        return Icons.task_alt_rounded;
+      case 'CLOSE':
         return Icons.task_alt_rounded;
       case 'FAIL':
       case 'DECLINED':
