@@ -2165,7 +2165,13 @@ export class OrdersController {
              o.reschedule_new_date as "rescheduleNewDate",
              o.reschedule_new_time as "rescheduleNewTime",
              o.reschedule_new_time_end as "rescheduleNewTimeEnd",
-             o.reschedule_reason as "rescheduleReason"
+             o.reschedule_reason as "rescheduleReason",
+             COALESCE(o.handover_status, 'NONE') as "handoverStatus",
+             o.handover_proposed_by as "handoverProposedBy",
+             (SELECT full_name FROM user_profiles WHERE user_id = o.handover_proposed_by) as "handoverProposerName",
+             o.handover_target_romo_id as "handoverTargetRomoId",
+             (SELECT full_name FROM user_profiles WHERE user_id = o.handover_target_romo_id) as "handoverTargetRomoName",
+             o.handover_reason as "handoverReason"
       FROM orders o
       JOIN service_categories sc ON o.service_category_id = sc.id
       JOIN urgency_levels ul ON o.urgency_level_id = ul.id
@@ -2190,25 +2196,26 @@ export class OrdersController {
       whereClauses.push(`COALESCE(o.paroki_id, p.paroki_id) = $${paramIdx++}`);
       queryParams.push(parseInt(parokiId));
     } else if (romoId && !isNaN(parseInt(romoId))) {
+      const parsedRId = parseInt(romoId);
       const romoRes = await this.dataSource.query(
         `SELECT r.code as role_code, p.kabupaten_kota_id, p.paroki_id
          FROM auth_users u
          JOIN user_profiles p ON p.user_id = u.id
          JOIN roles r ON u.role_id = r.id
          WHERE u.id = $1`,
-        [parseInt(romoId)],
+        [parsedRId],
       );
       if (romoRes.length > 0) {
         const romo = romoRes[0];
         if (romo.role_code === 'ROMO_ORDO' && romo.kabupaten_kota_id) {
-          whereClauses.push(`COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++}`);
-          queryParams.push(romo.kabupaten_kota_id);
+          whereClauses.push(`(COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++} OR o.accepted_romo_id = $${paramIdx++} OR (o.handover_target_romo_id = $${paramIdx++} AND o.handover_status = 'PENDING'))`);
+          queryParams.push(romo.kabupaten_kota_id, parsedRId, parsedRId);
         } else if (romo.paroki_id) {
-          whereClauses.push(`COALESCE(o.paroki_id, p.paroki_id) = $${paramIdx++}`);
-          queryParams.push(romo.paroki_id);
+          whereClauses.push(`(COALESCE(o.paroki_id, p.paroki_id) = $${paramIdx++} OR o.accepted_romo_id = $${paramIdx++} OR (o.handover_target_romo_id = $${paramIdx++} AND o.handover_status = 'PENDING'))`);
+          queryParams.push(romo.paroki_id, parsedRId, parsedRId);
         } else if (romo.kabupaten_kota_id) {
-          whereClauses.push(`COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++}`);
-          queryParams.push(romo.kabupaten_kota_id);
+          whereClauses.push(`(COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++} OR o.accepted_romo_id = $${paramIdx++} OR (o.handover_target_romo_id = $${paramIdx++} AND o.handover_status = 'PENDING'))`);
+          queryParams.push(romo.kabupaten_kota_id, parsedRId, parsedRId);
         }
       }
     }
@@ -2230,7 +2237,13 @@ export class OrdersController {
                 reschedule_new_date as "rescheduleNewDate",
                 reschedule_new_time_start as "rescheduleNewTimeStart",
                 reschedule_new_time_end as "rescheduleNewTimeEnd",
-                reschedule_reason as "rescheduleReason"
+                reschedule_reason as "rescheduleReason",
+                COALESCE(handover_status, 'NONE') as "handoverStatus",
+                handover_proposed_by as "handoverProposedBy",
+                (SELECT full_name FROM user_profiles WHERE user_id = handover_proposed_by) as "handoverProposerName",
+                handover_target_romo_id as "handoverTargetRomoId",
+                (SELECT full_name FROM user_profiles WHERE user_id = handover_target_romo_id) as "handoverTargetRomoName",
+                handover_reason as "handoverReason"
          FROM order_items 
          WHERE order_id = $1 
          ORDER BY id ASC`,
@@ -2312,7 +2325,13 @@ export class OrdersController {
              o.reschedule_new_date as "rescheduleNewDate",
              o.reschedule_new_time as "rescheduleNewTime",
              o.reschedule_new_time_end as "rescheduleNewTimeEnd",
-             o.reschedule_reason as "rescheduleReason"
+             o.reschedule_reason as "rescheduleReason",
+             COALESCE(o.handover_status, 'NONE') as "handoverStatus",
+             o.handover_proposed_by as "handoverProposedBy",
+             (SELECT full_name FROM user_profiles WHERE user_id = o.handover_proposed_by) as "handoverProposerName",
+             o.handover_target_romo_id as "handoverTargetRomoId",
+             (SELECT full_name FROM user_profiles WHERE user_id = o.handover_target_romo_id) as "handoverTargetRomoName",
+             o.handover_reason as "handoverReason"
       FROM orders o
       JOIN service_categories sc ON o.service_category_id = sc.id
       JOIN urgency_levels ul ON o.urgency_level_id = ul.id
@@ -2335,7 +2354,13 @@ export class OrdersController {
                 reschedule_new_date as "rescheduleNewDate",
                 reschedule_new_time_start as "rescheduleNewTimeStart",
                 reschedule_new_time_end as "rescheduleNewTimeEnd",
-                reschedule_reason as "rescheduleReason"
+                reschedule_reason as "rescheduleReason",
+                COALESCE(handover_status, 'NONE') as "handoverStatus",
+                handover_proposed_by as "handoverProposedBy",
+                (SELECT full_name FROM user_profiles WHERE user_id = handover_proposed_by) as "handoverProposerName",
+                handover_target_romo_id as "handoverTargetRomoId",
+                (SELECT full_name FROM user_profiles WHERE user_id = handover_target_romo_id) as "handoverTargetRomoName",
+                handover_reason as "handoverReason"
          FROM order_items 
          WHERE order_id = $1 
          ORDER BY id ASC`,
@@ -2653,21 +2678,21 @@ export class OrdersController {
 
   @Post(':id/handover')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Romo mengalihkan pelayanan (Ganti Romo / Berhalangan)' })
+  @ApiOperation({ summary: 'Romo mengajukan pelimpahan tugas pelayanan (Ganti Romo / Berhalangan)' })
   async handoverOrder(
     @Param('id') idParam: string,
     @Body() dto: {
       romoId: number;
       itemId?: number;
-      targetRomoId?: number;
+      targetRomoId: number;
       reason: string;
     },
   ) {
     const orderId = parseInt(idParam, 10) || 0;
     const { romoId, itemId, targetRomoId, reason } = dto;
 
-    if (!romoId || !reason) {
-      return { statusCode: 400, message: 'Alasan berhalangan dan ID Romo wajib diisi.' };
+    if (!romoId || !reason || !targetRomoId) {
+      return { statusCode: 400, message: 'Alasan berhalangan, Romo asal, dan Romo pengganti wajib diisi.' };
     }
 
     const orderRes = await this.dataSource.query(
@@ -2696,7 +2721,7 @@ export class OrdersController {
     }
 
     if (!isAuthorized) {
-      return { statusCode: 403, message: 'Hanya Romo yang bertugas yang dapat melakukan pengalihan pelayanan ini.' };
+      return { statusCode: 403, message: 'Hanya Romo yang bertugas yang dapat mengajukan pelimpahan pelayanan ini.' };
     }
 
     const prevRomoProf = await this.dataSource.query(
@@ -2704,137 +2729,237 @@ export class OrdersController {
       [romoId],
     );
     const prevRomoName = prevRomoProf.length > 0 ? prevRomoProf[0].full_name : 'Romo';
+
+    const newRomoProf = await this.dataSource.query(
+      `SELECT full_name FROM user_profiles WHERE user_id = $1`,
+      [targetRomoId],
+    );
+    const newRomoName = newRomoProf.length > 0 ? newRomoProf[0].full_name : 'Romo Pengganti';
     const itemPrefix = targetItemName ? `[${targetItemName}] ` : '';
 
-    if (targetRomoId && Number(targetRomoId) > 0) {
-      // ── DIRECT ASSIGNMENT TO ANOTHER ROMO ──
-      const newRomoProf = await this.dataSource.query(
-        `SELECT full_name FROM user_profiles WHERE user_id = $1`,
-        [targetRomoId],
+    if (itemId) {
+      await this.dataSource.query(
+        `UPDATE order_items 
+         SET handover_status = 'PENDING', handover_proposed_by = $1, handover_target_romo_id = $2, handover_reason = $3
+         WHERE id = $4 AND order_id = $5`,
+        [romoId, targetRomoId, reason, itemId, orderId],
       );
-      const newRomoName = newRomoProf.length > 0 ? newRomoProf[0].full_name : 'Romo Pengganti';
+    } else {
+      await this.dataSource.query(
+        `UPDATE order_items 
+         SET handover_status = 'PENDING', handover_proposed_by = $1, handover_target_romo_id = $2, handover_reason = $3
+         WHERE order_id = $4`,
+        [romoId, targetRomoId, reason, orderId],
+      );
+    }
 
+    await this.dataSource.query(
+      `UPDATE orders 
+       SET handover_status = 'PENDING', handover_proposed_by = $1, handover_target_romo_id = $2, handover_reason = $3
+       WHERE id = $4`,
+      [romoId, targetRomoId, reason, orderId],
+    );
+
+    // Record handover audit
+    await this.dataSource.query(
+      `INSERT INTO order_romo_handovers (order_id, item_id, previous_romo_id, new_romo_id, handover_type, reason, status)
+       VALUES ($1, $2, $3, $4, 'DIRECT_ASSIGN', $5, 'PENDING')`,
+      [orderId, itemId || null, romoId, targetRomoId, reason],
+    );
+
+    // Add new Romo to Chat Group & post system event
+    const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
+    if (groups.length > 0) {
+      const groupId = groups[0].id;
+      const memberCheck = await this.dataSource.query(
+        `SELECT id FROM chat_group_members WHERE chat_group_id = $1 AND user_id = $2`,
+        [groupId, targetRomoId],
+      );
+      if (memberCheck.length === 0) {
+        await this.dataSource.query(
+          `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'ROMO_PAROKI')`,
+          [groupId, targetRomoId],
+        );
+      }
+      await this.dataSource.query(
+        `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
+        [groupId, `Pemberitahuan: Romo ${prevRomoName} mengajukan pelimpahan tugas pelayanan ${itemPrefix}kepada Romo ${newRomoName} ("${reason}"). Menunggu konfirmasi dari Romo ${newRomoName}.`],
+      );
+    }
+
+    // Notify Umat
+    await this.dataSource.query(
+      `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+       VALUES ($1, $2, 'Pengajuan Pengalihan Romo', $3, 'ROMO_HANDOVER', false)`,
+      [order.user_id, orderId, `Romo ${prevRomoName} berhalangan ("${reason}"). Pengalihan tugas ke Romo ${newRomoName} sedang menunggu konfirmasi.`],
+    );
+
+    // Notify New Romo
+    await this.dataSource.query(
+      `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+       VALUES ($1, $2, 'Pengajuan Pelimpahan Tugas', $3, 'ROMO_HANDOVER', false)`,
+      [targetRomoId, orderId, `Romo ${prevRomoName} melimpahkan tugas pelayanan (${order.order_number}) kepada Anda. Alasan: "${reason}". Buka aplikasi untuk menerima atau menolak.`],
+    );
+
+    return {
+      statusCode: 200,
+      success: true,
+      message: `Pengajuan pelimpahan tugas kepada Romo ${newRomoName} berhasil dikirim.`,
+    };
+  }
+
+  @Post(':id/handover/respond')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Romo Baru menerima atau menolak pelimpahan tugas pelayanan' })
+  async respondHandover(
+    @Param('id') idParam: string,
+    @Body() dto: {
+      romoId: number;
+      itemId?: number;
+      action: 'ACCEPT' | 'REJECT';
+    },
+  ) {
+    const orderId = parseInt(idParam, 10) || 0;
+    const { romoId, itemId, action } = dto;
+    const isAccept = action === 'ACCEPT';
+
+    const orderRes = await this.dataSource.query(
+      `SELECT id, order_number, user_id, status, accepted_romo_id, 
+              handover_status, handover_proposed_by, handover_target_romo_id, handover_reason
+       FROM orders WHERE id = $1`,
+      [orderId],
+    );
+    if (orderRes.length === 0) {
+      return { statusCode: 404, message: 'Order tidak ditemukan.' };
+    }
+    const order = orderRes[0];
+
+    if (Number(order.handover_target_romo_id) !== Number(romoId)) {
+      return { statusCode: 403, message: 'Hanya Romo pengganti yang dituju yang dapat menerima atau menolak pelimpahan tugas ini.' };
+    }
+
+    const prevRomoId = order.handover_proposed_by;
+    const prevProf = await this.dataSource.query('SELECT full_name FROM user_profiles WHERE user_id = $1', [prevRomoId]);
+    const prevRomoName = prevProf.length > 0 ? prevProf[0].full_name : 'Romo';
+
+    const targetProf = await this.dataSource.query('SELECT full_name FROM user_profiles WHERE user_id = $1', [romoId]);
+    const targetRomoName = targetProf.length > 0 ? targetProf[0].full_name : 'Romo Pengganti';
+
+    if (isAccept) {
+      // Romo Baru accepts: transfer responsibility
       if (itemId) {
         await this.dataSource.query(
           `UPDATE order_items 
-           SET accepted_romo_id = $1, status = 'CONFIRMED', reschedule_status = 'NONE' 
+           SET accepted_romo_id = $1, handover_status = 'ACCEPTED', status = 'CONFIRMED'
            WHERE id = $2 AND order_id = $3`,
-          [targetRomoId, itemId, orderId],
+          [romoId, itemId, orderId],
         );
       } else {
         await this.dataSource.query(
           `UPDATE order_items 
-           SET accepted_romo_id = $1, status = 'CONFIRMED', reschedule_status = 'NONE' 
+           SET accepted_romo_id = $1, handover_status = 'ACCEPTED', status = 'CONFIRMED'
            WHERE order_id = $2`,
-          [targetRomoId, orderId],
+          [romoId, orderId],
         );
       }
 
       await this.dataSource.query(
         `UPDATE orders 
-         SET accepted_romo_id = $1, status = 'CONFIRMED', reschedule_status = 'NONE' 
+         SET accepted_romo_id = $1, handover_status = 'ACCEPTED', status = 'CONFIRMED'
          WHERE id = $2`,
-        [targetRomoId, orderId],
+        [romoId, orderId],
       );
 
-      // Record handover audit
+      // Update audit log
       await this.dataSource.query(
-        `INSERT INTO order_romo_handovers (order_id, item_id, previous_romo_id, new_romo_id, handover_type, reason, status)
-         VALUES ($1, $2, $3, $4, 'DIRECT_ASSIGN', $5, 'COMPLETED')`,
-        [orderId, itemId || null, romoId, targetRomoId, reason],
+        `UPDATE order_romo_handovers 
+         SET status = 'ACCEPTED', responded_at = CURRENT_TIMESTAMP 
+         WHERE order_id = $1 AND new_romo_id = $2 AND status = 'PENDING'`,
+        [orderId, romoId],
       );
 
-      // Add new Romo to Chat Group & post system event
+      // System chat message
       const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
       if (groups.length > 0) {
-        const groupId = groups[0].id;
-        const memberCheck = await this.dataSource.query(
-          `SELECT id FROM chat_group_members WHERE chat_group_id = $1 AND user_id = $2`,
-          [groupId, targetRomoId],
-        );
-        if (memberCheck.length === 0) {
-          await this.dataSource.query(
-            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'ROMO_PAROKI')`,
-            [groupId, targetRomoId],
-          );
-        }
         await this.dataSource.query(
           `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
-          [groupId, `Pemberitahuan Pengalihan Tugas: Romo ${prevRomoName} berhalangan hadir ("${reason}"). Tugas pelayanan ${itemPrefix}dialihkan kepada Romo ${newRomoName}.`],
+          [groups[0].id, `Romo ${targetRomoName} telah MENERIMA pelimpahan tugas pelayanan dari Romo ${prevRomoName}. Tugas pelayanan kini resmi diemban oleh Romo ${targetRomoName}.`],
         );
       }
+
+      // Notify Romo Lama
+      await this.dataSource.query(
+        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+         VALUES ($1, $2, 'Pelimpahan Disetujui', $3, 'ROMO_HANDOVER', false)`,
+        [prevRomoId, orderId, `Romo ${targetRomoName} telah MENYETUJUI pelimpahan tugas (${order.order_number}). Anda resmi tidak lagi bertugas untuk pelayanan ini.`],
+      );
 
       // Notify Umat
       await this.dataSource.query(
         `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-         VALUES ($1, $2, 'Pengalihan Romo Pelayanan', $3, 'ROMO_HANDOVER', false)`,
-        [order.user_id, orderId, `Romo ${prevRomoName} berhalangan karena "${reason}". Pelayanan Anda kini dialihkan ke Romo ${newRomoName}.`],
-      );
-
-      // Notify New Romo
-      await this.dataSource.query(
-        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-         VALUES ($1, $2, 'Pelimpahan Tugas Pelayanan', $3, 'ROMO_HANDOVER', false)`,
-        [targetRomoId, orderId, `Romo ${prevRomoName} melimpahkan tugas pelayanan (${order.order_number}) kepada Anda. Alasan: "${reason}".`],
+         VALUES ($1, $2, 'Romo Pelayanan Diperbarui', $3, 'ROMO_HANDOVER', false)`,
+        [order.user_id, orderId, `Pelayanan Anda resmi dialihkan ke Romo ${targetRomoName} menggantikan Romo ${prevRomoName}.`],
       );
 
       return {
         statusCode: 200,
         success: true,
-        message: `Pelayanan berhasil dialihkan kepada Romo ${newRomoName}.`,
+        message: `Pelimpahan tugas berhasil diterima. Pelayanan (${order.order_number}) kini menjadi tanggung jawab Anda.`,
       };
     } else {
-      // ── RELEASE BACK TO PAROKI POOL (BROADCAST) ──
+      // Romo Baru rejects: stays with Romo Lama
       if (itemId) {
         await this.dataSource.query(
-          `UPDATE order_items 
-           SET accepted_romo_id = NULL, status = 'PENDING', reschedule_status = 'NONE' 
-           WHERE id = $1 AND order_id = $2`,
+          `UPDATE order_items SET handover_status = 'REJECTED' WHERE id = $1 AND order_id = $2`,
           [itemId, orderId],
         );
       } else {
         await this.dataSource.query(
-          `UPDATE order_items 
-           SET accepted_romo_id = NULL, status = 'PENDING', reschedule_status = 'NONE' 
-           WHERE order_id = $1`,
+          `UPDATE order_items SET handover_status = 'REJECTED' WHERE order_id = $1`,
           [orderId],
         );
       }
 
       await this.dataSource.query(
-        `UPDATE orders 
-         SET accepted_romo_id = NULL, status = 'PENDING', reschedule_status = 'NONE' 
-         WHERE id = $1`,
+        `UPDATE orders SET handover_status = 'REJECTED' WHERE id = $1`,
         [orderId],
       );
 
-      // Record handover audit
+      // Update audit log
       await this.dataSource.query(
-        `INSERT INTO order_romo_handovers (order_id, item_id, previous_romo_id, new_romo_id, handover_type, reason, status)
-         VALUES ($1, $2, $3, NULL, 'BROADCAST_POOL', $4, 'COMPLETED')`,
-        [orderId, itemId || null, romoId, reason],
+        `UPDATE order_romo_handovers 
+         SET status = 'REJECTED', responded_at = CURRENT_TIMESTAMP 
+         WHERE order_id = $1 AND new_romo_id = $2 AND status = 'PENDING'`,
+        [orderId, romoId],
       );
 
-      // Chat System Event
+      // System chat message
       const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
       if (groups.length > 0) {
         await this.dataSource.query(
           `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
-          [groups[0].id, `Pemberitahuan: Romo ${prevRomoName} berhalangan hadir ("${reason}"). Pelayanan ${itemPrefix}dibuka kembali untuk dicarikan Romo pengganti.`],
+          [groups[0].id, `Romo ${targetRomoName} MENOLAK pelimpahan tugas pelayanan. Pelayanan tetap ditugaskan kepada Romo ${prevRomoName}.`],
         );
       }
+
+      // Notify Romo Lama
+      await this.dataSource.query(
+        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+         VALUES ($1, $2, 'Pelimpahan Ditolak', $3, 'ROMO_HANDOVER', false)`,
+        [prevRomoId, orderId, `Romo ${targetRomoName} MENOLAK pelimpahan tugas (${order.order_number}). Anda tetap bertugas melayani atau silakan limpahkan ke Romo lain.`],
+      );
 
       // Notify Umat
       await this.dataSource.query(
         `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-         VALUES ($1, $2, 'Pencarian Romo Pengganti', $3, 'ROMO_HANDOVER', false)`,
-        [order.user_id, orderId, `Romo ${prevRomoName} berhalangan karena "${reason}". Pelayanan Anda dibuka kembali untuk dicarikan Romo pengganti segera.`],
+         VALUES ($1, $2, 'Status Pelimpahan Pelayanan', $3, 'ROMO_HANDOVER', false)`,
+        [order.user_id, orderId, `Pelimpahan ke Romo ${targetRomoName} belum disetujui. Romo ${prevRomoName} tetap bertugas melayani.`],
       );
 
       return {
         statusCode: 200,
         success: true,
-        message: 'Pelayanan berhasil dikembalikan ke daftar tugas terbuka Paroki.',
+        message: `Pelimpahan tugas telah ditolak. Pelayanan (${order.order_number}) tetap menjadi tugas Romo ${prevRomoName}.`,
       };
     }
   }

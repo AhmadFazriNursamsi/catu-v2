@@ -38,7 +38,13 @@ class OrderItem {
   String? rescheduleNewDate;
   String? rescheduleNewTimeStart;
   String? rescheduleNewTimeEnd;
-  String? rescheduleReason;
+  String rescheduleReason;
+  String handoverStatus;
+  int? handoverProposedBy;
+  String? handoverProposerName;
+  int? handoverTargetRomoId;
+  String? handoverTargetRomoName;
+  String handoverReason;
 
   OrderItem({
     this.id,
@@ -55,41 +61,56 @@ class OrderItem {
     this.rescheduleNewDate,
     this.rescheduleNewTimeStart,
     this.rescheduleNewTimeEnd,
-    this.rescheduleReason,
+    this.rescheduleReason = '',
+    this.handoverStatus = 'NONE',
+    this.handoverProposedBy,
+    this.handoverProposerName,
+    this.handoverTargetRomoId,
+    this.handoverTargetRomoName,
+    this.handoverReason = '',
   });
 
   bool get hasPendingReschedule => rescheduleStatus.toUpperCase() == 'PENDING_UMAT';
+  bool get hasPendingHandover => handoverStatus.toUpperCase() == 'PENDING';
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
-    String rawDate = json['scheduledDate'] ?? json['scheduled_date'] ?? '';
-    if (rawDate.contains('T')) rawDate = rawDate.split('T').first;
+    final rawId = json['id'];
+    final parsedId = rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '');
 
-    String start = json['scheduledTimeStart'] ?? json['scheduled_time_start'] ?? '';
-    if (start.length >= 5) start = start.substring(0, 5);
+    final rawAcceptedRomo = json['acceptedRomoId'] ?? json['accepted_romo_id'];
+    final int? parsedAcceptedRomoId = rawAcceptedRomo != null ? int.tryParse(rawAcceptedRomo.toString()) : null;
 
-    String end = json['scheduledTimeEnd'] ?? json['scheduled_time_end'] ?? '';
-    if (end.length >= 5) end = end.substring(0, 5);
-
-    final rawItemId = json['id'];
-    final rawRomoId = json['acceptedRomoId'] ?? json['accepted_romo_id'];
     final rawProposedBy = json['rescheduleProposedBy'] ?? json['reschedule_proposed_by'];
+    final int? parsedProposedBy = rawProposedBy != null ? int.tryParse(rawProposedBy.toString()) : null;
+
+    final rawHandoverProposedBy = json['handoverProposedBy'] ?? json['handover_proposed_by'];
+    final int? parsedHandoverProposedBy = rawHandoverProposedBy != null ? int.tryParse(rawHandoverProposedBy.toString()) : null;
+
+    final rawHandoverTargetRomoId = json['handoverTargetRomoId'] ?? json['handover_target_romo_id'];
+    final int? parsedHandoverTargetRomoId = rawHandoverTargetRomoId != null ? int.tryParse(rawHandoverTargetRomoId.toString()) : null;
 
     return OrderItem(
-      id: rawItemId != null ? int.tryParse(rawItemId.toString()) : null,
-      itemName: json['itemName'] ?? json['item_name'] ?? 'Misa Kedukaan',
-      scheduledDate: rawDate,
-      scheduledTimeStart: start,
-      scheduledTimeEnd: end,
+      id: parsedId,
+      itemName: json['itemName'] ?? json['item_name'] ?? 'Misa',
+      scheduledDate: json['scheduledDate'] ?? json['scheduled_date'] ?? '',
+      scheduledTimeStart: json['scheduledTimeStart'] ?? json['scheduled_time_start'] ?? '',
+      scheduledTimeEnd: json['scheduledTimeEnd'] ?? json['scheduled_time_end'] ?? '',
       locationName: json['locationName'] ?? json['location_name'] ?? '',
-      status: (json['status'] ?? 'PENDING').toString().toUpperCase(),
-      acceptedRomoId: rawRomoId != null ? int.tryParse(rawRomoId.toString()) : null,
+      status: json['status'] ?? 'PENDING',
+      acceptedRomoId: parsedAcceptedRomoId,
       acceptedRomoName: json['acceptedRomoName'] ?? json['accepted_romo_name'],
       rescheduleStatus: (json['rescheduleStatus'] ?? json['reschedule_status'] ?? 'NONE').toString().toUpperCase(),
-      rescheduleProposedBy: rawProposedBy != null ? int.tryParse(rawProposedBy.toString()) : null,
+      rescheduleProposedBy: parsedProposedBy,
       rescheduleNewDate: json['rescheduleNewDate'] ?? json['reschedule_new_date'],
       rescheduleNewTimeStart: json['rescheduleNewTimeStart'] ?? json['reschedule_new_time_start'],
       rescheduleNewTimeEnd: json['rescheduleNewTimeEnd'] ?? json['reschedule_new_time_end'],
-      rescheduleReason: json['rescheduleReason'] ?? json['reschedule_reason'],
+      rescheduleReason: json['rescheduleReason'] ?? json['reschedule_reason'] ?? '',
+      handoverStatus: (json['handoverStatus'] ?? json['handover_status'] ?? 'NONE').toString().toUpperCase(),
+      handoverProposedBy: parsedHandoverProposedBy,
+      handoverProposerName: json['handoverProposerName'] ?? json['handover_proposer_name'],
+      handoverTargetRomoId: parsedHandoverTargetRomoId,
+      handoverTargetRomoName: json['handoverTargetRomoName'] ?? json['handover_target_romo_name'],
+      handoverReason: json['handoverReason'] ?? json['handover_reason'] ?? '',
     );
   }
 
@@ -259,6 +280,12 @@ class Order {
   String? rescheduleReason;
   List<OrderRescheduleLog> rescheduleHistory;
   List<OrderRomoHandover> handoverHistory;
+  String handoverStatus;
+  int? handoverProposedBy;
+  String? handoverProposerName;
+  int? handoverTargetRomoId;
+  String? handoverTargetRomoName;
+  String handoverReason;
 
   Order({
     required this.id,
@@ -288,9 +315,16 @@ class Order {
     this.rescheduleReason,
     this.rescheduleHistory = const [],
     this.handoverHistory = const [],
+    this.handoverStatus = 'NONE',
+    this.handoverProposedBy,
+    this.handoverProposerName,
+    this.handoverTargetRomoId,
+    this.handoverTargetRomoName,
+    this.handoverReason = '',
   });
 
   bool get hasPendingReschedule => rescheduleStatus.toUpperCase() == 'PENDING_UMAT';
+  bool get hasPendingHandover => handoverStatus.toUpperCase() == 'PENDING';
 
   /// Parse "Jam Mulai" from notes
   String get jamMulaiLabel {
@@ -526,6 +560,12 @@ class Order {
           .toList();
     }
 
+    final rawHandoverProposedBy = json['handoverProposedBy'] ?? json['handover_proposed_by'];
+    final int? parsedHandoverProposedBy = rawHandoverProposedBy != null ? int.tryParse(rawHandoverProposedBy.toString()) : null;
+
+    final rawHandoverTargetRomoId = json['handoverTargetRomoId'] ?? json['handover_target_romo_id'];
+    final int? parsedHandoverTargetRomoId = rawHandoverTargetRomoId != null ? int.tryParse(rawHandoverTargetRomoId.toString()) : null;
+
     return Order(
       id: parsedId,
       userId: parsedUserId,
@@ -554,6 +594,12 @@ class Order {
       rescheduleReason: json['rescheduleReason'] ?? json['reschedule_reason'],
       rescheduleHistory: parsedReschedules,
       handoverHistory: parsedHandovers,
+      handoverStatus: (json['handoverStatus'] ?? json['handover_status'] ?? 'NONE').toString().toUpperCase(),
+      handoverProposedBy: parsedHandoverProposedBy,
+      handoverProposerName: json['handoverProposerName'] ?? json['handover_proposer_name'],
+      handoverTargetRomoId: parsedHandoverTargetRomoId,
+      handoverTargetRomoName: json['handoverTargetRomoName'] ?? json['handover_target_romo_name'],
+      handoverReason: json['handoverReason'] ?? json['handover_reason'] ?? '',
     );
   }
 }

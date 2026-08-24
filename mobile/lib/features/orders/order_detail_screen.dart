@@ -507,9 +507,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                           ),
                         ),
                       ),
-                      actions: [
+                        actions: [
                         if (isAssignedToCurrentRomo &&
-                            (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS'))
+                            (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS') &&
+                            !order.hasPendingHandover &&
+                            !displayItem.hasPendingHandover)
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: GestureDetector(
@@ -589,6 +591,39 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               const SizedBox(height: 12),
                             ],
 
+                            // ── Handover Proposal Card for Target Romo (Romo Baru) ──
+                            if (widget.isRomo &&
+                                widget.romoId != null &&
+                                (displayItem.handoverTargetRomoId == widget.romoId || order.handoverTargetRomoId == widget.romoId) &&
+                                (displayItem.hasPendingHandover || order.hasPendingHandover)) ...[
+                              _buildHandoverProposalCardForTargetRomo(order, displayItem),
+                              const SizedBox(height: 12),
+                            ],
+
+                            // ── Handover Pending Banner for Proposer Romo (Romo Lama) ──
+                            if (widget.isRomo &&
+                                widget.romoId != null &&
+                                (displayItem.handoverProposedBy == widget.romoId || order.handoverProposedBy == widget.romoId) &&
+                                (displayItem.hasPendingHandover || order.hasPendingHandover)) ...[
+                              _buildHandoverPendingBannerForProposer(order, displayItem),
+                              const SizedBox(height: 12),
+                            ],
+
+                            // ── Handover Rejected Banner for Proposer Romo (Romo Lama) ──
+                            if (widget.isRomo &&
+                                widget.romoId != null &&
+                                (displayItem.handoverProposedBy == widget.romoId || order.handoverProposedBy == widget.romoId) &&
+                                (displayItem.handoverStatus == 'REJECTED' || order.handoverStatus == 'REJECTED')) ...[
+                              _buildHandoverRejectedBannerForProposer(order, displayItem),
+                              const SizedBox(height: 12),
+                            ],
+
+                            // ── Handover Info for Umat ──
+                            if (!widget.isRomo && (displayItem.hasPendingHandover || order.hasPendingHandover)) ...[
+                              _buildHandoverInfoCardForUmat(order, displayItem),
+                              const SizedBox(height: 12),
+                            ],
+
                             // ── Romo yang Bertugas Info Card ──
                             if (isItemAccepted) ...[
                               _buildInfoCard(
@@ -612,7 +647,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                     isLast: !isAssignedToCurrentRomo || (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE'),
                                   ),
                                   if (isAssignedToCurrentRomo &&
-                                      (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS')) ...[
+                                      (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS') &&
+                                      !order.hasPendingHandover &&
+                                      !displayItem.hasPendingHandover) ...[
                                     const SizedBox(height: 10),
                                     InkWell(
                                       onTap: () => _showHandoverBottomSheet(order, targetItem: displayItem),
@@ -977,7 +1014,7 @@ penerimaName: order.penerimaName,
     final String proposedDate = displayItem.rescheduleNewDate ?? order.rescheduleNewDate ?? order.scheduledDate;
     final String proposedTimeStart = displayItem.rescheduleNewTimeStart ?? order.rescheduleNewTime ?? order.scheduledTime;
     final String? proposedTimeEnd = displayItem.rescheduleNewTimeEnd ?? order.rescheduleNewTimeEnd;
-    final String reason = displayItem.rescheduleReason ?? order.rescheduleReason ?? '';
+    final String reason = displayItem.rescheduleReason.isNotEmpty ? displayItem.rescheduleReason : (order.rescheduleReason ?? '');
 
     final String timeDisplay = proposedTimeEnd != null && proposedTimeEnd.isNotEmpty
         ? '$proposedTimeStart - $proposedTimeEnd WIB'
@@ -1334,6 +1371,345 @@ penerimaName: order.penerimaName,
     );
   }
 
+  Widget _buildHandoverProposalCardForTargetRomo(Order order, OrderItem displayItem) {
+    final proposerName = displayItem.handoverProposerName ?? order.handoverProposerName ?? 'Romo Sebelumnya';
+    final reason = displayItem.handoverReason.isNotEmpty ? displayItem.handoverReason : order.handoverReason;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF86EFAC), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF059669).withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF059669).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.swap_horiz_rounded, color: Color(0xFF059669), size: 22),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Pelimpahan Pelayanan Masuk',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF065F46),
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF86EFAC)),
+                ),
+                child: const Text(
+                  'Menunggu Respon',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Romo $proposerName mengajukan pelimpahan tugas pelayanan ini kepada Anda.',
+            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
+          ),
+          if (reason.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFDCFCE7)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Alasan: ', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF065F46))),
+                  Expanded(
+                    child: Text(
+                      '"$reason"',
+                      style: const TextStyle(fontSize: 12.5, fontStyle: FontStyle.italic, color: Color(0xFF334155)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isSubmitting ? null : () => _respondHandover(order, displayItem, 'REJECT'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFDC2626),
+                    side: const BorderSide(color: Color(0xFFF87171), width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Tolak', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : () => _respondHandover(order, displayItem, 'ACCEPT'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF059669),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Terima Pelimpahan', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHandoverPendingBannerForProposer(Order order, OrderItem displayItem) {
+    final targetName = displayItem.handoverTargetRomoName ?? order.handoverTargetRomoName ?? 'Romo Pengganti';
+    final reason = displayItem.handoverReason.isNotEmpty ? displayItem.handoverReason : order.handoverReason;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.hourglass_top_rounded, color: Color(0xFFD97706), size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pelimpahan Pelayanan Sedang Diproses',
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF92400E)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Anda telah mengajukan pelimpahan tugas ini kepada Romo $targetName. Menunggu persetujuan Romo bersangkutan.',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF78350F), height: 1.3),
+                ),
+                if (reason.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Alasan: "$reason"',
+                    style: const TextStyle(fontSize: 11.5, fontStyle: FontStyle.italic, color: Color(0xFFB45309)),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHandoverRejectedBannerForProposer(Order order, OrderItem displayItem) {
+    final targetName = displayItem.handoverTargetRomoName ?? order.handoverTargetRomoName ?? 'Romo Pengganti';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFECACA), width: 1.2),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.cancel_outlined, color: Color(0xFFDC2626), size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pelimpahan Pelayanan Ditolak',
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF991B1B)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Romo $targetName berhalangan untuk menerima pelimpahan ini. Tugas pelayanan tetap menjadi tanggung jawab Anda, atau Anda dapat melimpahkannya ke Romo lain.',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF7F1D1D), height: 1.3),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHandoverInfoCardForUmat(Order order, OrderItem displayItem) {
+    final proposerName = displayItem.handoverProposerName ?? order.handoverProposerName ?? 'Romo yang Bertugas';
+    final targetName = displayItem.handoverTargetRomoName ?? order.handoverTargetRomoName ?? 'Romo Pengganti';
+    final reason = displayItem.handoverReason.isNotEmpty ? displayItem.handoverReason : order.handoverReason;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F9FF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFBAE6FD), width: 1.2),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.info_outline_rounded, color: Color(0xFF0284C7), size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Informasi Pengalihan Romo',
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF075985)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Romo $proposerName mengajukan pelimpahan tugas kepada Romo $targetName. Sedang menunggu konfirmasi dari Romo bersangkutan.',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF0C4A6E), height: 1.3),
+                ),
+                if (reason.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Alasan: "$reason"',
+                    style: const TextStyle(fontSize: 11.5, fontStyle: FontStyle.italic, color: Color(0xFF0369A1)),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _respondHandover(Order order, OrderItem? displayItem, String action) async {
+    final romoId = widget.romoId;
+    if (romoId == null) return;
+
+    final isAccept = action == 'ACCEPT';
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(isAccept ? 'Terima Pelimpahan Tugas?' : 'Tolak Pelimpahan Tugas?', style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(isAccept
+            ? 'Dengan menerima, Anda resmi menjadi Romo yang bertugas untuk melayani pesanan ini.'
+            : 'Jika ditolak, tanggung jawab pelayanan akan tetap berada pada Romo sebelumnya.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(c, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isAccept ? const Color(0xFF059669) : const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+            ),
+            child: Text(isAccept ? 'Ya, Terima' : 'Ya, Tolak'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      final res = await ApiService.respondHandoverServiceOrder(
+        order.id,
+        romoId: romoId,
+        itemId: displayItem?.id,
+        action: action,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message'] ?? 'Berhasil memproses respon.'),
+            backgroundColor: isAccept ? const Color(0xFF059669) : const Color(0xFFDC2626),
+          ),
+        );
+        await _fetchFreshOrder();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memproses respon: $e'), backgroundColor: Colors.red.shade700),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
   void _openChat(Order order) {
     HapticFeedback.lightImpact();
     Navigator.push(
@@ -1363,6 +1739,74 @@ penerimaName: order.penerimaName,
   }
 
   Widget _buildRomoAcceptedBottomActions(Order order, {OrderItem? displayItem}) {
+    final bool hasPendingHandover = (displayItem?.hasPendingHandover ?? false) || order.hasPendingHandover;
+    final bool isHandoverProposedByMe = hasPendingHandover &&
+        (displayItem?.handoverProposedBy == widget.romoId || order.handoverProposedBy == widget.romoId);
+
+    if (isHandoverProposedByMe) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFFBEB),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFF59E0B)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.hourglass_top_rounded, color: Color(0xFFB45309), size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Anda telah melimpahkan pelayanan ini ke Romo ${displayItem?.handoverTargetRomoName ?? order.handoverTargetRomoName ?? "Pengganti"}. Menunggu konfirmasi...',
+                    style: const TextStyle(color: Color(0xFF92400E), fontSize: 12.5, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppConstants.primaryBlue.withValues(alpha: 0.25),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: AppConstants.primaryBlue,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => _openChat(order),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Buka Chat Grup',
+                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     final String itemResch = (displayItem?.rescheduleStatus ?? 'NONE').toUpperCase();
     final String orderResch = order.rescheduleStatus.toUpperCase();
     final String historyLatestResch = order.rescheduleHistory.isNotEmpty
@@ -3122,11 +3566,11 @@ penerimaName: order.penerimaName,
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(res['message'] ?? 'Pengalihan tugas berhasil diproses.'),
+            content: Text(res['message'] ?? 'Pengajuan pelimpahan tugas berhasil dikirim.'),
             backgroundColor: const Color(0xFF0284C7),
           ),
         );
-        Navigator.pop(context, true);
+        await _fetchFreshOrder();
       }
     } catch (e) {
       if (mounted) {

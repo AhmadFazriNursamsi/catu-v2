@@ -700,6 +700,33 @@ class ApiService {
     }
   }
 
+  // 4e. Respond to Handover (Accept / Reject)
+  static Future<Map<String, dynamic>> respondHandoverServiceOrder(
+    int orderId, {
+    required int romoId,
+    int? itemId,
+    required String action, // 'ACCEPT' | 'REJECT'
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/orders/$orderId/handover/respond'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'romoId': romoId,
+          if (itemId != null) 'itemId': itemId,
+          'action': action,
+        }),
+      );
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return {'statusCode': response.statusCode, 'message': 'Berhasil merespon pengalihan tugas.'};
+    } catch (e) {
+      return {'statusCode': 500, 'message': 'Gagal merespon pengalihan tugas: $e'};
+    }
+  }
+
   // 5. Fetch WhatsApp Group Messages
   static Future<List<ChatMessage>> getGroupMessages(int groupId) async {
     try {
