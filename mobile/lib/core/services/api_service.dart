@@ -652,6 +652,54 @@ class ApiService {
     }
   }
 
+  // 4c. Fetch Available Romo list for Handover
+  static Future<List<Map<String, dynamic>>> getAvailableRomos({int? parokiId}) async {
+    try {
+      final url = parokiId != null
+          ? '$baseUrl/orders/available-romos?parokiId=$parokiId'
+          : '$baseUrl/orders/available-romos';
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is List) {
+          return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        }
+      }
+    } catch (e) {
+      print('Error getAvailableRomos: $e');
+    }
+    return [];
+  }
+
+  // 4d. Romo Handover / Ganti Romo
+  static Future<Map<String, dynamic>> handoverServiceOrder(
+    int orderId, {
+    required int romoId,
+    int? itemId,
+    int? targetRomoId,
+    required String reason,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/orders/$orderId/handover'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'romoId': romoId,
+          if (itemId != null) 'itemId': itemId,
+          if (targetRomoId != null && targetRomoId > 0) 'targetRomoId': targetRomoId,
+          'reason': reason,
+        }),
+      );
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return {'statusCode': response.statusCode, 'message': 'Berhasil memproses pengalihan romo.'};
+    } catch (e) {
+      return {'statusCode': 500, 'message': 'Gagal melakukan pengalihan romo: $e'};
+    }
+  }
+
   // 5. Fetch WhatsApp Group Messages
   static Future<List<ChatMessage>> getGroupMessages(int groupId) async {
     try {

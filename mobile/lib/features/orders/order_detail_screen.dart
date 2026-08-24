@@ -508,6 +508,38 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                         ),
                       ),
                       actions: [
+                        if (isAssignedToCurrentRomo &&
+                            (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS'))
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: GestureDetector(
+                              onTap: () => _showHandoverBottomSheet(order, targetItem: displayItem),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0284C7).withValues(alpha: 0.85),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 15),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Ganti Romo',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                         Padding(
                           padding: const EdgeInsets.only(right: 16),
                           child: Center(
@@ -577,8 +609,37 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                     label: 'Status Konfirmasi',
                                     value: effectiveStatus == 'DONE' ? 'Telah Selesai Dilaksanakan' : 'Telah Mengonfirmasi Kehadiran',
                                     valueColor: const Color(0xFF059669),
-                                    isLast: true,
+                                    isLast: !isAssignedToCurrentRomo || (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE'),
                                   ),
+                                  if (isAssignedToCurrentRomo &&
+                                      (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS')) ...[
+                                    const SizedBox(height: 10),
+                                    InkWell(
+                                      onTap: () => _showHandoverBottomSheet(order, targetItem: displayItem),
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF0F9FF),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(color: const Color(0xFFBAE6FD)),
+                                        ),
+                                        child: Row(
+                                          children: const [
+                                            Icon(Icons.published_with_changes_rounded, size: 16, color: Color(0xFF0284C7)),
+                                            SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                'Berhalangan Hadir? Alihkan / Ganti Romo',
+                                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0369A1)),
+                                              ),
+                                            ),
+                                            Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF0284C7)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -730,6 +791,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             if (order.rescheduleHistory.isNotEmpty) ...[
                               const SizedBox(height: 12),
                               _buildRescheduleHistoryCard(order),
+                            ],
+
+                            // ── Riwayat Pengalihan Romo (Handover History) ──
+                            if (order.handoverHistory.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              _buildHandoverHistoryCard(order),
                             ],
                           ],
                         ),
@@ -2545,5 +2612,478 @@ penerimaName: order.penerimaName,
         ),
       ),
     );
+  }
+
+  Widget _buildHandoverHistoryCard(Order order) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0284C7).withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.published_with_changes_rounded, color: Color(0xFF0284C7), size: 20),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Riwayat Pengalihan Romo',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${order.handoverHistory.length} Log',
+                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: order.handoverHistory.length,
+            separatorBuilder: (_, __) => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+            ),
+            itemBuilder: (context, idx) {
+              final h = order.handoverHistory[idx];
+              final bool isDirect = h.handoverType == 'DIRECT_ASSIGN';
+              final String destination = isDirect
+                  ? (h.newRomoName != null ? 'Dialihkan ke Romo ${h.newRomoName}' : 'Dialihkan ke Romo Rekan')
+                  : 'Dikembalikan ke Paroki (Terbuka)';
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Romo ${h.previousRomoName}',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0284C7).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          isDirect ? 'Pelimpahan Langsung' : 'Buka ke Paroki',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.swap_horiz_rounded, size: 15, color: Color(0xFF0284C7)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            destination,
+                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (h.reason.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Alasan: "${h.reason}"',
+                      style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHandoverBottomSheet(Order order, {OrderItem? targetItem}) async {
+    final romoId = widget.romoId;
+    if (romoId == null) return;
+
+    int handoverMode = 0; // 0: Release to Paroki pool, 1: Direct assign to specific Romo
+    int? selectedTargetRomoId;
+    final reasonController = TextEditingController();
+    List<Map<String, dynamic>> availableRomos = [];
+    bool isLoadingRomos = true;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          if (isLoadingRomos) {
+            ApiService.getAvailableRomos().then((list) {
+              if (ctx.mounted) {
+                setModalState(() {
+                  availableRomos = list.where((r) => (r['id'] as int?) != romoId).toList();
+                  if (availableRomos.isNotEmpty && selectedTargetRomoId == null) {
+                    selectedTargetRomoId = availableRomos.first['id'] as int?;
+                  }
+                  isLoadingRomos = false;
+                });
+              }
+            });
+          }
+
+          return Container(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0284C7).withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.published_with_changes_rounded, color: Color(0xFF0284C7), size: 22),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Pengalihan Tugas (Ganti Romo)',
+                          style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Gunakan fitur ini jika Anda mendadak berhalangan karena kondisi darurat atau agenda mendesak lainnya.',
+                    style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Option 1: Release to pool
+                  InkWell(
+                    onTap: () => setModalState(() => handoverMode = 0),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: handoverMode == 0 ? const Color(0xFFEFF6FF) : Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: handoverMode == 0 ? const Color(0xFF3B82F6) : Colors.grey.shade300,
+                          width: handoverMode == 0 ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Radio<int>(
+                            value: 0,
+                            groupValue: handoverMode,
+                            activeColor: const Color(0xFF2563EB),
+                            onChanged: (v) => setModalState(() => handoverMode = v ?? 0),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text(
+                                  'Kembalikan ke Paroki (Broadcast Terbuka)',
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Pelayanan akan dibuka kembali agar Romo lain di paroki dapat mengambilnya.',
+                                  style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Option 2: Direct Handover
+                  InkWell(
+                    onTap: () => setModalState(() => handoverMode = 1),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: handoverMode == 1 ? const Color(0xFFEFF6FF) : Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: handoverMode == 1 ? const Color(0xFF3B82F6) : Colors.grey.shade300,
+                          width: handoverMode == 1 ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Radio<int>(
+                            value: 1,
+                            groupValue: handoverMode,
+                            activeColor: const Color(0xFF2563EB),
+                            onChanged: (v) => setModalState(() => handoverMode = v ?? 1),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text(
+                                  'Limpahkan ke Romo Tertentu',
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Pilih Romo rekan yang telah bersedia menggantikan pelayanan ini.',
+                                  style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Dropdown for target Romo (if mode 1)
+                  if (handoverMode == 1) ...[
+                    const SizedBox(height: 12),
+                    const Text('Pilih Romo Pengganti', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                    const SizedBox(height: 6),
+                    isLoadingRomos
+                        ? const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()))
+                        : Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                isExpanded: true,
+                                value: selectedTargetRomoId,
+                                items: availableRomos.map((r) {
+                                  final name = r['fullName'] ?? 'Romo';
+                                  final paroki = r['parokiName'] ?? '';
+                                  return DropdownMenuItem<int>(
+                                    value: r['id'] as int,
+                                    child: Text(
+                                      paroki.isNotEmpty ? 'Romo $name ($paroki)' : 'Romo $name',
+                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setModalState(() => selectedTargetRomoId = val);
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                  ],
+
+                  const SizedBox(height: 14),
+
+                  // Reason text field
+                  const Text('Alasan Berhalangan / Pengalihan (Wajib)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: reasonController,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText: 'Contoh: Sakit mendadak / ada pemakaman keluarga...',
+                      hintStyle: TextStyle(fontSize: 12.5, color: Colors.grey.shade400),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Submit button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final reasonText = reasonController.text.trim();
+                        if (reasonText.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Silakan masukkan alasan berhalangan.')),
+                          );
+                          return;
+                        }
+
+                        final bool? confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (c) => AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            title: const Text('Konfirmasi Pengalihan', style: TextStyle(fontWeight: FontWeight.bold)),
+                            content: Text(
+                              handoverMode == 0
+                                  ? 'Apakah Anda yakin ingin mengembalikan tugas pelayanan ini ke Paroki agar dicarikan Romo pengganti?'
+                                  : 'Apakah Anda yakin ingin melimpahkan tugas pelayanan ini kepada Romo yang dipilih?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(c, false),
+                                child: const Text('Batal'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(c, true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF0284C7),
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text('Ya, Alihkan'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true) {
+                          Navigator.pop(ctx);
+                          _submitHandover(
+                            order: order,
+                            targetItem: targetItem,
+                            targetRomoId: handoverMode == 1 ? selectedTargetRomoId : null,
+                            reason: reasonText,
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0284C7),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Proses Pengalihan Tugas', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _submitHandover({
+    required Order order,
+    OrderItem? targetItem,
+    int? targetRomoId,
+    required String reason,
+  }) async {
+    final romoId = widget.romoId;
+    if (romoId == null) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      final res = await ApiService.handoverServiceOrder(
+        order.id,
+        romoId: romoId,
+        itemId: targetItem?.id,
+        targetRomoId: targetRomoId,
+        reason: reason,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message'] ?? 'Pengalihan tugas berhasil diproses.'),
+            backgroundColor: const Color(0xFF0284C7),
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal melakukan pengalihan: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 }

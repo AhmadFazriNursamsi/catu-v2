@@ -2254,9 +2254,41 @@ export class OrdersController {
         [order.id],
       );
       order.rescheduleHistory = reschedules;
+
+      const handovers = await this.dataSource.query(
+        `SELECT h.id, h.order_id as "orderId", h.item_id as "itemId",
+                h.previous_romo_id as "previousRomoId", p_prev.full_name as "previousRomoName",
+                h.new_romo_id as "newRomoId", p_new.full_name as "newRomoName",
+                h.handover_type as "handoverType", h.reason, h.status, h.created_at as "createdAt"
+         FROM order_romo_handovers h
+         LEFT JOIN user_profiles p_prev ON h.previous_romo_id = p_prev.user_id
+         LEFT JOIN user_profiles p_new ON h.new_romo_id = p_new.user_id
+         WHERE h.order_id = $1
+         ORDER BY h.id DESC`,
+        [order.id],
+      );
+      order.handoverHistory = handovers;
     }
 
     return orders;
+  }
+
+  @Get('available-romos')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Mendapatkan daftar Romo yang aktif untuk pelimpahan/ganti romo' })
+  async getAvailableRomos(@Query('parokiId') parokiId?: string) {
+    const query = `
+      SELECT u.id, u.phone_number as "phoneNumber", p.full_name as "fullName", r.code as "roleCode", 
+             p.paroki_id as "parokiId", par.name as "parokiName"
+      FROM auth_users u
+      JOIN user_profiles p ON u.id = p.user_id
+      JOIN roles r ON u.role_id = r.id
+      LEFT JOIN paroki par ON p.paroki_id = par.id
+      WHERE (r.code LIKE '%ROMO%' OR r.code = 'ROMO_PAROKI' OR r.code = 'ROMO_ORDO')
+        AND u.is_active = true
+      ORDER BY p.full_name ASC
+    `;
+    return await this.dataSource.query(query);
   }
 
   @Get(':id')
@@ -2325,6 +2357,20 @@ export class OrdersController {
         [order.id],
       );
       order.rescheduleHistory = reschedules;
+
+      const handovers = await this.dataSource.query(
+        `SELECT h.id, h.order_id as "orderId", h.item_id as "itemId",
+                h.previous_romo_id as "previousRomoId", p_prev.full_name as "previousRomoName",
+                h.new_romo_id as "newRomoId", p_new.full_name as "newRomoName",
+                h.handover_type as "handoverType", h.reason, h.status, h.created_at as "createdAt"
+         FROM order_romo_handovers h
+         LEFT JOIN user_profiles p_prev ON h.previous_romo_id = p_prev.user_id
+         LEFT JOIN user_profiles p_new ON h.new_romo_id = p_new.user_id
+         WHERE h.order_id = $1
+         ORDER BY h.id DESC`,
+        [order.id],
+      );
+      order.handoverHistory = handovers;
 
       return order;
     }
@@ -2599,6 +2645,194 @@ export class OrdersController {
         statusCode: 200,
         success: true,
         message: 'Pengajuan perubahan jadwal telah ditolak.',
+      };
+    }
+  }
+
+  @Post(':id/handover')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Romo mengalihkan pelayanan (Ganti Romo / Berhalangan)' })
+  async handoverOrder(
+    @Param('id') idParam: string,
+    @Body() dto: {
+      romoId: number;
+      itemId?: number;
+      targetRomoId?: number;
+      reason: string;
+    },
+  ) {
+    const orderId = parseInt(idParam, 10) || 0;
+    const { romoId, itemId, targetRomoId, reason } = dto;
+
+    if (!romoId || !reason) {
+      return { statusCode: 400, message: 'Alasan berhalangan dan ID Romo wajib diisi.' };
+    }
+
+    const orderRes = await this.dataSource.query(
+      `SELECT id, order_number, user_id, status, scheduled_date, scheduled_time, accepted_romo_id, paroki_id FROM orders WHERE id = $1`,
+      [orderId],
+    );
+    if (orderRes.length === 0) {
+      return { statusCode: 404, message: 'Order tidak ditemukan.' };
+    }
+    const order = orderRes[0];
+
+    let isAuthorized = false;
+    let targetItemName = '';
+    if (itemId) {
+      const itemRes = await this.dataSource.query(
+        `SELECT id, item_name, accepted_romo_id, status FROM order_items WHERE id = $1 AND order_id = $2`,
+        [itemId, orderId],
+      );
+      if (itemRes.length > 0) {
+        const it = itemRes[0];
+        targetItemName = it.item_name;
+        isAuthorized = Number(it.accepted_romo_id ?? order.accepted_romo_id) === Number(romoId);
+      }
+    } else {
+      isAuthorized = Number(order.accepted_romo_id) === Number(romoId);
+    }
+
+    if (!isAuthorized) {
+      return { statusCode: 403, message: 'Hanya Romo yang bertugas yang dapat melakukan pengalihan pelayanan ini.' };
+    }
+
+    const prevRomoProf = await this.dataSource.query(
+      `SELECT full_name FROM user_profiles WHERE user_id = $1`,
+      [romoId],
+    );
+    const prevRomoName = prevRomoProf.length > 0 ? prevRomoProf[0].full_name : 'Romo';
+    const itemPrefix = targetItemName ? `[${targetItemName}] ` : '';
+
+    if (targetRomoId && Number(targetRomoId) > 0) {
+      // ── DIRECT ASSIGNMENT TO ANOTHER ROMO ──
+      const newRomoProf = await this.dataSource.query(
+        `SELECT full_name FROM user_profiles WHERE user_id = $1`,
+        [targetRomoId],
+      );
+      const newRomoName = newRomoProf.length > 0 ? newRomoProf[0].full_name : 'Romo Pengganti';
+
+      if (itemId) {
+        await this.dataSource.query(
+          `UPDATE order_items 
+           SET accepted_romo_id = $1, status = 'CONFIRMED', reschedule_status = 'NONE' 
+           WHERE id = $2 AND order_id = $3`,
+          [targetRomoId, itemId, orderId],
+        );
+      } else {
+        await this.dataSource.query(
+          `UPDATE order_items 
+           SET accepted_romo_id = $1, status = 'CONFIRMED', reschedule_status = 'NONE' 
+           WHERE order_id = $2`,
+          [targetRomoId, orderId],
+        );
+      }
+
+      await this.dataSource.query(
+        `UPDATE orders 
+         SET accepted_romo_id = $1, status = 'CONFIRMED', reschedule_status = 'NONE' 
+         WHERE id = $2`,
+        [targetRomoId, orderId],
+      );
+
+      // Record handover audit
+      await this.dataSource.query(
+        `INSERT INTO order_romo_handovers (order_id, item_id, previous_romo_id, new_romo_id, handover_type, reason, status)
+         VALUES ($1, $2, $3, $4, 'DIRECT_ASSIGN', $5, 'COMPLETED')`,
+        [orderId, itemId || null, romoId, targetRomoId, reason],
+      );
+
+      // Add new Romo to Chat Group & post system event
+      const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
+      if (groups.length > 0) {
+        const groupId = groups[0].id;
+        const memberCheck = await this.dataSource.query(
+          `SELECT id FROM chat_group_members WHERE chat_group_id = $1 AND user_id = $2`,
+          [groupId, targetRomoId],
+        );
+        if (memberCheck.length === 0) {
+          await this.dataSource.query(
+            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'ROMO_PAROKI')`,
+            [groupId, targetRomoId],
+          );
+        }
+        await this.dataSource.query(
+          `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
+          [groupId, `Pemberitahuan Pengalihan Tugas: Romo ${prevRomoName} berhalangan hadir ("${reason}"). Tugas pelayanan ${itemPrefix}dialihkan kepada Romo ${newRomoName}.`],
+        );
+      }
+
+      // Notify Umat
+      await this.dataSource.query(
+        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+         VALUES ($1, $2, 'Pengalihan Romo Pelayanan', $3, 'ROMO_HANDOVER', false)`,
+        [order.user_id, orderId, `Romo ${prevRomoName} berhalangan karena "${reason}". Pelayanan Anda kini dialihkan ke Romo ${newRomoName}.`],
+      );
+
+      // Notify New Romo
+      await this.dataSource.query(
+        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+         VALUES ($1, $2, 'Pelimpahan Tugas Pelayanan', $3, 'ROMO_HANDOVER', false)`,
+        [targetRomoId, orderId, `Romo ${prevRomoName} melimpahkan tugas pelayanan (${order.order_number}) kepada Anda. Alasan: "${reason}".`],
+      );
+
+      return {
+        statusCode: 200,
+        success: true,
+        message: `Pelayanan berhasil dialihkan kepada Romo ${newRomoName}.`,
+      };
+    } else {
+      // ── RELEASE BACK TO PAROKI POOL (BROADCAST) ──
+      if (itemId) {
+        await this.dataSource.query(
+          `UPDATE order_items 
+           SET accepted_romo_id = NULL, status = 'PENDING', reschedule_status = 'NONE' 
+           WHERE id = $1 AND order_id = $2`,
+          [itemId, orderId],
+        );
+      } else {
+        await this.dataSource.query(
+          `UPDATE order_items 
+           SET accepted_romo_id = NULL, status = 'PENDING', reschedule_status = 'NONE' 
+           WHERE order_id = $1`,
+          [orderId],
+        );
+      }
+
+      await this.dataSource.query(
+        `UPDATE orders 
+         SET accepted_romo_id = NULL, status = 'PENDING', reschedule_status = 'NONE' 
+         WHERE id = $1`,
+        [orderId],
+      );
+
+      // Record handover audit
+      await this.dataSource.query(
+        `INSERT INTO order_romo_handovers (order_id, item_id, previous_romo_id, new_romo_id, handover_type, reason, status)
+         VALUES ($1, $2, $3, NULL, 'BROADCAST_POOL', $4, 'COMPLETED')`,
+        [orderId, itemId || null, romoId, reason],
+      );
+
+      // Chat System Event
+      const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
+      if (groups.length > 0) {
+        await this.dataSource.query(
+          `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
+          [groups[0].id, `Pemberitahuan: Romo ${prevRomoName} berhalangan hadir ("${reason}"). Pelayanan ${itemPrefix}dibuka kembali untuk dicarikan Romo pengganti.`],
+        );
+      }
+
+      // Notify Umat
+      await this.dataSource.query(
+        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+         VALUES ($1, $2, 'Pencarian Romo Pengganti', $3, 'ROMO_HANDOVER', false)`,
+        [order.user_id, orderId, `Romo ${prevRomoName} berhalangan karena "${reason}". Pelayanan Anda dibuka kembali untuk dicarikan Romo pengganti segera.`],
+      );
+
+      return {
+        statusCode: 200,
+        success: true,
+        message: 'Pelayanan berhasil dikembalikan ke daftar tugas terbuka Paroki.',
       };
     }
   }

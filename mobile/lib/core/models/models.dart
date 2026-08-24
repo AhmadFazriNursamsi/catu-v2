@@ -187,6 +187,50 @@ class OrderRescheduleLog {
   }
 }
 
+class OrderRomoHandover {
+  final int id;
+  final int orderId;
+  final int? itemId;
+  final int previousRomoId;
+  final String previousRomoName;
+  final int? newRomoId;
+  final String? newRomoName;
+  final String handoverType; // 'BROADCAST_POOL' or 'DIRECT_ASSIGN'
+  final String reason;
+  final String status;
+  final String? createdAt;
+
+  OrderRomoHandover({
+    required this.id,
+    required this.orderId,
+    this.itemId,
+    required this.previousRomoId,
+    required this.previousRomoName,
+    this.newRomoId,
+    this.newRomoName,
+    required this.handoverType,
+    required this.reason,
+    required this.status,
+    this.createdAt,
+  });
+
+  factory OrderRomoHandover.fromJson(Map<String, dynamic> json) {
+    return OrderRomoHandover(
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      orderId: json['orderId'] is int ? json['orderId'] : int.tryParse(json['orderId'].toString()) ?? 0,
+      itemId: json['itemId'] != null ? int.tryParse(json['itemId'].toString()) : null,
+      previousRomoId: json['previousRomoId'] is int ? json['previousRomoId'] : int.tryParse(json['previousRomoId'].toString()) ?? 0,
+      previousRomoName: json['previousRomoName'] ?? 'Romo',
+      newRomoId: json['newRomoId'] != null ? int.tryParse(json['newRomoId'].toString()) : null,
+      newRomoName: json['newRomoName'],
+      handoverType: json['handoverType'] ?? 'BROADCAST_POOL',
+      reason: json['reason'] ?? '',
+      status: json['status'] ?? 'COMPLETED',
+      createdAt: json['createdAt'] ?? json['created_at'],
+    );
+  }
+}
+
 class Order {
   final int id;
   final int? userId;
@@ -214,6 +258,7 @@ class Order {
   String? rescheduleNewTimeEnd;
   String? rescheduleReason;
   List<OrderRescheduleLog> rescheduleHistory;
+  List<OrderRomoHandover> handoverHistory;
 
   Order({
     required this.id,
@@ -242,6 +287,7 @@ class Order {
     this.rescheduleNewTimeEnd,
     this.rescheduleReason,
     this.rescheduleHistory = const [],
+    this.handoverHistory = const [],
   });
 
   bool get hasPendingReschedule => rescheduleStatus.toUpperCase() == 'PENDING_UMAT';
@@ -473,6 +519,13 @@ class Order {
           .toList();
     }
 
+    List<OrderRomoHandover> parsedHandovers = [];
+    if (json['handoverHistory'] is List) {
+      parsedHandovers = (json['handoverHistory'] as List)
+          .map((h) => OrderRomoHandover.fromJson(h as Map<String, dynamic>))
+          .toList();
+    }
+
     return Order(
       id: parsedId,
       userId: parsedUserId,
@@ -500,6 +553,7 @@ class Order {
       rescheduleNewTimeEnd: json['rescheduleNewTimeEnd'] ?? json['reschedule_new_time_end'],
       rescheduleReason: json['rescheduleReason'] ?? json['reschedule_reason'],
       rescheduleHistory: parsedReschedules,
+      handoverHistory: parsedHandovers,
     );
   }
 }
