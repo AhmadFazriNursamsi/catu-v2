@@ -1298,9 +1298,9 @@ penerimaName: order.penerimaName,
 
         Row(
           children: [
-            // Chat Button (Left)
+            // Chat Button (Full width when pending reschedule, flex 3 when normal)
             Expanded(
-              flex: hasPendingProposal ? 6 : 3,
+              flex: hasPendingProposal ? 1 : 3,
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -1350,10 +1350,10 @@ penerimaName: order.penerimaName,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 18),
-                          SizedBox(width: 6),
+                          SizedBox(width: 8),
                           Text(
-                            'Chat Grup',
-                            style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+                            'Buka Chat Grup',
+                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -1362,49 +1362,38 @@ penerimaName: order.penerimaName,
                 ),
               ),
             ),
-            const SizedBox(width: 8),
 
-            // Reschedule Button (Middle)
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFD97706).withValues(alpha: 0.25),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: const Color(0xFFD97706),
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
+            // Ubah Jam & Selesaikan buttons (Only visible when NOT in pending reschedule)
+            if (!hasPendingProposal) ...[
+              const SizedBox(width: 8),
+              // Reschedule Button (Middle)
+              Container(
+                decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  onTap: () => _showRescheduleBottomSheet(order, targetItem: displayItem),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: hasPendingProposal ? 16 : 14, vertical: 14),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.edit_calendar_rounded, color: Colors.white, size: 20),
-                        if (hasPendingProposal) ...[
-                          const SizedBox(width: 6),
-                          const Text(
-                            'Ubah Jam',
-                            style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ],
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFD97706).withValues(alpha: 0.25),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: const Color(0xFFD97706),
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => _showRescheduleBottomSheet(order, targetItem: displayItem),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      child: Icon(Icons.edit_calendar_rounded, color: Colors.white, size: 20),
                     ),
                   ),
                 ),
               ),
-            ),
-
-            // Complete Service Button (Right) - Hidden while reschedule proposal is pending
-            if (!hasPendingProposal) ...[
               const SizedBox(width: 8),
+
+              // Complete Service Button (Right)
               Expanded(
                 flex: 4,
                 child: Container(
