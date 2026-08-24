@@ -1267,8 +1267,38 @@ penerimaName: order.penerimaName,
     );
   }
 
+  void _openChat(Order order) {
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          groupId: order.id,
+          orderNumber: order.orderNumber,
+          userName: widget.userName,
+          userId: order.userId,
+          groupItem: ChatGroupItem(
+            groupId: order.id,
+            orderId: order.id,
+            groupTitle: 'Group Pelayanan ${order.categoryName}',
+            orderTitle: order.categoryName,
+            orderCategory: order.categoryName,
+            orderStatus: order.status,
+            scheduledDate: order.scheduledDate,
+            scheduledTimeStart: order.jamMulaiLabel,
+            scheduledTimeEnd: order.jamSelesaiLabel,
+            penerimaName: order.penerimaName,
+            requesterName: widget.userName,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildRomoAcceptedBottomActions(Order order, {OrderItem? displayItem}) {
-    final bool hasPendingProposal = (displayItem?.hasPendingReschedule ?? false) || order.hasPendingReschedule;
+    final String reschStatus = (displayItem?.rescheduleStatus ?? order.rescheduleStatus).toUpperCase();
+    final bool hasPendingProposal = reschStatus == 'PENDING_UMAT' || (displayItem?.hasPendingReschedule ?? false) || order.hasPendingReschedule;
+    final bool isRescheduleRejected = reschStatus == 'REJECTED';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1294,78 +1324,201 @@ penerimaName: order.penerimaName,
                 ),
               ],
             ),
+          )
+        else if (isRescheduleRejected)
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFEF4444)),
+            ),
+            child: Row(
+              children: const [
+                Icon(Icons.info_outline_rounded, color: Color(0xFFDC2626), size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Pengajuan ubah jam ditolak Umat. Silakan ajukan jadwal baru atau diskusikan via chat.',
+                    style: TextStyle(color: Color(0xFF991B1B), fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
           ),
 
-        Row(
-          children: [
-            // Chat Button (Full width when pending reschedule, flex 3 when normal)
-            Expanded(
-              flex: hasPendingProposal ? 1 : 3,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppConstants.primaryBlue.withValues(alpha: 0.25),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+        if (hasPendingProposal)
+          // 1. Pending: Only Chat full width
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppConstants.primaryBlue.withValues(alpha: 0.25),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 ),
-                child: Material(
-                  color: AppConstants.primaryBlue,
-                  borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
+              ],
+            ),
+            child: Material(
+              color: AppConstants.primaryBlue,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => _openChat(order),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Buka Chat Grup',
+                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          )
+        else if (isRescheduleRejected)
+          // 2. Rejected: Chat + Ajukan Jam Baru (Selesaikan is hidden)
+          Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: Container(
+                  decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ChatScreen(
-                            groupId: order.id,
-                            orderNumber: order.orderNumber,
-                            userName: widget.userName,
-                            userId: order.userId,
-                            groupItem: ChatGroupItem(
-                              groupId: order.id,
-                              orderId: order.id,
-                              groupTitle: 'Group Pelayanan ${order.categoryName}',
-                              orderTitle: order.categoryName,
-                              orderCategory: order.categoryName,
-                              orderStatus: order.status,
-                              scheduledDate: order.scheduledDate,
-                              scheduledTimeStart: order.jamMulaiLabel,
-                              scheduledTimeEnd: order.jamSelesaiLabel,
-                              penerimaName: order.penerimaName,
-                              requesterName: widget.userName,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppConstants.primaryBlue.withValues(alpha: 0.25),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: AppConstants.primaryBlue,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => _openChat(order),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 18),
+                            SizedBox(width: 6),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'Chat Grup',
+                                style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                      );
-                    },
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 14),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 18),
-                          SizedBox(width: 8),
-                          Text(
-                            'Buka Chat Grup',
-                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
-                        ],
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-
-            // Ubah Jam & Selesaikan buttons (Only visible when NOT in pending reschedule)
-            if (!hasPendingProposal) ...[
               const SizedBox(width: 8),
+              Expanded(
+                flex: 1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFD97706).withValues(alpha: 0.25),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: const Color(0xFFD97706),
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => _showRescheduleBottomSheet(order, targetItem: displayItem),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.edit_calendar_rounded, color: Colors.white, size: 18),
+                            SizedBox(width: 6),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'Ajukan Jam Baru',
+                                style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          )
+        else
+          // 3. Normal / Reschedule Accepted: Chat (flex 3), Ubah Jam (icon), Selesaikan (flex 4)
+          Row(
+            children: [
+              // Chat Button (Left)
+              Expanded(
+                flex: 3,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppConstants.primaryBlue.withValues(alpha: 0.25),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: AppConstants.primaryBlue,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => _openChat(order),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 18),
+                            SizedBox(width: 6),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'Chat',
+                                style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
               // Reschedule Button (Middle)
               Container(
                 decoration: BoxDecoration(
@@ -1426,9 +1579,12 @@ penerimaName: order.penerimaName,
                                   )
                                 : const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
                             const SizedBox(width: 6),
-                            const Text(
-                              'Selesaikan',
-                              style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+                            const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'Selesaikan',
+                                style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ],
                         ),
@@ -1438,8 +1594,7 @@ penerimaName: order.penerimaName,
                 ),
               ),
             ],
-          ],
-        ),
+          ),
       ],
     );
   }
