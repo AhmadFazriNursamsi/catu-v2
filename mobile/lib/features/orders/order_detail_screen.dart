@@ -1300,7 +1300,7 @@ penerimaName: order.penerimaName,
           children: [
             // Chat Button (Left)
             Expanded(
-              flex: 3,
+              flex: hasPendingProposal ? 6 : 3,
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -1352,7 +1352,7 @@ penerimaName: order.penerimaName,
                           Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 18),
                           SizedBox(width: 6),
                           Text(
-                            'Chat',
+                            'Chat Grup',
                             style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -1382,59 +1382,73 @@ penerimaName: order.penerimaName,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
                   onTap: () => _showRescheduleBottomSheet(order, targetItem: displayItem),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                    child: Icon(Icons.edit_calendar_rounded, color: Colors.white, size: 20),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: hasPendingProposal ? 16 : 14, vertical: 14),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.edit_calendar_rounded, color: Colors.white, size: 20),
+                        if (hasPendingProposal) ...[
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Ubah Jam',
+                            style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
 
-            // Complete Service Button (Right)
-            Expanded(
-              flex: 4,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF059669).withValues(alpha: 0.25),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: const Color(0xFF059669),
-                  borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
+            // Complete Service Button (Right) - Hidden while reschedule proposal is pending
+            if (!hasPendingProposal) ...[
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 4,
+                child: Container(
+                  decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    onTap: _isSubmitting ? null : () => _completeService(order, targetItem: displayItem),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _isSubmitting
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                )
-                              : const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'Selesaikan',
-                            style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
-                          ),
-                        ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF059669).withValues(alpha: 0.25),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: const Color(0xFF059669),
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: _isSubmitting ? null : () => _completeService(order, targetItem: displayItem),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _isSubmitting
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Selesaikan',
+                              style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ],
