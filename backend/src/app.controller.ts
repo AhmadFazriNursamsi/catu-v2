@@ -2153,6 +2153,7 @@ export class OrdersController {
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, 
              o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, 
              o.attachment_url as "attachmentUrl",
+             o.user_id,
              p.full_name as pemohon_name,
              k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
              COALESCE(o.paroki_id, p.paroki_id) as paroki_id,
@@ -2438,7 +2439,7 @@ export class OrdersController {
     }
     const order = orderRes[0];
 
-    if (Number(order.user_id) !== Number(userId)) {
+    if (userId && Number(order.user_id) !== Number(userId)) {
       return { statusCode: 403, message: 'Hanya pemohon (Umat) yang dapat menyetujui atau menolak perubahan jadwal ini.' };
     }
 

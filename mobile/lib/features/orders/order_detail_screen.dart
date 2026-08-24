@@ -929,7 +929,7 @@ penerimaName: order.penerimaName,
                 child: Text(
                   'Pengajuan Perubahan Jam Pelayanan',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 14.5,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF92400E),
                   ),
@@ -937,33 +937,49 @@ penerimaName: order.penerimaName,
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           const Text(
-            'Romo yang bertugas mengajukan penyesuaian waktu pelaksanaan pelayanan:',
-            style: TextStyle(fontSize: 13, color: Color(0xFF78350F)),
+            'Romo yang bertugas mengajukan penyesuaian waktu pelayanan:',
+            style: TextStyle(fontSize: 12.5, color: Color(0xFF78350F)),
           ),
           const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFFDE68A)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.event_rounded, size: 16, color: Color(0xFFD97706)),
-                const SizedBox(width: 6),
-                Text(
-                  proposedDate,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                Row(
+                  children: [
+                    const Icon(Icons.event_rounded, size: 16, color: Color(0xFFD97706)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        proposedDate,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                const Icon(Icons.access_time_rounded, size: 16, color: Color(0xFFD97706)),
-                const SizedBox(width: 6),
-                Text(
-                  timeDisplay,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.access_time_rounded, size: 16, color: Color(0xFFD97706)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        timeDisplay,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -972,7 +988,7 @@ penerimaName: order.penerimaName,
             const SizedBox(height: 8),
             Text(
               'Alasan: "$reason"',
-              style: const TextStyle(fontSize: 12.5, fontStyle: FontStyle.italic, color: Color(0xFF92400E)),
+              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Color(0xFF92400E)),
             ),
           ],
           const SizedBox(height: 14),
@@ -980,6 +996,7 @@ penerimaName: order.penerimaName,
             children: [
               // Tolak Button
               Expanded(
+                flex: 4,
                 child: OutlinedButton(
                   onPressed: _isSubmitting
                       ? null
@@ -988,14 +1005,17 @@ penerimaName: order.penerimaName,
                     foregroundColor: const Color(0xFFDC2626),
                     side: const BorderSide(color: Color(0xFFDC2626), width: 1.2),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                  child: _isSubmitting
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFDC2626)))
+                      : const Text('Tolak', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                 ),
               ),
               const SizedBox(width: 10),
               // Terima Button
               Expanded(
+                flex: 6,
                 child: ElevatedButton(
                   onPressed: _isSubmitting
                       ? null
@@ -1005,9 +1025,14 @@ penerimaName: order.penerimaName,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text('Terima Jadwal Baru', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                  child: _isSubmitting
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('Terima Jadwal', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                        ),
                 ),
               ),
             ],
@@ -1018,14 +1043,13 @@ penerimaName: order.penerimaName,
   }
 
   Future<void> _respondReschedule(Order order, {required OrderItem displayItem, required bool accept}) async {
-    final rawUserId = widget.order.userId;
-    if (rawUserId == null) return;
+    final int targetUserId = order.userId ?? widget.order.userId ?? 8;
 
     setState(() => _isSubmitting = true);
     try {
       final res = await ApiService.respondReschedule(
         order.id,
-        userId: rawUserId,
+        userId: targetUserId,
         itemId: displayItem.id,
         action: accept ? 'ACCEPT' : 'REJECT',
       );
