@@ -2237,6 +2237,23 @@ export class OrdersController {
         [order.id],
       );
       order.items = items;
+
+      const reschedules = await this.dataSource.query(
+        `SELECT r.id, r.order_id as "orderId", r.item_id as "itemId",
+                r.proposed_by as "proposedBy", p_prop.full_name as "proposerName",
+                r.previous_date as "previousDate", r.previous_time_start as "previousTimeStart", r.previous_time_end as "previousTimeEnd",
+                r.proposed_date as "proposedDate", r.proposed_time_start as "proposedTimeStart", r.proposed_time_end as "proposedTimeEnd",
+                r.reason, r.status,
+                r.responded_by as "respondedBy", p_resp.full_name as "responderName",
+                r.responded_at as "respondedAt", r.created_at as "createdAt"
+         FROM order_reschedules r
+         LEFT JOIN user_profiles p_prop ON r.proposed_by = p_prop.user_id
+         LEFT JOIN user_profiles p_resp ON r.responded_by = p_resp.user_id
+         WHERE r.order_id = $1
+         ORDER BY r.id DESC`,
+        [order.id],
+      );
+      order.rescheduleHistory = reschedules;
     }
 
     return orders;
@@ -2291,6 +2308,24 @@ export class OrdersController {
         [order.id],
       );
       order.items = items;
+
+      const reschedules = await this.dataSource.query(
+        `SELECT r.id, r.order_id as "orderId", r.item_id as "itemId",
+                r.proposed_by as "proposedBy", p_prop.full_name as "proposerName",
+                r.previous_date as "previousDate", r.previous_time_start as "previousTimeStart", r.previous_time_end as "previousTimeEnd",
+                r.proposed_date as "proposedDate", r.proposed_time_start as "proposedTimeStart", r.proposed_time_end as "proposedTimeEnd",
+                r.reason, r.status,
+                r.responded_by as "respondedBy", p_resp.full_name as "responderName",
+                r.responded_at as "respondedAt", r.created_at as "createdAt"
+         FROM order_reschedules r
+         LEFT JOIN user_profiles p_prop ON r.proposed_by = p_prop.user_id
+         LEFT JOIN user_profiles p_resp ON r.responded_by = p_resp.user_id
+         WHERE r.order_id = $1
+         ORDER BY r.id DESC`,
+        [order.id],
+      );
+      order.rescheduleHistory = reschedules;
+
       return order;
     }
     return { statusCode: 404, message: 'Order tidak ditemukan' };
@@ -2326,17 +2361,24 @@ export class OrdersController {
     }
     const order = orderRes[0];
 
-    // Check Romo authorization
+    // Check Romo authorization & record previous schedule
     let isAuthorized = false;
     let targetItemName = '';
+    let prevDate = order.scheduled_date;
+    let prevTimeStart = order.scheduled_time;
+    let prevTimeEnd: string | null = null;
+
     if (itemId) {
       const itemRes = await this.dataSource.query(
-        `SELECT id, item_name, accepted_romo_id, status FROM order_items WHERE id = $1 AND order_id = $2`,
+        `SELECT id, item_name, scheduled_date, scheduled_time_start, scheduled_time_end, accepted_romo_id, status FROM order_items WHERE id = $1 AND order_id = $2`,
         [itemId, orderId],
       );
       if (itemRes.length > 0) {
         const it = itemRes[0];
         targetItemName = it.item_name;
+        prevDate = it.scheduled_date;
+        prevTimeStart = it.scheduled_time_start;
+        prevTimeEnd = it.scheduled_time_end;
         isAuthorized = Number(it.accepted_romo_id ?? order.accepted_romo_id) === Number(romoId);
       }
     } else {
@@ -2379,6 +2421,13 @@ export class OrdersController {
            reschedule_reason = $5
        WHERE id = $6`,
       [romoId, proposedDate, newTimeStart, newTimeEnd || null, reason || '', orderId],
+    );
+
+    // Record to order_reschedules audit log table
+    await this.dataSource.query(
+      `INSERT INTO order_reschedules (order_id, item_id, proposed_by, previous_date, previous_time_start, previous_time_end, proposed_date, proposed_time_start, proposed_time_end, reason, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'PENDING_UMAT')`,
+      [orderId, itemId || null, romoId, prevDate, prevTimeStart, prevTimeEnd, proposedDate, newTimeStart, newTimeEnd || null, reason || 'Penyesuaian agenda'],
     );
 
     // Format display string
@@ -2466,6 +2515,14 @@ export class OrdersController {
         [orderId],
       );
 
+      // Update order_reschedules log
+      await this.dataSource.query(
+        `UPDATE order_reschedules 
+         SET status = 'ACCEPTED', responded_by = $1, responded_at = CURRENT_TIMESTAMP 
+         WHERE order_id = $2 AND status = 'PENDING_UMAT'`,
+        [userId || order.user_id, orderId],
+      );
+
       const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
       if (groups.length > 0) {
         await this.dataSource.query(
@@ -2497,6 +2554,14 @@ export class OrdersController {
       await this.dataSource.query(
         `UPDATE orders SET reschedule_status = 'REJECTED' WHERE id = $1`,
         [orderId],
+      );
+
+      // Update order_reschedules log
+      await this.dataSource.query(
+        `UPDATE order_reschedules 
+         SET status = 'REJECTED', responded_by = $1, responded_at = CURRENT_TIMESTAMP 
+         WHERE order_id = $2 AND status = 'PENDING_UMAT'`,
+        [userId || order.user_id, orderId],
       );
 
       const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);

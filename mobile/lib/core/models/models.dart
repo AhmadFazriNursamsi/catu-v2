@@ -107,6 +107,86 @@ class OrderItem {
   }
 }
 
+class OrderRescheduleLog {
+  final int id;
+  final int orderId;
+  final int? itemId;
+  final int proposedBy;
+  final String proposerName;
+  final String? previousDate;
+  final String? previousTimeStart;
+  final String? previousTimeEnd;
+  final String proposedDate;
+  final String proposedTimeStart;
+  final String? proposedTimeEnd;
+  final String reason;
+  final String status; // PENDING_UMAT, ACCEPTED, REJECTED
+  final int? respondedBy;
+  final String? responderName;
+  final String? respondedAt;
+  final String? createdAt;
+
+  OrderRescheduleLog({
+    required this.id,
+    required this.orderId,
+    this.itemId,
+    required this.proposedBy,
+    required this.proposerName,
+    this.previousDate,
+    this.previousTimeStart,
+    this.previousTimeEnd,
+    required this.proposedDate,
+    required this.proposedTimeStart,
+    this.proposedTimeEnd,
+    required this.reason,
+    required this.status,
+    this.respondedBy,
+    this.responderName,
+    this.respondedAt,
+    this.createdAt,
+  });
+
+  factory OrderRescheduleLog.fromJson(Map<String, dynamic> json) {
+    String prevDate = json['previousDate'] ?? json['previous_date'] ?? '';
+    if (prevDate.contains('T')) prevDate = prevDate.split('T').first;
+
+    String propDate = json['proposedDate'] ?? json['proposed_date'] ?? '';
+    if (propDate.contains('T')) propDate = propDate.split('T').first;
+
+    String prevStart = json['previousTimeStart'] ?? json['previous_time_start'] ?? '';
+    if (prevStart.length >= 5) prevStart = prevStart.substring(0, 5);
+
+    String prevEnd = json['previousTimeEnd'] ?? json['previous_time_end'] ?? '';
+    if (prevEnd.length >= 5) prevEnd = prevEnd.substring(0, 5);
+
+    String propStart = json['proposedTimeStart'] ?? json['proposed_time_start'] ?? '';
+    if (propStart.length >= 5) propStart = propStart.substring(0, 5);
+
+    String propEnd = json['proposedTimeEnd'] ?? json['proposed_time_end'] ?? '';
+    if (propEnd.length >= 5) propEnd = propEnd.substring(0, 5);
+
+    return OrderRescheduleLog(
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      orderId: json['orderId'] is int ? json['orderId'] : int.tryParse(json['orderId'].toString()) ?? 0,
+      itemId: json['itemId'] != null ? int.tryParse(json['itemId'].toString()) : null,
+      proposedBy: json['proposedBy'] is int ? json['proposedBy'] : int.tryParse(json['proposedBy'].toString()) ?? 0,
+      proposerName: json['proposerName'] ?? json['proposer_name'] ?? 'Romo',
+      previousDate: prevDate,
+      previousTimeStart: prevStart,
+      previousTimeEnd: prevEnd,
+      proposedDate: propDate,
+      proposedTimeStart: propStart,
+      proposedTimeEnd: propEnd,
+      reason: json['reason'] ?? '',
+      status: (json['status'] ?? 'PENDING_UMAT').toString().toUpperCase(),
+      respondedBy: json['respondedBy'] != null ? int.tryParse(json['respondedBy'].toString()) : null,
+      responderName: json['responderName'] ?? json['responder_name'],
+      respondedAt: json['respondedAt'] ?? json['responded_at'],
+      createdAt: json['createdAt'] ?? json['created_at'],
+    );
+  }
+}
+
 class Order {
   final int id;
   final int? userId;
@@ -133,6 +213,7 @@ class Order {
   String? rescheduleNewTime;
   String? rescheduleNewTimeEnd;
   String? rescheduleReason;
+  List<OrderRescheduleLog> rescheduleHistory;
 
   Order({
     required this.id,
@@ -160,6 +241,7 @@ class Order {
     this.rescheduleNewTime,
     this.rescheduleNewTimeEnd,
     this.rescheduleReason,
+    this.rescheduleHistory = const [],
   });
 
   bool get hasPendingReschedule => rescheduleStatus.toUpperCase() == 'PENDING_UMAT';
@@ -384,6 +466,13 @@ class Order {
     final String? parsedAcceptedRomoName = json['acceptedRomoName'] ?? json['accepted_romo_name'];
     final rawProposedBy = json['rescheduleProposedBy'] ?? json['reschedule_proposed_by'];
 
+    List<OrderRescheduleLog> parsedReschedules = [];
+    if (json['rescheduleHistory'] is List) {
+      parsedReschedules = (json['rescheduleHistory'] as List)
+          .map((r) => OrderRescheduleLog.fromJson(r as Map<String, dynamic>))
+          .toList();
+    }
+
     return Order(
       id: parsedId,
       userId: parsedUserId,
@@ -410,6 +499,7 @@ class Order {
       rescheduleNewTime: json['rescheduleNewTime'] ?? json['reschedule_new_time'],
       rescheduleNewTimeEnd: json['rescheduleNewTimeEnd'] ?? json['reschedule_new_time_end'],
       rescheduleReason: json['rescheduleReason'] ?? json['reschedule_reason'],
+      rescheduleHistory: parsedReschedules,
     );
   }
 }

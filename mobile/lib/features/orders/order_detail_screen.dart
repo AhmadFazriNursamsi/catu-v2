@@ -32,6 +32,7 @@ class OrderDetailScreen extends StatefulWidget {
 
 class _OrderDetailScreenState extends State<OrderDetailScreen>
     with SingleTickerProviderStateMixin {
+  late Order _order;
   late AnimationController _animController;
   late Animation<double> _fadeIn;
   late Animation<Offset> _slideUp;
@@ -40,6 +41,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   @override
   void initState() {
     super.initState();
+    _order = widget.order;
+    _fetchFreshOrder();
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
     _animController = AnimationController(
       vsync: this,
@@ -51,6 +54,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
+  }
+
+  Future<void> _fetchFreshOrder() async {
+    try {
+      final updated = await ApiService.getOrderById(widget.order.id);
+      if (updated != null && mounted) {
+        setState(() {
+          _order = updated;
+        });
+      }
+    } catch (_) {}
   }
 
   void _onLanguageChanged() {
@@ -379,7 +393,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final order = widget.order;
+    final order = _order;
     OrderItem? targetItem;
     if (widget.selectedItemTitle != null && order.items.isNotEmpty) {
       for (final item in order.items) {
@@ -711,6 +725,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                   _buildNotesTile(order.catatanLabel),
                               ],
                             ),
+
+                            // ── Riwayat Perubahan Jadwal (Reschedule History) ──
+                            if (order.rescheduleHistory.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              _buildRescheduleHistoryCard(order),
+                            ],
                           ],
                         ),
                       ),
@@ -1078,6 +1098,7 @@ penerimaName: order.penerimaName,
           ),
         );
         setState(() {});
+        _fetchFreshOrder();
       }
     } catch (e) {
       if (mounted) {
@@ -1091,6 +1112,159 @@ penerimaName: order.penerimaName,
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  Widget _buildRescheduleHistoryCard(Order order) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.history_toggle_off_rounded, color: Color(0xFF4F46E5), size: 20),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Riwayat Perubahan Jadwal',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${order.rescheduleHistory.length} Log',
+                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: order.rescheduleHistory.length,
+            separatorBuilder: (_, __) => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+            ),
+            itemBuilder: (context, idx) {
+              final log = order.rescheduleHistory[idx];
+              final bool isAccepted = log.status == 'ACCEPTED';
+              final bool isRejected = log.status == 'REJECTED';
+              final Color badgeColor = isAccepted
+                  ? const Color(0xFF059669)
+                  : (isRejected ? const Color(0xFFDC2626) : const Color(0xFFD97706));
+              final String badgeText = isAccepted
+                  ? 'Disetujui Umat'
+                  : (isRejected ? 'Ditolak Umat' : 'Menunggu Umat');
+              final IconData badgeIcon = isAccepted
+                  ? Icons.check_circle_rounded
+                  : (isRejected ? Icons.cancel_rounded : Icons.pending_actions_rounded);
+
+              final String timeProposed = log.proposedTimeEnd != null && log.proposedTimeEnd!.isNotEmpty
+                  ? '${log.proposedTimeStart} – ${log.proposedTimeEnd} WIB'
+                  : '${log.proposedTimeStart} WIB';
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Diajukan ${log.proposerName}',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: badgeColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(badgeIcon, size: 13, color: badgeColor),
+                            const SizedBox(width: 4),
+                            Text(
+                              badgeText,
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: badgeColor),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFF64748B)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Jadwal Baru: ${log.proposedDate} • $timeProposed',
+                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (log.reason.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Alasan: "${log.reason}"',
+                      style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildRomoAcceptedBottomActions(Order order, {OrderItem? displayItem}) {
@@ -1552,6 +1726,7 @@ penerimaName: order.penerimaName,
           ),
         );
         setState(() {});
+        _fetchFreshOrder();
       }
     } catch (e) {
       if (mounted) {
