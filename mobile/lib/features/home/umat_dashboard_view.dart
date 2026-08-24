@@ -104,7 +104,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
   }
 
   Future<void> _refreshUnreadCount() async {
-    final count = await NotificationService.unreadCount('UMAT');
+    final count = await NotificationService.unreadCount('UMAT', userId: _userId);
     if (mounted) setState(() => _unreadNotifCount = count);
   }
 

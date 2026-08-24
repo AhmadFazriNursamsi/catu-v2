@@ -87,6 +87,10 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
   Future<void> _refreshUnreadCount() async {
     final role = _romoRole;
+    final romoId = widget.user['id'] != null
+        ? int.tryParse(widget.user['id'].toString())
+        : (widget.user['userId'] != null ? int.tryParse(widget.user['userId'].toString()) : null);
+
     final rawParoki = widget.user['parokiId'] ?? widget.user['paroki_id'];
     final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
 
@@ -95,6 +99,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
     final count = await NotificationService.unreadCount(
       role,
+      userId: romoId,
       parokiId: parokiId,
       kabupatenKotaId: kabupatenKotaId,
     );
@@ -807,6 +812,10 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
   }
 
   List<RomoDashboardCardItem> get _displayParishRequestsCardItems {
+    final int? romoId = widget.user['id'] != null
+        ? int.tryParse(widget.user['id'].toString())
+        : (widget.user['userId'] != null ? int.tryParse(widget.user['userId'].toString()) : null);
+
     final List<RomoDashboardCardItem> cardList = [];
 
     for (final order in widget.orders) {
@@ -816,8 +825,12 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
-          // EXCLUDE items that are already accepted by ANY Romo!
-          if (item.acceptedRomoId != null) continue;
+          final isIncomingHandover = romoId != null &&
+              ((item.handoverTargetRomoId == romoId && item.hasPendingHandover) ||
+               (order.handoverTargetRomoId == romoId && order.hasPendingHandover));
+
+          // EXCLUDE items that are already accepted by ANY Romo, unless it's an incoming handover to this Romo!
+          if (item.acceptedRomoId != null && !isIncomingHandover) continue;
           if (_isDateBeforeToday(item.scheduledDate)) continue;
 
           String scheduleStr = item.scheduledDate;
@@ -833,7 +846,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           cardList.add(
             RomoDashboardCardItem(
               parentOrder: order,
-              title: item.itemName,
+              title: isIncomingHandover ? '🔄 [Pelimpahan] ${item.itemName}' : item.itemName,
               dateSchedule: scheduleStr,
               location: item.locationName.isNotEmpty
                   ? item.locationName
@@ -844,13 +857,16 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           );
         }
       } else {
-        if (st != 'PENDING' || order.acceptedRomoId != null) continue;
+        final isIncomingHandover = romoId != null &&
+            (order.handoverTargetRomoId == romoId && order.hasPendingHandover);
+
+        if ((st != 'PENDING' || order.acceptedRomoId != null) && !isIncomingHandover) continue;
         if (_isDateBeforeToday(order.scheduledDate)) continue;
 
         cardList.add(
           RomoDashboardCardItem(
             parentOrder: order,
-            title: order.categoryName,
+            title: isIncomingHandover ? '🔄 [Pelimpahan] ${order.categoryName}' : order.categoryName,
             dateSchedule: order.fullScheduleLabel,
             location: order.displayAddress,
             penerimaName: order.penerimaName,

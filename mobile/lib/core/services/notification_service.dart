@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_service.dart';
 
 class NotificationItem {
   final String id;
   final String title;
   final String body;
-  final String type; // 'NEW_REQUEST', 'ROMO_ACCEPTED', 'ROMO_DECLINED', 'STATUS_UPDATE'
+  final String type; // 'NEW_REQUEST', 'ROMO_ACCEPTED', 'ROMO_DECLINED', 'STATUS_UPDATE', 'ROMO_HANDOVER', etc.
   final String role; // 'UMAT', 'ROMO_ORDO', 'ROMO_PAROKI', 'PENGURUS'
   final DateTime createdAt;
   bool isRead;
@@ -98,15 +99,63 @@ class NotificationService {
     return items;
   }
 
-  // ─── Get For Role (with location filtering) ────────────────────────────────
+  // ─── Get For Role (with backend sync and location filtering) ──────────────────
 
   static Future<List<NotificationItem>> getForRole(
     String role, {
+    int? userId,
     int? parokiId,
     int? kabupatenKotaId,
   }) async {
-    final all = await getAll();
+    final localItems = await getAll();
+    final List<NotificationItem> backendItems = [];
+
+    if (userId != null && userId > 0) {
+      try {
+        final rawNotifs = await ApiService.getNotifications(userId: userId);
+        for (final r in rawNotifs) {
+          final id = 'backend_${r['id']}';
+          final title = r['title'] ?? 'Pemberitahuan';
+          final body = r['body'] ?? '';
+          final type = r['type'] ?? 'STATUS_UPDATE';
+          final isRead = r['isRead'] == true || r['is_read'] == true;
+          final rawOrder = r['orderId'] ?? r['order_id'];
+          final orderId = rawOrder?.toString();
+          final categoryName = r['categoryName'] ?? r['category_name'];
+          final createdAt = DateTime.tryParse(r['createdAt'] ?? r['created_at'] ?? '') ?? DateTime.now();
+
+          backendItems.add(
+            NotificationItem(
+              id: id,
+              title: title,
+              body: body,
+              type: type,
+              role: role,
+              createdAt: createdAt,
+              isRead: isRead,
+              orderId: orderId,
+              categoryName: categoryName,
+            ),
+          );
+        }
+      } catch (_) {}
+    }
+
+    final combined = <String, NotificationItem>{};
+    for (final b in backendItems) {
+      combined[b.id] = b;
+    }
+    for (final l in localItems) {
+      if (!combined.containsKey(l.id)) {
+        combined[l.id] = l;
+      }
+    }
+
+    final all = combined.values.toList();
+    all.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
     return all.where((n) {
+      if (n.id.startsWith('backend_')) return true;
       if (n.role != role) return false;
       if (role == 'ROMO_PAROKI' && parokiId != null && n.parokiId != null) {
         return n.parokiId == parokiId;
@@ -122,11 +171,13 @@ class NotificationService {
 
   static Future<int> unreadCount(
     String role, {
+    int? userId,
     int? parokiId,
     int? kabupatenKotaId,
   }) async {
     final items = await getForRole(
       role,
+      userId: userId,
       parokiId: parokiId,
       kabupatenKotaId: kabupatenKotaId,
     );
@@ -147,6 +198,12 @@ class NotificationService {
   // ─── Mark As Read ─────────────────────────────────────────────────────────
 
   static Future<void> markRead(String id) async {
+    if (id.startsWith('backend_')) {
+      final intId = int.tryParse(id.replaceFirst('backend_', ''));
+      if (intId != null) {
+        await ApiService.markNotificationRead(intId);
+      }
+    }
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_key) ?? [];
     final updated = raw.map((s) {
@@ -165,9 +222,13 @@ class NotificationService {
 
   static Future<void> markAllRead(
     String role, {
+    int? userId,
     int? parokiId,
     int? kabupatenKotaId,
   }) async {
+    if (userId != null && userId > 0) {
+      await ApiService.markAllNotificationsRead(userId);
+    }
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_key) ?? [];
     final updated = raw.map((s) {
@@ -193,6 +254,12 @@ class NotificationService {
   // ─── Delete One ───────────────────────────────────────────────────────────
 
   static Future<void> delete(String id) async {
+    if (id.startsWith('backend_')) {
+      final intId = int.tryParse(id.replaceFirst('backend_', ''));
+      if (intId != null) {
+        await ApiService.deleteNotification(intId);
+      }
+    }
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_key) ?? [];
     final updated = raw.where((s) {
@@ -210,9 +277,13 @@ class NotificationService {
 
   static Future<void> deleteAll(
     String role, {
+    int? userId,
     int? parokiId,
     int? kabupatenKotaId,
   }) async {
+    if (userId != null && userId > 0) {
+      await ApiService.markAllNotificationsRead(userId);
+    }
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_key) ?? [];
     final updated = raw.where((s) {

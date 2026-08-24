@@ -2965,6 +2965,74 @@ export class OrdersController {
   }
 }
 
+@ApiTags('Notifications')
+@Controller('notifications')
+export class NotificationsController {
+  constructor(@InjectDataSource() private dataSource: DataSource) {}
+
+  @Get()
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Mendapatkan daftar notifikasi untuk user' })
+  async getNotifications(
+    @Query('userId') userId?: string,
+    @Query('role') role?: string,
+  ) {
+    const whereClauses: string[] = [];
+    const queryParams: any[] = [];
+    let idx = 1;
+
+    if (userId && !isNaN(parseInt(userId))) {
+      whereClauses.push(`n.user_id = $${idx++}`);
+      queryParams.push(parseInt(userId));
+    }
+
+    const whereStr = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+    const query = `
+      SELECT n.id, n.user_id as "userId", n.order_id as "orderId", n.title, n.body, n.type, n.is_read as "isRead", n.created_at as "createdAt",
+             o.order_number as "orderNumber", sc.name as "categoryName",
+             o.status as "orderStatus"
+      FROM notifications n
+      LEFT JOIN orders o ON n.order_id = o.id
+      LEFT JOIN service_categories sc ON o.service_category_id = sc.id
+      ${whereStr}
+      ORDER BY n.id DESC LIMIT 100
+    `;
+    return await this.dataSource.query(query, queryParams);
+  }
+
+  @Post(':id/read')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Tandai notifikasi sebagai sudah dibaca' })
+  async markRead(@Param('id') idParam: string) {
+    const notifId = parseInt(idParam, 10);
+    if (!isNaN(notifId)) {
+      await this.dataSource.query('UPDATE notifications SET is_read = true WHERE id = $1', [notifId]);
+    }
+    return { success: true };
+  }
+
+  @Post('read-all')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Tandai semua notifikasi user sebagai sudah dibaca' })
+  async markAllRead(@Body() body: { userId: number }) {
+    if (body.userId) {
+      await this.dataSource.query('UPDATE notifications SET is_read = true WHERE user_id = $1', [body.userId]);
+    }
+    return { success: true };
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Hapus notifikasi' })
+  async deleteNotification(@Param('id') idParam: string) {
+    const notifId = parseInt(idParam, 10);
+    if (!isNaN(notifId)) {
+      await this.dataSource.query('DELETE FROM notifications WHERE id = $1', [notifId]);
+    }
+    return { success: true };
+  }
+}
+
 @ApiTags('Romo Assignments')
 @Controller('assignments')
 export class AssignmentsController {

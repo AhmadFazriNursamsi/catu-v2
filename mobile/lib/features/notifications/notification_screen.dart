@@ -36,6 +36,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  int? get _userId {
+    if (widget.romoId != null) return widget.romoId;
+    final raw = widget.user['id'] ?? widget.user['userId'] ?? widget.user['user_id'];
+    return raw != null ? int.tryParse(raw.toString()) : null;
+  }
+
   int? get _parokiId {
     final raw = widget.user['parokiId'] ?? widget.user['paroki_id'];
     return raw != null ? int.tryParse(raw.toString()) : null;
@@ -62,6 +68,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     setState(() => _isLoading = true);
     final items = await NotificationService.getForRole(
       widget.role,
+      userId: _userId,
       parokiId: _parokiId,
       kabupatenKotaId: _kabupatenKotaId,
     );
@@ -141,6 +148,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     if (confirmed == true) {
       await NotificationService.deleteAll(
         widget.role,
+        userId: _userId,
         parokiId: _parokiId,
         kabupatenKotaId: _kabupatenKotaId,
       );
@@ -166,11 +174,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
       case 'NEW_REQUEST':
         return const Color(0xFF1E3A8A);
       case 'ROMO_ACCEPTED':
+      case 'RESCHEDULE_ACCEPTED':
         return const Color(0xFF059669);
       case 'ROMO_DECLINED':
+      case 'RESCHEDULE_REJECTED':
         return const Color(0xFFDC2626);
       case 'STATUS_UPDATE':
+      case 'RESCHEDULE_PROPOSED':
         return const Color(0xFFD97706);
+      case 'ROMO_HANDOVER':
+        return const Color(0xFF0284C7);
       default:
         return const Color(0xFF1E3A8A);
     }
@@ -181,8 +194,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
       final isKedukaan = (category ?? '').toLowerCase().contains('kedukaan');
       return isKedukaan ? Icons.church_rounded : Icons.water_drop_rounded;
     }
-    if (type == 'ROMO_ACCEPTED') return Icons.check_circle_rounded;
-    if (type == 'ROMO_DECLINED') return Icons.cancel_rounded;
+    if (type == 'ROMO_ACCEPTED' || type == 'RESCHEDULE_ACCEPTED') return Icons.check_circle_rounded;
+    if (type == 'ROMO_DECLINED' || type == 'RESCHEDULE_REJECTED') return Icons.cancel_rounded;
+    if (type == 'ROMO_HANDOVER') return Icons.swap_horiz_rounded;
+    if (type == 'RESCHEDULE_PROPOSED') return Icons.access_time_filled_rounded;
     return Icons.notifications_rounded;
   }
 

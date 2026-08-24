@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   AuthController,
   OrdersController,
+  NotificationsController,
   AssignmentsController,
   ChatController,
   TestRunnerController,
@@ -26,6 +27,7 @@ import { AppService } from './app.service';
   controllers: [
     AuthController,
     OrdersController,
+    NotificationsController,
     AssignmentsController,
     ChatController,
     TestRunnerController,

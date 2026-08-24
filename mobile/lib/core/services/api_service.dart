@@ -727,6 +727,46 @@ class ApiService {
     }
   }
 
+  // 4f. Notifications from Backend PostgreSQL
+  static Future<List<Map<String, dynamic>>> getNotifications({int? userId, String? role}) async {
+    try {
+      final queryParams = <String, String>{};
+      if (userId != null) queryParams['userId'] = userId.toString();
+      if (role != null) queryParams['role'] = role;
+      final uri = Uri.parse('$baseUrl/notifications').replace(queryParameters: queryParams);
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((e) => e as Map<String, dynamic>).toList();
+      }
+    } catch (e) {
+      print('Error getNotifications: $e');
+    }
+    return [];
+  }
+
+  static Future<void> markNotificationRead(int id) async {
+    try {
+      await http.post(Uri.parse('$baseUrl/notifications/$id/read'));
+    } catch (_) {}
+  }
+
+  static Future<void> markAllNotificationsRead(int userId) async {
+    try {
+      await http.post(
+        Uri.parse('$baseUrl/notifications/read-all'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': userId}),
+      );
+    } catch (_) {}
+  }
+
+  static Future<void> deleteNotification(int id) async {
+    try {
+      await http.delete(Uri.parse('$baseUrl/notifications/$id'));
+    } catch (_) {}
+  }
+
   // 5. Fetch WhatsApp Group Messages
   static Future<List<ChatMessage>> getGroupMessages(int groupId) async {
     try {
