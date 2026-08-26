@@ -3343,91 +3343,104 @@ export class ChatController {
   async getGroupMembers(@Param('groupId') groupIdParam: string) {
     const groupId = await this.resolveGroupId(groupIdParam);
 
-    // Fetch order details first to check status & lingkungan_id
+    // Fetch order details to check status, lingkungan_id, paroki_id, accepted_romo_id
     const orderRes = await this.dataSource.query(
-      `SELECT o.id, o.status, o.user_id, p.lingkungan_id, p.full_name as pemohon_name, l.name as lingkungan_name
+      `SELECT o.id as order_id, o.status, o.user_id as pemohon_id, o.accepted_romo_id,
+              COALESCE(o.lingkungan_id, p.lingkungan_id) as lingkungan_id,
+              COALESCE(o.paroki_id, p.paroki_id) as paroki_id,
+              p.full_name as pemohon_name, u.phone_number as pemohon_phone,
+              l.name as lingkungan_name, par.name as paroki_name
        FROM chat_groups g
        JOIN orders o ON g.order_id = o.id
+       JOIN auth_users u ON o.user_id = u.id
        LEFT JOIN user_profiles p ON o.user_id = p.user_id
-       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+       LEFT JOIN lingkungan l ON COALESCE(o.lingkungan_id, p.lingkungan_id) = l.id
+       LEFT JOIN paroki par ON COALESCE(o.paroki_id, p.paroki_id) = par.id
        WHERE g.id = $1`,
       [groupId],
     );
 
-    const order = orderRes.length > 0 ? orderRes[0] : null;
-    const isRomoAccepted = order && order.status !== 'PENDING';
-    const pemohonLingkunganId = order ? order.lingkungan_id : null;
-
-    const members = await this.dataSource.query(
-      `SELECT m.user_id, m.role_in_group, COALESCE(p.full_name, 'Pengguna CATU') as full_name, 
-              COALESCE(p.phone_number, '+628123456789') as phone_number, p.avatar_url, u.email,
-              COALESCE(l.name, 'Paroki St. Laurensius') as lingkungan_name, p.lingkungan_id
-       FROM chat_group_members m
-       JOIN users u ON m.user_id = u.id
-       LEFT JOIN user_profiles p ON m.user_id = p.user_id
-       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
-       WHERE m.chat_group_id = $1
-       ORDER BY m.id ASC`,
-      [groupId],
-    );
-
-    if (members.length > 0) {
-      // Filter members based on rules:
-      // 1. Romo only included if accepted (status != PENDING)
-      // 2. Pengurus Lingkungan only included if from same lingkungan
-      const filtered = members.filter((m: any) => {
-        const role = (m.role_in_group || '').toUpperCase();
-        if (role === 'ROMO') {
-          return isRomoAccepted;
-        }
-        if (role === 'PENGURUS_LINGKUNGAN') {
-          if (pemohonLingkunganId && m.lingkungan_id) {
-            return m.lingkungan_id === pemohonLingkunganId;
-          }
-          return true;
-        }
-        return true;
-      });
-      return filtered;
+    if (orderRes.length === 0) {
+      return [];
     }
 
-    // Dynamic Fallback constructed based on business rules:
-    const fallbackMembers: any[] = [
-      {
-        user_id: order ? order.user_id : 1,
-        role_in_group: 'PEMOHON',
-        full_name: order ? order.pemohon_name : 'Pemohon Pelayanan',
-        phone_number: '+628123456789',
-        lingkungan_name: order && order.lingkungan_name ? order.lingkungan_name : 'Wilayah St. Yohanes',
-      },
-      {
-        user_id: 3,
-        role_in_group: 'SEKRETARIAT',
-        full_name: 'Sekretariat Paroki',
-        phone_number: '+628112233445',
-        lingkungan_name: 'Sekretariat Paroki',
-      },
-      {
-        user_id: 4,
+    const order = orderRes[0];
+    const isRomoAccepted = order.status !== 'PENDING' && order.accepted_romo_id != null;
+
+    const memberList: any[] = [];
+
+    // 1. Pemohon (Umat)
+    memberList.push({
+      user_id: order.pemohon_id,
+      role_in_group: 'PEMOHON',
+      full_name: order.pemohon_name || 'Umat Pemohon',
+      phone_number: order.pemohon_phone || '-',
+      lingkungan_name: order.lingkungan_name ? `Lingkungan ${order.lingkungan_name}` : (order.paroki_name || 'Umat Paroki'),
+    });
+
+    // 2. Pengurus Lingkungan (from same lingkungan or paroki)
+    let pengurus: any[] = [];
+    if (order.lingkungan_id) {
+      pengurus = await this.dataSource.query(
+        `SELECT u.id as user_id, 'PENGURUS_LINGKUNGAN' as role_in_group, p.full_name, u.phone_number,
+                COALESCE(l.name, 'Lingkungan') as lingkungan_name
+         FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+         WHERE r.code = 'PENGURUS_LINGKUNGAN' AND p.lingkungan_id = $1
+         ORDER BY u.id ASC`,
+        [order.lingkungan_id],
+      );
+    }
+    if (pengurus.length === 0 && order.paroki_id) {
+      pengurus = await this.dataSource.query(
+        `SELECT u.id as user_id, 'PENGURUS_LINGKUNGAN' as role_in_group, p.full_name, u.phone_number,
+                COALESCE(l.name, 'Lingkungan') as lingkungan_name
+         FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+         WHERE r.code = 'PENGURUS_LINGKUNGAN' AND p.paroki_id = $1
+         ORDER BY u.id ASC`,
+        [order.paroki_id],
+      );
+    }
+
+    for (const p of pengurus) {
+      memberList.push({
+        user_id: p.user_id,
         role_in_group: 'PENGURUS_LINGKUNGAN',
-        full_name: 'Ketua Lingkungan',
-        phone_number: '+628155667788',
-        lingkungan_name: order && order.lingkungan_name ? order.lingkungan_name : 'Lingkungan St. Yustinus',
-      },
-    ];
-
-    // ONLY include Romo if Romo has accepted the request (status != PENDING)
-    if (isRomoAccepted) {
-      fallbackMembers.splice(1, 0, {
-        user_id: 2,
-        role_in_group: 'ROMO',
-        full_name: 'Romo Yohanes, Pr',
-        phone_number: '+628198765432',
-        lingkungan_name: 'Paroki St. Laurensius',
+        full_name: p.full_name || 'Pengurus Lingkungan',
+        phone_number: p.phone_number || '-',
+        lingkungan_name: p.lingkungan_name ? `Pengurus Lingkungan ${p.lingkungan_name}` : 'Pengurus Lingkungan',
       });
     }
 
-    return fallbackMembers;
+    // 3. Romo (ONLY IF accepted and status != PENDING)
+    if (isRomoAccepted) {
+      const romoRes = await this.dataSource.query(
+        `SELECT u.id as user_id, r.code as role_code, p.full_name, u.phone_number, par.name as paroki_name
+         FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         LEFT JOIN paroki par ON p.paroki_id = par.id
+         WHERE u.id = $1`,
+        [order.accepted_romo_id],
+      );
+      if (romoRes.length > 0) {
+        const romo = romoRes[0];
+        memberList.push({
+          user_id: romo.user_id,
+          role_in_group: romo.role_code === 'ROMO_ORDO' ? 'ROMO_ORDO' : 'ROMO_PAROKI',
+          full_name: romo.full_name || 'Romo Pelayan',
+          phone_number: romo.phone_number || '-',
+          lingkungan_name: romo.paroki_name ? `Romo ${romo.paroki_name}` : 'Romo Pelayan',
+        });
+      }
+    }
+
+    return memberList;
   }
 
   @Get('user/:userId/groups')

@@ -798,9 +798,10 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
 
   String _getRoleLabel(String role) {
     final r = role.toUpperCase();
-    if (r.contains('ROMO')) return 'ROMO PAROKI';
-    if (r.contains('PEMOHON') || r.contains('UMAT')) return 'PEMOHON PELAYANAN';
-    if (r.contains('SEKRETARIAT') || r.contains('ADMIN')) return 'SEKRETARIAT PAROKI';
+    if (r.contains('ROMO_ORDO')) return 'ROMO ORDO';
+    if (r.contains('ROMO')) return 'ROMO';
+    if (r.contains('PEMOHON') || r.contains('UMAT')) return 'PEMOHON';
+    if (r.contains('SEKRETARIAT') || r.contains('ADMIN')) return 'SEKRETARIAT';
     if (r.contains('PENGURUS')) return 'PENGURUS LINGKUNGAN';
     return r;
   }
