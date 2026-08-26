@@ -898,7 +898,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
           final itemAcceptedId = item.acceptedRomoId ?? order.acceptedRomoId;
-          if (romoId != null && itemAcceptedId != null && itemAcceptedId != romoId) continue;
+          if (romoId != null && itemAcceptedId != romoId) continue;
           if (itemAcceptedId == null && item.status.toUpperCase() != 'CONFIRMED' && order.status.toUpperCase() != 'CONFIRMED') continue;
 
           final itemSt = item.status.toUpperCase();
@@ -929,7 +929,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           );
         }
       } else {
-        if (romoId != null && order.acceptedRomoId != null && order.acceptedRomoId != romoId) continue;
+        if (romoId != null && order.acceptedRomoId != romoId) continue;
         if (order.acceptedRomoId == null && order.status.toUpperCase() != 'CONFIRMED') continue;
 
         final st = order.status.toUpperCase();
@@ -1152,10 +1152,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
             ),
           ),
         );
-        if (refreshed == true) {
-          widget.onRefresh();
-          if (mounted) setState(() {});
-        }
+        widget.onRefresh();
+        if (mounted) setState(() {});
       },
       child: Container(
         width: 250,

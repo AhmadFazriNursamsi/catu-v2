@@ -80,8 +80,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final orders = await ApiService.getOrders(
       userId: roleCode.startsWith('ROMO') ? null : userId,
-      parokiId: roleCode == 'ROMO_ORDO' ? null : (roleCode.startsWith('ROMO') ? parokiId : null),
-      kabupatenKotaId: roleCode == 'ROMO_ORDO' ? kabupatenKotaId : null,
+      parokiId: roleCode.startsWith('ROMO') ? null : parokiId,
+      kabupatenKotaId: roleCode.startsWith('ROMO') ? null : kabupatenKotaId,
       romoId: roleCode.startsWith('ROMO') ? userId : null,
     );
 

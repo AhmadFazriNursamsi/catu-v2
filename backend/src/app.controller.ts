@@ -2197,16 +2197,7 @@ export class OrdersController {
     const queryParams: any[] = [];
     let paramIdx = 1;
 
-    if (userId && !isNaN(parseInt(userId))) {
-      whereClauses.push(`o.user_id = $${paramIdx++}`);
-      queryParams.push(parseInt(userId));
-    } else if (kabupatenKotaId && !isNaN(parseInt(kabupatenKotaId))) {
-      whereClauses.push(`COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++}`);
-      queryParams.push(parseInt(kabupatenKotaId));
-    } else if (parokiId && !isNaN(parseInt(parokiId))) {
-      whereClauses.push(`COALESCE(o.paroki_id, p.paroki_id) = $${paramIdx++}`);
-      queryParams.push(parseInt(parokiId));
-    } else if (romoId && !isNaN(parseInt(romoId))) {
+    if (romoId && !isNaN(parseInt(romoId))) {
       const parsedRId = parseInt(romoId);
       const romoRes = await this.dataSource.query(
         `SELECT r.code as role_code, p.kabupaten_kota_id, p.paroki_id
@@ -2218,17 +2209,35 @@ export class OrdersController {
       );
       if (romoRes.length > 0) {
         const romo = romoRes[0];
+        const assignedOrHandoverClause = `(o.accepted_romo_id = $${paramIdx} OR (o.handover_target_romo_id = $${paramIdx} AND o.handover_status = 'PENDING') OR EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id AND (oi.accepted_romo_id = $${paramIdx} OR (oi.handover_target_romo_id = $${paramIdx} AND oi.handover_status = 'PENDING'))))`;
+        paramIdx++;
+        queryParams.push(parsedRId);
+
         if (romo.role_code === 'ROMO_ORDO' && romo.kabupaten_kota_id) {
-          whereClauses.push(`(COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++} OR o.accepted_romo_id = $${paramIdx++} OR (o.handover_target_romo_id = $${paramIdx++} AND o.handover_status = 'PENDING'))`);
-          queryParams.push(romo.kabupaten_kota_id, parsedRId, parsedRId);
+          whereClauses.push(`(COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++} OR ${assignedOrHandoverClause})`);
+          queryParams.push(romo.kabupaten_kota_id);
         } else if (romo.paroki_id) {
-          whereClauses.push(`(COALESCE(o.paroki_id, p.paroki_id) = $${paramIdx++} OR o.accepted_romo_id = $${paramIdx++} OR (o.handover_target_romo_id = $${paramIdx++} AND o.handover_status = 'PENDING'))`);
-          queryParams.push(romo.paroki_id, parsedRId, parsedRId);
+          whereClauses.push(`(COALESCE(o.paroki_id, p.paroki_id) = $${paramIdx++} OR ${assignedOrHandoverClause})`);
+          queryParams.push(romo.paroki_id);
         } else if (romo.kabupaten_kota_id) {
-          whereClauses.push(`(COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++} OR o.accepted_romo_id = $${paramIdx++} OR (o.handover_target_romo_id = $${paramIdx++} AND o.handover_status = 'PENDING'))`);
-          queryParams.push(romo.kabupaten_kota_id, parsedRId, parsedRId);
+          whereClauses.push(`(COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++} OR ${assignedOrHandoverClause})`);
+          queryParams.push(romo.kabupaten_kota_id);
+        } else {
+          whereClauses.push(assignedOrHandoverClause);
         }
+      } else {
+        whereClauses.push(`(o.accepted_romo_id = $${paramIdx++} OR (o.handover_target_romo_id = $${paramIdx++} AND o.handover_status = 'PENDING'))`);
+        queryParams.push(parsedRId, parsedRId);
       }
+    } else if (userId && !isNaN(parseInt(userId))) {
+      whereClauses.push(`o.user_id = $${paramIdx++}`);
+      queryParams.push(parseInt(userId));
+    } else if (kabupatenKotaId && !isNaN(parseInt(kabupatenKotaId))) {
+      whereClauses.push(`COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++}`);
+      queryParams.push(parseInt(kabupatenKotaId));
+    } else if (parokiId && !isNaN(parseInt(parokiId))) {
+      whereClauses.push(`COALESCE(o.paroki_id, p.paroki_id) = $${paramIdx++}`);
+      queryParams.push(parseInt(parokiId));
     }
 
     const whereStr = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';

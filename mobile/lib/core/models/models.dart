@@ -498,6 +498,22 @@ class Order {
   }
 
   bool get isPastDate {
+    if (items.isNotEmpty) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      for (final item in items) {
+        if (item.scheduledDate.isNotEmpty) {
+          try {
+            String clean = item.scheduledDate;
+            if (clean.contains('T')) clean = clean.split('T').first;
+            final d = DateTime.parse(clean);
+            final itemDay = DateTime(d.year, d.month, d.day);
+            if (!itemDay.isBefore(today)) return false;
+          } catch (_) {}
+        }
+      }
+      return true;
+    }
     final d = parsedDate;
     if (d == null) return false;
     final now = DateTime.now();
