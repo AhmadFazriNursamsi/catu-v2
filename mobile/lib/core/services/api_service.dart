@@ -11,6 +11,13 @@ class ApiService {
       if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
         return 'http://$host:3005';
       }
+      return 'http://127.0.0.1:3005';
+    }
+    if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
+      return 'http://127.0.0.1:3005';
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return AppConstants.apiBaseUrl.isNotEmpty ? AppConstants.apiBaseUrl : 'http://10.0.2.2:3005';
     }
     return AppConstants.apiBaseUrl;
   }
