@@ -1594,6 +1594,41 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                         ),
                       ],
 
+                      // Handover Badge (if received via handover)
+                      if (entry.item?.isHandoverCompleted == true || order.isHandoverCompleted) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0284C7).withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF0284C7).withValues(alpha: 0.25),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.swap_horiz_rounded, size: 12, color: Color(0xFF0284C7)),
+                              SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  'Diterima dari Pelimpahan Tugas',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF0284C7),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
                       const SizedBox(height: 8),
 
                       // Date + Start Time + urgency pill

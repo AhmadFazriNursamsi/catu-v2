@@ -72,6 +72,7 @@ class OrderItem {
 
   bool get hasPendingReschedule => rescheduleStatus.toUpperCase() == 'PENDING_UMAT';
   bool get hasPendingHandover => handoverStatus.toUpperCase() == 'PENDING';
+  bool get isHandoverCompleted => handoverStatus.toUpperCase() == 'ACCEPTED';
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     final rawId = json['id'];
@@ -325,6 +326,7 @@ class Order {
 
   bool get hasPendingReschedule => rescheduleStatus.toUpperCase() == 'PENDING_UMAT';
   bool get hasPendingHandover => handoverStatus.toUpperCase() == 'PENDING';
+  bool get isHandoverCompleted => handoverStatus.toUpperCase() == 'ACCEPTED';
 
   /// Parse "Jam Mulai" from notes
   String get jamMulaiLabel {

@@ -511,7 +511,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                         if (isAssignedToCurrentRomo &&
                             (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS') &&
                             !order.hasPendingHandover &&
-                            !displayItem.hasPendingHandover)
+                            !displayItem.hasPendingHandover &&
+                            !order.isHandoverCompleted &&
+                            !displayItem.isHandoverCompleted)
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: GestureDetector(
@@ -559,7 +561,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ),
@@ -593,91 +596,116 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
 
                             // ── Handover Proposal Card for Target Romo (Romo Baru) ──
                             if (widget.isRomo &&
-                                widget.romoId != null &&
-                                (displayItem.handoverTargetRomoId == widget.romoId || order.handoverTargetRomoId == widget.romoId) &&
-                                (displayItem.hasPendingHandover || order.hasPendingHandover)) ...[
-                              _buildHandoverProposalCardForTargetRomo(order, displayItem),
-                              const SizedBox(height: 12),
-                            ],
+                                  widget.romoId != null &&
+                                  (displayItem.handoverTargetRomoId == widget.romoId || order.handoverTargetRomoId == widget.romoId) &&
+                                  (displayItem.hasPendingHandover || order.hasPendingHandover)) ...[
+                                _buildHandoverProposalCardForTargetRomo(order, displayItem),
+                                const SizedBox(height: 12),
+                              ],
 
-                            // ── Handover Pending Banner for Proposer Romo (Romo Lama) ──
-                            if (widget.isRomo &&
-                                widget.romoId != null &&
-                                (displayItem.handoverProposedBy == widget.romoId || order.handoverProposedBy == widget.romoId) &&
-                                (displayItem.hasPendingHandover || order.hasPendingHandover)) ...[
-                              _buildHandoverPendingBannerForProposer(order, displayItem),
-                              const SizedBox(height: 12),
-                            ],
+                              // ── Handover Pending Banner for Proposer Romo (Romo Lama) ──
+                              if (widget.isRomo &&
+                                  widget.romoId != null &&
+                                  (displayItem.handoverProposedBy == widget.romoId || order.handoverProposedBy == widget.romoId) &&
+                                  (displayItem.hasPendingHandover || order.hasPendingHandover)) ...[
+                                _buildHandoverPendingBannerForProposer(order, displayItem),
+                                const SizedBox(height: 12),
+                              ],
 
-                            // ── Handover Rejected Banner for Proposer Romo (Romo Lama) ──
-                            if (widget.isRomo &&
-                                widget.romoId != null &&
-                                (displayItem.handoverProposedBy == widget.romoId || order.handoverProposedBy == widget.romoId) &&
-                                (displayItem.handoverStatus == 'REJECTED' || order.handoverStatus == 'REJECTED')) ...[
-                              _buildHandoverRejectedBannerForProposer(order, displayItem),
-                              const SizedBox(height: 12),
-                            ],
+                              // ── Handover Rejected Banner for Proposer Romo (Romo Lama) ──
+                              if (widget.isRomo &&
+                                  widget.romoId != null &&
+                                  (displayItem.handoverProposedBy == widget.romoId || order.handoverProposedBy == widget.romoId) &&
+                                  (displayItem.handoverStatus == 'REJECTED' || order.handoverStatus == 'REJECTED')) ...[
+                                _buildHandoverRejectedBannerForProposer(order, displayItem),
+                                const SizedBox(height: 12),
+                              ],
 
-                            // ── Handover Info for Umat ──
-                            if (!widget.isRomo && (displayItem.hasPendingHandover || order.hasPendingHandover)) ...[
-                              _buildHandoverInfoCardForUmat(order, displayItem),
-                              const SizedBox(height: 12),
-                            ],
+                              // ── Handover Info for Umat ──
+                              if (!widget.isRomo && (displayItem.hasPendingHandover || order.hasPendingHandover)) ...[
+                                _buildHandoverInfoCardForUmat(order, displayItem),
+                                const SizedBox(height: 12),
+                              ],
 
-                            // ── Romo yang Bertugas Info Card ──
-                            if (isItemAccepted) ...[
-                              _buildInfoCard(
-                                icon: Icons.person_pin_rounded,
-                                iconBg: const Color(0xFF059669),
-                                title: 'Romo yang Bertugas',
-                                children: [
-                                  _buildInfoTile(
-                                    icon: Icons.verified_user_rounded,
-                                    label: 'Romo / Pastor',
-                                    value: assignedRomoName.isNotEmpty
-                                        ? assignedRomoName
-                                        : (isAssignedToCurrentRomo ? widget.userName : 'Romo yang Bertugas'),
-                                    valueColor: const Color(0xFF059669),
-                                  ),
-                                  _buildInfoTile(
-                                    icon: Icons.check_circle_outline_rounded,
-                                    label: 'Status Konfirmasi',
-                                    value: effectiveStatus == 'DONE' ? 'Telah Selesai Dilaksanakan' : 'Telah Mengonfirmasi Kehadiran',
-                                    valueColor: const Color(0xFF059669),
-                                    isLast: !isAssignedToCurrentRomo || (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE'),
-                                  ),
-                                  if (isAssignedToCurrentRomo &&
-                                      (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS') &&
-                                      !order.hasPendingHandover &&
-                                      !displayItem.hasPendingHandover) ...[
-                                    const SizedBox(height: 10),
-                                    InkWell(
-                                      onTap: () => _showHandoverBottomSheet(order, targetItem: displayItem),
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                              // ── Romo yang Bertugas Info Card ──
+                              if (isItemAccepted) ...[
+                                _buildInfoCard(
+                                  icon: Icons.person_pin_rounded,
+                                  iconBg: const Color(0xFF059669),
+                                  title: 'Romo yang Bertugas',
+                                  children: [
+                                    _buildInfoTile(
+                                      icon: Icons.verified_user_rounded,
+                                      label: 'Romo / Pastor',
+                                      value: assignedRomoName.isNotEmpty
+                                          ? assignedRomoName
+                                          : (isAssignedToCurrentRomo ? widget.userName : 'Romo yang Bertugas'),
+                                      valueColor: const Color(0xFF059669),
+                                    ),
+                                    _buildInfoTile(
+                                      icon: Icons.check_circle_outline_rounded,
+                                      label: 'Status Konfirmasi',
+                                      value: effectiveStatus == 'DONE' ? 'Telah Selesai Dilaksanakan' : 'Telah Mengonfirmasi Kehadiran',
+                                      valueColor: const Color(0xFF059669),
+                                      isLast: !isAssignedToCurrentRomo || (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE'),
+                                    ),
+                                    if (displayItem.isHandoverCompleted || order.isHandoverCompleted) ...[
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFF0F9FF),
-                                          borderRadius: BorderRadius.circular(10),
-                                          border: Border.all(color: const Color(0xFFBAE6FD)),
+                                          color: const Color(0xFFF0FDF4),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: const Color(0xFFBBF7D0)),
                                         ),
                                         child: Row(
-                                          children: const [
-                                            Icon(Icons.published_with_changes_rounded, size: 16, color: Color(0xFF0284C7)),
-                                            SizedBox(width: 8),
+                                          children: [
+                                            const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF16A34A)),
+                                            const SizedBox(width: 6),
                                             Expanded(
                                               child: Text(
-                                                'Berhalangan Hadir? Alihkan / Ganti Romo',
-                                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0369A1)),
+                                                'Pelayanan diterima via pelimpahan tugas dari Romo ${displayItem.handoverProposerName ?? order.handoverProposerName ?? 'sebelumnya'}',
+                                                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF15803D)),
                                               ),
                                             ),
-                                            Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF0284C7)),
                                           ],
                                         ),
                                       ),
-                                    ),
+                                    ],
+                                    if (isAssignedToCurrentRomo &&
+                                        (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS') &&
+                                        !order.hasPendingHandover &&
+                                        !displayItem.hasPendingHandover &&
+                                        !order.isHandoverCompleted &&
+                                        !displayItem.isHandoverCompleted) ...[
+                                      const SizedBox(height: 10),
+                                      InkWell(
+                                        onTap: () => _showHandoverBottomSheet(order, targetItem: displayItem),
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF0F9FF),
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(color: const Color(0xFFBAE6FD)),
+                                          ),
+                                          child: const Row(
+                                            children: [
+                                              Icon(Icons.published_with_changes_rounded, size: 16, color: Color(0xFF0284C7)),
+                                              SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  'Berhalangan Hadir? Alihkan / Ganti Romo',
+                                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0369A1)),
+                                                ),
+                                              ),
+                                              Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF0284C7)),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ],
-                                ],
                               ),
                               const SizedBox(height: 12),
                             ],
@@ -3196,6 +3224,16 @@ penerimaName: order.penerimaName,
   void _showHandoverBottomSheet(Order order, {OrderItem? targetItem}) async {
     final romoId = widget.romoId;
     if (romoId == null) return;
+
+    if (order.isHandoverCompleted || (targetItem != null && targetItem.isHandoverCompleted)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pelayanan yang telah diterima dari pelimpahan tugas tidak dapat dilimpahkan kembali.'),
+          backgroundColor: Color(0xFF0284C7),
+        ),
+      );
+      return;
+    }
 
     int? selectedTargetRomoId;
     final reasonController = TextEditingController();
