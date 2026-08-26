@@ -52,6 +52,7 @@ class RomoDashboardView extends StatefulWidget {
 class _RomoDashboardViewState extends State<RomoDashboardView> {
   int _currentNavIndex = 0;
   int _unreadNotifCount = 0;
+  int _unreadChatCount = 0;
   int _pendingRomoApprovalsCount = 0;
 
   @override
@@ -103,7 +104,21 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       parokiId: parokiId,
       kabupatenKotaId: kabupatenKotaId,
     );
-    if (mounted) setState(() => _unreadNotifCount = count);
+
+    int chatUnread = 0;
+    if (romoId != null) {
+      try {
+        final groups = await ApiService.getChatGroups(romoId);
+        chatUnread = groups.fold<int>(0, (sum, g) => sum + g.unreadCount);
+      } catch (_) {}
+    }
+
+    if (mounted) {
+      setState(() {
+        _unreadNotifCount = count;
+        _unreadChatCount = chatUnread;
+      });
+    }
   }
 
   String get _romoRole {
@@ -367,8 +382,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.mail_outline_rounded, color: Color(0xFF1E5399), size: 26),
-                            onPressed: () {
-                              Navigator.push(
+                            onPressed: () async {
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => ChatListScreen(
@@ -377,25 +392,27 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                                   ),
                                 ),
                               );
+                              _refreshUnreadCount();
                             },
                           ),
-                          Positioned(
-                            top: 6,
-                            right: 6,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Colors.redAccent,
-                                shape: BoxShape.circle,
-                              ),
-                              constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                              child: const Text(
-                                '2',
-                                style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
-                                textAlign: TextAlign.center,
+                          if (_unreadChatCount > 0)
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.redAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+                                child: Text(
+                                  _unreadChatCount > 99 ? '99+' : '$_unreadChatCount',
+                                  style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ],

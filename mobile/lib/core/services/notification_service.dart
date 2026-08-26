@@ -107,12 +107,10 @@ class NotificationService {
     int? parokiId,
     int? kabupatenKotaId,
   }) async {
-    final localItems = await getAll();
-    final List<NotificationItem> backendItems = [];
-
     if (userId != null && userId > 0) {
       try {
         final rawNotifs = await ApiService.getNotifications(userId: userId);
+        final List<NotificationItem> backendItems = [];
         for (final r in rawNotifs) {
           final id = 'backend_${r['id']}';
           final title = r['title'] ?? 'Pemberitahuan';
@@ -138,24 +136,13 @@ class NotificationService {
             ),
           );
         }
+        backendItems.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return backendItems;
       } catch (_) {}
     }
 
-    final combined = <String, NotificationItem>{};
-    for (final b in backendItems) {
-      combined[b.id] = b;
-    }
-    for (final l in localItems) {
-      if (!combined.containsKey(l.id)) {
-        combined[l.id] = l;
-      }
-    }
-
-    final all = combined.values.toList();
-    all.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-    return all.where((n) {
-      if (n.id.startsWith('backend_')) return true;
+    final localItems = await getAll();
+    return localItems.where((n) {
       if (n.role != role) return false;
       if (role == 'ROMO_PAROKI' && parokiId != null && n.parokiId != null) {
         return n.parokiId == parokiId;
@@ -216,6 +203,11 @@ class NotificationService {
       }
     }).toList();
     await prefs.setStringList(_key, updated);
+  }
+
+  static Future<void> clearAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_key);
   }
 
   // ─── Mark All Read For Role ───────────────────────────────────────────────

@@ -61,6 +61,7 @@ class UmatDashboardView extends StatefulWidget {
 class _UmatDashboardViewState extends State<UmatDashboardView> {
   int _currentNavIndex = 0;
   int _unreadNotifCount = 0;
+  int _unreadChatCount = 0;
   int _pendingPengurusApprovalsCount = 0;
 
   @override
@@ -105,7 +106,17 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
 
   Future<void> _refreshUnreadCount() async {
     final count = await NotificationService.unreadCount('UMAT', userId: _userId);
-    if (mounted) setState(() => _unreadNotifCount = count);
+    int chatUnread = 0;
+    try {
+      final groups = await ApiService.getChatGroups(_userId ?? 1);
+      chatUnread = groups.fold<int>(0, (sum, g) => sum + g.unreadCount);
+    } catch (_) {}
+    if (mounted) {
+      setState(() {
+        _unreadNotifCount = count;
+        _unreadChatCount = chatUnread;
+      });
+    }
   }
 
   Future<void> _openNotifications() async {
@@ -369,8 +380,8 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                           IconButton(
                             icon: const Icon(Icons.mail_outline_rounded,
                                 color: Color(0xFF1E5399), size: 26),
-                            onPressed: () {
-                              Navigator.push(
+                            onPressed: () async {
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => ChatListScreen(
@@ -379,29 +390,31 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                   ),
                                 ),
                               );
+                              _refreshUnreadCount();
                             },
                           ),
-                          Positioned(
-                            top: 6,
-                            right: 6,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Colors.redAccent,
-                                shape: BoxShape.circle,
-                              ),
-                              constraints: const BoxConstraints(
-                                  minWidth: 15, minHeight: 15),
-                              child: const Text(
-                                '2',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.bold),
-                                textAlign: TextAlign.center,
+                          if (_unreadChatCount > 0)
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.redAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                    minWidth: 15, minHeight: 15),
+                                child: Text(
+                                  _unreadChatCount > 99 ? '99+' : '$_unreadChatCount',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ],
