@@ -65,6 +65,7 @@ class ScheduleScreen extends StatefulWidget {
   final VoidCallback onRefresh;
   final bool isRomo;
   final int? romoId;
+  final int? userId;
   final bool showPendingOnly;
 
   const ScheduleScreen({
@@ -74,6 +75,7 @@ class ScheduleScreen extends StatefulWidget {
     required this.onRefresh,
     this.isRomo = false,
     this.romoId,
+    this.userId,
     this.showPendingOnly = false,
   }) : super(key: key);
 
@@ -115,8 +117,6 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     );
     _fadeIn = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
-
-    _refreshLocalOrders();
   }
 
   @override
@@ -130,16 +130,19 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   Future<void> _refreshLocalOrders() async {
     try {
       widget.onRefresh();
-      final fetched = await ApiService.getOrders(
-        romoId: widget.romoId,
-      );
-      if (mounted && fetched.isNotEmpty) {
+      List<Order> fetched = [];
+      if (widget.isRomo && widget.romoId != null) {
+        fetched = await ApiService.getOrders(
+          romoId: widget.romoId,
+        );
+      } else if (widget.userId != null) {
+        fetched = await ApiService.getOrders(
+          userId: widget.userId,
+        );
+      }
+      if (mounted) {
         setState(() {
-          _localOrders = fetched;
-        });
-      } else if (mounted) {
-        setState(() {
-          _localOrders = List.from(widget.orders);
+          _localOrders = fetched.isNotEmpty ? fetched : List.from(widget.orders);
         });
       }
     } catch (_) {

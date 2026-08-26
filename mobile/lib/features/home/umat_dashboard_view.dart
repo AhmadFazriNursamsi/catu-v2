@@ -201,6 +201,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
         body: ScheduleScreen(
           orders: widget.orders,
           userName: userName,
+          userId: _userId,
           onRefresh: widget.onRefresh,
         ),
         bottomNavigationBar: LiquidBottomNavBar(

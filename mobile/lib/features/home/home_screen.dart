@@ -42,54 +42,63 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _loadOrders() async {
-    if (_orders.isEmpty) {
+  Future<void> _loadOrders({bool showLoading = false}) async {
+    if (showLoading || (_orders.isEmpty && _isLoading)) {
       setState(() => _isLoading = true);
     }
 
-    final rawId =
-        _currentUserMap['id'] ?? _currentUserMap['userId'] ?? _currentUserMap['user_id'];
-    final int? userId = rawId != null ? int.tryParse(rawId.toString()) : null;
+    try {
+      final rawId =
+          _currentUserMap['id'] ?? _currentUserMap['userId'] ?? _currentUserMap['user_id'];
+      final int? userId = rawId != null ? int.tryParse(rawId.toString()) : null;
 
-    if (userId != null) {
-      try {
-        final profileRes = await http.get(
-          Uri.parse('${ApiService.baseUrl}/auth/profile/$userId'),
-        );
-        if (profileRes.statusCode == 200) {
-          final resData = jsonDecode(profileRes.body);
-          if (resData['user'] != null) {
-            _currentUserMap = Map<String, dynamic>.from(resData['user']);
+      if (userId != null) {
+        try {
+          final profileRes = await http.get(
+            Uri.parse('${ApiService.baseUrl}/auth/profile/$userId'),
+          );
+          if (profileRes.statusCode == 200) {
+            final resData = jsonDecode(profileRes.body);
+            if (resData['user'] != null) {
+              _currentUserMap = Map<String, dynamic>.from(resData['user']);
+            }
           }
+        } catch (e) {
+          debugPrint('Error reloading profile in HomeScreen: $e');
         }
-      } catch (e) {
-        debugPrint('Error reloading profile in HomeScreen: $e');
       }
-    }
 
-    final String roleCode = (_currentUserMap['roleCode'] ??
-        _currentUserMap['role_code'] ??
-        _currentUserMap['role'] ??
-        'UMAT').toString().toUpperCase();
+      final String roleCode = (_currentUserMap['roleCode'] ??
+          _currentUserMap['role_code'] ??
+          _currentUserMap['role'] ??
+          'UMAT').toString().toUpperCase();
 
-    final rawParoki = _currentUserMap['parokiId'] ?? _currentUserMap['paroki_id'];
-    final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
+      final rawParoki = _currentUserMap['parokiId'] ?? _currentUserMap['paroki_id'];
+      final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
 
-    final rawKota = _currentUserMap['kabupatenKotaId'] ?? _currentUserMap['kabupaten_kota_id'];
-    final int? kabupatenKotaId = rawKota != null ? int.tryParse(rawKota.toString()) : null;
+      final rawKota = _currentUserMap['kabupatenKotaId'] ?? _currentUserMap['kabupaten_kota_id'];
+      final int? kabupatenKotaId = rawKota != null ? int.tryParse(rawKota.toString()) : null;
 
-    final orders = await ApiService.getOrders(
-      userId: roleCode.startsWith('ROMO') ? null : userId,
-      parokiId: roleCode.startsWith('ROMO') ? null : parokiId,
-      kabupatenKotaId: roleCode.startsWith('ROMO') ? null : kabupatenKotaId,
-      romoId: roleCode.startsWith('ROMO') ? userId : null,
-    );
+      final orders = await ApiService.getOrders(
+        userId: roleCode.startsWith('ROMO') ? null : userId,
+        parokiId: roleCode.startsWith('ROMO') ? null : parokiId,
+        kabupatenKotaId: roleCode.startsWith('ROMO') ? null : kabupatenKotaId,
+        romoId: roleCode.startsWith('ROMO') ? userId : null,
+      );
 
-    if (mounted) {
-      setState(() {
-        _orders = orders;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _orders = orders;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading orders in HomeScreen: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
