@@ -68,7 +68,18 @@ export class AuthController implements OnModuleInit {
         SELECT setval('lingkungan_id_seq', (SELECT COALESCE(MAX(id), 1) FROM lingkungan));
         SELECT setval('ordo_id_seq', (SELECT COALESCE(MAX(id), 1) FROM ordo));
         SELECT setval('service_categories_id_seq', (SELECT COALESCE(MAX(id), 1) FROM service_categories));
+        SELECT setval('urgency_levels_id_seq', (SELECT COALESCE(MAX(id), 1) FROM urgency_levels));
         SELECT setval('master_positions_id_seq', (SELECT COALESCE(MAX(id), 1) FROM master_positions));
+        SELECT setval('auth_users_id_seq', (SELECT COALESCE(MAX(id), 1) FROM auth_users));
+        SELECT setval('user_profiles_id_seq', (SELECT COALESCE(MAX(id), 1) FROM user_profiles));
+        SELECT setval('orders_id_seq', (SELECT COALESCE(MAX(id), 1) FROM orders));
+        SELECT setval('order_items_id_seq', (SELECT COALESCE(MAX(id), 1) FROM order_items));
+        SELECT setval('order_reschedules_id_seq', (SELECT COALESCE(MAX(id), 1) FROM order_reschedules));
+        SELECT setval('order_romo_handovers_id_seq', (SELECT COALESCE(MAX(id), 1) FROM order_romo_handovers));
+        SELECT setval('chat_groups_id_seq', (SELECT COALESCE(MAX(id), 1) FROM chat_groups));
+        SELECT setval('chat_group_members_id_seq', (SELECT COALESCE(MAX(id), 1) FROM chat_group_members));
+        SELECT setval('chat_messages_id_seq', (SELECT COALESCE(MAX(id), 1) FROM chat_messages));
+        SELECT setval('notifications_id_seq', (SELECT COALESCE(MAX(id), 1) FROM notifications));
       `);
 
       for (const val of ['CONFIRMED', 'DONE', 'CLOSE', 'FAIL']) {
