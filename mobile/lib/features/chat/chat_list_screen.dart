@@ -61,91 +61,21 @@ class _ChatListScreenState extends State<ChatListScreen> {
     setState(() => _isLoading = true);
     try {
       final groups = await ApiService.getChatGroups(_userId ?? 1);
-      if (groups.isNotEmpty) {
-        if (mounted) {
-          setState(() {
-            _chatGroups = groups;
-            _isLoading = false;
-          });
-        }
-        return;
+      if (mounted) {
+        setState(() {
+          _chatGroups = groups;
+          _isLoading = false;
+        });
       }
     } catch (e) {
       debugPrint('Error loading backend chat groups: $e');
+      if (mounted) {
+        setState(() {
+          _chatGroups = [];
+          _isLoading = false;
+        });
+      }
     }
-
-    // Fallback: Build chat list from active orders
-    final fallbackGroups = _buildFallbackGroupsFromOrders();
-    if (mounted) {
-      setState(() {
-        _chatGroups = fallbackGroups;
-        _isLoading = false;
-      });
-    }
-  }
-
-  List<ChatGroupItem> _buildFallbackGroupsFromOrders() {
-    if (widget.orders.isEmpty) {
-      // Return sample demonstration chat groups
-      return [
-        ChatGroupItem(
-          groupId: 1,
-          orderId: 101,
-          groupTitle: 'Group Pelayanan Bp. Antonius',
-          lastMessageText: 'Romo Fajar Pr telah bergabung ke grup chat.',
-          lastMessageAt: '15:30',
-          orderTitle: 'Sakramen Perminyakan',
-          orderCategory: 'Sakramen Perminyakan',
-          orderStatus: 'CONFIRMED',
-          scheduledDate: '2026-08-15',
-          scheduledTimeStart: '15:30',
-          scheduledTimeEnd: '17:00',
-          penerimaName: 'Bp. Antonius Subagyo',
-          requesterName: 'Maria Subagyo',
-          notes: 'Nama Penerima: Bp. Antonius Subagyo',
-          unreadCount: 2,
-        ),
-        ChatGroupItem(
-          groupId: 2,
-          orderId: 102,
-          groupTitle: 'Group Pelayanan Misa Kedukaan',
-          lastMessageText: 'Terima kasih Romo, jadwal telah kami konfirmasi.',
-          lastMessageAt: '12:15',
-          orderTitle: 'Misa Kedukaan',
-          orderCategory: 'Misa Kedukaan',
-          orderStatus: 'IN_PROGRESS',
-          scheduledDate: '2026-08-14',
-          scheduledTimeStart: '10:00',
-          scheduledTimeEnd: '11:30',
-          penerimaName: 'Alm. Yohanes Setiawan',
-          requesterName: 'Theresia Setiawan',
-          notes: 'Misa: Misa Penutupan Peti | Nama Almarhum: Alm. Yohanes Setiawan',
-          unreadCount: 0,
-        ),
-      ];
-    }
-
-    return widget.orders.map((o) {
-      return ChatGroupItem(
-        groupId: o.id,
-        orderId: o.id,
-        groupTitle: 'Group Pelayanan ${o.categoryName}',
-        lastMessageText: o.status == 'CONFIRMED'
-            ? 'Romo telah mengkonfirmasi kehadiran.'
-            : 'Grup chat pelayanan aktif.',
-        lastMessageAt: 'Hari ini',
-        orderTitle: o.categoryName,
-        orderCategory: o.categoryName,
-        orderStatus: o.status,
-        scheduledDate: o.scheduledDate,
-        scheduledTimeStart: o.jamMulaiLabel,
-        scheduledTimeEnd: o.jamSelesaiLabel,
-        penerimaName: o.penerimaName,
-        requesterName: _userName,
-        notes: o.notes,
-        unreadCount: o.status == 'CONFIRMED' ? 1 : 0,
-      );
-    }).toList();
   }
 
   List<ChatGroupItem> get _filteredGroups {
