@@ -32,7 +32,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   String get _userName =>
-      widget.user['fullName'] ?? widget.user['full_name'] ?? 'Umat';
+      widget.user['fullName'] ?? widget.user['full_name'] ?? (_isRomo ? 'Romo' : 'Umat');
+
+  bool get _isRomo {
+    final role = (widget.user['roleCode'] ?? widget.user['role_code'] ?? widget.user['role'] ?? '').toString().toUpperCase();
+    return role.startsWith('ROMO');
+  }
 
   @override
   void initState() {
@@ -320,6 +325,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               orderNumber: group.orderId.toString(),
               userName: _userName,
               userId: _userId,
+              isRomo: _isRomo,
               groupItem: group,
             ),
           ),

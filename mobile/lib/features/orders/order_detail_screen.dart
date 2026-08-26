@@ -1740,6 +1740,7 @@ penerimaName: order.penerimaName,
 
   void _openChat(Order order) {
     HapticFeedback.lightImpact();
+    final int? currentSenderId = widget.isRomo ? widget.romoId : (order.userId ?? 1);
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -1747,7 +1748,8 @@ penerimaName: order.penerimaName,
           groupId: order.id,
           orderNumber: order.orderNumber,
           userName: widget.userName,
-          userId: order.userId,
+          userId: currentSenderId,
+          isRomo: widget.isRomo,
           groupItem: ChatGroupItem(
             groupId: order.id,
             orderId: order.id,
@@ -3008,6 +3010,7 @@ penerimaName: order.penerimaName,
           borderRadius: BorderRadius.circular(20),
           onTap: () {
             HapticFeedback.lightImpact();
+            final int? currentSenderId = widget.isRomo ? widget.romoId : (order.userId ?? 1);
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -3015,7 +3018,8 @@ penerimaName: order.penerimaName,
                   groupId: order.id,
                   orderNumber: order.orderNumber,
                   userName: widget.userName,
-                  userId: order.userId,
+                  userId: currentSenderId,
+                  isRomo: widget.isRomo,
                   groupItem: ChatGroupItem(
                     groupId: order.id,
                     orderId: order.id,

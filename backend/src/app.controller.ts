@@ -3404,6 +3404,31 @@ export class ChatController {
        WHERE o.id NOT IN (SELECT order_id FROM chat_groups WHERE order_id IS NOT NULL)`
     );
 
+    const parsedUId = parseInt(userId, 10) || 0;
+    const userProf = await this.dataSource.query(
+      `SELECT u.id, r.code as role_code, p.paroki_id, p.kabupaten_kota_id
+       FROM auth_users u
+       JOIN roles r ON u.role_id = r.id
+       LEFT JOIN user_profiles p ON p.user_id = u.id
+       WHERE u.id = $1`,
+      [parsedUId],
+    );
+
+    let whereClause = '';
+    const queryParams: any[] = [];
+    if (userProf.length > 0) {
+      const user = userProf[0];
+      if (user.role_code === 'ADMIN') {
+        whereClause = '';
+      } else if (user.role_code.startsWith('ROMO')) {
+        whereClause = `WHERE (o.accepted_romo_id = $1 OR o.handover_target_romo_id = $1 OR EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1) OR (o.status = 'PENDING' AND (COALESCE(o.paroki_id, p.paroki_id) = $2 OR COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $3)))`;
+        queryParams.push(parsedUId, user.paroki_id || 0, user.kabupaten_kota_id || 0);
+      } else {
+        whereClause = `WHERE (o.user_id = $1 OR EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1))`;
+        queryParams.push(parsedUId);
+      }
+    }
+
     const result = await this.dataSource.query(
       `SELECT g.id as group_id, g.order_id, g.title as group_title,
               COALESCE(
@@ -3429,7 +3454,9 @@ export class ChatController {
        JOIN service_categories sc ON o.service_category_id = sc.id
        LEFT JOIN urgency_levels ul ON o.urgency_level_id = ul.id
        LEFT JOIN user_profiles p ON o.user_id = p.user_id
-       ORDER BY COALESCE(g.last_message_at, o.created_at) DESC, g.id DESC`
+       ${whereClause}
+       ORDER BY COALESCE(g.last_message_at, o.created_at) DESC, g.id DESC`,
+      queryParams,
     );
     return result;
   }

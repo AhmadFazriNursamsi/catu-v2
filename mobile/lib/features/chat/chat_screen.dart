@@ -10,6 +10,7 @@ class ChatScreen extends StatefulWidget {
   final String orderNumber;
   final String userName;
   final int? userId;
+  final bool isRomo;
   final ChatGroupItem? groupItem;
 
   const ChatScreen({
@@ -18,6 +19,7 @@ class ChatScreen extends StatefulWidget {
     required this.orderNumber,
     required this.userName,
     this.userId,
+    this.isRomo = false,
     this.groupItem,
   });
 
@@ -349,6 +351,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       builder: (_) => OrderDetailScreen(
                         order: order,
                         userName: widget.userName,
+                        isRomo: widget.isRomo,
+                        romoId: widget.isRomo ? widget.userId : null,
                       ),
                     ),
                   );
@@ -372,6 +376,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       builder: (_) => OrderDetailScreen(
                         order: fallbackOrder,
                         userName: widget.userName,
+                        isRomo: widget.isRomo,
+                        romoId: widget.isRomo ? widget.userId : null,
                       ),
                     ),
                   );
@@ -484,10 +490,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
                       final bool isSystem = msg.messageType == 'SYSTEM_EVENT';
-                      final currentUserId = widget.userId ?? 1;
-                      final bool isMe = (msg.senderId != null && msg.senderId == currentUserId) ||
-                          msg.senderName == widget.userName ||
-                          (!isSystem && msg.senderName == null);
+                      final currentUserId = widget.userId;
+                      final bool isMe = !isSystem && (
+                          (msg.senderId != null && currentUserId != null && msg.senderId == currentUserId) ||
+                          (msg.senderName != null && widget.userName.isNotEmpty && msg.senderName == widget.userName) ||
+                          (msg.senderId == null && msg.senderName == null)
+                      );
 
                       if (isSystem) {
                         return Center(
