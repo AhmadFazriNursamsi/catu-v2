@@ -1738,20 +1738,29 @@ penerimaName: order.penerimaName,
     }
   }
 
-  void _openChat(Order order) {
+  void _openChat(Order order) async {
     HapticFeedback.lightImpact();
     final int? currentSenderId = widget.isRomo ? widget.romoId : (order.userId ?? 1);
+    
+    int targetGroupId = order.id;
+    try {
+      final res = await ApiService.getChatGroupIdForOrder(order.id);
+      if (res > 0) targetGroupId = res;
+    } catch (_) {}
+
+    if (!mounted) return;
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ChatScreen(
-          groupId: order.id,
+          groupId: targetGroupId,
           orderNumber: order.orderNumber,
           userName: widget.userName,
           userId: currentSenderId,
           isRomo: widget.isRomo,
           groupItem: ChatGroupItem(
-            groupId: order.id,
+            groupId: targetGroupId,
             orderId: order.id,
             groupTitle: 'Group Pelayanan ${order.categoryName}',
             orderTitle: order.categoryName,
@@ -3008,20 +3017,29 @@ penerimaName: order.penerimaName,
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () {
+          onTap: () async {
             HapticFeedback.lightImpact();
             final int? currentSenderId = widget.isRomo ? widget.romoId : (order.userId ?? 1);
+            
+            int targetGroupId = order.id;
+            try {
+              final res = await ApiService.getChatGroupIdForOrder(order.id);
+              if (res > 0) targetGroupId = res;
+            } catch (_) {}
+
+            if (!mounted) return;
+
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => ChatScreen(
-                  groupId: order.id,
+                  groupId: targetGroupId,
                   orderNumber: order.orderNumber,
                   userName: widget.userName,
                   userId: currentSenderId,
                   isRomo: widget.isRomo,
                   groupItem: ChatGroupItem(
-                    groupId: order.id,
+                    groupId: targetGroupId,
                     orderId: order.id,
                     groupTitle: 'Group Pelayanan ${order.categoryName}',
                     orderTitle: order.categoryName,

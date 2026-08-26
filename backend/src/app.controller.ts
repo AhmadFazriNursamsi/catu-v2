@@ -3254,6 +3254,45 @@ export class ChatController {
     return num;
   }
 
+  @Get('order/:orderId')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Mendapatkan Group Chat ID berdasarkan Order ID' })
+  async getGroupByOrderId(@Param('orderId') orderIdParam: string) {
+    const orderId = parseInt(orderIdParam, 10) || 0;
+    if (orderId <= 0) return { groupId: 1 };
+
+    const existing = await this.dataSource.query(
+      `SELECT id FROM chat_groups WHERE order_id = $1 LIMIT 1`,
+      [orderId],
+    );
+
+    if (existing.length > 0) {
+      return { groupId: existing[0].id };
+    }
+
+    const orderCheck = await this.dataSource.query(
+      `SELECT o.id, sc.name as category_name, o.order_number
+       FROM orders o
+       JOIN service_categories sc ON o.service_category_id = sc.id
+       WHERE o.id = $1`,
+      [orderId],
+    );
+
+    if (orderCheck.length > 0) {
+      const order = orderCheck[0];
+      const created = await this.dataSource.query(
+        `INSERT INTO chat_groups (order_id, title, last_message_text)
+         VALUES ($1, $2, $3) RETURNING id`,
+        [order.id, `Grup Pelayanan - ${order.order_number || order.category_name}`, 'Grup chat pelayanan aktif'],
+      );
+      if (created.length > 0) {
+        return { groupId: created[0].id };
+      }
+    }
+
+    return { groupId: orderId };
+  }
+
   @Post('groups/:groupId/messages')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({

@@ -823,6 +823,21 @@ class ApiService {
     return [];
   }
 
+  // 7b. Fetch Chat Group ID for Order
+  static Future<int> getChatGroupIdForOrder(int orderId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/chat/order/$orderId'));
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final raw = data['groupId'];
+        return raw is int ? raw : int.tryParse(raw?.toString() ?? '') ?? orderId;
+      }
+    } catch (e) {
+      print('Error getChatGroupIdForOrder: $e');
+    }
+    return orderId;
+  }
+
   // 8. Fetch Chat Group Members
   static Future<List<Map<String, dynamic>>> getGroupMembers(int groupId) async {
     try {
