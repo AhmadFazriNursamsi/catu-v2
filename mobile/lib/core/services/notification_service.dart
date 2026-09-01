@@ -212,8 +212,11 @@ class NotificationService {
     }
   }
 
-  static Future<void> registerUserDevice(int userId) async {
+  static Future<void> registerUserDevice(dynamic userId) async {
     try {
+      final intUid = int.tryParse(userId.toString()) ?? 0;
+      if (intUid <= 0) return;
+
       String? token = _currentToken;
       if (token == null && !kIsWeb) {
         try {
@@ -226,7 +229,7 @@ class NotificationService {
 
       if (token != null && token.isNotEmpty) {
         await ApiService.registerDeviceToken(
-          userId: userId,
+          userId: intUid,
           fcmToken: token,
           deviceType: deviceType,
         );
@@ -236,11 +239,14 @@ class NotificationService {
     }
   }
 
-  static Future<void> unregisterUserDevice(int userId) async {
+  static Future<void> unregisterUserDevice(dynamic userId) async {
     try {
+      final intUid = int.tryParse(userId.toString()) ?? 0;
+      if (intUid <= 0) return;
+
       if (_currentToken != null && _currentToken!.isNotEmpty) {
         await ApiService.unregisterDeviceToken(
-          userId: userId,
+          userId: intUid,
           fcmToken: _currentToken!,
         );
       }
