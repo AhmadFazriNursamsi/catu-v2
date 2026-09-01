@@ -9,6 +9,8 @@ import {
   TestRunnerController,
   MasterDataController,
 } from './app.controller';
+import { NewsController } from './news.controller';
+import { NewsService } from './news.service';
 import { AppService } from './app.service';
 
 @Module({
@@ -32,7 +34,8 @@ import { AppService } from './app.service';
     ChatController,
     TestRunnerController,
     MasterDataController,
+    NewsController,
   ],
-  providers: [AppService],
+  providers: [AppService, NewsService],
 })
 export class AppModule {}

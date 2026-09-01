@@ -1,0 +1,15 @@
+use_default_settings: true
+general:
+  debug: false
+  instance_name: "CATU Catholic News Search"
+search:
+  safe_search: 0
+  autocomplete: "google"
+  formats:
+    - html
+    - json
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "catu_super_secret_key_2026_searxng"
+  limiter: false

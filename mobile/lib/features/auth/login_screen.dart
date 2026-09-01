@@ -8,6 +8,7 @@ import '../home/home_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import 'pending_approval_screen.dart';
+import '../news/public_news_screen.dart';
 import '../../core/services/language_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -278,6 +279,33 @@ class _LoginScreenState extends State<LoginScreen>
                         ],
                       ),
                       const Spacer(),
+                      InkWell(
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => const PublicNewsScreen()),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.newspaper_rounded, color: Colors.white, size: 14),
+                              SizedBox(width: 6),
+                              Text(
+                                'Warta Berita',
+                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
@@ -1046,6 +1074,31 @@ class _LoginScreenState extends State<LoginScreen>
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
                                           color: AppConstants.primaryBlue,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+
+                                    // Back to News Button
+                                    TextButton.icon(
+                                      onPressed: () {
+                                        HapticFeedback.lightImpact();
+                                        if (Navigator.canPop(context)) {
+                                          Navigator.pop(context);
+                                        } else {
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(builder: (_) => const PublicNewsScreen()),
+                                          );
+                                        }
+                                      },
+                                      icon: const Icon(Icons.newspaper_rounded, size: 16, color: Color(0xFF64748B)),
+                                      label: const Text(
+                                        'Baca Warta & Berita Katolik',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF475569),
                                         ),
                                       ),
                                     ),

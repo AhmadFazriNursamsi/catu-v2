@@ -912,4 +912,82 @@ class ApiService {
       return {'statusCode': 500, 'message': 'Gagal memproses persetujuan romo: $e'};
     }
   }
+
+  // ── Catholic News API ──
+  static Future<Map<String, dynamic>> getNews({
+    String? categorySlug,
+    String? search,
+    int page = 1,
+    int limit = 10,
+    String? sourceCode,
+  }) async {
+    try {
+      final queryParams = <String>[
+        'page=$page',
+        'limit=$limit',
+      ];
+      if (categorySlug != null && categorySlug.isNotEmpty && categorySlug != 'semua') {
+        queryParams.add('categorySlug=${Uri.encodeComponent(categorySlug)}');
+      }
+      if (search != null && search.trim().isNotEmpty) {
+        queryParams.add('search=${Uri.encodeComponent(search.trim())}');
+      }
+      if (sourceCode != null && sourceCode.isNotEmpty) {
+        queryParams.add('sourceCode=${Uri.encodeComponent(sourceCode)}');
+      }
+
+      final url = '$baseUrl/news?${queryParams.join('&')}';
+      final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      print('Error getNews: $e');
+    }
+    return {'articles': [], 'featuredArticles': [], 'total': 0, 'totalPages': 0};
+  }
+
+  static Future<List<dynamic>> getNewsCategories() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/news/categories')).timeout(const Duration(seconds: 6));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      print('Error getNewsCategories: $e');
+    }
+    return [];
+  }
+
+  static Future<Map<String, dynamic>?> getNewsDetail(String idOrSlug) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/news/$idOrSlug')).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      print('Error getNewsDetail: $e');
+    }
+    return null;
+  }
+
+  static Future<Map<String, dynamic>> searchLiveNews(String query) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/news/search-live?q=${Uri.encodeComponent(query)}')).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      print('Error searchLiveNews: $e');
+    }
+    return {'results': []};
+  }
+
+  static Future<void> triggerNewsScrape() async {
+    try {
+      await http.post(Uri.parse('$baseUrl/news/scrape/run')).timeout(const Duration(seconds: 15));
+    } catch (e) {
+      print('Error triggerNewsScrape: $e');
+    }
+  }
 }
