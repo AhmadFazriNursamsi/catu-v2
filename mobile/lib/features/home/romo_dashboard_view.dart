@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
@@ -54,12 +55,34 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
   int _unreadNotifCount = 0;
   int _unreadChatCount = 0;
   int _pendingRomoApprovalsCount = 0;
+  Timer? _pollTimer;
+  bool _isPolling = false;
+  int _lastKnownNotifCount = 0;
+  bool _hasInitialLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _refreshUnreadCount();
     _refreshPendingApprovals();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _pollRealtimeUpdates();
+    });
+  }
+
+  Future<void> _pollRealtimeUpdates() async {
+    if (!mounted || _isPolling) return;
+    _isPolling = true;
+    try {
+      await _refreshUnreadCount();
+      await _refreshPendingApprovals();
+    } catch (_) {}
+    _isPolling = false;
   }
 
   Future<void> _refreshPendingApprovals() async {
@@ -114,6 +137,32 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     }
 
     if (mounted) {
+      if (_hasInitialLoaded && count > _lastKnownNotifCount) {
+        HapticFeedback.mediumImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.notifications_active_rounded, color: Colors.amber, size: 20),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Permintaan / Pemberitahuan Baru di Beranda',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF1E293B),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      _lastKnownNotifCount = count;
+      _hasInitialLoaded = true;
+
       setState(() {
         _unreadNotifCount = count;
         _unreadChatCount = chatUnread;
@@ -138,6 +187,11 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     final romoId = widget.user['id'] != null
         ? int.tryParse(widget.user['id'].toString())
         : (widget.user['userId'] != null ? int.tryParse(widget.user['userId'].toString()) : null);
+    final rawParoki = widget.user['parokiId'] ?? widget.user['paroki_id'];
+    final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
+    final rawKota = widget.user['kabupatenKotaId'] ?? widget.user['kabupaten_kota_id'];
+    final int? kabupatenKotaId = rawKota != null ? int.tryParse(rawKota.toString()) : null;
+
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -154,6 +208,12 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     _refreshPendingApprovals();
     widget.onRefresh();
     if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   List<LiquidNavItem> _buildNavItems() {
@@ -848,11 +908,14 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
           // EXCLUDE items that are already accepted by ANY Romo, unless it's an incoming handover to this Romo!
           if (item.acceptedRomoId != null && !isIncomingHandover) continue;
+          final itemSt = item.status.toUpperCase();
+          if ((itemSt == 'CONFIRMED' || itemSt == 'DONE' || itemSt == 'IN_PROGRESS' || itemSt == 'ACCEPTED') && !isIncomingHandover) continue;
           if (_isDateBeforeToday(item.scheduledDate)) continue;
 
-          String scheduleStr = item.scheduledDate;
+          String rawDate = item.scheduledDate;
+          String scheduleStr = formatServiceDate(rawDate);
           if (item.scheduledTimeStart.isNotEmpty) {
-            scheduleStr = '${item.scheduledDate} • ${item.scheduledTimeStart}';
+            scheduleStr = '$scheduleStr • ${item.scheduledTimeStart}';
             if (item.scheduledTimeEnd.isNotEmpty) {
               scheduleStr += ' - ${item.scheduledTimeEnd} WIB';
             } else {
@@ -914,15 +977,16 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
-          final itemAcceptedId = item.acceptedRomoId ?? order.acceptedRomoId;
+          final itemAcceptedId = item.acceptedRomoId;
           if (romoId != null && itemAcceptedId != romoId) continue;
-          if (itemAcceptedId == null && item.status.toUpperCase() != 'CONFIRMED' && order.status.toUpperCase() != 'CONFIRMED') continue;
+          if (itemAcceptedId == null && (item.status.toUpperCase() != 'CONFIRMED' && item.status.toUpperCase() != 'ACCEPTED')) continue;
 
           final itemSt = item.status.toUpperCase();
-          if (itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL') continue;
+          if (itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL' || itemSt == 'PENDING') continue;
           if (_isDateBeforeToday(item.scheduledDate.isNotEmpty ? item.scheduledDate : order.scheduledDate)) continue;
 
-          String scheduleStr = item.scheduledDate.isNotEmpty ? item.scheduledDate : order.scheduledDate;
+          String rawDate = item.scheduledDate.isNotEmpty ? item.scheduledDate : order.scheduledDate;
+          String scheduleStr = formatServiceDate(rawDate);
           if (item.scheduledTimeStart.isNotEmpty) {
             scheduleStr = '$scheduleStr • ${item.scheduledTimeStart}';
             if (item.scheduledTimeEnd.isNotEmpty) {
@@ -947,10 +1011,10 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         }
       } else {
         if (romoId != null && order.acceptedRomoId != romoId) continue;
-        if (order.acceptedRomoId == null && order.status.toUpperCase() != 'CONFIRMED') continue;
+        if (order.acceptedRomoId == null && order.status.toUpperCase() != 'CONFIRMED' && order.status.toUpperCase() != 'ACCEPTED') continue;
 
         final st = order.status.toUpperCase();
-        if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') continue;
+        if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL' || st == 'PENDING') continue;
         if (_isDateBeforeToday(order.scheduledDate)) continue;
 
         cardList.add(

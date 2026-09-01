@@ -775,9 +775,12 @@ class ApiService {
   }
 
   // 5. Fetch WhatsApp Group Messages
-  static Future<List<ChatMessage>> getGroupMessages(int groupId) async {
+  static Future<List<ChatMessage>> getGroupMessages(int groupId, {int? userId}) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/chat/groups/$groupId/messages'));
+      final url = userId != null
+          ? '$baseUrl/chat/groups/$groupId/messages?userId=$userId'
+          : '$baseUrl/chat/groups/$groupId/messages';
+      final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => ChatMessage.fromJson(json)).toList();
@@ -786,6 +789,17 @@ class ApiService {
       print('Error getGroupMessages: $e');
     }
     return [];
+  }
+
+  // Mark all messages in a group as read for a user
+  static Future<void> markGroupAsRead(int groupId, int userId) async {
+    try {
+      await http.post(
+        Uri.parse('$baseUrl/chat/groups/$groupId/read'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': userId}),
+      );
+    } catch (_) {}
   }
 
   // 6. Send WhatsApp Group Message

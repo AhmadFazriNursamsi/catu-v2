@@ -646,6 +646,18 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
           parokiId: effectiveParokiId,
           kabupatenKotaId: effectiveKabupatenId,
         );
+
+        // 🔔 3. Notif Pengurus Lingkungan (berdasarkan Lingkungan / Paroki)
+        await NotificationService.notifyNewRequest(
+          orderId: orderId,
+          umatName: umatName,
+          categoryName: 'Misa Kedukaan',
+          targetRole: 'PENGURUS',
+          misaItemName: _misaList[i].itemName,
+          itemIndex: i,
+          parokiId: effectiveParokiId,
+          kabupatenKotaId: effectiveKabupatenId,
+        );
       }
       Navigator.pop(context);
     }
@@ -1080,7 +1092,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            '📅 ${item.scheduledDate} (${item.scheduledTimeStart} - ${item.scheduledTimeEnd})',
+                                            '📅 ${formatServiceDate(item.scheduledDate)} (${item.scheduledTimeStart} - ${item.scheduledTimeEnd} WIB)',
                                             style: const TextStyle(
                                               fontSize: 11.5,
                                               color: Color(0xFF64748B),

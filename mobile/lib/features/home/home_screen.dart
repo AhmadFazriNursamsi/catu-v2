@@ -1,4 +1,5 @@
 // CATU — Home Screen (Root State Handler with Profile Sync)
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -23,13 +24,67 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Order> _orders = [];
   bool _isLoading = true;
   late Map<String, dynamic> _currentUserMap;
+  Timer? _pollTimer;
+  bool _isSilentRefreshing = false;
 
   @override
   void initState() {
     super.initState();
     _currentUserMap = Map<String, dynamic>.from(widget.user);
     _loadOrders();
+    _startPolling();
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _silentRefresh();
+    });
+  }
+
+  Future<void> _silentRefresh() async {
+    if (!mounted || _isSilentRefreshing || _isLoading) return;
+    _isSilentRefreshing = true;
+    try {
+      final rawId = _currentUserMap['id'] ?? _currentUserMap['userId'] ?? _currentUserMap['user_id'];
+      final int? userId = rawId != null ? int.tryParse(rawId.toString()) : null;
+
+      final String roleCode = (_currentUserMap['roleCode'] ??
+          _currentUserMap['role_code'] ??
+          _currentUserMap['role'] ??
+          'UMAT').toString().toUpperCase();
+
+      final rawParoki = _currentUserMap['parokiId'] ?? _currentUserMap['paroki_id'];
+      final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
+
+      final rawKota = _currentUserMap['kabupatenKotaId'] ?? _currentUserMap['kabupaten_kota_id'];
+      final int? kabupatenKotaId = rawKota != null ? int.tryParse(rawKota.toString()) : null;
+
+      final latestOrders = await ApiService.getOrders(
+        userId: roleCode.startsWith('ROMO') ? null : userId,
+        parokiId: roleCode.startsWith('ROMO') ? null : parokiId,
+        kabupatenKotaId: roleCode.startsWith('ROMO') ? null : kabupatenKotaId,
+        romoId: roleCode.startsWith('ROMO') ? userId : null,
+      );
+
+      if (mounted) {
+        bool hasChanges = latestOrders.length != _orders.length;
+        if (!hasChanges && latestOrders.isNotEmpty && _orders.isNotEmpty) {
+          if (latestOrders.first.id != _orders.first.id ||
+              latestOrders.first.status != _orders.first.status ||
+              latestOrders.last.status != _orders.last.status) {
+            hasChanges = true;
+          }
+        }
+        if (hasChanges) {
+          setState(() {
+            _orders = latestOrders;
+          });
+        }
+      }
+    } catch (_) {}
+    _isSilentRefreshing = false;
   }
 
   void _onLanguageChanged() {
@@ -38,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     super.dispose();
   }

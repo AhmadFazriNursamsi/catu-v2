@@ -483,6 +483,16 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
         parokiId: effectiveParokiId,
         kabupatenKotaId: effectiveKabupatenId,
       );
+
+      // 🔔 3. Notif Pengurus Lingkungan
+      await NotificationService.notifyNewRequest(
+        orderId: orderId,
+        umatName: umatName,
+        categoryName: 'Perminyakan',
+        targetRole: 'PENGURUS',
+        parokiId: effectiveParokiId,
+        kabupatenKotaId: effectiveKabupatenId,
+      );
       Navigator.pop(context);
     }
   }

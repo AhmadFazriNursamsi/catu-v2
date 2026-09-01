@@ -808,7 +808,7 @@ class _HistoriScreenState extends State<HistoriScreen>
     String locationStr = order.displayAddress;
     if (displayItem != null) {
       locationStr = displayItem.locationName.isNotEmpty ? displayItem.locationName : locationStr;
-      String t = displayItem.scheduledDate;
+      String t = formatServiceDate(displayItem.scheduledDate);
       if (displayItem.scheduledTimeStart.isNotEmpty) {
         t += ' · ${displayItem.scheduledTimeStart}';
         if (displayItem.scheduledTimeEnd.isNotEmpty) t += '–${displayItem.scheduledTimeEnd} WIB';

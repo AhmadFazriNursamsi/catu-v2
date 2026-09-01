@@ -1624,22 +1624,6 @@
                               </div>
                             `;
                           }
-                          if (r === 'ROMO_PAROKI' && romoPos !== 'KETUA_ROMO') {
-                            return `
-                              <div class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-900 border border-indigo-200/80 font-bold text-[11px] shadow-2xs" title="Persetujuan Romo Paroki dilakukan oleh Kepala Romo Paroki terkait via aplikasi mobile CATU">
-                                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-indigo-600"></i>
-                                <span>Verifikasi Kepala Romo Paroki</span>
-                              </div>
-                            `;
-                          }
-                          if (r === 'ROMO_ORDO' && romoPos !== 'KETUA_ROMO') {
-                            return `
-                              <div class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-50 text-purple-900 border border-purple-200/80 font-bold text-[11px] shadow-2xs" title="Persetujuan Romo Ordo dilakukan oleh Ketua Romo Ordo terkait via aplikasi mobile CATU">
-                                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-purple-600"></i>
-                                <span>Verifikasi Ketua Romo Ordo</span>
-                              </div>
-                            `;
-                          }
                           return `
                             <div class="inline-flex items-center justify-end space-x-2">
                               <button onclick="approveUserAction('${u.id}', 'APPROVED')" 
@@ -4664,14 +4648,6 @@
 
       if (r === 'UMAT') {
         showToast('Pendaftaran akun Umat diverifikasi dan disetujui oleh Pengurus Lingkungan setempat via aplikasi mobile CATU.', 'warning', 'Persetujuan Khusus Pengurus');
-        return;
-      }
-      if (r === 'ROMO_PAROKI' && romoPos !== 'KETUA_ROMO') {
-        showToast('Pendaftaran Romo Paroki diverifikasi dan disetujui oleh Kepala Romo Paroki terkait via aplikasi mobile CATU.', 'warning', 'Persetujuan Khusus Kepala Romo');
-        return;
-      }
-      if (r === 'ROMO_ORDO' && romoPos !== 'KETUA_ROMO') {
-        showToast('Pendaftaran Romo Ordo diverifikasi dan disetujui oleh Ketua Romo Ordo terkait via aplikasi mobile CATU.', 'warning', 'Persetujuan Khusus Ketua Romo Ordo');
         return;
       }
 

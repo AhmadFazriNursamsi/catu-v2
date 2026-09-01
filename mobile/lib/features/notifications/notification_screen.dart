@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
@@ -35,6 +36,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  Timer? _pollTimer;
+  bool _isSilentRefreshing = false;
 
   int? get _userId {
     if (widget.romoId != null) return widget.romoId;
@@ -56,10 +59,46 @@ class _NotificationScreenState extends State<NotificationScreen> {
   void initState() {
     super.initState();
     _loadNotifications();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _silentRefreshNotifications();
+    });
+  }
+
+  Future<void> _silentRefreshNotifications() async {
+    if (!mounted || _isSilentRefreshing || _isLoading) return;
+    _isSilentRefreshing = true;
+    try {
+      final items = await NotificationService.getForRole(
+        widget.role,
+        userId: _userId,
+        parokiId: _parokiId,
+        kabupatenKotaId: _kabupatenKotaId,
+      );
+      if (mounted) {
+        bool hasChanges = items.length != _allItems.length;
+        if (!hasChanges && items.isNotEmpty && _allItems.isNotEmpty) {
+          if (items.first.id != _allItems.first.id || items.first.isRead != _allItems.first.isRead) {
+            hasChanges = true;
+          }
+        }
+        if (hasChanges) {
+          setState(() {
+            _allItems = items;
+          });
+        }
+      }
+    } catch (_) {}
+    _isSilentRefreshing = false;
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
@@ -32,12 +33,55 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   List<ChatMessage> _messages = [];
   bool _isLoading = true;
+  Timer? _pollTimer;
+  bool _isPolling = false;
 
   @override
   void initState() {
     super.initState();
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
     _loadMessages();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+      _pollMessages();
+    });
+  }
+
+  Future<void> _pollMessages() async {
+    if (!mounted || _isPolling) return;
+    _isPolling = true;
+    try {
+      final latestMsgs = await ApiService.getGroupMessages(widget.groupId, userId: widget.userId);
+      if (!mounted) return;
+
+      bool hasChanges = latestMsgs.length != _messages.length;
+      if (!hasChanges && latestMsgs.isNotEmpty && _messages.isNotEmpty) {
+        if (latestMsgs.last.id != _messages.last.id ||
+            latestMsgs.last.message != _messages.last.message) {
+          hasChanges = true;
+        }
+      }
+
+      if (hasChanges) {
+        final previousCount = _messages.length;
+        setState(() {
+          _messages = latestMsgs;
+          _isLoading = false;
+        });
+
+        if (latestMsgs.length > previousCount) {
+          _scrollToBottom();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error polling chat messages: $e');
+    } finally {
+      _isPolling = false;
+    }
   }
 
   void _onLanguageChanged() {
@@ -46,6 +90,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _messageController.dispose();
     _scrollController.dispose();
@@ -53,7 +98,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadMessages() async {
-    final msgs = await ApiService.getGroupMessages(widget.groupId);
+    final msgs = await ApiService.getGroupMessages(widget.groupId, userId: widget.userId);
     if (mounted) {
       setState(() {
         _messages = msgs;
@@ -63,42 +108,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  List<ChatMessage> _buildInitialDemoMessages() {
-    return [
-      ChatMessage(
-        id: 1,
-        chatGroupId: widget.groupId,
-        senderName: null,
-        messageType: 'SYSTEM_EVENT',
-        message: 'Grup chat pelayanan telah otomatis dibentuk oleh sistem.',
-        createdAt: '2026-08-13T10:00:00Z',
-      ),
-      ChatMessage(
-        id: 2,
-        chatGroupId: widget.groupId,
-        senderName: 'Theresia (Pemohon)',
-        messageType: 'TEXT',
-        message: 'Selamat siang Romo, kami memohon bimbingan dan ketersediaan pelayanan.',
-        createdAt: '2026-08-13T10:05:00Z',
-      ),
-      ChatMessage(
-        id: 3,
-        chatGroupId: widget.groupId,
-        senderName: null,
-        messageType: 'SYSTEM_EVENT',
-        message: 'Romo Fajar Pr telah mengkonfirmasi kehadiran dan bergabung dalam grup chat.',
-        createdAt: '2026-08-13T10:10:00Z',
-      ),
-      ChatMessage(
-        id: 4,
-        chatGroupId: widget.groupId,
-        senderName: 'Romo Fajar Pr',
-        messageType: 'TEXT',
-        message: 'Berkah Dalem. Baik Ibu Theresia, saya siap mendampingi pelayanan ini sesuai jadwal.',
-        createdAt: '2026-08-13T10:12:00Z',
-      ),
-    ];
-  }
+
 
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 150), () {
@@ -164,18 +174,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   String _formatDayAndDate(String dateStr) {
-    if (dateStr.isEmpty) return 'Kamis, 13/08/2026';
-    try {
-      final dt = DateTime.parse(dateStr);
-      final days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-      final dayName = days[dt.weekday - 1];
-      final dd = dt.day.toString().padLeft(2, '0');
-      final mm = dt.month.toString().padLeft(2, '0');
-      final yyyy = dt.year.toString();
-      return '$dayName, $dd/$mm/$yyyy';
-    } catch (_) {
-      return dateStr;
-    }
+    return formatServiceDate(dateStr);
   }
 
   String _formatTimeOnly(String timeStr) {
@@ -341,7 +340,7 @@ class _ChatScreenState extends State<ChatScreen> {
           InkWell(
             onTap: () async {
               HapticFeedback.selectionClick();
-              final orderId = group?.orderId ?? widget.groupId;
+              final orderId = group?.orderId ?? (int.tryParse(widget.orderNumber) ?? widget.groupId);
               final order = await ApiService.getOrderById(orderId);
               if (context.mounted) {
                 if (order != null) {
@@ -351,6 +350,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       builder: (_) => OrderDetailScreen(
                         order: order,
                         userName: widget.userName,
+                        selectedItemId: group?.orderItemId,
+                        selectedItemTitle: group?.orderTitle,
                         isRomo: widget.isRomo,
                         romoId: widget.isRomo ? widget.userId : null,
                       ),
@@ -376,6 +377,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       builder: (_) => OrderDetailScreen(
                         order: fallbackOrder,
                         userName: widget.userName,
+                        selectedItemId: group?.orderItemId,
+                        selectedItemTitle: group?.orderTitle,
                         isRomo: widget.isRomo,
                         romoId: widget.isRomo ? widget.userId : null,
                       ),

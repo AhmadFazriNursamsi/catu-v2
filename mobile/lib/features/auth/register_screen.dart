@@ -332,12 +332,26 @@ class _RegisterScreenState extends State<RegisterScreen>
         res['user'] != null;
 
     if (isSuccess) {
-      final registeredUser = res['user'] ?? {
-        'fullName': fullName,
-        'phoneNumber': fullPhone,
-        'roleCode': finalRoleCode,
-        'accountStatus': 'PENDING_APPROVAL',
-      };
+      final Map<String, dynamic> registeredUser = res['user'] != null
+          ? Map<String, dynamic>.from(res['user'])
+          : {
+              'fullName': fullName,
+              'phoneNumber': fullPhone,
+              'roleCode': finalRoleCode,
+              'accountStatus': 'PENDING_APPROVAL',
+            };
+
+      if (finalRoleCode == 'ROMO_ORDO' && _selectedOrdoId != null) {
+        registeredUser['ordoId'] = _selectedOrdoId;
+        final selectedOrdo = _ordoList.firstWhere(
+          (o) => o['id'] == _selectedOrdoId,
+          orElse: () => {},
+        );
+        if (selectedOrdo['name'] != null) {
+          registeredUser['ordoName'] = selectedOrdo['name'];
+        }
+      }
+
       Navigator.pushReplacement(
         context,
         FadeSlideRoute(page: PendingApprovalScreen(user: registeredUser)),

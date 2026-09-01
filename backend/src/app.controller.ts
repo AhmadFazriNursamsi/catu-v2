@@ -608,8 +608,8 @@ export class AuthController implements OnModuleInit {
 
     const users = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.account_status, r.code as role_code, 
-              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id, kk.provinsi_id,
-              k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, kk.name as kota_name,
+              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.ordo_id, p.kabupaten_kota_id, kk.provinsi_id,
+              k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, ord.name as ordo_name, kk.name as kota_name,
               p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
        FROM auth_users u 
        JOIN roles r ON u.role_id = r.id 
@@ -618,6 +618,7 @@ export class AuthController implements OnModuleInit {
        LEFT JOIN paroki par ON p.paroki_id = par.id
        LEFT JOIN wilayah w ON p.wilayah_id = w.id
        LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+       LEFT JOIN ordo ord ON p.ordo_id = ord.id
        LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
        WHERE u.phone_number = $1`,
       [fullPhone],
@@ -646,12 +647,14 @@ export class AuthController implements OnModuleInit {
         parokiId: user.paroki_id,
         wilayahId: user.wilayah_id,
         lingkunganId: user.lingkungan_id,
+        ordoId: user.ordo_id,
         kabupatenKotaId: user.kabupaten_kota_id,
         provinsiId: user.provinsi_id,
         keuskupanName: user.keuskupan_name,
         parokiName: user.paroki_name,
         wilayahName: user.wilayah_name,
         lingkunganName: user.lingkungan_name,
+        ordoName: user.ordo_name,
         kabupatenKotaName: user.kota_name,
         pengurusPosition: user.pengurus_position,
         romoPosition: user.romo_position,
@@ -981,8 +984,8 @@ export class AuthController implements OnModuleInit {
 
       // 2. Insert ke user_profiles
       await queryRunner.query(
-        `INSERT INTO user_profiles (user_id, full_name, email, birth_date, address, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, pengurus_position, romo_position, jabatan_start_year, jabatan_end_year, jabatan_start_date, jabatan_end_date, is_jabatan_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+        `INSERT INTO user_profiles (user_id, full_name, email, birth_date, address, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, pengurus_position, romo_position, jabatan_start_year, jabatan_end_year, jabatan_start_date, jabatan_end_date, is_jabatan_active, ordo_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
         [
           authUser.id,
           dto.fullName,
@@ -1001,6 +1004,7 @@ export class AuthController implements OnModuleInit {
           dto.jabatanStartDate || null,
           dto.jabatanEndDate || null,
           initialActiveFlag,
+          dto.ordoId || null,
         ],
       );
 
@@ -1011,6 +1015,7 @@ export class AuthController implements OnModuleInit {
       let parokiName = '';
       let wilayahName = '';
       let lingkunganName = '';
+      let ordoName = '';
       let kabupatenKotaName = 'JAKARTA TIMUR';
 
       if (dto.keuskupanId) {
@@ -1028,6 +1033,10 @@ export class AuthController implements OnModuleInit {
       if (dto.lingkunganId) {
         const lRes = await this.dataSource.query('SELECT name FROM lingkungan WHERE id = $1', [dto.lingkunganId]);
         if (lRes.length > 0) lingkunganName = lRes[0].name;
+      }
+      if (dto.ordoId) {
+        const oRes = await this.dataSource.query('SELECT name FROM ordo WHERE id = $1', [dto.ordoId]);
+        if (oRes.length > 0) ordoName = oRes[0].name;
       }
 
       if (dto.roleCode === 'UMAT' && dto.lingkunganId) {
@@ -1114,9 +1123,9 @@ export class AuthController implements OnModuleInit {
       if (dto.roleCode === 'UMAT') {
         approvalTargetMsg = 'Pengurus Lingkungan';
       } else if (dto.roleCode === 'ROMO_PAROKI') {
-        approvalTargetMsg = romoPositionVal === 'KETUA_ROMO' ? 'Admin Aplikasi CATU' : 'Kepala Romo Paroki';
+        approvalTargetMsg = romoPositionVal === 'KETUA_ROMO' ? 'Admin Aplikasi CATU' : 'Kepala Romo Paroki / Admin Aplikasi CATU';
       } else if (dto.roleCode === 'ROMO_ORDO') {
-        approvalTargetMsg = romoPositionVal === 'KETUA_ROMO' ? 'Admin Aplikasi CATU' : 'Ketua Romo Ordo';
+        approvalTargetMsg = romoPositionVal === 'KETUA_ROMO' ? 'Admin Aplikasi CATU' : 'Ketua Romo Ordo / Admin Aplikasi CATU';
       } else if (dto.roleCode === 'PENGURUS_LINGKUNGAN') {
         approvalTargetMsg = 'Admin Aplikasi CATU';
       }
@@ -1132,10 +1141,16 @@ export class AuthController implements OnModuleInit {
           email: dto.email || '',
           roleCode: dto.roleCode,
           accountStatus: authUser.account_status,
-          keuskupanName: keuskupanName || 'Keuskupan Agung Jakarta',
-          parokiName: parokiName || 'Paroki Kelapa Gading - St. Yakobus',
-          wilayahName: wilayahName || 'Wilayah Anastasia',
-          lingkunganName: lingkunganName || 'Lingkungan Anastasia 1',
+          keuskupanId: dto.keuskupanId || null,
+          parokiId: dto.parokiId || null,
+          wilayahId: dto.wilayahId || null,
+          lingkunganId: dto.lingkunganId || null,
+          ordoId: dto.ordoId || null,
+          keuskupanName: keuskupanName || null,
+          parokiName: parokiName || null,
+          wilayahName: wilayahName || null,
+          lingkunganName: lingkunganName || null,
+          ordoName: ordoName || null,
           kabupatenKotaName: 'JAKARTA TIMUR',
           pengurusPosition: dto.pengurusPosition,
           romoPosition: romoPositionVal,
@@ -1174,8 +1189,8 @@ export class AuthController implements OnModuleInit {
   async login(@Body() dto: LoginDto) {
     const users = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.password_hash, u.account_status, r.code as role_code, 
-              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id, kk.provinsi_id,
-              k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, kk.name as kota_name,
+              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.ordo_id, p.kabupaten_kota_id, kk.provinsi_id,
+              k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, ord.name as ordo_name, kk.name as kota_name,
               p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
        FROM auth_users u 
        JOIN roles r ON u.role_id = r.id 
@@ -1184,6 +1199,7 @@ export class AuthController implements OnModuleInit {
        LEFT JOIN paroki par ON p.paroki_id = par.id
        LEFT JOIN wilayah w ON p.wilayah_id = w.id
        LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+       LEFT JOIN ordo ord ON p.ordo_id = ord.id
        LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
        WHERE u.phone_number = $1`,
       [dto.phoneNumber],
@@ -1225,12 +1241,14 @@ export class AuthController implements OnModuleInit {
         parokiId: user.paroki_id,
         wilayahId: user.wilayah_id,
         lingkunganId: user.lingkungan_id,
+        ordoId: user.ordo_id,
         kabupatenKotaId: user.kabupaten_kota_id,
         provinsiId: user.provinsi_id,
         keuskupanName: user.keuskupan_name,
         parokiName: user.paroki_name,
         wilayahName: user.wilayah_name,
         lingkunganName: user.lingkungan_name,
+        ordoName: user.ordo_name,
         kabupatenKotaName: user.kota_name,
         pengurusPosition: user.pengurus_position,
         romoPosition: user.romo_position,
@@ -1762,33 +1780,6 @@ export class AuthController implements OnModuleInit {
         throw new BadRequestException('Pendaftaran akun Umat harus diverifikasi dan disetujui oleh Pengurus Lingkungan setempat melalui aplikasi mobile CATU.');
       }
 
-      if (targetProf.length > 0 && targetProf[0].role_code === 'ROMO_PAROKI' && targetProf[0].romo_position !== 'KETUA_ROMO' && targetProf[0].paroki_id) {
-        const hasKetua = await this.dataSource.query(
-          `SELECT u.id, p.full_name FROM user_profiles p
-           JOIN auth_users u ON p.user_id = u.id
-           JOIN roles r ON u.role_id = r.id
-           WHERE p.paroki_id = $1 AND r.code = 'ROMO_PAROKI' AND p.romo_position = 'KETUA_ROMO' AND u.account_status = 'APPROVED'`,
-          [targetProf[0].paroki_id],
-        );
-        if (hasKetua.length > 0) {
-          throw new BadRequestException(`Pendaftaran Romo Paroki (${targetProf[0].full_name}) diverifikasi dan disetujui oleh Kepala Romo Paroki (${hasKetua[0].full_name}) melalui aplikasi mobile CATU.`);
-        }
-      }
-
-      if (targetProf.length > 0 && targetProf[0].role_code === 'ROMO_ORDO' && targetProf[0].romo_position !== 'KETUA_ROMO' && targetProf[0].ordo_id) {
-        const hasKetuaOrdo = await this.dataSource.query(
-          `SELECT u.id, p.full_name FROM user_profiles p
-           JOIN auth_users u ON p.user_id = u.id
-           JOIN roles r ON u.role_id = r.id
-           WHERE (p.ordo_id = $1 OR p.user_id IN (SELECT rp.user_id FROM romo_profiles rp WHERE rp.ordo_id = $1))
-             AND r.code = 'ROMO_ORDO' AND p.romo_position = 'KETUA_ROMO' AND u.account_status = 'APPROVED'`,
-          [targetProf[0].ordo_id],
-        );
-        if (hasKetuaOrdo.length > 0) {
-          throw new BadRequestException(`Pendaftaran Romo Ordo (${targetProf[0].full_name}) diverifikasi dan disetujui oleh Ketua Romo Ordo (${hasKetuaOrdo[0].full_name}) melalui aplikasi mobile CATU.`);
-        }
-      }
-
       if (targetProf.length > 0 && targetProf[0].role_code === 'PENGURUS_LINGKUNGAN' && targetProf[0].lingkungan_id && targetProf[0].pengurus_position) {
         const existingApproved = await this.dataSource.query(
           `SELECT u.id, p.full_name, p.pengurus_position 
@@ -2026,6 +2017,35 @@ export class AuthController implements OnModuleInit {
 export class OrdersController {
   constructor(@InjectDataSource() private dataSource: DataSource) {}
 
+  private async getPengurusForOrder(orderId: number): Promise<any[]> {
+    const orderHierarchy = await this.dataSource.query(
+      `SELECT o.lingkungan_id, o.paroki_id FROM orders o WHERE o.id = $1`,
+      [orderId],
+    );
+    if (orderHierarchy.length === 0) return [];
+    const oh = orderHierarchy[0];
+    let pengurus: any[] = [];
+    if (oh.lingkungan_id) {
+      pengurus = await this.dataSource.query(
+        `SELECT u.id FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.lingkungan_id = $1`,
+        [oh.lingkungan_id],
+      );
+    }
+    if (pengurus.length === 0 && oh.paroki_id) {
+      pengurus = await this.dataSource.query(
+        `SELECT u.id FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.paroki_id = $1`,
+        [oh.paroki_id],
+      );
+    }
+    return pengurus;
+  }
+
   @Post()
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -2050,7 +2070,7 @@ export class OrdersController {
     let lId = dto.lingkunganId;
     let kabId = dto.kabupatenKotaId;
 
-    if (!kId || !pId) {
+    if (!kId || !pId || !kabId) {
       const prof = await this.dataSource.query(
         `SELECT keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id FROM user_profiles WHERE user_id = $1`,
         [userId],
@@ -2094,60 +2114,203 @@ export class OrdersController {
 
     const order = orderResult[0];
 
-    if (dto.items && dto.items.length > 0) {
-      for (const item of dto.items) {
-        await this.dataSource.query(
-          `INSERT INTO order_items (order_id, item_name, scheduled_date, scheduled_time_start, scheduled_time_end, location_name)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [order.id, item.itemName, item.scheduledDate, item.scheduledTimeStart, item.scheduledTimeEnd, item.locationName],
-        );
-      }
-    }
-
-    const groupResult = await this.dataSource.query(
-      `INSERT INTO chat_groups (order_id, title, last_message_text) VALUES ($1, $2, $3) RETURNING id`,
-      [order.id, `Grup Pelayanan - ${order.order_number}`, 'Grup Pelayanan telah dibentuk'],
-    );
-
-    const groupId = groupResult[0].id;
-
-    // 1. Add order creator (Umat) to chat group
-    await this.dataSource.query(
-      `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'UMAT') ON CONFLICT DO NOTHING`,
-      [groupId, userId],
-    );
-
-    // 2. Add actual Pengurus Lingkungan for this lingkungan if available & send monitoring notification
+    // 1. Find actual Pengurus Lingkungan for this lingkungan / paroki
+    let pengurus: any[] = [];
     if (lId) {
-      const pengurus = await this.dataSource.query(
+      pengurus = await this.dataSource.query(
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE r.code = 'PENGURUS_LINGKUNGAN' AND p.lingkungan_id = $1`,
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.lingkungan_id = $1`,
         [lId],
       );
+    }
+    if (pengurus.length === 0 && pId) {
+      pengurus = await this.dataSource.query(
+        `SELECT u.id FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.paroki_id = $1`,
+        [pId],
+      );
+    }
+
+    // 2. Find Romo Paroki
+    let romoParoki: any[] = [];
+    if (pId) {
+      romoParoki = await this.dataSource.query(
+        `SELECT u.id FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         WHERE r.code = 'ROMO_PAROKI' AND p.paroki_id = $1`,
+        [pId],
+      );
+    }
+
+    // 3. Find Romo Ordo
+    let romoOrdo: any[] = [];
+    if (kabId) {
+      romoOrdo = await this.dataSource.query(
+        `SELECT u.id FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         WHERE r.code = 'ROMO_ORDO' AND p.kabupaten_kota_id = $1`,
+        [kabId],
+      );
+    }
+
+    let firstGroupId: number | null = null;
+
+    if (dto.items && dto.items.length > 0) {
+      for (const item of dto.items) {
+        const itemResult = await this.dataSource.query(
+          `INSERT INTO order_items (order_id, item_name, scheduled_date, scheduled_time_start, scheduled_time_end, location_name)
+           VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+          [order.id, item.itemName, item.scheduledDate, item.scheduledTimeStart, item.scheduledTimeEnd, item.locationName],
+        );
+        const itemId = itemResult[0].id;
+
+        const groupResult = await this.dataSource.query(
+          `INSERT INTO chat_groups (order_id, order_item_id, title, last_message_text) VALUES ($1, $2, $3, $4) RETURNING id`,
+          [order.id, itemId, `Grup Pelayanan - ${item.itemName} (${order.order_number})`, 'Grup Pelayanan telah dibentuk'],
+        );
+        const gId = groupResult[0].id;
+        if (!firstGroupId) firstGroupId = gId;
+
+        // 1. Add order creator (Umat)
+        if (userId) {
+          await this.dataSource.query(
+            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'UMAT') ON CONFLICT DO NOTHING`,
+            [gId, userId],
+          );
+        }
+
+        // 2. Add Pengurus Lingkungan
+        for (const p of pengurus) {
+          await this.dataSource.query(
+            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'PENGURUS_LINGKUNGAN') ON CONFLICT DO NOTHING`,
+            [gId, p.id],
+          );
+        }
+
+        // 3. Welcome message
+        await this.dataSource.query(
+          `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
+          [gId, `Grup Pelayanan untuk ${item.itemName} (${order.order_number}) telah dibuat. Menunggu konfirmasi kehadiran Romo.`],
+        );
+
+        // 🔔 4. Notify Pengurus Lingkungan per-misa
+        for (const p of pengurus) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+             VALUES ($1, $2, $3, $4, 'NEW_ORDER_MONITOR', false)`,
+            [
+              p.id, 
+              order.id, 
+              `Pemantauan ${item.itemName}`, 
+              `Ada permintaan ${item.itemName} (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.`
+            ],
+          );
+        }
+
+        // 🔔 5. Notify Romo Paroki per-misa
+        for (const rp of romoParoki) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+             VALUES ($1, $2, $3, $4, 'NEW_ORDER_ROMO', false)`,
+            [
+              rp.id, 
+              order.id, 
+              `Permintaan Pelayanan ${item.itemName}`, 
+              `Umat yang berada di paroki anda telah membuat permintaan pelayanan ${item.itemName} (${order.order_number}).`
+            ],
+          );
+        }
+
+        // 🔔 6. Notify Romo Ordo per-misa
+        let targetRomoOrdo = romoOrdo;
+        const itemKabId = item.kabupatenKotaId || kabId;
+        if (itemKabId && itemKabId !== kabId) {
+          targetRomoOrdo = await this.dataSource.query(
+            `SELECT u.id FROM auth_users u
+             JOIN user_profiles p ON u.id = p.user_id
+             JOIN roles r ON u.role_id = r.id
+             WHERE r.code = 'ROMO_ORDO' AND p.kabupaten_kota_id = $1`,
+            [itemKabId],
+          );
+        }
+
+        for (const ro of targetRomoOrdo) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+             VALUES ($1, $2, $3, $4, 'NEW_ORDER_ROMO', false)`,
+            [
+              ro.id, 
+              order.id, 
+              `Permintaan Pelayanan ${item.itemName}`, 
+              `Umat yang berada di kota anda telah membuat permintaan pelayanan ${item.itemName} (${order.order_number}).`
+            ],
+          );
+        }
+      }
+    } else {
+      const groupResult = await this.dataSource.query(
+        `INSERT INTO chat_groups (order_id, order_item_id, title, last_message_text) VALUES ($1, NULL, $2, $3) RETURNING id`,
+        [order.id, `Grup Pelayanan - ${order.order_number}`, 'Grup Pelayanan telah dibentuk'],
+      );
+      firstGroupId = groupResult[0].id;
+
+      if (userId) {
+        await this.dataSource.query(
+          `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'UMAT') ON CONFLICT DO NOTHING`,
+          [firstGroupId, userId],
+        );
+      }
+
       for (const p of pengurus) {
         await this.dataSource.query(
           `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'PENGURUS_LINGKUNGAN') ON CONFLICT DO NOTHING`,
-          [groupId, p.id],
+          [firstGroupId, p.id],
         );
+      }
+
+      await this.dataSource.query(
+        `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
+        [firstGroupId, `Grup Pelayanan ${order.order_number} telah dibuat. Menunggu konfirmasi kehadiran Romo.`],
+      );
+
+      // 🔔 Notify Pengurus Lingkungan
+      for (const p of pengurus) {
         await this.dataSource.query(
           `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
-           VALUES ($1, $2, 'Pemantauan Pelayanan Warga', $3, 'NEW_ORDER_MONITOR', false)`,
-          [p.id, order.id, `Ada permintaan pelayanan baru (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.`],
+           VALUES ($1, $2, 'Pemantauan Pelayanan Sakramen Perminyakan', $3, 'NEW_ORDER_MONITOR', false)`,
+          [p.id, order.id, `Ada permintaan pelayanan Sakramen Perminyakan (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.`],
+        );
+      }
+
+      // 🔔 Notify Romo Paroki
+      for (const rp of romoParoki) {
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+           VALUES ($1, $2, 'Permintaan Pelayanan Sakramen Perminyakan', $3, 'NEW_ORDER_ROMO', false)`,
+          [rp.id, order.id, `Umat yang berada di paroki anda telah membuat permintaan pelayanan Sakramen Perminyakan (${order.order_number}).`],
+        );
+      }
+
+      // 🔔 Notify Romo Ordo
+      for (const ro of romoOrdo) {
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+           VALUES ($1, $2, 'Permintaan Pelayanan Sakramen Perminyakan', $3, 'NEW_ORDER_ROMO', false)`,
+          [ro.id, order.id, `Umat yang berada di kota anda telah membuat permintaan pelayanan Sakramen Perminyakan (${order.order_number}).`],
         );
       }
     }
-
-    await this.dataSource.query(
-      `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
-      [groupId, `Grup Pelayanan ${order.order_number} telah dibuat. Menunggu konfirmasi kehadiran Romo.`],
-    );
 
     return {
       message: 'Order pelayanan berhasil dibuat di PostgreSQL! Group Chat WhatsApp telah otomatis dibentuk.',
       order: order,
-      chatGroupId: groupId,
+      chatGroupId: firstGroupId,
     };
   }
 
@@ -2169,8 +2332,8 @@ export class OrdersController {
              k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
              COALESCE(o.paroki_id, p.paroki_id) as paroki_id,
              COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id,
-             COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) as "acceptedRomoId",
-             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) LIMIT 1) as "acceptedRomoName",
+             o.accepted_romo_id as "acceptedRomoId",
+             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id) as "acceptedRomoName",
              COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus",
              o.reschedule_proposed_by as "rescheduleProposedBy",
              o.reschedule_new_date as "rescheduleNewDate",
@@ -2338,8 +2501,8 @@ export class OrdersController {
              p.full_name as pemohon_name,
              k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
              o.user_id,
-             COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) as "acceptedRomoId",
-             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(o.accepted_romo_id, (SELECT cgm.user_id FROM chat_groups cg JOIN chat_group_members cgm ON cg.id = cgm.chat_group_id WHERE cg.order_id = o.id AND (cgm.role_in_group = 'ROMO_PAROKI' OR cgm.role_in_group = 'ROMO' OR cgm.role_in_group = 'ROMO_ORDO') LIMIT 1)) LIMIT 1) as "acceptedRomoName",
+             o.accepted_romo_id as "acceptedRomoId",
+             (SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id) as "acceptedRomoName",
              COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus",
              o.reschedule_proposed_by as "rescheduleProposedBy",
              o.reschedule_new_date as "rescheduleNewDate",
@@ -2540,13 +2703,29 @@ export class OrdersController {
     // Send Notification to Umat
     await this.dataSource.query(
       `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-       VALUES ($1, $2, 'Pengajuan Perubahan Jadwal', $3, 'RESCHEDULE_PROPOSED', false)`,
+       VALUES ($1, $2, $3, $4, 'RESCHEDULE_PROPOSED', false)`,
       [
         order.user_id,
         orderId,
-        `Romo ${romoName} mengajukan perubahan jam pelayanan ${itemPrefix}menjadi ${timeDisplay}. Alasan: ${reason || '-'}. Ketuk untuk menanggapi.`,
+        `Usulan Perubahan Jadwal: ${targetItemName || 'Pelayanan'}`,
+        `Romo ${romoName} mengajukan perubahan jam pelayanan ${itemPrefix}menjadi ${timeDisplay}. Alasan: "${reason || '-'}". Ketuk untuk menanggapi.`,
       ],
     );
+
+    // Send Notification to Pengurus Lingkungan
+    const pengurusResched = await this.getPengurusForOrder(orderId);
+    for (const p of pengurusResched) {
+      await this.dataSource.query(
+        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+         VALUES ($1, $2, $3, $4, 'RESCHEDULE_PROPOSED', false)`,
+        [
+          p.id,
+          orderId,
+          `Usulan Perubahan Jadwal: ${targetItemName || 'Pelayanan'}`,
+          `Romo ${romoName} mengajukan perubahan jam pelayanan ${itemPrefix}menjadi ${timeDisplay} (${order.order_number}).`,
+        ],
+      );
+    }
 
     return {
       statusCode: 200,
@@ -2585,7 +2764,14 @@ export class OrdersController {
       return { statusCode: 403, message: 'Hanya pemohon (Umat) yang dapat menyetujui atau menolak perubahan jadwal ini.' };
     }
 
+    let targetItemName = '';
+    if (itemId) {
+      const iRes = await this.dataSource.query('SELECT item_name FROM order_items WHERE id = $1', [itemId]);
+      if (iRes.length > 0) targetItemName = iRes[0].item_name;
+    }
+    const serviceTitle = targetItemName || 'Pelayanan';
     const romoId = order.reschedule_proposed_by || order.accepted_romo_id;
+    const pengurusRespond = await this.getPengurusForOrder(orderId);
 
     if (isAccept) {
       if (itemId) {
@@ -2634,11 +2820,31 @@ export class OrdersController {
         );
       }
 
+      // 🔔 Notify Romo Bertugas
       if (romoId) {
         await this.dataSource.query(
           `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-           VALUES ($1, $2, 'Perubahan Jadwal Disetujui', $3, 'RESCHEDULE_ACCEPTED', false)`,
-          [romoId, orderId, `Umat telah menyetujui jadwal baru untuk pelayanan (${order.order_number}).`],
+           VALUES ($1, $2, $3, $4, 'RESCHEDULE_ACCEPTED', false)`,
+          [
+            romoId, 
+            orderId, 
+            `Perubahan Jadwal Disetujui: ${serviceTitle}`,
+            `Umat telah menyetujui jadwal baru untuk pelayanan ${serviceTitle} (${order.order_number}).`,
+          ],
+        );
+      }
+
+      // 🔔 Notify Pengurus Lingkungan
+      for (const p of pengurusRespond) {
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+           VALUES ($1, $2, $3, $4, 'RESCHEDULE_ACCEPTED', false)`,
+          [
+            p.id,
+            orderId,
+            `Perubahan Jadwal Disetujui: ${serviceTitle}`,
+            `Jadwal pelayanan ${serviceTitle} (${order.order_number}) telah disesuaikan mengikuti persetujuan Umat.`,
+          ],
         );
       }
 
@@ -2680,11 +2886,31 @@ export class OrdersController {
         );
       }
 
+      // 🔔 Notify Romo Bertugas
       if (romoId) {
         await this.dataSource.query(
           `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-           VALUES ($1, $2, 'Perubahan Jadwal Ditolak', $3, 'RESCHEDULE_REJECTED', false)`,
-          [romoId, orderId, `Umat tidak menyetujui perubahan jadwal (${order.order_number}). Pelayanan tetap pada jadwal semula.`],
+           VALUES ($1, $2, $3, $4, 'RESCHEDULE_REJECTED', false)`,
+          [
+            romoId, 
+            orderId, 
+            `Perubahan Jadwal Ditolak: ${serviceTitle}`,
+            `Umat tidak menyetujui perubahan jadwal (${order.order_number}). Pelayanan tetap pada jadwal semula.`,
+          ],
+        );
+      }
+
+      // 🔔 Notify Pengurus Lingkungan
+      for (const p of pengurusRespond) {
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+           VALUES ($1, $2, $3, $4, 'RESCHEDULE_REJECTED', false)`,
+          [
+            p.id,
+            orderId,
+            `Perubahan Jadwal Ditolak: ${serviceTitle}`,
+            `Usulan perubahan jadwal ${serviceTitle} (${order.order_number}) ditolak oleh Umat. Jadwal tetap sesuai waktu semula.`,
+          ],
         );
       }
 
@@ -2807,19 +3033,46 @@ export class OrdersController {
       );
     }
 
+    const serviceTitle = targetItemName || 'Pelayanan';
+    const pengurusHandover = await this.getPengurusForOrder(orderId);
+
     // Notify Umat
     await this.dataSource.query(
       `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-       VALUES ($1, $2, 'Pengajuan Pengalihan Romo', $3, 'ROMO_HANDOVER', false)`,
-      [order.user_id, orderId, `Romo ${prevRomoName} berhalangan ("${reason}"). Pengalihan tugas ke Romo ${newRomoName} sedang menunggu konfirmasi.`],
+       VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
+      [
+        order.user_id, 
+        orderId, 
+        `Pengajuan Ganti Romo: ${serviceTitle}`,
+        `Romo ${prevRomoName} berhalangan ("${reason}"). Pengalihan tugas pelayanan ${serviceTitle} (${order.order_number}) ke Romo ${newRomoName} sedang menunggu konfirmasi.`,
+      ],
     );
 
     // Notify New Romo
     await this.dataSource.query(
       `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-       VALUES ($1, $2, 'Pengajuan Pelimpahan Tugas', $3, 'ROMO_HANDOVER', false)`,
-      [targetRomoId, orderId, `Romo ${prevRomoName} melimpahkan tugas pelayanan (${order.order_number}) kepada Anda. Alasan: "${reason}". Buka aplikasi untuk menerima atau menolak.`],
+       VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
+      [
+        targetRomoId, 
+        orderId, 
+        `Permintaan Pelimpahan Pelayanan: ${serviceTitle}`,
+        `Romo ${prevRomoName} melimpahkan tugas pelayanan ${serviceTitle} (${order.order_number}) kepada Anda. Alasan: "${reason}". Buka aplikasi untuk menerima atau menolak.`,
+      ],
     );
+
+    // Notify Pengurus Lingkungan
+    for (const p of pengurusHandover) {
+      await this.dataSource.query(
+        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+         VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
+        [
+          p.id,
+          orderId,
+          `Pengajuan Ganti Romo: ${serviceTitle}`,
+          `Romo ${prevRomoName} mengajukan pengalihan pelayanan ${serviceTitle} (${order.order_number}) kepada Romo ${newRomoName} ("${reason}").`,
+        ],
+      );
+    }
 
     return {
       statusCode: 200,
@@ -2858,12 +3111,20 @@ export class OrdersController {
       return { statusCode: 403, message: 'Hanya Romo pengganti yang dituju yang dapat menerima atau menolak pelimpahan tugas ini.' };
     }
 
+    let targetItemName = '';
+    if (itemId) {
+      const iRes = await this.dataSource.query('SELECT item_name FROM order_items WHERE id = $1', [itemId]);
+      if (iRes.length > 0) targetItemName = iRes[0].item_name;
+    }
+    const serviceTitle = targetItemName || 'Pelayanan';
+
     const prevRomoId = order.handover_proposed_by;
     const prevProf = await this.dataSource.query('SELECT full_name FROM user_profiles WHERE user_id = $1', [prevRomoId]);
     const prevRomoName = prevProf.length > 0 ? prevProf[0].full_name : 'Romo';
 
     const targetProf = await this.dataSource.query('SELECT full_name FROM user_profiles WHERE user_id = $1', [romoId]);
     const targetRomoName = targetProf.length > 0 ? targetProf[0].full_name : 'Romo Pengganti';
+    const pengurusRespondHandover = await this.getPengurusForOrder(orderId);
 
     if (isAccept) {
       // Romo Baru accepts: transfer responsibility
@@ -2907,19 +3168,43 @@ export class OrdersController {
         );
       }
 
-      // Notify Romo Lama
+      // 🔔 Notify Romo Lama
       await this.dataSource.query(
         `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-         VALUES ($1, $2, 'Pelimpahan Disetujui', $3, 'ROMO_HANDOVER', false)`,
-        [prevRomoId, orderId, `Romo ${targetRomoName} telah MENYETUJUI pelimpahan tugas (${order.order_number}). Anda resmi tidak lagi bertugas untuk pelayanan ini.`],
+         VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
+        [
+          prevRomoId, 
+          orderId, 
+          `Pelimpahan Disetujui: ${serviceTitle}`,
+          `Romo ${targetRomoName} telah MENYETUJUI pelimpahan tugas ${serviceTitle} (${order.order_number}). Anda resmi tidak lagi bertugas untuk pelayanan ini.`,
+        ],
       );
 
-      // Notify Umat
+      // 🔔 Notify Umat
       await this.dataSource.query(
         `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-         VALUES ($1, $2, 'Romo Pelayanan Diperbarui', $3, 'ROMO_HANDOVER', false)`,
-        [order.user_id, orderId, `Pelayanan Anda resmi dialihkan ke Romo ${targetRomoName} menggantikan Romo ${prevRomoName}.`],
+         VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
+        [
+          order.user_id, 
+          orderId, 
+          `Romo Pelayanan Diperbarui: ${serviceTitle}`,
+          `Pelayanan ${serviceTitle} (${order.order_number}) resmi dialihkan ke Romo ${targetRomoName} menggantikan Romo ${prevRomoName}.`,
+        ],
       );
+
+      // 🔔 Notify Pengurus Lingkungan
+      for (const p of pengurusRespondHandover) {
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+           VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
+          [
+            p.id,
+            orderId,
+            `Romo Pelayanan Diperbarui: ${serviceTitle}`,
+            `Pelayanan ${serviceTitle} (${order.order_number}) resmi dialihkan ke Romo ${targetRomoName} menggantikan Romo ${prevRomoName}.`,
+          ],
+        );
+      }
 
       return {
         statusCode: 200,
@@ -2962,19 +3247,43 @@ export class OrdersController {
         );
       }
 
-      // Notify Romo Lama
+      // 🔔 Notify Romo Lama
       await this.dataSource.query(
         `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-         VALUES ($1, $2, 'Pelimpahan Ditolak', $3, 'ROMO_HANDOVER', false)`,
-        [prevRomoId, orderId, `Romo ${targetRomoName} MENOLAK pelimpahan tugas (${order.order_number}). Anda tetap bertugas melayani atau silakan limpahkan ke Romo lain.`],
+         VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
+        [
+          prevRomoId, 
+          orderId, 
+          `Pelimpahan Ditolak: ${serviceTitle}`,
+          `Romo ${targetRomoName} MENOLAK pelimpahan tugas ${serviceTitle} (${order.order_number}). Anda tetap bertugas melayani atau silakan limpahkan ke Romo lain.`,
+        ],
       );
 
-      // Notify Umat
+      // 🔔 Notify Umat
       await this.dataSource.query(
         `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-         VALUES ($1, $2, 'Status Pelimpahan Pelayanan', $3, 'ROMO_HANDOVER', false)`,
-        [order.user_id, orderId, `Pelimpahan ke Romo ${targetRomoName} belum disetujui. Romo ${prevRomoName} tetap bertugas melayani.`],
+         VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
+        [
+          order.user_id, 
+          orderId, 
+          `Status Pelimpahan Pelayanan: ${serviceTitle}`,
+          `Pelimpahan ke Romo ${targetRomoName} belum disetujui. Romo ${prevRomoName} tetap bertugas melayani ${serviceTitle}.`,
+        ],
       );
+
+      // 🔔 Notify Pengurus Lingkungan
+      for (const p of pengurusRespondHandover) {
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+           VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
+          [
+            p.id,
+            orderId,
+            `Status Pelimpahan Pelayanan: ${serviceTitle}`,
+            `Pelimpahan tugas ${serviceTitle} (${order.order_number}) kepada Romo ${targetRomoName} ditolak. Pelayanan tetap bersama Romo ${prevRomoName}.`,
+          ],
+        );
+      }
 
       return {
         statusCode: 200,
@@ -3057,6 +3366,35 @@ export class NotificationsController {
 @Controller('assignments')
 export class AssignmentsController {
   constructor(@InjectDataSource() private dataSource: DataSource) {}
+
+  private async getPengurusForOrder(orderId: number): Promise<any[]> {
+    const orderHierarchy = await this.dataSource.query(
+      `SELECT o.lingkungan_id, o.paroki_id FROM orders o WHERE o.id = $1`,
+      [orderId],
+    );
+    if (orderHierarchy.length === 0) return [];
+    const oh = orderHierarchy[0];
+    let pengurus: any[] = [];
+    if (oh.lingkungan_id) {
+      pengurus = await this.dataSource.query(
+        `SELECT u.id FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.lingkungan_id = $1`,
+        [oh.lingkungan_id],
+      );
+    }
+    if (pengurus.length === 0 && oh.paroki_id) {
+      pengurus = await this.dataSource.query(
+        `SELECT u.id FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.paroki_id = $1`,
+        [oh.paroki_id],
+      );
+    }
+    return pengurus;
+  }
 
   @Post(':orderId/respond')
   @ApiBearerAuth('JWT-auth')
@@ -3149,8 +3487,8 @@ export class AssignmentsController {
         );
       } else if (anyActive) {
         await this.dataSource.query(
-          `UPDATE orders SET status = 'CONFIRMED', accepted_romo_id = COALESCE($2, accepted_romo_id) WHERE id = $1`,
-          [orderId, romoId],
+          `UPDATE orders SET status = 'CONFIRMED' WHERE id = $1`,
+          [orderId],
         );
       } else {
         await this.dataSource.query(
@@ -3164,7 +3502,7 @@ export class AssignmentsController {
         [newStatus, romoId, orderId],
       );
       await this.dataSource.query(
-        `UPDATE order_items SET status = $1, accepted_romo_id = COALESCE($2, accepted_romo_id) WHERE order_id = $3`,
+        `UPDATE order_items SET status = $1 WHERE order_id = $3`,
         [newStatus, romoId, orderId],
       );
     }
@@ -3183,21 +3521,153 @@ export class AssignmentsController {
       FAIL: `Tidak ada Romo yang menerima pelayanan ini hingga melewati tanggal pelayanan.`,
     };
 
-    const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
-    if (groups.length > 0) {
-      const groupId = groups[0].id;
+    let targetGroups: any[] = [];
+    if (itemId) {
+      targetGroups = await this.dataSource.query(
+        `SELECT id FROM chat_groups WHERE order_id = $1 AND order_item_id = $2`,
+        [orderId, itemId],
+      );
+    }
+    if (targetGroups.length === 0) {
+      targetGroups = await this.dataSource.query(
+        `SELECT id FROM chat_groups WHERE order_id = $1`,
+        [orderId],
+      );
+    }
 
-      if (newStatus === 'CONFIRMED' && romoId) {
-        await this.dataSource.query(
-          `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'ROMO_PAROKI') ON CONFLICT DO NOTHING`,
-          [groupId, romoId],
+    if (targetGroups.length > 0) {
+      let romoRole = 'ROMO_PAROKI';
+      if (romoId) {
+        const rCheck = await this.dataSource.query(
+          `SELECT r.code FROM auth_users u JOIN roles r ON u.role_id = r.id WHERE u.id = $1`,
+          [romoId],
         );
+        if (rCheck.length > 0 && rCheck[0].code === 'ROMO_ORDO') {
+          romoRole = 'ROMO_ORDO';
+        }
       }
 
-      await this.dataSource.query(
-        `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
-        [groupId, statusMessages[newStatus] || `Status diubah menjadi ${newStatus}`],
-      );
+      for (const grp of targetGroups) {
+        if (newStatus === 'CONFIRMED' && romoId) {
+          await this.dataSource.query(
+            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, $3) ON CONFLICT (chat_group_id, user_id) DO UPDATE SET role_in_group = $3`,
+            [grp.id, romoId, romoRole],
+          );
+        }
+
+        await this.dataSource.query(
+          `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
+          [grp.id, statusMessages[newStatus] || `Status diubah menjadi ${newStatus}`],
+        );
+      }
+    }
+
+    // 🔔 Send Real-Time Notifications to Umat and Pengurus Lingkungan
+    const orderDetailRes = await this.dataSource.query(
+      `SELECT o.id, o.order_number, o.user_id, o.lingkungan_id, o.paroki_id, sc.name as category_name
+       FROM orders o
+       JOIN service_categories sc ON o.service_category_id = sc.id
+       WHERE o.id = $1`,
+      [orderId],
+    );
+
+    if (orderDetailRes.length > 0) {
+      const orderInfo = orderDetailRes[0];
+      let serviceTitle = orderInfo.category_name || 'Pelayanan';
+      if (itemId) {
+        const itemRes = await this.dataSource.query(
+          `SELECT item_name FROM order_items WHERE id = $1`,
+          [itemId],
+        );
+        if (itemRes.length > 0) {
+          serviceTitle = itemRes[0].item_name;
+        }
+      }
+
+      const pengurusStatusList = await this.getPengurusForOrder(orderId);
+
+      if (newStatus === 'CONFIRMED') {
+        // 🔔 1. Notify Umat
+        if (orderInfo.user_id) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+             VALUES ($1, $2, $3, $4, 'ORDER_CONFIRMED', false)`,
+            [
+              orderInfo.user_id,
+              orderId,
+              `Pelayanan Dikonfirmasi: ${serviceTitle}`,
+              `Romo ${romoName} telah mengkonfirmasi kehadiran untuk melayani ${serviceTitle} (${orderInfo.order_number}).`,
+            ],
+          );
+        }
+        // 🔔 2. Notify Pengurus Lingkungan
+        for (const p of pengurusStatusList) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+             VALUES ($1, $2, $3, $4, 'ORDER_CONFIRMED', false)`,
+            [
+              p.id,
+              orderId,
+              `Pelayanan Dikonfirmasi: ${serviceTitle}`,
+              `Romo ${romoName} telah mengkonfirmasi kehadiran untuk melayani ${serviceTitle} (${orderInfo.order_number}) bagi warga lingkungan Anda.`,
+            ],
+          );
+        }
+      } else if (newStatus === 'IN_PROGRESS') {
+        // 🔔 1. Notify Umat
+        if (orderInfo.user_id) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+             VALUES ($1, $2, $3, $4, 'ORDER_IN_PROGRESS', false)`,
+            [
+              orderInfo.user_id,
+              orderId,
+              `Pelayanan Berlangsung: ${serviceTitle}`,
+              `Romo ${romoName} sedang menjalankan pelayanan ${serviceTitle} (${orderInfo.order_number}).`,
+            ],
+          );
+        }
+        // 🔔 2. Notify Pengurus Lingkungan
+        for (const p of pengurusStatusList) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+             VALUES ($1, $2, $3, $4, 'ORDER_IN_PROGRESS', false)`,
+            [
+              p.id,
+              orderId,
+              `Pelayanan Berlangsung: ${serviceTitle}`,
+              `Romo ${romoName} sedang menjalankan pelayanan ${serviceTitle} (${orderInfo.order_number}) bagi warga lingkungan Anda.`,
+            ],
+          );
+        }
+      } else if (newStatus === 'DONE') {
+        // 🔔 1. Notify Umat
+        if (orderInfo.user_id) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+             VALUES ($1, $2, $3, $4, 'ORDER_DONE', false)`,
+            [
+              orderInfo.user_id,
+              orderId,
+              `Pelayanan Selesai: ${serviceTitle}`,
+              `Pelayanan ${serviceTitle} (${orderInfo.order_number}) telah selesai dilaksanakan oleh Romo ${romoName}. Terima kasih atas partisipasi Anda.`,
+            ],
+          );
+        }
+        // 🔔 2. Notify Pengurus Lingkungan
+        for (const p of pengurusStatusList) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+             VALUES ($1, $2, $3, $4, 'ORDER_DONE', false)`,
+            [
+              p.id,
+              orderId,
+              `Pelayanan Selesai: ${serviceTitle}`,
+              `Pelayanan ${serviceTitle} (${orderInfo.order_number}) telah selesai dilaksanakan oleh Romo ${romoName}.`,
+            ],
+          );
+        }
+      }
     }
 
     return {
@@ -3316,17 +3786,81 @@ export class ChatController {
       [dto.message, groupId],
     );
 
+    if (result.length > 0 && result[0].id) {
+      await this.dataSource.query(
+        `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group, last_read_message_id)
+         VALUES ($1, $2, 'MEMBER', $3)
+         ON CONFLICT (chat_group_id, user_id)
+         DO UPDATE SET last_read_message_id = GREATEST(COALESCE(chat_group_members.last_read_message_id, 0), $3)`,
+        [groupId, senderId, result[0].id],
+      );
+    }
+
     return {
       message: 'Pesan berhasil terkirim ke Group Chat!',
       data: result[0],
     };
   }
 
+  @Post('groups/:groupId/read')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Menandai seluruh pesan dalam Group Chat sebagai telah dibaca (Read)' })
+  async markGroupAsRead(
+    @Param('groupId') groupIdParam: string,
+    @Body() body: { userId?: number },
+    @Query('userId') queryUserId?: string,
+  ) {
+    const groupId = await this.resolveGroupId(groupIdParam);
+    const userId = body?.userId || parseInt(queryUserId || '', 10) || 1;
+
+    const maxMsg = await this.dataSource.query(
+      `SELECT COALESCE(MAX(id), 0) as max_id FROM chat_messages WHERE chat_group_id = $1`,
+      [groupId],
+    );
+    const maxId = maxMsg[0]?.max_id || 0;
+
+    if (maxId > 0 && userId > 0) {
+      await this.dataSource.query(
+        `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group, last_read_message_id)
+         VALUES ($1, $2, 'MEMBER', $3)
+         ON CONFLICT (chat_group_id, user_id)
+         DO UPDATE SET last_read_message_id = GREATEST(COALESCE(chat_group_members.last_read_message_id, 0), $3)`,
+        [groupId, userId, maxId],
+      );
+    }
+
+    return { success: true, groupId, userId, lastReadMessageId: maxId };
+  }
+
   @Get('groups/:groupId/messages')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Mendapatkan Riwayat Pesan Chat & Centang Biru Read Receipts dari PostgreSQL' })
-  async getMessages(@Param('groupId') groupIdParam: string) {
+  async getMessages(
+    @Param('groupId') groupIdParam: string,
+    @Query('userId') userIdParam?: string,
+  ) {
     const groupId = await this.resolveGroupId(groupIdParam);
+
+    if (userIdParam) {
+      const uId = parseInt(userIdParam, 10) || 0;
+      if (uId > 0) {
+        const maxMsg = await this.dataSource.query(
+          `SELECT COALESCE(MAX(id), 0) as max_id FROM chat_messages WHERE chat_group_id = $1`,
+          [groupId],
+        );
+        const maxId = maxMsg[0]?.max_id || 0;
+        if (maxId > 0) {
+          await this.dataSource.query(
+            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group, last_read_message_id)
+             VALUES ($1, $2, 'MEMBER', $3)
+             ON CONFLICT (chat_group_id, user_id)
+             DO UPDATE SET last_read_message_id = GREATEST(COALESCE(chat_group_members.last_read_message_id, 0), $3)`,
+            [groupId, uId, maxId],
+          );
+        }
+      }
+    }
+
     return await this.dataSource.query(
       `SELECT m.id, m.chat_group_id, m.sender_id, p.full_name as sender_name, m.message_type, m.message, m.attachment_url, m.created_at
        FROM chat_messages m
@@ -3345,13 +3879,17 @@ export class ChatController {
 
     // Fetch order details to check status, lingkungan_id, paroki_id, accepted_romo_id
     const orderRes = await this.dataSource.query(
-      `SELECT o.id as order_id, o.status, o.user_id as pemohon_id, o.accepted_romo_id,
+      `SELECT o.id as order_id, 
+              COALESCE(oi.status, o.status::text) as status, 
+              o.user_id as pemohon_id, 
+              COALESCE(oi.accepted_romo_id, o.accepted_romo_id) as accepted_romo_id,
               COALESCE(o.lingkungan_id, p.lingkungan_id) as lingkungan_id,
               COALESCE(o.paroki_id, p.paroki_id) as paroki_id,
               p.full_name as pemohon_name, u.phone_number as pemohon_phone,
               l.name as lingkungan_name, par.name as paroki_name
        FROM chat_groups g
        JOIN orders o ON g.order_id = o.id
+       LEFT JOIN order_items oi ON g.order_item_id = oi.id
        JOIN auth_users u ON o.user_id = u.id
        LEFT JOIN user_profiles p ON o.user_id = p.user_id
        LEFT JOIN lingkungan l ON COALESCE(o.lingkungan_id, p.lingkungan_id) = l.id
@@ -3388,7 +3926,7 @@ export class ChatController {
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
          LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
-         WHERE r.code = 'PENGURUS_LINGKUNGAN' AND p.lingkungan_id = $1
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.lingkungan_id = $1
          ORDER BY u.id ASC`,
         [order.lingkungan_id],
       );
@@ -3401,7 +3939,7 @@ export class ChatController {
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
          LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
-         WHERE r.code = 'PENGURUS_LINGKUNGAN' AND p.paroki_id = $1
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.paroki_id = $1
          ORDER BY u.id ASC`,
         [order.paroki_id],
       );
@@ -3447,15 +3985,6 @@ export class ChatController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Mendapatkan daftar WhatsApp Group Chat per Pelayanan untuk User' })
   async getUserChatGroups(@Param('userId') userId: string) {
-    // Auto create chat_groups for any order missing a chat group
-    await this.dataSource.query(
-      `INSERT INTO chat_groups (order_id, title, last_message_text)
-       SELECT o.id, CONCAT('Group Pelayanan ', sc.name), 'Grup chat pelayanan aktif'
-       FROM orders o
-       JOIN service_categories sc ON o.service_category_id = sc.id
-       WHERE o.id NOT IN (SELECT order_id FROM chat_groups WHERE order_id IS NOT NULL)`
-    );
-
     const parsedUId = parseInt(userId, 10) || 0;
     const userProf = await this.dataSource.query(
       `SELECT u.id, r.code as role_code, p.paroki_id, p.kabupaten_kota_id
@@ -3467,43 +3996,66 @@ export class ChatController {
     );
 
     let whereClause = '';
-    const queryParams: any[] = [];
+    const queryParams: any[] = [parsedUId];
     if (userProf.length > 0) {
       const user = userProf[0];
       if (user.role_code === 'ADMIN') {
         whereClause = '';
       } else if (user.role_code.startsWith('ROMO')) {
-        whereClause = `WHERE (o.accepted_romo_id = $1 OR o.handover_target_romo_id = $1 OR EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1) OR (o.status = 'PENDING' AND (COALESCE(o.paroki_id, p.paroki_id) = $2 OR COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $3)))`;
-        queryParams.push(parsedUId, user.paroki_id || 0, user.kabupaten_kota_id || 0);
+        whereClause = `WHERE (
+          EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1)
+          OR (g.order_item_id IS NOT NULL AND (oi.accepted_romo_id = $1 OR (oi.handover_target_romo_id = $1 AND oi.handover_status = 'PENDING')))
+          OR (g.order_item_id IS NULL AND (o.accepted_romo_id = $1 OR (o.handover_target_romo_id = $1 AND o.handover_status = 'PENDING')))
+        )`;
       } else {
         whereClause = `WHERE (o.user_id = $1 OR EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1))`;
-        queryParams.push(parsedUId);
       }
     }
 
     const result = await this.dataSource.query(
-      `SELECT g.id as group_id, g.order_id, g.title as group_title,
+      `SELECT g.id as group_id, g.order_id, g.order_item_id as order_item_id, o.order_number, g.title as group_title,
               COALESCE(
                 (SELECT message FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1),
                 g.last_message_text,
                 'Grup chat pelayanan aktif'
               ) as last_message_text,
+              (SELECT m.sender_id FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_id,
+              (SELECT COALESCE(p.full_name, 'Pengguna') FROM chat_messages m LEFT JOIN user_profiles p ON m.sender_id = p.user_id WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_name,
               COALESCE(
                 (SELECT created_at FROM chat_messages m WHERE m.chat_group_id = g.id ORDER BY m.id DESC LIMIT 1),
                 g.last_message_at,
                 o.created_at
               ) as last_message_at,
               COALESCE(
-                (SELECT item_name FROM order_items oi WHERE oi.order_id = o.id ORDER BY oi.id ASC LIMIT 1),
+                oi.item_name,
+                (SELECT sub_oi.item_name FROM order_items sub_oi WHERE sub_oi.order_id = o.id ORDER BY sub_oi.id ASC LIMIT 1),
                 sc.name
               ) as order_title,
-              sc.name as order_category, o.status as order_status,
-              o.scheduled_date, o.scheduled_time as scheduled_time_start, '' as scheduled_time_end,
+              sc.name as order_category, 
+              COALESCE(oi.status, o.status::text) as order_status,
+              COALESCE(oi.scheduled_date::text, o.scheduled_date::text) as scheduled_date, 
+              COALESCE(oi.scheduled_time_start::text, o.scheduled_time::text) as scheduled_time_start, 
+              COALESCE(oi.scheduled_time_end::text, '') as scheduled_time_end,
               o.notes, ul.name as urgency_name, p.full_name as penerima_name,
-              p.full_name as requester_name, p.avatar_url as requester_avatar
+              p.full_name as requester_name, p.avatar_url as requester_avatar,
+              COALESCE(
+                (
+                  SELECT COUNT(*)::int
+                  FROM chat_messages m
+                  WHERE m.chat_group_id = g.id
+                    AND (m.sender_id IS NOT NULL AND m.sender_id != $1)
+                    AND m.message_type != 'SYSTEM_EVENT'
+                    AND m.id > COALESCE(
+                      (SELECT cgm.last_read_message_id FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1),
+                      0
+                    )
+                ),
+                0
+              ) as unread_count
        FROM chat_groups g
        JOIN orders o ON g.order_id = o.id
        JOIN service_categories sc ON o.service_category_id = sc.id
+       LEFT JOIN order_items oi ON g.order_item_id = oi.id
        LEFT JOIN urgency_levels ul ON o.urgency_level_id = ul.id
        LEFT JOIN user_profiles p ON o.user_id = p.user_id
        ${whereClause}

@@ -20,6 +20,12 @@ export class CreateOrderItemDto {
   @IsString()
   scheduledTimeEnd: string;
 
+  @ApiPropertyOptional({ example: 3175, description: 'ID Kabupaten/Kota lokasi misa' })
+  @IsNumber()
+  @IsInt()
+  @IsOptional()
+  kabupatenKotaId?: number;
+
   @ApiProperty({ example: 'Rumah Duka Carolus Room 101', description: 'Lokasi misa' })
   @IsString()
   locationName: string;

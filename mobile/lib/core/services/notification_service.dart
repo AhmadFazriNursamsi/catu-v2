@@ -122,6 +122,14 @@ class NotificationService {
           final categoryName = r['categoryName'] ?? r['category_name'];
           final createdAt = DateTime.tryParse(r['createdAt'] ?? r['created_at'] ?? '') ?? DateTime.now();
 
+          String? parsedItemTitle = r['itemTitle'] ?? r['item_title'];
+          if (parsedItemTitle == null || parsedItemTitle.isEmpty) {
+            if (title.contains('Misa')) {
+              final idx = title.indexOf('Misa');
+              parsedItemTitle = title.substring(idx).trim();
+            }
+          }
+
           backendItems.add(
             NotificationItem(
               id: id,
@@ -133,6 +141,7 @@ class NotificationService {
               isRead: isRead,
               orderId: orderId,
               categoryName: categoryName,
+              itemTitle: parsedItemTitle,
             ),
           );
         }
@@ -143,7 +152,11 @@ class NotificationService {
 
     final localItems = await getAll();
     return localItems.where((n) {
-      if (n.role != role) return false;
+      if (role == 'PENGURUS' || role == 'PENGURUS_LINGKUNGAN') {
+        if (n.role != 'PENGURUS' && n.role != 'PENGURUS_LINGKUNGAN' && n.role != 'UMAT') return false;
+      } else {
+        if (n.role != role) return false;
+      }
       if (role == 'ROMO_PAROKI' && parokiId != null && n.parokiId != null) {
         return n.parokiId == parokiId;
       }
@@ -324,7 +337,7 @@ class NotificationService {
         : 'Sakramen Perminyakan';
     final locationPhrase = targetRole == 'ROMO_PAROKI'
         ? 'paroki anda'
-        : 'kota anda';
+        : (targetRole == 'ROMO_ORDO' ? 'kota anda' : 'lingkungan anda');
     final uniqueId = await _uniqueId('new_${targetRole.toLowerCase()}_${orderId}_${itemIndex ?? 0}');
     await add(NotificationItem(
       id: uniqueId,

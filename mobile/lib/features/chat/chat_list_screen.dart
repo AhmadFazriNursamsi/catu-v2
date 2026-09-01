@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
@@ -25,6 +26,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
   String _searchQuery = '';
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  Timer? _pollTimer;
+  bool _isSilentRefreshing = false;
 
   int? get _userId {
     final raw = widget.user['id'] ?? widget.user['userId'] ?? widget.user['user_id'];
@@ -44,6 +47,28 @@ class _ChatListScreenState extends State<ChatListScreen> {
     super.initState();
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
     _loadChatGroups();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _silentRefreshGroups();
+    });
+  }
+
+  Future<void> _silentRefreshGroups() async {
+    if (!mounted || _isSilentRefreshing || _isLoading) return;
+    _isSilentRefreshing = true;
+    try {
+      final groups = await ApiService.getChatGroups(_userId ?? 1);
+      if (mounted) {
+        setState(() {
+          _chatGroups = groups;
+        });
+      }
+    } catch (_) {}
+    _isSilentRefreshing = false;
   }
 
   void _onLanguageChanged() {
@@ -52,6 +77,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _searchController.dispose();
     super.dispose();
@@ -300,10 +326,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   // Line 1: User / Group Title (Perminyakan: a/n penerima, Kedukaan: detail misa)
                   Text(
                     group.displayTitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0F172A),
+                      fontWeight: group.unreadCount > 0 ? FontWeight.w800 : FontWeight.w700,
+                      color: const Color(0xFF0F172A),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -335,18 +361,22 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   ),
                   const SizedBox(height: 3),
 
-                  // Line 3: Checkmark + Last Message Preview
+                  // Line 3: Checkmark + Last Message Preview with Sender Name
                   Row(
                     children: [
-                      const Icon(Icons.done_all_rounded,
-                          size: 14, color: Color(0xFF3B82F6)),
+                      Icon(
+                        group.unreadCount > 0 ? Icons.done_rounded : Icons.done_all_rounded,
+                        size: 14,
+                        color: group.unreadCount > 0 ? const Color(0xFF94A3B8) : const Color(0xFF3B82F6),
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          group.displayLastMessage,
-                          style: const TextStyle(
+                          group.formatLastMessage(currentUserId: _userId),
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF94A3B8),
+                            fontWeight: group.unreadCount > 0 ? FontWeight.w700 : FontWeight.w400,
+                            color: group.unreadCount > 0 ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -366,19 +396,26 @@ class _ChatListScreenState extends State<ChatListScreen> {
               children: [
                 Text(
                   group.formattedLastTime,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF94A3B8),
+                    fontWeight: group.unreadCount > 0 ? FontWeight.w700 : FontWeight.w500,
+                    color: group.unreadCount > 0 ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 if (group.unreadCount > 0)
                   Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF1E5399),
-                      shape: BoxShape.circle,
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.35),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     constraints: const BoxConstraints(
                       minWidth: 20,
@@ -388,8 +425,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       '${group.unreadCount}',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
                       ),
                       textAlign: TextAlign.center,
                     ),

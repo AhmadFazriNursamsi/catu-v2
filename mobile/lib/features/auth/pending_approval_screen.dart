@@ -27,6 +27,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
   void initState() {
     super.initState();
     _currentUser = Map<String, dynamic>.from(widget.user);
+    _resolveOrdoNameIfNeeded();
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -36,10 +37,88 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
     );
   }
 
+  Future<void> _resolveOrdoNameIfNeeded() async {
+    final role = _currentUser['roleCode'];
+    final currentOrdo = _currentUser['ordoName'] ??
+        _currentUser['ordo_name'] ??
+        _currentUser['ordo'] ??
+        _currentUser['ordoCode'] ??
+        _currentUser['ordo_code'];
+
+    if (role == 'ROMO_ORDO' && (currentOrdo == null || currentOrdo.toString().trim().isEmpty || currentOrdo == '-')) {
+      final ordoId = _currentUser['ordoId'] ?? _currentUser['ordo_id'];
+      try {
+        final list = await ApiService.getOrdoList();
+        if (list.isNotEmpty) {
+          Map<String, dynamic>? matched;
+          if (ordoId != null) {
+            matched = list.firstWhere(
+              (o) => o['id'].toString() == ordoId.toString(),
+              orElse: () => list.first,
+            );
+          } else {
+            matched = list.first;
+          }
+          final found = matched;
+          if (found != null && mounted) {
+            setState(() {
+              _currentUser['ordoName'] = found['name'] ?? found['code'];
+            });
+          }
+        }
+      } catch (e) {
+        debugPrint('Error resolving Ordo name: $e');
+      }
+    }
+  }
+
   @override
   void dispose() {
     _pulseController.dispose();
     super.dispose();
+  }
+
+  String _getApproverTitle(String role, String? romoPos) {
+    if (role == 'ROMO_ORDO') {
+      return romoPos == 'KETUA_ROMO' ? 'Admin Aplikasi CATU' : 'Ketua Romo Ordo / Admin Aplikasi CATU';
+    } else if (role == 'ROMO_PAROKI') {
+      return romoPos == 'KETUA_ROMO' ? 'Admin Aplikasi CATU' : 'Kepala Romo Paroki / Admin Aplikasi CATU';
+    } else if (role == 'PENGURUS_LINGKUNGAN') {
+      return 'Admin Aplikasi CATU';
+    } else if (role == 'UMAT') {
+      return 'Pengurus Lingkungan';
+    }
+    return 'Admin / Pengurus';
+  }
+
+  String _getNoticeText(String role, String? romoPos) {
+    if (role == 'ROMO_ORDO') {
+      return romoPos == 'KETUA_ROMO'
+          ? 'Pendaftaran Ketua Romo Ordo akan diverifikasi oleh Admin Aplikasi CATU sebelum akun aktif.'
+          : 'Pendaftaran Romo Ordo akan diverifikasi oleh Ketua Romo Ordo atau Admin Aplikasi CATU sebelum akun aktif.';
+    } else if (role == 'ROMO_PAROKI') {
+      return romoPos == 'KETUA_ROMO'
+          ? 'Pendaftaran Kepala Romo Paroki akan diverifikasi oleh Admin Aplikasi CATU sebelum akun aktif.'
+          : 'Pendaftaran Romo Paroki akan diverifikasi oleh Kepala Romo Paroki atau Admin Aplikasi CATU sebelum akun aktif.';
+    } else if (role == 'PENGURUS_LINGKUNGAN') {
+      return 'Pendaftaran Pengurus Lingkungan akan diverifikasi oleh Admin Aplikasi CATU sebelum akun aktif.';
+    }
+    return 'Sesuai ketentuan Gereja Katolik, akun Umat harus diverifikasi oleh Pengurus Lingkungan setempat sebelum dapat mengajukan permohonan sakramen & misa.';
+  }
+
+  String _formatRoleName(String role) {
+    switch (role) {
+      case 'ROMO_ORDO':
+        return 'Romo Ordo';
+      case 'ROMO_PAROKI':
+        return 'Romo Paroki';
+      case 'PENGURUS_LINGKUNGAN':
+        return 'Pengurus Lingkungan';
+      case 'UMAT':
+        return 'Umat Katolik';
+      default:
+        return role;
+    }
   }
 
   Future<void> _checkApprovalStatus() async {
@@ -53,19 +132,30 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body);
         final status = body['accountStatus'] ?? _currentUser['accountStatus'];
-        
+        final updatedUser = body['user'] != null
+            ? Map<String, dynamic>.from(body['user'])
+            : _currentUser;
+
+        setState(() {
+          _currentUser = updatedUser;
+        });
+
+        final role = updatedUser['roleCode'] ?? _currentUser['roleCode'] ?? 'UMAT';
+        final romoPos = updatedUser['romoPosition'] ?? _currentUser['romoPosition'];
+        final approverTitle = _getApproverTitle(role, romoPos);
+
         if (status == 'APPROVED') {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              backgroundColor: Color(0xFF059669),
-              content: Text('🎉 Selamat! Akun Anda telah disetujui oleh Pengurus Lingkungan!'),
-              duration: Duration(seconds: 3),
+            SnackBar(
+              backgroundColor: const Color(0xFF059669),
+              content: Text('🎉 Selamat! Akun Anda telah disetujui oleh $approverTitle!'),
+              duration: const Duration(seconds: 3),
             ),
           );
           Navigator.pushReplacement(
             context,
-            FadeSlideRoute(page: HomeScreen(user: body['user'] ?? _currentUser)),
+            FadeSlideRoute(page: HomeScreen(user: updatedUser)),
           );
           return;
         } else if (status == 'REJECTED') {
@@ -73,35 +163,43 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               backgroundColor: Colors.red.shade700,
-              content: const Text('Akun Anda ditolak oleh Pengurus Lingkungan / Admin. Silakan hubungi admin.'),
+              content: Text('Akun Anda ditolak oleh $approverTitle. Silakan hubungi admin.'),
               duration: const Duration(seconds: 4),
             ),
           );
         } else {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              backgroundColor: Color(0xFFD97706),
-              content: Text('Status akun masih MENUNGGU PERSETUJUAN (PENDING) dari Pengurus Lingkungan.'),
+            SnackBar(
+              backgroundColor: const Color(0xFFD97706),
+              content: Text('Status akun masih MENUNGGU PERSETUJUAN (PENDING) dari $approverTitle.'),
             ),
           );
         }
       } else {
         // Fallback: Show informative toast
+        final role = _currentUser['roleCode'] ?? 'UMAT';
+        final romoPos = _currentUser['romoPosition'];
+        final approverTitle = _getApproverTitle(role, romoPos);
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Color(0xFFD97706),
-            content: Text('Status akun masih MENUNGGU PERSETUJUAN (PENDING).'),
+          SnackBar(
+            backgroundColor: const Color(0xFFD97706),
+            content: Text('Status akun masih MENUNGGU PERSETUJUAN (PENDING) dari $approverTitle.'),
           ),
         );
       }
     } catch (e) {
+      final role = _currentUser['roleCode'] ?? 'UMAT';
+      final romoPos = _currentUser['romoPosition'];
+      final approverTitle = _getApproverTitle(role, romoPos);
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: const Color(0xFFD97706),
-          content: Text('Status saat ini masih Menunggu Persetujuan Pengurus Lingkungan.'),
+          content: Text('Status saat ini masih Menunggu Persetujuan dari $approverTitle.'),
         ),
       );
     } finally {
@@ -111,13 +209,35 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
 
   @override
   Widget build(BuildContext context) {
-    final fullName = _currentUser['fullName'] ?? 'Umat Terdaftar';
+    final fullName = _currentUser['fullName'] ?? 'Terdaftar';
     final phone = _currentUser['phoneNumber'] ?? '-';
+    final email = _currentUser['email'];
     final role = _currentUser['roleCode'] ?? 'UMAT';
-    final keuskupan = _currentUser['keuskupanName'] ?? '-';
-    final paroki = _currentUser['parokiName'] ?? '-';
-    final wilayah = _currentUser['wilayahName'] ?? '-';
-    final lingkungan = _currentUser['lingkunganName'] ?? '-';
+    final romoPos = _currentUser['romoPosition'];
+    final pengurusPos = _currentUser['pengurusPosition'];
+    final keuskupan = _currentUser['keuskupanName'];
+    final paroki = _currentUser['parokiName'];
+    final wilayah = _currentUser['wilayahName'];
+    final lingkungan = _currentUser['lingkunganName'];
+    final ordo = _currentUser['ordoName'] ??
+        _currentUser['ordo_name'] ??
+        _currentUser['ordo'] ??
+        _currentUser['ordoCode'] ??
+        _currentUser['ordo_code'];
+
+    String? positionDisplay;
+    if (role == 'ROMO_ORDO' || role == 'ROMO_PAROKI') {
+      if (romoPos == 'KETUA_ROMO') {
+        positionDisplay = role == 'ROMO_ORDO' ? 'Ketua / Superior Ordo' : 'Kepala Romo Paroki';
+      } else if (romoPos == 'ROMO_BIASA') {
+        positionDisplay = 'Romo Rekan / Anggota';
+      }
+    } else if (pengurusPos != null && pengurusPos.toString().isNotEmpty) {
+      positionDisplay = pengurusPos.toString();
+    }
+
+    final approverTitle = _getApproverTitle(role, romoPos);
+    final noticeText = _getNoticeText(role, romoPos);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -153,7 +273,33 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
+
+              // Prominent Rebuild Version Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE0F2FE),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF38BDF8)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.verified_outlined, size: 14, color: Color(0xFF0284C7)),
+                    SizedBox(width: 6),
+                    Text(
+                      'BUILD REVISED: ${AppConstants.appVersion}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0369A1),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
 
               // Animated Glowing Hourglass Icon
               ScaleTransition(
@@ -230,11 +376,11 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Text(
-                  'Pendaftaran Anda telah berhasil dicatat di sistem database CATU dan sedang menunggu persetujuan (approval) dari Pengurus Lingkungan Anda.',
-                  style: TextStyle(
+                  'Pendaftaran Anda telah berhasil dicatat di sistem database CATU dan sedang menunggu persetujuan (approval) dari $approverTitle.',
+                  style: const TextStyle(
                     fontSize: 13.5,
                     color: Color(0xFF64748B),
                     height: 1.45,
@@ -282,19 +428,43 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                     _buildInfoRow('Nama Lengkap', fullName),
                     const SizedBox(height: 10),
                     _buildInfoRow('Nomor WhatsApp', phone),
-                    const SizedBox(height: 10),
-                    _buildInfoRow('Jenis Pengguna', role == 'UMAT' ? 'Umat Katolik' : role),
-                    const SizedBox(height: 10),
-                    _buildInfoRow('Keuskupan', keuskupan),
-                    const SizedBox(height: 10),
-                    _buildInfoRow('Paroki', paroki),
-                    if (wilayah != '-') ...[
+                    if (email != null && email.toString().trim().isNotEmpty) ...[
                       const SizedBox(height: 10),
-                      _buildInfoRow('Wilayah', wilayah),
+                      _buildInfoRow('Email', email.toString()),
                     ],
-                    if (lingkungan != '-') ...[
+                    const SizedBox(height: 10),
+                    _buildInfoRow('Jenis Pengguna', _formatRoleName(role)),
+                    if (positionDisplay != null && positionDisplay.isNotEmpty) ...[
                       const SizedBox(height: 10),
-                      _buildInfoRow('Lingkungan', lingkungan),
+                      _buildInfoRow('Jabatan / Posisi', positionDisplay),
+                    ],
+                    if (role == 'ROMO_ORDO') ...[
+                      const SizedBox(height: 10),
+                      _buildInfoRow(
+                        'Ordo',
+                        (ordo != null && ordo.toString().trim().isNotEmpty && ordo.toString() != '-')
+                            ? ordo.toString()
+                            : 'Memuat data Ordo...',
+                      ),
+                    ] else ...[
+                      if (keuskupan != null && keuskupan.toString().trim().isNotEmpty && keuskupan.toString() != '-') ...[
+                        const SizedBox(height: 10),
+                        _buildInfoRow('Keuskupan', keuskupan.toString()),
+                      ],
+                      if (paroki != null && paroki.toString().trim().isNotEmpty && paroki.toString() != '-') ...[
+                        const SizedBox(height: 10),
+                        _buildInfoRow('Paroki', paroki.toString()),
+                      ],
+                      if (role != 'ROMO_PAROKI') ...[
+                        if (wilayah != null && wilayah.toString().trim().isNotEmpty && wilayah.toString() != '-') ...[
+                          const SizedBox(height: 10),
+                          _buildInfoRow('Wilayah', wilayah.toString()),
+                        ],
+                        if (lingkungan != null && lingkungan.toString().trim().isNotEmpty && lingkungan.toString() != '-') ...[
+                          const SizedBox(height: 10),
+                          _buildInfoRow('Lingkungan', lingkungan.toString()),
+                        ],
+                      ],
                     ],
                   ],
                 ),
@@ -311,13 +481,13 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Icon(Icons.info_outline, color: Color(0xFF2563EB), size: 20),
-                    SizedBox(width: 12),
+                  children: [
+                    const Icon(Icons.info_outline, color: Color(0xFF2563EB), size: 20),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Sesuai ketentuan Gereja Katolik, akun Umat harus diverifikasi oleh Pengurus Lingkungan setempat sebelum dapat mengajukan permohonan sakramen & misa.',
-                        style: TextStyle(
+                        noticeText,
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFF1E40AF),
                           height: 1.4,

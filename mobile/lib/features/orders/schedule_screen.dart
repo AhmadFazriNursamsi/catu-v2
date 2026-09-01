@@ -40,7 +40,7 @@ class ScheduleTimelineEntry {
     if (item != null) {
       final st = item!.status.toUpperCase();
       if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
-      final bool romoAccepted = item!.acceptedRomoId != null || parentOrder.acceptedRomoId != null;
+      final bool romoAccepted = item!.acceptedRomoId != null;
       if (isPastDate) {
         return romoAccepted ? 'CLOSE' : 'FAIL';
       }
@@ -182,14 +182,16 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           if (widget.isRomo) {
             if (widget.showPendingOnly) {
               // Permintaan Masuk: Only show unaccepted items with status PENDING
-              final itemAcceptedId = item.acceptedRomoId ?? order.acceptedRomoId;
-              if (itemAcceptedId != null || (itemSt != 'PENDING' && order.status.toUpperCase() != 'PENDING')) continue;
+              final isIncomingHandover = widget.romoId != null &&
+                  ((item.handoverTargetRomoId == widget.romoId && item.hasPendingHandover) ||
+                   (order.handoverTargetRomoId == widget.romoId && order.hasPendingHandover));
+              if (item.acceptedRomoId != null && !isIncomingHandover) continue;
+              if (itemSt != 'PENDING' && !isIncomingHandover) continue;
             } else {
               // Jadwal Dikonfirmasi: Only show items accepted by THIS Romo with CONFIRMED/IN_PROGRESS status
-              final itemAcceptedId = item.acceptedRomoId ?? order.acceptedRomoId;
-              if (widget.romoId != null && itemAcceptedId != null && itemAcceptedId != widget.romoId) continue;
-              if (itemAcceptedId == null && itemSt != 'CONFIRMED' && itemSt != 'IN_PROGRESS' && itemSt != 'ACCEPTED' && order.status.toUpperCase() != 'CONFIRMED') continue;
-              if (itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL') continue;
+              if (widget.romoId != null && item.acceptedRomoId != widget.romoId) continue;
+              if (item.acceptedRomoId == null && itemSt != 'CONFIRMED' && itemSt != 'IN_PROGRESS' && itemSt != 'ACCEPTED') continue;
+              if (itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL' || itemSt == 'PENDING') continue;
             }
           }
 
@@ -236,10 +238,13 @@ class _ScheduleScreenState extends State<ScheduleScreen>
       } else {
         if (widget.isRomo) {
           if (widget.showPendingOnly) {
-            if (st != 'PENDING' || order.acceptedRomoId != null) continue;
+            final isIncomingHandover = widget.romoId != null &&
+                (order.handoverTargetRomoId == widget.romoId && order.hasPendingHandover);
+            if ((st != 'PENDING' || order.acceptedRomoId != null) && !isIncomingHandover) continue;
           } else {
-            if (widget.romoId != null && order.acceptedRomoId != null && order.acceptedRomoId != widget.romoId) continue;
+            if (widget.romoId != null && order.acceptedRomoId != widget.romoId) continue;
             if (order.acceptedRomoId == null && st != 'CONFIRMED' && st != 'IN_PROGRESS' && st != 'ACCEPTED') continue;
+            if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL' || st == 'PENDING') continue;
           }
         }
 
@@ -1372,12 +1377,16 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             ),
           );
           if (refreshed == true) {
-            order.status = 'CONFIRMED';
-            if (widget.romoId != null) {
-              order.acceptedRomoId = widget.romoId;
-            }
-            if (widget.showPendingOnly) {
-              _localOrders.removeWhere((o) => o.id == order.id);
+            if (entry.item != null) {
+              entry.item!.status = 'CONFIRMED';
+              if (widget.romoId != null) {
+                entry.item!.acceptedRomoId = widget.romoId;
+              }
+            } else {
+              order.status = 'CONFIRMED';
+              if (widget.romoId != null) {
+                order.acceptedRomoId = widget.romoId;
+              }
             }
             if (mounted) {
               setState(() {});
@@ -1723,14 +1732,14 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
   String _formatDateHeader(DateTime dt) {
-    final days = [
+    const days = [
       'Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'
     ];
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
-    ];
-    return '${days[dt.weekday % 7]}, ${dt.day} ${months[dt.month - 1]} ${dt.year}';
+    final dayName = days[dt.weekday % 7];
+    final dd = dt.day.toString().padLeft(2, '0');
+    final mm = dt.month.toString().padLeft(2, '0');
+    final yy = (dt.year % 100).toString().padLeft(2, '0');
+    return '$dayName, $dd/$mm/$yy';
   }
 
   String _formatMonthYear(DateTime dt) {

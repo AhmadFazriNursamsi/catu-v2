@@ -1,5 +1,24 @@
 import 'package:flutter/material.dart';
 
+/// Helper to format date string to "nama hari, dd/mm/yy" (e.g. "Senin, 01/09/26")
+String formatServiceDate(String? rawDate) {
+  if (rawDate == null || rawDate.isEmpty) return '-';
+  try {
+    String clean = rawDate.trim();
+    if (clean.contains('T')) clean = clean.split('T').first;
+    if (clean.contains(' ')) clean = clean.split(' ').first;
+    final dt = DateTime.parse(clean);
+    const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+    final dayName = days[dt.weekday - 1];
+    final dd = dt.day.toString().padLeft(2, '0');
+    final mm = dt.month.toString().padLeft(2, '0');
+    final yy = (dt.year % 100).toString().padLeft(2, '0');
+    return '$dayName, $dd/$mm/$yy';
+  } catch (_) {
+    return rawDate;
+  }
+}
+
 class ServiceCategory {
   final int id;
   final String name;
@@ -126,6 +145,19 @@ class OrderItem {
       if (acceptedRomoId != null) 'acceptedRomoId': acceptedRomoId,
       if (acceptedRomoName != null) 'acceptedRomoName': acceptedRomoName,
     };
+  }
+
+  /// Formatted date in "nama hari, dd/mm/yy" (e.g. "Sabtu, 15/08/26")
+  String get formattedDateIndo => formatServiceDate(scheduledDate);
+
+  /// Format date + start time for display (e.g. "Sabtu, 15/08/26 • 18:00 – 19:30 WIB")
+  String get fullScheduleLabel {
+    final dateStr = formatServiceDate(scheduledDate);
+    if (scheduledTimeStart.isNotEmpty) {
+      final timeEndStr = scheduledTimeEnd.isNotEmpty ? ' – $scheduledTimeEnd' : '';
+      return '$dateStr • $scheduledTimeStart$timeEndStr WIB';
+    }
+    return dateStr;
   }
 }
 
@@ -476,16 +508,20 @@ class Order {
     return '-';
   }
 
-  /// Format date + start time for display (e.g. "2026-08-20 • 14:00")
+  /// Formatted date in "nama hari, dd/mm/yy" (e.g. "Sabtu, 15/08/26")
+  String get formattedDateIndo => formatServiceDate(scheduledDate);
+
+  /// Format date + start time for display (e.g. "Sabtu, 15/08/26 • 14:00 WIB")
   String get fullScheduleLabel {
     String timeStr = scheduledTime;
     if (timeStr.length >= 5) {
       timeStr = timeStr.substring(0, 5);
     }
+    final dateStr = formatServiceDate(scheduledDate);
     if (timeStr.isNotEmpty) {
-      return '$scheduledDate • $timeStr WIB';
+      return '$dateStr • $timeStr WIB';
     }
-    return scheduledDate;
+    return dateStr;
   }
 
   DateTime? get parsedDate {
@@ -669,9 +705,12 @@ class ChatMessage {
 class ChatGroupItem {
   final int groupId;
   final int orderId;
+  final int? orderItemId;
   final String groupTitle;
   final String? lastMessageText;
   final String? lastMessageAt;
+  final int? lastSenderId;
+  final String? lastSenderName;
   final String orderTitle;
   final String orderCategory;
   final String orderStatus;
@@ -688,9 +727,12 @@ class ChatGroupItem {
   ChatGroupItem({
     required this.groupId,
     required this.orderId,
+    this.orderItemId,
     required this.groupTitle,
     this.lastMessageText,
     this.lastMessageAt,
+    this.lastSenderId,
+    this.lastSenderName,
     required this.orderTitle,
     required this.orderCategory,
     required this.orderStatus,
@@ -793,20 +835,9 @@ class ChatGroupItem {
     return requesterName.isNotEmpty ? requesterName : groupTitle;
   }
 
-  /// Formatted Day & Date (e.g. Kamis, 13/08/2026) matching Detail Chat
+  /// Formatted Day & Date (e.g. Kamis, 13/08/26) matching Detail Chat
   String get formattedScheduledDayAndDate {
-    if (scheduledDate.isEmpty) return 'Kamis, 13/08/2026';
-    try {
-      final dt = DateTime.parse(scheduledDate);
-      final days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-      final dayName = days[dt.weekday - 1];
-      final dd = dt.day.toString().padLeft(2, '0');
-      final mm = dt.month.toString().padLeft(2, '0');
-      final yyyy = dt.year.toString();
-      return '$dayName, $dd/$mm/$yyyy';
-    } catch (_) {
-      return scheduledDate;
-    }
+    return formatServiceDate(scheduledDate);
   }
 
   /// Formatted Time HH:mm
@@ -854,12 +885,22 @@ class ChatGroupItem {
     }
   }
 
-  /// Display text for last message preview
-  String get displayLastMessage {
-    if (lastMessageText != null && lastMessageText!.isNotEmpty) {
-      return lastMessageText!;
+  /// Display text for last message preview with sender name
+  String formatLastMessage({int? currentUserId}) {
+    if (lastMessageText == null || lastMessageText!.isEmpty) {
+      return 'Belum ada pesan chat.';
     }
-    return 'Belum ada pesan chat.';
+    if (lastSenderName != null && lastSenderName!.trim().isNotEmpty) {
+      final isSelf = (lastSenderId != null && currentUserId != null && lastSenderId == currentUserId);
+      final sender = isSelf ? 'Anda' : lastSenderName!.trim();
+      return '$sender: $lastMessageText';
+    }
+    return lastMessageText!;
+  }
+
+  /// Default display text for last message preview
+  String get displayLastMessage {
+    return formatLastMessage();
   }
 
   factory ChatGroupItem.fromJson(Map<String, dynamic> json) {
@@ -869,15 +910,24 @@ class ChatGroupItem {
     final rawOId = json['order_id'] ?? json['orderId'];
     final parsedOId = rawOId is int ? rawOId : int.tryParse(rawOId?.toString() ?? '') ?? 0;
 
+    final rawOrderItemId = json['order_item_id'] ?? json['orderItemId'];
+    final parsedOrderItemId = rawOrderItemId is int ? rawOrderItemId : int.tryParse(rawOrderItemId?.toString() ?? '');
+
     final rawUnread = json['unread_count'] ?? json['unreadCount'];
     final parsedUnread = rawUnread is int ? rawUnread : int.tryParse(rawUnread?.toString() ?? '') ?? 0;
+
+    final rawSenderId = json['last_sender_id'] ?? json['lastSenderId'];
+    final parsedSenderId = rawSenderId is int ? rawSenderId : int.tryParse(rawSenderId?.toString() ?? '');
 
     return ChatGroupItem(
       groupId: parsedGId,
       orderId: parsedOId,
+      orderItemId: parsedOrderItemId,
       groupTitle: json['group_title'] ?? json['groupTitle'] ?? json['title'] ?? 'Group Pelayanan',
       lastMessageText: json['last_message_text'] ?? json['lastMessageText'],
       lastMessageAt: json['last_message_at'] ?? json['lastMessageAt'],
+      lastSenderId: parsedSenderId,
+      lastSenderName: json['last_sender_name'] ?? json['lastSenderName'],
       orderTitle: json['order_title'] ?? json['orderTitle'] ?? json['title'] ?? 'Pelayanan',
       orderCategory: json['order_category'] ?? json['orderCategory'] ?? json['category'] ?? 'Permintaan Pelayanan',
       orderStatus: json['order_status'] ?? json['orderStatus'] ?? json['status'] ?? 'CONFIRMED',

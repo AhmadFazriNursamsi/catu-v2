@@ -14,6 +14,7 @@ class OrderDetailScreen extends StatefulWidget {
   final Order order;
   final String userName;
   final String? selectedItemTitle;
+  final int? selectedItemId;
   final bool isRomo;
   final int? romoId;
 
@@ -22,6 +23,7 @@ class OrderDetailScreen extends StatefulWidget {
     required this.order,
     required this.userName,
     this.selectedItemTitle,
+    this.selectedItemId,
     this.isRomo = false,
     this.romoId,
   }) : super(key: key);
@@ -37,11 +39,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   late Animation<double> _fadeIn;
   late Animation<Offset> _slideUp;
   bool _isSubmitting = false;
+  int? _activeItemId;
 
   @override
   void initState() {
     super.initState();
     _order = widget.order;
+    _activeItemId = widget.selectedItemId;
     _fetchFreshOrder();
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
     _animController = AnimationController(
@@ -395,16 +399,28 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   Widget build(BuildContext context) {
     final order = _order;
     OrderItem? targetItem;
-    if (widget.selectedItemTitle != null && order.items.isNotEmpty) {
+    if (_activeItemId != null && order.items.isNotEmpty) {
       for (final item in order.items) {
-        if (item.itemName.toLowerCase().trim() ==
-            widget.selectedItemTitle!.toLowerCase().trim()) {
+        if (item.id == _activeItemId) {
           targetItem = item;
           break;
         }
       }
     }
+    if (targetItem == null && widget.selectedItemTitle != null && order.items.isNotEmpty) {
+      for (final item in order.items) {
+        if (item.itemName.toLowerCase().trim() ==
+            widget.selectedItemTitle!.toLowerCase().trim()) {
+          targetItem = item;
+          _activeItemId = item.id;
+          break;
+        }
+      }
+    }
     targetItem ??= (order.items.isNotEmpty ? order.items.first : null);
+    if (targetItem != null && _activeItemId == null) {
+      _activeItemId = targetItem.id;
+    }
 
     final OrderItem displayItem = targetItem ??
         OrderItem(
@@ -417,13 +433,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         );
 
     final int? assignedRomoId = order.items.isNotEmpty
-        ? (displayItem.acceptedRomoId ?? order.acceptedRomoId)
+        ? displayItem.acceptedRomoId
         : order.acceptedRomoId;
 
     final String assignedRomoName = order.items.isNotEmpty
-        ? ((displayItem.acceptedRomoName != null && displayItem.acceptedRomoName!.isNotEmpty)
-            ? displayItem.acceptedRomoName!
-            : (order.acceptedRomoName ?? ''))
+        ? (displayItem.acceptedRomoName ?? '')
         : (order.acceptedRomoName ?? '');
 
     final String currentStatus = order.items.isNotEmpty
@@ -582,6 +596,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // ── Multi-Misa Selector Tabs ──
+                            if (order.items.length > 1)
+                              _buildMisaSelector(order, _activeItemId),
+
                             // ── Title + Status Chip ──
                             _buildTitleCard(
                                 displayItem, order, statusColor, statusLabel, statusIcon),
@@ -719,7 +737,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                 _buildInfoTile(
                                   icon: Icons.calendar_month_rounded,
                                   label: 'Tanggal Misa',
-                                  value: displayItem.scheduledDate,
+                                  value: formatServiceDate(displayItem.scheduledDate.isNotEmpty
+                                      ? displayItem.scheduledDate
+                                      : order.scheduledDate),
                                 ),
                                 _buildInfoTile(
                                   icon: Icons.access_time_rounded,
@@ -1004,9 +1024,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           }
         } else {
           order.status = 'DONE';
-        }
-        if (widget.romoId != null) {
-          order.acceptedRomoId = widget.romoId;
+          if (widget.romoId != null) {
+            order.acceptedRomoId = widget.romoId;
+          }
         }
         // 🔔 Notify Umat that service is completed
         await NotificationService.notifyServiceCompleted(
@@ -1112,7 +1132,7 @@ penerimaName: order.penerimaName,
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        proposedDate,
+                        formatServiceDate(proposedDate),
                         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -2471,12 +2491,15 @@ penerimaName: order.penerimaName,
         itemId: targetItem?.id,
       );
       if (mounted) {
-        order.status = 'CONFIRMED';
         if (targetItem != null && widget.romoId != null) {
+          targetItem.status = 'CONFIRMED';
           targetItem.acceptedRomoId = widget.romoId;
           targetItem.acceptedRomoName = widget.userName;
-        }
-        if (widget.romoId != null) {
+          if (order.items.every((i) => i.status.toUpperCase() == 'CONFIRMED' || i.status.toUpperCase() == 'DONE')) {
+            order.status = 'CONFIRMED';
+          }
+        } else if (widget.romoId != null) {
+          order.status = 'CONFIRMED';
           order.acceptedRomoId = widget.romoId;
           order.acceptedRomoName = widget.userName;
         }
@@ -2587,6 +2610,111 @@ penerimaName: order.penerimaName,
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMisaSelector(Order order, int? activeId) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: order.items.map((item) {
+            final isSelected = item.id == activeId;
+            final isAccepted = item.acceptedRomoId != null ||
+                item.status.toUpperCase() == 'CONFIRMED' ||
+                item.status.toUpperCase() == 'DONE';
+            final isMyItem = widget.isRomo &&
+                widget.romoId != null &&
+                item.acceptedRomoId == widget.romoId;
+
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    _activeItemId = item.id;
+                  });
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFF1E293B)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFFD4AF37)
+                          : Colors.grey.shade300,
+                      width: isSelected ? 1.5 : 1,
+                    ),
+                    boxShadow: [
+                      if (isSelected)
+                        BoxShadow(
+                          color: const Color(0xFF1E293B).withValues(alpha: 0.18),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isMyItem
+                            ? Icons.check_circle_rounded
+                            : (isAccepted
+                                ? Icons.person_rounded
+                                : Icons.church_rounded),
+                        size: 16,
+                        color: isSelected
+                            ? const Color(0xFFD4AF37)
+                            : (isAccepted
+                                ? Colors.green.shade700
+                                : Colors.grey.shade600),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        item.itemName,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.w600,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF1E293B),
+                        ),
+                      ),
+                      if (isMyItem) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade600,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'Diterima',
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ),
     );
