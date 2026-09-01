@@ -11,6 +11,7 @@ import {
 } from './app.controller';
 import { NewsController } from './news.controller';
 import { NewsService } from './news.service';
+import { FcmService } from './fcm.service';
 import { AppService } from './app.service';
 
 @Module({
@@ -36,6 +37,7 @@ import { AppService } from './app.service';
     MasterDataController,
     NewsController,
   ],
-  providers: [AppService, NewsService],
+  providers: [AppService, NewsService, FcmService],
+  exports: [FcmService],
 })
 export class AppModule {}

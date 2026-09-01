@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'core/constants/app_constants.dart';
 import 'core/services/language_service.dart';
+import 'core/services/notification_service.dart';
 import 'features/auth/login_screen.dart';
 import 'features/news/public_news_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LanguageService.init();
+  await NotificationService.init();
   runApp(const CatuApp());
 }
 

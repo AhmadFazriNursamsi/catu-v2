@@ -10,6 +10,7 @@ import 'forgot_password_screen.dart';
 import 'pending_approval_screen.dart';
 import '../news/public_news_screen.dart';
 import '../../core/services/language_service.dart';
+import '../../core/services/notification_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -138,6 +139,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         );
       } else {
+        NotificationService.registerUserDevice(user['id']);
         Navigator.pushReplacement(
           context,
           FadeSlideRoute(page: HomeScreen(user: user)),

@@ -990,4 +990,73 @@ class ApiService {
       print('Error triggerNewsScrape: $e');
     }
   }
+
+  // ── Push Notification & FCM Device Registration ──
+  static Future<Map<String, dynamic>> registerDeviceToken({
+    required int userId,
+    required String fcmToken,
+    String deviceType = 'ANDROID',
+    String? deviceModel,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/notifications/register-device'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'fcmToken': fcmToken,
+          'deviceType': deviceType,
+          if (deviceModel != null) 'deviceModel': deviceModel,
+        }),
+      ).timeout(const Duration(seconds: 8));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error registerDeviceToken: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> unregisterDeviceToken({
+    required int userId,
+    required String fcmToken,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/notifications/unregister-device'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'fcmToken': fcmToken,
+        }),
+      ).timeout(const Duration(seconds: 8));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      print('Error unregisterDeviceToken: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> sendTestPush({
+    required int userId,
+    String? title,
+    String? message,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/notifications/test-push'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'title': title,
+          'message': message,
+        }),
+      ).timeout(const Duration(seconds: 8));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
 }
