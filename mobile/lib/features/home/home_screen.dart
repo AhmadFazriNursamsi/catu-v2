@@ -104,13 +104,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() {});
   }
 
-  @override
-  void dispose() {
-    _pollTimer?.cancel();
-    LanguageService.currentLanguage.removeListener(_onLanguageChanged);
-    super.dispose();
-  }
-
   Future<void> _loadOrders({bool showLoading = false}) async {
     if (showLoading || (_orders.isEmpty && _isLoading)) {
       setState(() => _isLoading = true);
