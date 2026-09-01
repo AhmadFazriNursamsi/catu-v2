@@ -142,6 +142,7 @@ class _LoginScreenState extends State<LoginScreen>
         } else {
           try {
             NotificationService.registerUserDevice(user['id']);
+            NotificationService.startPolling(user['id']);
           } catch (_) {}
           Navigator.pushReplacement(
             context,

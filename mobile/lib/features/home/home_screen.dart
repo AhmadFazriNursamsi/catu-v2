@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/utils/fade_slide_route.dart';
 import '../auth/login_screen.dart';
 import 'romo_dashboard_view.dart';
@@ -33,7 +34,19 @@ class _HomeScreenState extends State<HomeScreen> {
     _currentUserMap = Map<String, dynamic>.from(widget.user);
     _loadOrders();
     _startPolling();
+    final uid = _currentUserMap['id'] ?? _currentUserMap['userId'] ?? _currentUserMap['user_id'];
+    if (uid != null) {
+      NotificationService.startPolling(uid);
+    }
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    NotificationService.stopPolling();
+    LanguageService.currentLanguage.removeListener(_onLanguageChanged);
+    super.dispose();
   }
 
   void _startPolling() {

@@ -255,6 +255,50 @@ class NotificationService {
     }
   }
 
+  // ─── Real-Time Notification Polling Stream ────────────────────────────────
+  static Timer? _pollingTimer;
+  static final Set<int> _knownNotifIds = {};
+
+  static void startPolling(dynamic userId) {
+    _pollingTimer?.cancel();
+    final intUid = int.tryParse(userId.toString()) ?? 0;
+    if (intUid <= 0) return;
+
+    // Pre-populate existing notif IDs so we don't spam old notifications
+    ApiService.getNotifications(userId: intUid).then((notifs) {
+      for (final n in notifs) {
+        final id = n['id'] is int ? n['id'] : int.tryParse(n['id'].toString());
+        if (id != null) _knownNotifIds.add(id);
+      }
+    }).catchError((_) {});
+
+    // Poll every 3 seconds for instant notifications
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      try {
+        final notifs = await ApiService.getNotifications(userId: intUid);
+        for (final n in notifs) {
+          final id = n['id'] is int ? n['id'] : int.tryParse(n['id'].toString());
+          if (id != null && !_knownNotifIds.contains(id)) {
+            _knownNotifIds.add(id);
+            final isRead = n['isRead'] == true || n['is_read'] == true;
+            if (!isRead) {
+              await showNotification(
+                title: n['title'] ?? 'Pemberitahuan CATU',
+                body: n['body'] ?? '',
+                id: id,
+              );
+            }
+          }
+        }
+      } catch (_) {}
+    });
+  }
+
+  static void stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+  }
+
   // ─── Read All ────────────────────────────────────────────────────────────────
 
   static Future<List<NotificationItem>> getAll() async {
