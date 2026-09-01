@@ -17,31 +17,42 @@ class ApiService {
       return 'http://127.0.0.1:3005';
     }
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return AppConstants.apiBaseUrl.isNotEmpty ? AppConstants.apiBaseUrl : 'http://10.0.2.2:3005';
+      return 'http://127.0.0.1:3005';
     }
     return AppConstants.apiBaseUrl;
   }
 
+  static List<String> get _candidateBaseUrls {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return ['http://127.0.0.1:3005', 'http://10.0.10.93:3005', 'http://10.0.2.2:3005'];
+    }
+    return [baseUrl];
+  }
+
   // 1. Auth Login
   static Future<Map<String, dynamic>> login(String phoneNumber, String password) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/auth/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'phoneNumber': phoneNumber,
-          'password': password,
-        }),
-      ).timeout(const Duration(seconds: 10));
+    for (final hostUrl in _candidateBaseUrls) {
+      try {
+        final response = await http.post(
+          Uri.parse('$hostUrl/auth/login'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'phoneNumber': phoneNumber,
+            'password': password,
+          }),
+        ).timeout(const Duration(seconds: 4));
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return jsonDecode(response.body);
-      } else {
-        return {'statusCode': response.statusCode, 'message': 'Gagal Login: ${response.body}'};
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          return jsonDecode(response.body);
+        } else {
+          final errBody = jsonDecode(response.body);
+          return {'statusCode': response.statusCode, 'message': errBody['message'] ?? 'Nomor HP atau Password salah'};
+        }
+      } catch (_) {
+        // Try next candidate URL
       }
-    } catch (e) {
-      return {'statusCode': 500, 'message': 'Koneksi ke backend ($baseUrl) gagal: $e'};
     }
+    return {'statusCode': 500, 'message': 'Koneksi ke backend ($baseUrl) gagal. Pastikan HP terhubung via USB / Wi-Fi lokal.'};
   }
 
   // 1a. Forgot Password: Request OTP
