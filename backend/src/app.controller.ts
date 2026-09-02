@@ -3369,14 +3369,17 @@ export class NotificationsController {
 
     const whereStr = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
     const query = `
-      SELECT n.id, n.user_id as "userId", n.order_id as "orderId", n.title, n.body, n.type, n.is_read as "isRead", n.created_at as "createdAt",
+      SELECT n.id, n.user_id as "userId", n.order_id as "orderId", 
+             COALESCE(n.chat_group_id, cg.id) as "groupId",
+             n.title, n.body, n.type, n.is_read as "isRead", n.created_at as "createdAt",
              o.order_number as "orderNumber", sc.name as "categoryName",
-             o.status as "orderStatus",
-             cg.id as "groupId"
+             o.status as "orderStatus"
       FROM notifications n
       LEFT JOIN orders o ON n.order_id = o.id
       LEFT JOIN service_categories sc ON o.service_category_id = sc.id
-      LEFT JOIN chat_groups cg ON cg.order_id = n.order_id
+      LEFT JOIN LATERAL (
+        SELECT id FROM chat_groups WHERE order_id = n.order_id ORDER BY id ASC LIMIT 1
+      ) cg ON n.chat_group_id IS NULL
       ${whereStr}
       ORDER BY n.id DESC LIMIT 100
     `;
@@ -3881,11 +3884,12 @@ export class ChatController {
         if (m.user_id && m.user_id !== senderId) {
           targetUserIds.push(m.user_id);
           await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-             VALUES ($1, $2, $3, $4, 'CHAT_MESSAGE', false)`,
+            `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read)
+             VALUES ($1, $2, $3, $4, $5, 'CHAT_MESSAGE', false)`,
             [
               m.user_id,
               orderId,
+              groupId,
               `Pesan dari ${senderName}`,
               msgBody,
             ],
