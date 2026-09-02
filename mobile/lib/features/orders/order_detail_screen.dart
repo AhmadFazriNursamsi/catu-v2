@@ -1028,6 +1028,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
             order.acceptedRomoId = widget.romoId;
           }
         }
+        // 🔔 Notify Umat that service is completed
+        await NotificationService.notifyServiceCompleted(
+          orderId: order.id.toString(),
+          categoryName: order.categoryName,
+          penerimaName: order.penerimaName,
+          targetRole: 'UMAT',
+          misaItemName: targetItem?.itemName,
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(res['message'] ?? 'Pelayanan telah selesai dilaksanakan. Terima kasih atas pelayanan Anda!'),
@@ -2495,6 +2503,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           order.acceptedRomoId = widget.romoId;
           order.acceptedRomoName = widget.userName;
         }
+        // 🔔 Notify Umat that Romo accepted
+        await NotificationService.notifyRomoResponse(
+          orderId: order.id.toString(),
+          romoName: widget.userName,
+          categoryName: order.categoryName,
+          accepted: true,
+          misaItemName: targetItem?.itemName,
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(res['message'] ?? 'Pelayanan berhasil diterima! Anda telah bergabung ke grup chat.'),

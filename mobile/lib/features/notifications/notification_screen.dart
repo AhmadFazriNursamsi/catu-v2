@@ -7,6 +7,8 @@ import '../../core/services/notification_service.dart';
 import '../orders/order_detail_screen.dart';
 import '../admin/pengurus_approval_screen.dart';
 import '../admin/romo_approval_screen.dart';
+import '../chat/chat_screen.dart';
+import '../chat/chat_list_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   final String role; // 'UMAT', 'ROMO_ORDO', 'ROMO_PAROKI', 'PENGURUS'
@@ -223,12 +225,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
         return const Color(0xFFD97706);
       case 'ROMO_HANDOVER':
         return const Color(0xFF0284C7);
+      case 'CHAT_MESSAGE':
+        return const Color(0xFF25D366);
       default:
         return const Color(0xFF1E3A8A);
     }
   }
 
   IconData _typeIcon(String type, String? category) {
+    if (type == 'CHAT_MESSAGE') return Icons.chat_rounded;
     if (type == 'NEW_REQUEST') {
       final isKedukaan = (category ?? '').toLowerCase().contains('kedukaan');
       return isKedukaan ? Icons.church_rounded : Icons.water_drop_rounded;
@@ -573,6 +578,64 @@ class _NotificationScreenState extends State<NotificationScreen> {
               HapticFeedback.selectionClick();
               await NotificationService.markRead(item.id);
               if (mounted) setState(() => item.isRead = true);
+
+              // 0. Check if chat message notification
+              if (item.type == 'CHAT_MESSAGE') {
+                int? orderId;
+                if (item.orderId != null && item.orderId!.trim().isNotEmpty) {
+                  orderId = int.tryParse(item.orderId!.trim());
+                }
+                final uName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'User';
+                final isRomo = widget.role.toUpperCase().contains('ROMO');
+
+                if (orderId != null && orderId > 0) {
+                  try {
+                    final grpRes = await ApiService.getGroupByOrderId(orderId);
+                    final gId = grpRes['groupId'] ?? orderId;
+                    if (mounted) {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatScreen(
+                            groupId: gId is int ? gId : int.tryParse(gId.toString()) ?? 1,
+                            orderNumber: item.orderNumber ?? 'ORD-$orderId',
+                            userName: uName,
+                            userId: _userId,
+                            isRomo: isRomo,
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (_) {
+                    if (mounted) {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatListScreen(
+                            currentUserId: _userId ?? 1,
+                            currentUserName: uName,
+                            userRole: widget.role,
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                } else {
+                  if (mounted) {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatListScreen(
+                          currentUserId: _userId ?? 1,
+                          currentUserName: uName,
+                          userRole: widget.role,
+                        ),
+                      ),
+                    );
+                  }
+                }
+                return;
+              }
 
               // 1. Check if strictly a user registration approval notification
               final isApprovalNotification = item.type == 'USER_APPROVAL' ||

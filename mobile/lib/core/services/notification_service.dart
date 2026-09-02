@@ -101,7 +101,7 @@ class NotificationService {
     if (_isInitialized) return;
 
     // 1. Setup Local Notifications
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings('@drawable/ic_stat_catu');
     const darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -122,9 +122,26 @@ class NotificationService {
         },
       );
 
-      await _localNotifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(_channel);
+      final androidImplementation = _localNotifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      await androidImplementation?.requestNotificationsPermission();
+      await androidImplementation?.createNotificationChannel(_channel);
+
+      final iosImplementation = _localNotifications
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+      await iosImplementation?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      final macosImplementation = _localNotifications
+          .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>();
+      await macosImplementation?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
     } catch (e) {
       print('Local notification init error: $e');
     }
@@ -144,8 +161,8 @@ class NotificationService {
       channelDescription: _channel.description,
       importance: Importance.max,
       priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      icon: '@drawable/ic_stat_catu',
+      largeIcon: const DrawableResourceAndroidBitmap('@drawable/ic_catu_logo'),
       color: const Color(0xFF1E5399),
       playSound: true,
       enableVibration: true,
@@ -155,6 +172,8 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      presentBanner: true,
+      presentList: true,
     );
 
     final details = NotificationDetails(
@@ -499,6 +518,7 @@ class NotificationService {
     int? itemIndex,
     int? parokiId,
     int? kabupatenKotaId,
+    String? currentUserRole,
   }) async {
     final isKedukaan = categoryName.toLowerCase().contains('kedukaan');
     final servicePhrase = isKedukaan

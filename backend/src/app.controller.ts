@@ -3732,7 +3732,10 @@ export class AssignmentsController {
 @ApiTags('Group Chat')
 @Controller('chat')
 export class ChatController {
-  constructor(@InjectDataSource() private dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() private dataSource: DataSource,
+    private fcmService: FcmService,
+  ) {}
 
   private async resolveGroupId(idParam: string): Promise<number> {
     const num = parseInt(idParam, 10) || 0;
@@ -3846,6 +3849,61 @@ export class ChatController {
          DO UPDATE SET last_read_message_id = GREATEST(COALESCE(chat_group_members.last_read_message_id, 0), $3)`,
         [groupId, senderId, result[0].id],
       );
+    }
+
+    // 🔔 Notify other group members
+    try {
+      const senderProfile = await this.dataSource.query(
+        `SELECT full_name FROM user_profiles WHERE user_id = $1`,
+        [senderId],
+      );
+      const senderName = senderProfile[0]?.full_name || 'Seseorang';
+
+      const groupInfo = await this.dataSource.query(
+        `SELECT id, title, order_id FROM chat_groups WHERE id = $1`,
+        [groupId],
+      );
+      const orderId = groupInfo[0]?.order_id || null;
+
+      const members = await this.dataSource.query(
+        `SELECT user_id FROM chat_group_members WHERE chat_group_id = $1 AND user_id != $2`,
+        [groupId, senderId],
+      );
+
+      const targetUserIds: number[] = [];
+      const msgBody = dto.messageType === 'IMAGE'
+        ? '📷 Mengirim gambar'
+        : (dto.messageType === 'LOCATION' ? '📍 Berbagi lokasi' : (dto.message || 'Pesan baru'));
+
+      for (const m of members) {
+        if (m.user_id && m.user_id !== senderId) {
+          targetUserIds.push(m.user_id);
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
+             VALUES ($1, $2, $3, $4, 'CHAT_MESSAGE', false)`,
+            [
+              m.user_id,
+              orderId,
+              `Pesan dari ${senderName}`,
+              msgBody,
+            ],
+          );
+        }
+      }
+
+      if (targetUserIds.length > 0) {
+        await this.fcmService.sendPushToUsers(targetUserIds, {
+          title: `Pesan dari ${senderName}`,
+          body: msgBody,
+          data: {
+            type: 'CHAT_MESSAGE',
+            groupId: groupId.toString(),
+            orderId: orderId ? orderId.toString() : '',
+          },
+        });
+      }
+    } catch (e) {
+      console.error('Error dispatching chat notification:', e);
     }
 
     return {
