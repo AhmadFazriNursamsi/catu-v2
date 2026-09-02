@@ -141,6 +141,18 @@ class NotificationService {
     return null;
   }
 
+  static String? _pendingPayload;
+
+  static void checkPendingNotificationTap() {
+    if (_pendingPayload != null) {
+      final payload = _pendingPayload;
+      _pendingPayload = null;
+      Future.delayed(const Duration(milliseconds: 400), () {
+        handleNotificationTap(payload);
+      });
+    }
+  }
+
   static Future<void> handleNotificationTap(String? payloadStr) async {
     if (payloadStr == null || payloadStr.isEmpty) return;
     try {
@@ -151,8 +163,11 @@ class NotificationService {
         ApiService.markNotificationRead(notifId);
       }
 
-      final context = navigatorKey.currentContext;
-      if (context == null) return;
+      final navState = navigatorKey.currentState;
+      if (navState == null) {
+        _pendingPayload = payloadStr;
+        return;
+      }
 
       final userMap = currentUser ?? await _loadStoredUser();
       final uName = userMap?['fullName'] ?? userMap?['full_name'] ?? 'User';
@@ -311,6 +326,13 @@ class NotificationService {
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
         handleNotificationTap(jsonEncode(message.data));
       });
+
+      // Cold start from terminated state
+      final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+      if (initialMessage != null && initialMessage.data.isNotEmpty) {
+        _pendingPayload = jsonEncode(initialMessage.data);
+        handleNotificationTap(_pendingPayload);
+      }
     } catch (e) {
       debugPrint('Firebase init error: $e');
     }

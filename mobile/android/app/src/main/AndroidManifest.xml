@@ -12,8 +12,14 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:usesCleartextTraffic="true">
         <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_catu" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_color" />
+        <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="catu_high_importance_channel" />
+            android:value="catu_custom_sound_channel_v1" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -42,12 +42,14 @@ class _HomeScreenState extends State<HomeScreen> {
       NotificationService.startPolling(uid);
     }
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.checkPendingNotificationTap();
+    });
   }
 
   @override
   void dispose() {
     _pollTimer?.cancel();
-    NotificationService.stopPolling();
     LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     super.dispose();
   }
