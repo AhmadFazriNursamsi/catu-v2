@@ -365,18 +365,18 @@ class NotificationService {
       } catch (_) {}
     }
 
-    // 2. Deduplicate identical notifications within a 5-second window
-    final String notifKey = '$title|$body|$payload';
+    // 2. Deduplicate identical notifications within a 10-second window based on title & body
+    final String notifKey = '${title.trim().toLowerCase()}|${body.trim().toLowerCase()}';
     final nowMs = DateTime.now().millisecondsSinceEpoch;
     if (_recentNotificationTimestamps.containsKey(notifKey)) {
       final lastTime = _recentNotificationTimestamps[notifKey]!;
-      if (nowMs - lastTime < 5000) {
-        debugPrint('🔇 Suppressing duplicate notification within 5s: $title');
+      if (nowMs - lastTime < 10000) {
+        debugPrint('🔇 Suppressing duplicate notification within 10s: $title');
         return;
       }
     }
     _recentNotificationTimestamps[notifKey] = nowMs;
-    _recentNotificationTimestamps.removeWhere((_, time) => nowMs - time > 30000);
+    _recentNotificationTimestamps.removeWhere((_, time) => nowMs - time > 60000);
 
     final androidDetails = AndroidNotificationDetails(
       _channel.id,
@@ -488,7 +488,8 @@ class NotificationService {
           if (id != null && !_knownNotifIds.contains(id)) {
             _knownNotifIds.add(id);
             final isRead = n['isRead'] == true || n['is_read'] == true;
-            if (!isRead) {
+            // Only show local notification fallback from polling if FCM is not active
+            if (!isRead && (_currentToken == null || _currentToken!.isEmpty)) {
               await showNotification(
                 title: n['title'] ?? 'Pemberitahuan CATU',
                 body: n['body'] ?? '',
