@@ -111,6 +111,8 @@ class NotificationService {
 
   static bool _isInitialized = false;
   static String? _currentToken;
+  static dynamic activeChatGroupId;
+  static final Map<String, int> _recentNotificationTimestamps = {};
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'catu_custom_sound_channel_v1',
@@ -350,6 +352,32 @@ class NotificationService {
     String? payload,
     int id = 0,
   }) async {
+    // 1. Suppress in-app notification if user is actively viewing this chat
+    if (payload != null && payload.isNotEmpty) {
+      try {
+        final Map<String, dynamic> data = jsonDecode(payload);
+        final String type = (data['type'] ?? data['notifType'] ?? data['notification_type'] ?? '').toString().toUpperCase();
+        final String incomingGroupId = (data['groupId'] ?? data['group_id'] ?? '').toString();
+        if (type == 'CHAT_MESSAGE' && activeChatGroupId != null && incomingGroupId.isNotEmpty && activeChatGroupId.toString() == incomingGroupId) {
+          debugPrint('🔇 Suppressing in-app notification because user is actively viewing chat group $incomingGroupId');
+          return;
+        }
+      } catch (_) {}
+    }
+
+    // 2. Deduplicate identical notifications within a 5-second window
+    final String notifKey = '$title|$body|$payload';
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    if (_recentNotificationTimestamps.containsKey(notifKey)) {
+      final lastTime = _recentNotificationTimestamps[notifKey]!;
+      if (nowMs - lastTime < 5000) {
+        debugPrint('🔇 Suppressing duplicate notification within 5s: $title');
+        return;
+      }
+    }
+    _recentNotificationTimestamps[notifKey] = nowMs;
+    _recentNotificationTimestamps.removeWhere((_, time) => nowMs - time > 30000);
+
     final androidDetails = AndroidNotificationDetails(
       _channel.id,
       _channel.name,

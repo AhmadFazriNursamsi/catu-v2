@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
+import '../../core/services/notification_service.dart';
 import '../orders/order_detail_screen.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -40,6 +41,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    NotificationService.activeChatGroupId = widget.groupId;
     _groupItem = widget.groupItem;
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
     _loadMessages();
@@ -106,6 +108,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    if (NotificationService.activeChatGroupId == widget.groupId) {
+      NotificationService.activeChatGroupId = null;
+    }
     _pollTimer?.cancel();
     LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _messageController.dispose();
