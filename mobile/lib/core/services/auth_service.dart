@@ -16,21 +16,30 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_userKey);
-      final loggedIn = prefs.getBool(_isLoggedInKey) ?? false;
-      if (raw != null && raw.isNotEmpty && loggedIn) {
-        final Map<String, dynamic> userMap = jsonDecode(raw);
-        _currentUser = userMap;
-        NotificationService.setCurrentUser(userMap);
+      final loggedIn = prefs.getBool(_isLoggedInKey);
+      if (raw != null && raw.isNotEmpty && loggedIn != false) {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map<String, dynamic> &&
+            (decoded.containsKey('id') ||
+                decoded.containsKey('userId') ||
+                decoded.containsKey('user_id') ||
+                decoded.containsKey('fullName') ||
+                decoded.containsKey('full_name'))) {
+          _currentUser = decoded;
+          await prefs.setBool(_isLoggedInKey, true);
+          NotificationService.setCurrentUser(decoded);
 
-        final uid = userMap['id'] ?? userMap['userId'] ?? userMap['user_id'];
-        if (uid != null) {
-          final int? intUid = int.tryParse(uid.toString());
-          if (intUid != null) {
-            NotificationService.registerUserDevice(intUid);
-            NotificationService.startPolling(intUid);
+          final uid = decoded['id'] ?? decoded['userId'] ?? decoded['user_id'];
+          if (uid != null) {
+            final int? intUid = int.tryParse(uid.toString());
+            if (intUid != null) {
+              NotificationService.registerUserDevice(intUid);
+              NotificationService.startPolling(intUid);
+            }
           }
+          debugPrint('AuthService: Auto-login session restored for user: $uid');
+          return decoded;
         }
-        return userMap;
       }
     } catch (e) {
       debugPrint('Error loading saved session: $e');

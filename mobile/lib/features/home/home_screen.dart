@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _currentUserMap = Map<String, dynamic>.from(widget.user);
+    AuthService.saveSession(_currentUserMap);
     NotificationService.setCurrentUser(_currentUserMap);
     _loadOrders();
     _startPolling();
