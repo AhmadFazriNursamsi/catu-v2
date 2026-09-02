@@ -11,6 +11,7 @@ import 'pending_approval_screen.dart';
 import '../news/public_news_screen.dart';
 import '../../core/services/language_service.dart';
 import '../../core/services/notification_service.dart';
+import '../../core/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -106,6 +107,8 @@ class _LoginScreenState extends State<LoginScreen>
         final status = user['accountStatus'] ?? 'APPROVED';
 
         if (status == 'PENDING_APPROVAL') {
+          await AuthService.saveSession(user);
+          if (!mounted) return;
           Navigator.pushReplacement(
             context,
             FadeSlideRoute(page: PendingApprovalScreen(user: user)),
@@ -140,11 +143,8 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           );
         } else {
-          try {
-            NotificationService.setCurrentUser(user);
-            NotificationService.registerUserDevice(user['id']);
-            NotificationService.startPolling(user['id']);
-          } catch (_) {}
+          await AuthService.saveSession(user);
+          if (!mounted) return;
           Navigator.pushReplacement(
             context,
             FadeSlideRoute(page: HomeScreen(user: user)),

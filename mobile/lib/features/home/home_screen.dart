@@ -7,8 +7,9 @@ import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import '../../core/services/notification_service.dart';
-import '../../core/utils/fade_slide_route.dart';
+import '../../core/services/auth_service.dart';
 import '../auth/login_screen.dart';
+import '../news/public_news_screen.dart';
 import 'romo_dashboard_view.dart';
 import 'umat_dashboard_view.dart';
 import '../admin/admin_dashboard_view.dart';
@@ -165,6 +166,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _executeLogout() async {
+    await AuthService.logout();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const PublicNewsScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final String roleCode = _currentUserMap['roleCode'] ??
@@ -183,12 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
         user: _currentUserMap,
         orders: _orders,
         onRefresh: _loadOrders,
-        onLogout: () {
-          Navigator.pushReplacement(
-            context,
-            FadeSlideRoute(page: const LoginScreen()),
-          );
-        },
+        onLogout: _executeLogout,
       );
     }
 
@@ -197,12 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
         user: _currentUserMap,
         orders: _orders,
         onRefresh: _loadOrders,
-        onLogout: () {
-          Navigator.pushReplacement(
-            context,
-            FadeSlideRoute(page: const LoginScreen()),
-          );
-        },
+        onLogout: _executeLogout,
       );
     }
 
@@ -210,12 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
       user: _currentUserMap,
       orders: _orders,
       onRefresh: _loadOrders,
-      onLogout: () {
-        Navigator.pushReplacement(
-          context,
-          FadeSlideRoute(page: const LoginScreen()),
-        );
-      },
+      onLogout: _executeLogout,
     );
   }
 }

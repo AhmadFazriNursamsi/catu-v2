@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/utils/fade_slide_route.dart';
 import '../home/home_screen.dart';
+import '../news/public_news_screen.dart';
 import 'login_screen.dart';
 
 class PendingApprovalScreen extends StatefulWidget {
@@ -258,11 +260,15 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
           IconButton(
             icon: const Icon(Icons.logout, color: Color(0xFF64748B)),
             tooltip: 'Keluar',
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
+            onPressed: () async {
+              await AuthService.logout();
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PublicNewsScreen()),
+                  (route) => false,
+                );
+              }
             },
           ),
         ],
