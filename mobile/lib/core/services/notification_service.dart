@@ -307,10 +307,8 @@ class NotificationService {
           ));
         }
 
-        if (backendItems.isNotEmpty) {
-          backendItems.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return backendItems;
-        }
+        backendItems.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return backendItems;
       } catch (e) {
         print('Error getNotifications from backend: $e');
       }
@@ -364,12 +362,6 @@ class NotificationService {
       raw.removeLast();
     }
     await prefs.setStringList(_key, raw);
-
-    await showNotification(
-      title: item.title,
-      body: item.body,
-      payload: jsonEncode(item.toJson()),
-    );
   }
 
   // ─── Mark Read ────────────────────────────────────────────────────────────

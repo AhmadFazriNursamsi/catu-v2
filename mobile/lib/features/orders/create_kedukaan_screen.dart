@@ -618,47 +618,6 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
       final int? userParokiId = userParokiRaw != null ? int.tryParse(userParokiRaw.toString()) : null;
       final effectiveParokiId = _isSameParish ? userParokiId : _selectedParokiId;
 
-      final userKabRaw = widget.user?['kabupatenKotaId'] ?? widget.user?['kabupaten_kota_id'];
-      final int? userKabupatenId = userKabRaw != null ? int.tryParse(userKabRaw.toString()) : null;
-      final effectiveKabupatenId = _isSameParish ? userKabupatenId : _selectedKabupatenKotaId;
-
-      for (int i = 0; i < _misaList.length; i++) {
-        // 🔔 1. Notif Romo Ordo (berdasarkan Kabupaten / Kota)
-        await NotificationService.notifyNewRequest(
-          orderId: orderId,
-          umatName: umatName,
-          categoryName: 'Misa Kedukaan',
-          targetRole: 'ROMO_ORDO',
-          misaItemName: _misaList[i].itemName,
-          itemIndex: i,
-          parokiId: effectiveParokiId,
-          kabupatenKotaId: effectiveKabupatenId,
-        );
-
-        // 🔔 2. Notif Romo Paroki (berdasarkan Paroki)
-        await NotificationService.notifyNewRequest(
-          orderId: orderId,
-          umatName: umatName,
-          categoryName: 'Misa Kedukaan',
-          targetRole: 'ROMO_PAROKI',
-          misaItemName: _misaList[i].itemName,
-          itemIndex: i,
-          parokiId: effectiveParokiId,
-          kabupatenKotaId: effectiveKabupatenId,
-        );
-
-        // 🔔 3. Notif Pengurus Lingkungan (berdasarkan Lingkungan / Paroki)
-        await NotificationService.notifyNewRequest(
-          orderId: orderId,
-          umatName: umatName,
-          categoryName: 'Misa Kedukaan',
-          targetRole: 'PENGURUS',
-          misaItemName: _misaList[i].itemName,
-          itemIndex: i,
-          parokiId: effectiveParokiId,
-          kabupatenKotaId: effectiveKabupatenId,
-        );
-      }
       Navigator.pop(context);
     }
   }
