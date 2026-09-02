@@ -21,6 +21,7 @@ class CatuApp extends StatelessWidget {
       valueListenable: LanguageService.currentLanguage,
       builder: (context, langCode, child) {
         return MaterialApp(
+          navigatorKey: NotificationService.navigatorKey,
           title: LanguageService.tr('app_name'),
           debugShowCheckedModeBanner: false,
           theme: ThemeData(

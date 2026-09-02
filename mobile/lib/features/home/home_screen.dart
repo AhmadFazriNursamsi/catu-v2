@@ -32,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _currentUserMap = Map<String, dynamic>.from(widget.user);
+    NotificationService.setCurrentUser(_currentUserMap);
     _loadOrders();
     _startPolling();
     final uid = _currentUserMap['id'] ?? _currentUserMap['userId'] ?? _currentUserMap['user_id'];

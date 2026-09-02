@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'api_service.dart';
+import '../../features/chat/chat_screen.dart';
+import '../../features/chat/chat_list_screen.dart';
+import '../../features/notifications/notification_screen.dart';
 
 class NotificationItem {
   final String id;
@@ -20,6 +23,8 @@ class NotificationItem {
   final String? itemTitle; // Specific misa name e.g. 'Misa Tutup Peti'
   final int? parokiId;
   final int? kabupatenKotaId;
+  final int? groupId;
+  final String? orderNumber;
 
   NotificationItem({
     required this.id,
@@ -34,6 +39,8 @@ class NotificationItem {
     this.itemTitle,
     this.parokiId,
     this.kabupatenKotaId,
+    this.groupId,
+    this.orderNumber,
   });
 
   Map<String, dynamic> toJson() => {
@@ -49,6 +56,8 @@ class NotificationItem {
         'itemTitle': itemTitle,
         'parokiId': parokiId,
         'kabupatenKotaId': kabupatenKotaId,
+        'groupId': groupId,
+        'orderNumber': orderNumber,
       };
 
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
@@ -65,6 +74,8 @@ class NotificationItem {
       itemTitle: json['itemTitle'],
       parokiId: json['parokiId'] != null ? int.tryParse(json['parokiId'].toString()) : null,
       kabupatenKotaId: json['kabupatenKotaId'] != null ? int.tryParse(json['kabupatenKotaId'].toString()) : null,
+      groupId: json['groupId'] != null ? int.tryParse(json['groupId'].toString()) : null,
+      orderNumber: json['orderNumber'],
     );
   }
 
@@ -85,6 +96,9 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static Map<String, dynamic>? currentUser;
+
   static bool _isInitialized = false;
   static String? _currentToken;
 
@@ -96,6 +110,99 @@ class NotificationService {
     playSound: true,
     enableVibration: true,
   );
+
+  static Future<void> setCurrentUser(Map<String, dynamic> user) async {
+    currentUser = Map<String, dynamic>.from(user);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('catu_current_user_profile', jsonEncode(user));
+    } catch (_) {}
+  }
+
+  static Future<Map<String, dynamic>?> _loadStoredUser() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('catu_current_user_profile');
+      if (raw != null && raw.isNotEmpty) {
+        return jsonDecode(raw) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  static Future<void> handleNotificationTap(String? payloadStr) async {
+    if (payloadStr == null || payloadStr.isEmpty) return;
+    try {
+      final Map<String, dynamic> data = jsonDecode(payloadStr);
+      final String type = data['type']?.toString() ?? '';
+      final int notifId = int.tryParse(data['id']?.toString() ?? '') ?? 0;
+      if (notifId > 0) {
+        ApiService.markNotificationRead(notifId);
+      }
+
+      final context = navigatorKey.currentContext;
+      if (context == null) return;
+
+      final userMap = currentUser ?? await _loadStoredUser();
+      final uName = userMap?['fullName'] ?? userMap?['full_name'] ?? 'User';
+      final uId = userMap?['id'] ?? userMap?['userId'] ?? userMap?['user_id'];
+      final int? currentUserId = uId != null ? int.tryParse(uId.toString()) : null;
+      final role = userMap?['roleCode'] ?? userMap?['role_code'] ?? userMap?['role'] ?? 'UMAT';
+      final isRomo = role.toString().toUpperCase().contains('ROMO');
+
+      // 💬 1. CHAT NOTIFICATION -> Langsung masuk ke Grup Chatting
+      if (type == 'CHAT_MESSAGE') {
+        int? groupId = data['groupId'] != null ? int.tryParse(data['groupId'].toString()) : null;
+        final int? orderId = data['orderId'] != null ? int.tryParse(data['orderId'].toString()) : null;
+        final orderNumber = data['orderNumber']?.toString() ?? (orderId != null ? 'ORD-$orderId' : 'Grup Pelayanan');
+
+        if (groupId == null || groupId <= 0) {
+          if (orderId != null && orderId > 0) {
+            groupId = await ApiService.getChatGroupIdForOrder(orderId);
+          }
+        }
+
+        if (groupId != null && groupId > 0) {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (_) => ChatScreen(
+                groupId: groupId!,
+                orderNumber: orderNumber,
+                userName: uName,
+                userId: currentUserId,
+                isRomo: isRomo,
+              ),
+            ),
+          );
+        } else {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (_) => ChatListScreen(
+                user: userMap ?? {},
+                orders: const [],
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      // 🔔 2. GENERAL NOTIFICATION -> Cukup sampai di List Notif saja
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (_) => NotificationScreen(
+            role: role.toString(),
+            orders: const [],
+            user: userMap ?? {},
+            isRomo: isRomo,
+            romoId: isRomo ? currentUserId : null,
+          ),
+        ),
+      );
+    } catch (e) {
+      print('Error handling notification tap: $e');
+    }
+  }
 
   static Future<void> init() async {
     if (_isInitialized) return;
@@ -119,6 +226,7 @@ class NotificationService {
         initSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
           print('Notification tapped: ${response.payload}');
+          handleNotificationTap(response.payload);
         },
       );
 
@@ -262,6 +370,15 @@ class NotificationService {
                 title: n['title'] ?? 'Pemberitahuan CATU',
                 body: n['body'] ?? '',
                 id: id,
+                payload: jsonEncode({
+                  'id': id,
+                  'type': n['type'],
+                  'orderId': n['orderId'] ?? n['order_id'],
+                  'groupId': n['groupId'] ?? n['group_id'],
+                  'orderNumber': n['orderNumber'] ?? n['order_number'],
+                  'title': n['title'],
+                  'body': n['body'],
+                }),
               );
             }
           }
@@ -316,6 +433,9 @@ class NotificationService {
           final orderId = rawOrder != null ? rawOrder.toString() : null;
           final categoryName = r['categoryName'] ?? r['category_name'];
           final createdAt = DateTime.tryParse(r['createdAt'] ?? r['created_at'] ?? '') ?? DateTime.now();
+          final rawGroup = r['groupId'] ?? r['group_id'];
+          final int? groupId = rawGroup != null ? int.tryParse(rawGroup.toString()) : null;
+          final orderNumber = r['orderNumber'] ?? r['order_number'];
 
           backendItems.add(NotificationItem(
             id: id,
@@ -327,6 +447,8 @@ class NotificationService {
             isRead: isRead,
             orderId: orderId,
             categoryName: categoryName,
+            groupId: groupId,
+            orderNumber: orderNumber,
           ));
         }
 

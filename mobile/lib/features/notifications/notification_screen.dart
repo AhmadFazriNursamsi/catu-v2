@@ -590,14 +590,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
                 if (orderId != null && orderId > 0) {
                   try {
-                    final grpRes = await ApiService.getGroupByOrderId(orderId);
-                    final gId = grpRes['groupId'] ?? orderId;
+                    final gId = item.groupId ?? await ApiService.getChatGroupIdForOrder(orderId);
                     if (mounted) {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => ChatScreen(
-                            groupId: gId is int ? gId : int.tryParse(gId.toString()) ?? 1,
+                            groupId: gId,
                             orderNumber: item.orderNumber ?? 'ORD-$orderId',
                             userName: uName,
                             userId: _userId,
@@ -612,9 +611,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => ChatListScreen(
-                            currentUserId: _userId ?? 1,
-                            currentUserName: uName,
-                            userRole: widget.role,
+                            user: widget.user,
+                            orders: widget.orders,
                           ),
                         ),
                       );
@@ -626,9 +624,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => ChatListScreen(
-                          currentUserId: _userId ?? 1,
-                          currentUserName: uName,
-                          userRole: widget.role,
+                          user: widget.user,
+                          orders: widget.orders,
                         ),
                       ),
                     );

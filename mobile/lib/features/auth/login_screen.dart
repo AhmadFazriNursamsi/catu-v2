@@ -141,6 +141,7 @@ class _LoginScreenState extends State<LoginScreen>
           );
         } else {
           try {
+            NotificationService.setCurrentUser(user);
             NotificationService.registerUserDevice(user['id']);
             NotificationService.startPolling(user['id']);
           } catch (_) {}

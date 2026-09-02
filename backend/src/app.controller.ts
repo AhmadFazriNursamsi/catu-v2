@@ -3371,10 +3371,12 @@ export class NotificationsController {
     const query = `
       SELECT n.id, n.user_id as "userId", n.order_id as "orderId", n.title, n.body, n.type, n.is_read as "isRead", n.created_at as "createdAt",
              o.order_number as "orderNumber", sc.name as "categoryName",
-             o.status as "orderStatus"
+             o.status as "orderStatus",
+             cg.id as "groupId"
       FROM notifications n
       LEFT JOIN orders o ON n.order_id = o.id
       LEFT JOIN service_categories sc ON o.service_category_id = sc.id
+      LEFT JOIN chat_groups cg ON cg.order_id = n.order_id
       ${whereStr}
       ORDER BY n.id DESC LIMIT 100
     `;
