@@ -17,3 +17,7 @@ mobile/.dart_tool/
 .DS_Store
 .vscode/
 .idea/
+
+# Firebase private credentials
+firebase-service-account.json
+*-firebase-adminsdk-*.json
