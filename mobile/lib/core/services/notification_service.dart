@@ -4,8 +4,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'api_service.dart';
 
 class NotificationItem {
@@ -81,13 +79,6 @@ class NotificationItem {
   }
 }
 
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  try {
-    await Firebase.initializeApp();
-  } catch (_) {}
-}
-
 class NotificationService {
   static const String _key = 'catu_notifications_v1';
   static final FlutterLocalNotificationsPlugin _localNotifications =
@@ -135,37 +126,6 @@ class NotificationService {
           ?.createNotificationChannel(_channel);
     } catch (e) {
       print('Local notification init error: $e');
-    }
-
-    // 2. Setup Firebase Messaging if available
-    try {
-      if (!kIsWeb) {
-        await Firebase.initializeApp();
-        FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-        final messaging = FirebaseMessaging.instance;
-        await messaging.requestPermission(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-
-        _currentToken = await messaging.getToken();
-        print('FCM Device Token: $_currentToken');
-
-        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-          final notif = message.notification;
-          if (notif != null) {
-            showNotification(
-              title: notif.title ?? 'Notifikasi CATU',
-              body: notif.body ?? '',
-              payload: message.data.toString(),
-            );
-          }
-        });
-      }
-    } catch (e) {
-      print('Firebase Messaging init info (waiting for config): $e');
     }
 
     _isInitialized = true;
@@ -218,13 +178,6 @@ class NotificationService {
       if (intUid <= 0) return;
 
       String? token = _currentToken;
-      if (token == null && !kIsWeb) {
-        try {
-          token = await FirebaseMessaging.instance.getToken();
-          _currentToken = token;
-        } catch (_) {}
-      }
-
       final deviceType = kIsWeb ? 'WEB' : (Platform.isIOS ? 'IOS' : 'ANDROID');
 
       if (token != null && token.isNotEmpty) {

@@ -68,17 +68,22 @@ export class NewsService {
   }
 
   private extractImageUrl(rawContent: string, itemXml: string): string | null {
+    const isImage = (url: string) => {
+      const lower = url.toLowerCase();
+      return !lower.endsWith('.mp4') && !lower.endsWith('.mov') && !lower.endsWith('.webm') && !lower.endsWith('.mp3') && !lower.endsWith('.m4v');
+    };
+
     // 1. Check enclosure tag
     const encMatch = itemXml.match(/<enclosure[^>]+url=["']([^"']+)["']/i);
-    if (encMatch && encMatch[1]) return encMatch[1];
+    if (encMatch && encMatch[1] && isImage(encMatch[1])) return encMatch[1];
 
     // 2. Check media:content or media:thumbnail
     const mediaMatch = itemXml.match(/<media:(?:content|thumbnail)[^>]+url=["']([^"']+)["']/i);
-    if (mediaMatch && mediaMatch[1]) return mediaMatch[1];
+    if (mediaMatch && mediaMatch[1] && isImage(mediaMatch[1])) return mediaMatch[1];
 
     // 3. Check img tag in content/description
     const imgMatch = rawContent.match(/<img[^>]+src=["']([^"']+)["']/i);
-    if (imgMatch && imgMatch[1]) return imgMatch[1];
+    if (imgMatch && imgMatch[1] && isImage(imgMatch[1])) return imgMatch[1];
 
     return null;
   }
