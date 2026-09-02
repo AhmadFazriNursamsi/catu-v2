@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'api_service.dart';
+import '../models/models.dart';
 import '../../features/chat/chat_screen.dart';
 import '../../features/chat/chat_list_screen.dart';
 import '../../features/notifications/notification_screen.dart';
@@ -103,11 +104,12 @@ class NotificationService {
   static String? _currentToken;
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'catu_high_importance_channel',
+    'catu_custom_sound_channel_v1',
     'Pelayanan & Chat CATU',
     description: 'Notifikasi penting untuk permintaan pelayanan Romo, persetujuan jadwal, dan pesan chat umat',
     importance: Importance.max,
     playSound: true,
+    sound: RawResourceAndroidNotificationSound('notif_catu'),
     enableVibration: true,
   );
 
@@ -163,14 +165,20 @@ class NotificationService {
         }
 
         if (groupId != null && groupId > 0) {
+          ChatGroupItem? preloadedGroup;
+          try {
+            preloadedGroup = await ApiService.getChatGroupDetails(groupId, userId: currentUserId);
+          } catch (_) {}
+
           navigatorKey.currentState?.push(
             MaterialPageRoute(
               builder: (_) => ChatScreen(
                 groupId: groupId!,
-                orderNumber: orderNumber,
+                orderNumber: orderNumber.isNotEmpty ? orderNumber : (preloadedGroup?.orderId.toString() ?? groupId.toString()),
                 userName: uName,
                 userId: currentUserId,
                 isRomo: isRomo,
+                groupItem: preloadedGroup,
               ),
             ),
           );
@@ -273,6 +281,7 @@ class NotificationService {
       largeIcon: const DrawableResourceAndroidBitmap('@drawable/ic_catu_logo'),
       color: const Color(0xFF1E5399),
       playSound: true,
+      sound: const RawResourceAndroidNotificationSound('notif_catu'),
       enableVibration: true,
     );
 
@@ -280,6 +289,7 @@ class NotificationService {
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      sound: 'notif_catu.caf',
       presentBanner: true,
       presentList: true,
     );

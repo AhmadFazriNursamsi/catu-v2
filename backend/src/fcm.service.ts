@@ -172,15 +172,15 @@ export class FcmService implements OnModuleInit {
         android: {
           priority: 'high',
           notification: {
-            sound: 'default',
-            channelId: 'catu_high_importance_channel',
+            sound: 'notif_catu',
+            channelId: 'catu_custom_sound_channel_v1',
             clickAction: 'FLUTTER_NOTIFICATION_CLICK',
           },
         },
         apns: {
           payload: {
             aps: {
-              sound: 'default',
+              sound: 'notif_catu.caf',
               badge: 1,
             },
           },

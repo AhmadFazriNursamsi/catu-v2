@@ -866,6 +866,23 @@ class ApiService {
     return orderId;
   }
 
+  // 7c. Fetch Chat Group Detail by Group ID
+  static Future<ChatGroupItem?> getChatGroupDetails(int groupId, {int? userId}) async {
+    final query = userId != null && userId > 0 ? '?userId=$userId' : '';
+    for (final hostUrl in _candidateBaseUrls) {
+      try {
+        final response = await http
+            .get(Uri.parse('$hostUrl/chat/groups/$groupId$query'))
+            .timeout(const Duration(seconds: 5));
+        if (response.statusCode == 200) {
+          final Map<String, dynamic> data = jsonDecode(response.body);
+          return ChatGroupItem.fromJson(data);
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
   // 8. Fetch Chat Group Members
   static Future<List<Map<String, dynamic>>> getGroupMembers(int groupId) async {
     try {

@@ -1,4 +1,4 @@
-import { Controller, Post, Put, Delete, Body, Get, Param, Query, OnModuleInit, BadRequestException, HttpCode } from '@nestjs/common';
+import { Controller, Post, Put, Delete, Body, Get, Param, Query, OnModuleInit, BadRequestException, NotFoundException, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -3865,10 +3865,22 @@ export class ChatController {
       const senderName = senderProfile[0]?.full_name || 'Seseorang';
 
       const groupInfo = await this.dataSource.query(
-        `SELECT id, title, order_id FROM chat_groups WHERE id = $1`,
+        `SELECT g.id, g.title, g.order_id, o.order_number, sc.name as category_name,
+                COALESCE(oi.item_name, sc.name) as item_name,
+                p.full_name as penerima_name
+         FROM chat_groups g
+         JOIN orders o ON g.order_id = o.id
+         JOIN service_categories sc ON o.service_category_id = sc.id
+         LEFT JOIN order_items oi ON g.order_item_id = oi.id
+         LEFT JOIN user_profiles p ON o.user_id = p.user_id
+         WHERE g.id = $1`,
         [groupId],
       );
       const orderId = groupInfo[0]?.order_id || null;
+      const orderNumber = groupInfo[0]?.order_number || (orderId ? `ORD-${orderId}` : '');
+      const categoryName = groupInfo[0]?.category_name || '';
+      const itemTitle = groupInfo[0]?.item_name || '';
+      const penerimaName = groupInfo[0]?.penerima_name || '';
 
       const members = await this.dataSource.query(
         `SELECT user_id FROM chat_group_members WHERE chat_group_id = $1 AND user_id != $2`,
@@ -3905,6 +3917,10 @@ export class ChatController {
             type: 'CHAT_MESSAGE',
             groupId: groupId.toString(),
             orderId: orderId ? orderId.toString() : '',
+            orderNumber: orderNumber,
+            categoryName: categoryName,
+            itemTitle: itemTitle,
+            penerimaName: penerimaName,
           },
         });
       }
@@ -3985,6 +4001,74 @@ export class ChatController {
        ORDER BY m.id ASC`,
       [groupId],
     );
+  }
+
+  @Get('groups/:groupId')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Mendapatkan informasi detail 1 Group Chat Pelayanan beserta status dan nama Misa' })
+  async getGroupDetail(
+    @Param('groupId') groupIdParam: string,
+    @Query('userId') queryUserId?: string,
+  ) {
+    const groupId = await this.resolveGroupId(groupIdParam);
+    const userId = parseInt(queryUserId || '', 10) || 1;
+
+    const result = await this.dataSource.query(
+      `SELECT g.id as group_id, g.order_id, g.order_item_id as order_item_id, o.order_number, g.title as group_title,
+              COALESCE(
+                (SELECT message FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1),
+                g.last_message_text,
+                'Grup chat pelayanan aktif'
+              ) as last_message_text,
+              (SELECT m.sender_id FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_id,
+              (SELECT COALESCE(p.full_name, 'Pengguna') FROM chat_messages m LEFT JOIN user_profiles p ON m.sender_id = p.user_id WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_name,
+              COALESCE(
+                (SELECT created_at FROM chat_messages m WHERE m.chat_group_id = g.id ORDER BY m.id DESC LIMIT 1),
+                g.last_message_at,
+                o.created_at
+              ) as last_message_at,
+              COALESCE(
+                oi.item_name,
+                (SELECT sub_oi.item_name FROM order_items sub_oi WHERE sub_oi.order_id = o.id ORDER BY sub_oi.id ASC LIMIT 1),
+                sc.name
+              ) as order_title,
+              sc.name as order_category, 
+              COALESCE(oi.status, o.status::text) as order_status,
+              COALESCE(oi.scheduled_date::text, o.scheduled_date::text) as scheduled_date, 
+              COALESCE(oi.scheduled_time_start::text, o.scheduled_time::text) as scheduled_time_start, 
+              COALESCE(oi.scheduled_time_end::text, '') as scheduled_time_end,
+              o.notes, ul.name as urgency_name, p.full_name as penerima_name,
+              p.full_name as requester_name, p.avatar_url as requester_avatar,
+              COALESCE(
+                (
+                  SELECT COUNT(*)::int
+                  FROM chat_messages m
+                  WHERE m.chat_group_id = g.id
+                    AND (m.sender_id IS NOT NULL AND m.sender_id != $2)
+                    AND m.message_type != 'SYSTEM_EVENT'
+                    AND m.id > COALESCE(
+                      (SELECT cgm.last_read_message_id FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $2),
+                      0
+                    )
+                ),
+                0
+              ) as unread_count
+       FROM chat_groups g
+       JOIN orders o ON g.order_id = o.id
+       JOIN service_categories sc ON o.service_category_id = sc.id
+       LEFT JOIN order_items oi ON g.order_item_id = oi.id
+       LEFT JOIN urgency_levels ul ON o.urgency_level_id = ul.id
+       LEFT JOIN user_profiles p ON o.user_id = p.user_id
+       WHERE g.id = $1
+       LIMIT 1`,
+      [groupId, userId],
+    );
+
+    if (!result || result.length === 0) {
+      throw new NotFoundException(`Chat group with ID ${groupId} not found`);
+    }
+
+    return result[0];
   }
 
   @Get('groups/:groupId/members')

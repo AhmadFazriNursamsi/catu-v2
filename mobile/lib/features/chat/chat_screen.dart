@@ -32,6 +32,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   List<ChatMessage> _messages = [];
+  ChatGroupItem? _groupItem;
   bool _isLoading = true;
   Timer? _pollTimer;
   bool _isPolling = false;
@@ -39,9 +40,24 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    _groupItem = widget.groupItem;
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
     _loadMessages();
+    _loadGroupDetails();
     _startPolling();
+  }
+
+  Future<void> _loadGroupDetails() async {
+    try {
+      final details = await ApiService.getChatGroupDetails(widget.groupId, userId: widget.userId);
+      if (mounted && details != null) {
+        setState(() {
+          _groupItem = details;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading chat group details: $e');
+    }
   }
 
   void _startPolling() {
@@ -98,6 +114,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadMessages() async {
+    _loadGroupDetails();
     final msgs = await ApiService.getGroupMessages(widget.groupId, userId: widget.userId);
     if (mounted) {
       setState(() {
@@ -257,25 +274,27 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _showGroupMembersModal() {
     HapticFeedback.selectionClick();
-    final groupId = widget.groupItem?.groupId ?? widget.groupId;
+    final group = _groupItem ?? widget.groupItem;
+    final groupId = group?.groupId ?? widget.groupId;
+    final String title = group?.displayTitle ?? (widget.orderNumber.isNotEmpty ? 'Pelayanan #${widget.orderNumber}' : 'Group Pelayanan');
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _GroupMembersBottomSheet(
         groupId: groupId,
-        groupTitle: widget.groupItem?.displayTitle ?? 'Group Pelayanan',
-        penerimaName: widget.groupItem?.penerimaOrDeceasedName ?? widget.userName,
-        requesterName: widget.groupItem?.requesterName ?? widget.userName,
-        orderStatus: widget.groupItem?.orderStatus ?? 'PENDING',
+        groupTitle: title,
+        penerimaName: group?.penerimaOrDeceasedName ?? widget.userName,
+        requesterName: group?.requesterName ?? widget.userName,
+        orderStatus: group?.orderStatus ?? 'PENDING',
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final group = widget.groupItem;
-    final String mainTitle = group?.displayTitle ?? 'Group Pelayanan';
+    final group = _groupItem ?? widget.groupItem;
+    final String mainTitle = group?.displayTitle ?? (widget.orderNumber.isNotEmpty ? 'Pelayanan #${widget.orderNumber}' : 'Group Pelayanan');
     final String rawStatus = group?.orderStatus ?? 'PENDING';
 
     return Scaffold(
