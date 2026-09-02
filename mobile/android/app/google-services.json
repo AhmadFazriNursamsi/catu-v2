@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "349420956756",
+    "project_id": "catu-fluter",
+    "storage_bucket": "catu-fluter.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:349420956756:android:4313ece50b1a5d994451c1",
+        "android_client_info": {
+          "package_name": "com.example.catu_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAH2xlb_z1z57JasvnN_qREOg1sy89wxxc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -5,11 +5,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'api_service.dart';
 import '../models/models.dart';
 import '../../features/chat/chat_screen.dart';
 import '../../features/chat/chat_list_screen.dart';
 import '../../features/notifications/notification_screen.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {}
+}
 
 class NotificationItem {
   final String id;
@@ -262,6 +271,50 @@ class NotificationService {
       print('Local notification init error: $e');
     }
 
+    // 2. Initialize Firebase Cloud Messaging (FCM)
+    try {
+      await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+      final messaging = FirebaseMessaging.instance;
+      await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      final token = await messaging.getToken();
+      if (token != null) {
+        _currentToken = token;
+        debugPrint('🔥 Firebase FCM Token: $token');
+      }
+
+      messaging.onTokenRefresh.listen((newToken) {
+        _currentToken = newToken;
+        if (currentUser != null) {
+          final uid = currentUser!['id'] ?? currentUser!['userId'] ?? currentUser!['user_id'];
+          if (uid != null) registerUserDevice(uid);
+        }
+      });
+
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        final notif = message.notification;
+        if (notif != null) {
+          showNotification(
+            title: notif.title ?? 'Pemberitahuan CATU',
+            body: notif.body ?? '',
+            payload: jsonEncode(message.data),
+          );
+        }
+      });
+
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        handleNotificationTap(jsonEncode(message.data));
+      });
+    } catch (e) {
+      debugPrint('Firebase init error: $e');
+    }
+
     _isInitialized = true;
   }
 
@@ -318,15 +371,21 @@ class NotificationService {
       final intUid = int.tryParse(userId.toString()) ?? 0;
       if (intUid <= 0) return;
 
-      String? token = _currentToken;
+      if (_currentToken == null || _currentToken!.isEmpty) {
+        try {
+          _currentToken = await FirebaseMessaging.instance.getToken();
+        } catch (_) {}
+      }
+
       final deviceType = kIsWeb ? 'WEB' : (Platform.isIOS ? 'IOS' : 'ANDROID');
 
-      if (token != null && token.isNotEmpty) {
+      if (_currentToken != null && _currentToken!.isNotEmpty) {
         await ApiService.registerDeviceToken(
           userId: intUid,
-          fcmToken: token,
+          fcmToken: _currentToken!,
           deviceType: deviceType,
         );
+        debugPrint('NotificationService: Registered FCM device token for user $intUid ($deviceType)');
       }
     } catch (e) {
       print('Error registerUserDevice: $e');
