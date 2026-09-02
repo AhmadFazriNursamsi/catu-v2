@@ -147,7 +147,7 @@ class NotificationService {
     if (_pendingPayload != null) {
       final payload = _pendingPayload;
       _pendingPayload = null;
-      Future.delayed(const Duration(milliseconds: 400), () {
+      Future.delayed(const Duration(milliseconds: 600), () {
         handleNotificationTap(payload);
       });
     }
@@ -156,8 +156,9 @@ class NotificationService {
   static Future<void> handleNotificationTap(String? payloadStr) async {
     if (payloadStr == null || payloadStr.isEmpty) return;
     try {
+      debugPrint('👉 handleNotificationTap called with: $payloadStr');
       final Map<String, dynamic> data = jsonDecode(payloadStr);
-      final String type = data['type']?.toString() ?? '';
+      final String type = (data['type'] ?? data['notifType'] ?? data['notification_type'] ?? '').toString().toUpperCase();
       final int notifId = int.tryParse(data['id']?.toString() ?? '') ?? 0;
       if (notifId > 0) {
         ApiService.markNotificationRead(notifId);
@@ -165,6 +166,7 @@ class NotificationService {
 
       final navState = navigatorKey.currentState;
       if (navState == null) {
+        debugPrint('👉 navState is null, queuing payload for checkPendingNotificationTap');
         _pendingPayload = payloadStr;
         return;
       }
@@ -177,9 +179,9 @@ class NotificationService {
       final isRomo = role.toString().toUpperCase().contains('ROMO');
 
       // 💬 1. CHAT NOTIFICATION -> Langsung masuk ke Grup Chatting
-      if (type == 'CHAT_MESSAGE') {
-        int? groupId = data['groupId'] != null ? int.tryParse(data['groupId'].toString()) : null;
-        final int? orderId = data['orderId'] != null ? int.tryParse(data['orderId'].toString()) : null;
+      if (type == 'CHAT_MESSAGE' || data.containsKey('groupId') || data.containsKey('chat_group_id')) {
+        int? groupId = int.tryParse(data['groupId']?.toString() ?? data['group_id']?.toString() ?? data['chat_group_id']?.toString() ?? '');
+        final int? orderId = int.tryParse(data['orderId']?.toString() ?? data['order_id']?.toString() ?? '');
         final orderNumber = data['orderNumber']?.toString() ?? (orderId != null ? 'ORD-$orderId' : 'Grup Pelayanan');
 
         if (groupId == null || groupId <= 0) {
@@ -194,7 +196,7 @@ class NotificationService {
             preloadedGroup = await ApiService.getChatGroupDetails(groupId, userId: currentUserId);
           } catch (_) {}
 
-          navigatorKey.currentState?.push(
+          navState.push(
             MaterialPageRoute(
               builder: (_) => ChatScreen(
                 groupId: groupId!,
@@ -207,7 +209,7 @@ class NotificationService {
             ),
           );
         } else {
-          navigatorKey.currentState?.push(
+          navState.push(
             MaterialPageRoute(
               builder: (_) => ChatListScreen(
                 user: userMap ?? {},
@@ -220,7 +222,7 @@ class NotificationService {
       }
 
       // 🔔 2. GENERAL NOTIFICATION -> Cukup sampai di List Notif saja
-      navigatorKey.currentState?.push(
+      navState.push(
         MaterialPageRoute(
           builder: (_) => NotificationScreen(
             role: role.toString(),
@@ -232,7 +234,7 @@ class NotificationService {
         ),
       );
     } catch (e) {
-      print('Error handling notification tap: $e');
+      debugPrint('Error handling notification tap: $e');
     }
   }
 
@@ -324,12 +326,14 @@ class NotificationService {
       });
 
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        debugPrint('🔥 FCM onMessageOpenedApp received: ${message.data}');
         handleNotificationTap(jsonEncode(message.data));
       });
 
       // Cold start from terminated state
       final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
       if (initialMessage != null && initialMessage.data.isNotEmpty) {
+        debugPrint('🔥 FCM getInitialMessage received: ${initialMessage.data}');
         _pendingPayload = jsonEncode(initialMessage.data);
         handleNotificationTap(_pendingPayload);
       }
