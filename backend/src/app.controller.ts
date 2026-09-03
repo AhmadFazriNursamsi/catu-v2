@@ -3568,7 +3568,7 @@ export class AssignmentsController {
     if (itemId) {
       if (newStatus === 'CONFIRMED') {
         await this.dataSource.query(
-          `UPDATE order_items SET status = $1, accepted_romo_id = COALESCE($2, accepted_romo_id) WHERE id = $3 AND order_id = $4`,
+          `UPDATE order_items SET status = $1, accepted_romo_id = COALESCE($2::int, accepted_romo_id) WHERE id = $3 AND order_id = $4`,
           [newStatus, romoId, itemId, orderId],
         );
       } else {
@@ -3604,11 +3604,11 @@ export class AssignmentsController {
       }
     } else {
       await this.dataSource.query(
-        `UPDATE orders SET status = $1, accepted_romo_id = COALESCE($2, accepted_romo_id) WHERE id = $3`,
+        `UPDATE orders SET status = $1, accepted_romo_id = COALESCE($2::int, accepted_romo_id) WHERE id = $3`,
         [newStatus, romoId, orderId],
       );
       await this.dataSource.query(
-        `UPDATE order_items SET status = $1 WHERE order_id = $3`,
+        `UPDATE order_items SET status = $1, accepted_romo_id = COALESCE($2::int, accepted_romo_id) WHERE order_id = $3`,
         [newStatus, romoId, orderId],
       );
     }
