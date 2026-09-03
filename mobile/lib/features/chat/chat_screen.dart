@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
@@ -182,15 +185,140 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _simulateAttachment(String type) {
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickAndSendImage(ImageSource source) async {
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(type == 'CAMERA'
-            ? '📸 Membuka Kamera untuk lampiran foto...'
-            : '📄 Membuka Dokumen untuk lampiran file...'),
-        duration: const Duration(milliseconds: 1500),
-        behavior: SnackBarBehavior.floating,
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 75,
+      );
+
+      if (pickedFile == null) return;
+
+      final Uint8List imageBytes = await pickedFile.readAsBytes();
+      final String base64String = base64Encode(imageBytes);
+      final String dataUrl = 'data:image/jpeg;base64,$base64String';
+
+      final currentSenderId = widget.userId ?? 1;
+      final tempId = DateTime.now().millisecondsSinceEpoch;
+
+      final newMsg = ChatMessage(
+        id: tempId,
+        chatGroupId: widget.groupId,
+        senderId: currentSenderId,
+        senderName: widget.userName,
+        messageType: 'IMAGE',
+        message: '',
+        attachmentUrl: dataUrl,
+        createdAt: DateTime.now().toIso8601String(),
+      );
+
+      setState(() {
+        _messages.add(newMsg);
+      });
+      _scrollToBottom();
+
+      await ApiService.sendChatMessage(
+        widget.groupId,
+        'IMAGE',
+        '',
+        senderId: currentSenderId,
+        attachmentUrl: dataUrl,
+      );
+
+      final backendMsgs = await ApiService.getGroupMessages(widget.groupId);
+      if (mounted && backendMsgs.isNotEmpty) {
+        setState(() {
+          _messages = backendMsgs;
+        });
+        _scrollToBottom();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengirim foto: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
+  }
+
+  void _openFullScreenImage(String rawUrl) {
+    HapticFeedback.selectionClick();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            title: const Text('Foto Pelayanan', style: TextStyle(fontSize: 16)),
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 0.8,
+              maxScale: 4.0,
+              child: _buildImageWidget(rawUrl, fit: BoxFit.contain),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageWidget(String rawUrl, {BoxFit fit = BoxFit.cover}) {
+    if (rawUrl.startsWith('data:image')) {
+      try {
+        final commaIdx = rawUrl.indexOf(',');
+        final base64Data = commaIdx != -1 ? rawUrl.substring(commaIdx + 1) : rawUrl;
+        final bytes = base64Decode(base64Data);
+        return Image.memory(
+          bytes,
+          fit: fit,
+          errorBuilder: (_, __, ___) => _buildImageError(),
+        );
+      } catch (_) {
+        return _buildImageError();
+      }
+    } else if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+      return Image.network(
+        rawUrl,
+        fit: fit,
+        loadingBuilder: (ctx, child, progress) {
+          if (progress == null) return child;
+          return Container(
+            height: 180,
+            color: Colors.black12,
+            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          );
+        },
+        errorBuilder: (_, __, ___) => _buildImageError(),
+      );
+    }
+    return _buildImageError();
+  }
+
+  Widget _buildImageError() {
+    return Container(
+      height: 140,
+      color: Colors.grey.shade200,
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.broken_image_rounded, color: Colors.grey, size: 36),
+            SizedBox(height: 6),
+            Text('Foto tidak dapat dimuat', style: TextStyle(fontSize: 11, color: Colors.grey)),
+          ],
+        ),
       ),
     );
   }
@@ -597,16 +725,30 @@ class _ChatScreenState extends State<ChatScreen> {
                                       ),
                                       const SizedBox(height: 4),
                                     ],
-                                    Text(
-                                      msg.message,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: isMe
-                                            ? Colors.white
-                                            : const Color(0xFF0F172A),
-                                        height: 1.3,
+                                    if (msg.messageType == 'IMAGE' || (msg.attachmentUrl != null && msg.attachmentUrl!.isNotEmpty)) ...[
+                                      GestureDetector(
+                                        onTap: () => _openFullScreenImage(msg.attachmentUrl ?? ''),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(12),
+                                          child: Container(
+                                            constraints: const BoxConstraints(maxHeight: 220, minWidth: 160),
+                                            child: _buildImageWidget(msg.attachmentUrl ?? ''),
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      if (msg.message.isNotEmpty) const SizedBox(height: 6),
+                                    ],
+                                    if (msg.message.isNotEmpty)
+                                      Text(
+                                        msg.message,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: isMe
+                                              ? Colors.white
+                                              : const Color(0xFF0F172A),
+                                          height: 1.3,
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -683,17 +825,19 @@ class _ChatScreenState extends State<ChatScreen> {
                             onSubmitted: (_) => _sendMessage(),
                           ),
                         ),
-                        // Document / Attachment Icon (📄)
+                        // Gallery / Document Icon (🖼️/📄)
                         IconButton(
-                          icon: const Icon(Icons.insert_drive_file_outlined,
+                          icon: const Icon(Icons.photo_library_outlined,
                               color: Color(0xFF1E5399), size: 22),
-                          onPressed: () => _simulateAttachment('FILE'),
+                          tooltip: 'Pilih dari Galeri',
+                          onPressed: () => _pickAndSendImage(ImageSource.gallery),
                         ),
                         // Camera Icon (📷)
                         IconButton(
                           icon: const Icon(Icons.camera_alt_outlined,
                               color: Color(0xFF1E5399), size: 22),
-                          onPressed: () => _simulateAttachment('CAMERA'),
+                          tooltip: 'Ambil Foto Kamera',
+                          onPressed: () => _pickAndSendImage(ImageSource.camera),
                         ),
                       ],
                     ),
