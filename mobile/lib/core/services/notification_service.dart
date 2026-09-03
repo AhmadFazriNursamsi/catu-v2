@@ -466,6 +466,11 @@ class NotificationService {
   static Timer? _pollingTimer;
   static final Set<int> _knownNotifIds = {};
 
+  static void clearKnownNotifs() {
+    _knownNotifIds.clear();
+    _recentNotificationTimestamps.clear();
+  }
+
   static void startPolling(dynamic userId) {
     _pollingTimer?.cancel();
     final intUid = int.tryParse(userId.toString()) ?? 0;

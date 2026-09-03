@@ -70,9 +70,24 @@ class AuthService {
 
   /// Clear session when user explicitly logs out
   static Future<void> logout() async {
+    try {
+      if (_currentUser != null) {
+        final uid = _currentUser!['id'] ?? _currentUser!['userId'] ?? _currentUser!['user_id'];
+        if (uid != null) {
+          final intUid = int.tryParse(uid.toString());
+          if (intUid != null) {
+            await NotificationService.unregisterUserDevice(intUid);
+          }
+        }
+      }
+    } catch (_) {}
+
     _currentUser = null;
     NotificationService.stopPolling();
     NotificationService.currentUser = null;
+    NotificationService.clearKnownNotifs();
+    await NotificationService.clearAll();
+
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_userKey);
