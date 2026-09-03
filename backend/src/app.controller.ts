@@ -2121,18 +2121,22 @@ export class OrdersController {
 
   private async getPengurusForOrder(orderId: number): Promise<any[]> {
     const orderHierarchy = await this.dataSource.query(
-      `SELECT o.lingkungan_id, o.paroki_id FROM orders o WHERE o.id = $1`,
+      `SELECT o.lingkungan_id, o.paroki_id, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id 
+       FROM orders o 
+       JOIN user_profiles p ON o.user_id = p.user_id 
+       WHERE o.id = $1`,
       [orderId],
     );
     if (orderHierarchy.length === 0) return [];
     const oh = orderHierarchy[0];
+    const keuskupanId = oh.keuskupan_id;
     let pengurus: any[] = [];
     if (oh.lingkungan_id) {
       pengurus = await this.dataSource.query(
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.lingkungan_id = $1`,
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND p.lingkungan_id = $1`,
         [oh.lingkungan_id],
       );
     }
@@ -2141,10 +2145,27 @@ export class OrdersController {
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.paroki_id = $1`,
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND p.paroki_id = $1`,
         [oh.paroki_id],
       );
     }
+
+    // Also include Koordinator in the same Keuskupan
+    if (keuskupanId) {
+      const koordinator = await this.dataSource.query(
+        `SELECT u.id FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         WHERE (r.code = 'KOORDINATOR' OR LOWER(p.pengurus_position) LIKE '%koordinator%') AND p.keuskupan_id = $1`,
+        [keuskupanId],
+      );
+      for (const k of koordinator) {
+        if (!pengurus.some((p: any) => p.id === k.id)) {
+          pengurus.push(k);
+        }
+      }
+    }
+
     return pengurus;
   }
 
@@ -2223,7 +2244,7 @@ export class OrdersController {
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.lingkungan_id = $1`,
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND p.lingkungan_id = $1`,
         [lId],
       );
     }
@@ -2232,8 +2253,20 @@ export class OrdersController {
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.paroki_id = $1`,
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND p.paroki_id = $1`,
         [pId],
+      );
+    }
+
+    // 1b. Find Koordinator for this Keuskupan
+    let koordinator: any[] = [];
+    if (kId) {
+      koordinator = await this.dataSource.query(
+        `SELECT u.id FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         WHERE (r.code = 'KOORDINATOR' OR LOWER(p.pengurus_position) LIKE '%koordinator%') AND p.keuskupan_id = $1`,
+        [kId],
       );
     }
 
@@ -2295,6 +2328,14 @@ export class OrdersController {
           );
         }
 
+        // 2b. Add Koordinator Keuskupan
+        for (const k of koordinator) {
+          await this.dataSource.query(
+            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'KOORDINATOR') ON CONFLICT DO NOTHING`,
+            [gId, k.id],
+          );
+        }
+
         // 3. Welcome message
         await this.dataSource.query(
           `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
@@ -2311,6 +2352,20 @@ export class OrdersController {
               order.id, 
               `Pemantauan ${item.itemName}`, 
               `Ada permintaan ${item.itemName} (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.`
+            ],
+          );
+        }
+
+        // 🔔 4b. Notify Koordinator Keuskupan per-misa
+        for (const k of koordinator) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+             VALUES ($1, $2, $3, $4, 'NEW_ORDER_KOORDINATOR', false)`,
+            [
+              k.id, 
+              order.id, 
+              `Pemantauan Keuskupan: ${item.itemName}`, 
+              `Ada permintaan ${item.itemName} (${order.order_number}) di keuskupan Anda. Ketuk untuk memantau status dan koordinasi via chat.`
             ],
           );
         }
@@ -2376,6 +2431,13 @@ export class OrdersController {
         );
       }
 
+      for (const k of koordinator) {
+        await this.dataSource.query(
+          `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'KOORDINATOR') ON CONFLICT DO NOTHING`,
+          [firstGroupId, k.id],
+        );
+      }
+
       await this.dataSource.query(
         `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
         [firstGroupId, `Grup Pelayanan ${order.order_number} telah dibuat. Menunggu konfirmasi kehadiran Romo.`],
@@ -2387,6 +2449,15 @@ export class OrdersController {
           `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
            VALUES ($1, $2, 'Pemantauan Pelayanan Sakramen Perminyakan', $3, 'NEW_ORDER_MONITOR', false)`,
           [p.id, order.id, `Ada permintaan pelayanan Sakramen Perminyakan (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.`],
+        );
+      }
+
+      // 🔔 Notify Koordinator Keuskupan
+      for (const k of koordinator) {
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+           VALUES ($1, $2, 'Pemantauan Keuskupan: Sakramen Perminyakan', $3, 'NEW_ORDER_KOORDINATOR', false)`,
+          [k.id, order.id, `Ada permintaan pelayanan Sakramen Perminyakan (${order.order_number}) di keuskupan Anda. Ketuk untuk memantau status dan koordinasi via chat.`],
         );
       }
 
@@ -2409,7 +2480,7 @@ export class OrdersController {
       }
     }
 
-    // 🔔 7. Send Real-Time FCM Push Notifications to Romo and Pengurus
+    // 🔔 7. Send Real-Time FCM Push Notifications to Romo, Pengurus, and Koordinator
     try {
       const catRow = await this.dataSource.query('SELECT name FROM service_categories WHERE id = $1', [dto.serviceCategoryId]);
       const catName = catRow[0]?.name || 'Pelayanan';
@@ -2442,6 +2513,21 @@ export class OrdersController {
           body: `Ada permohonan ${catName} (${order.order_number}) dari warga lingkungan Anda.`,
           data: {
             type: 'NEW_ORDER_MONITOR',
+            orderId: order.id.toString(),
+            orderNumber: order.order_number,
+            categoryName: catName,
+          },
+        });
+      }
+
+      // Unique Koordinator IDs (exclude creator)
+      const allKoordinatorIds = Array.from(new Set(koordinator.map((k: any) => k.id))).filter((id: number) => id && id !== userId);
+      if (allKoordinatorIds.length > 0) {
+        await this.fcmService.sendPushToUsers(allKoordinatorIds, {
+          title: `Pemantauan Keuskupan: ${catName}`,
+          body: `Ada permohonan ${catName} (${order.order_number}) baru di keuskupan Anda.`,
+          data: {
+            type: 'NEW_ORDER_KOORDINATOR',
             orderId: order.id.toString(),
             orderNumber: order.order_number,
             categoryName: catName,
@@ -3741,18 +3827,22 @@ export class AssignmentsController {
 
   private async getPengurusForOrder(orderId: number): Promise<any[]> {
     const orderHierarchy = await this.dataSource.query(
-      `SELECT o.lingkungan_id, o.paroki_id FROM orders o WHERE o.id = $1`,
+      `SELECT o.lingkungan_id, o.paroki_id, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id 
+       FROM orders o 
+       JOIN user_profiles p ON o.user_id = p.user_id 
+       WHERE o.id = $1`,
       [orderId],
     );
     if (orderHierarchy.length === 0) return [];
     const oh = orderHierarchy[0];
+    const keuskupanId = oh.keuskupan_id;
     let pengurus: any[] = [];
     if (oh.lingkungan_id) {
       pengurus = await this.dataSource.query(
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.lingkungan_id = $1`,
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND p.lingkungan_id = $1`,
         [oh.lingkungan_id],
       );
     }
@@ -3761,10 +3851,27 @@ export class AssignmentsController {
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.paroki_id = $1`,
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND p.paroki_id = $1`,
         [oh.paroki_id],
       );
     }
+
+    // Also include Koordinator in the same Keuskupan
+    if (keuskupanId) {
+      const koordinator = await this.dataSource.query(
+        `SELECT u.id FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         WHERE (r.code = 'KOORDINATOR' OR LOWER(p.pengurus_position) LIKE '%koordinator%') AND p.keuskupan_id = $1`,
+        [keuskupanId],
+      );
+      for (const k of koordinator) {
+        if (!pengurus.some((p: any) => p.id === k.id)) {
+          pengurus.push(k);
+        }
+      }
+    }
+
     return pengurus;
   }
 

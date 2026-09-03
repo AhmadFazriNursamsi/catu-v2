@@ -213,15 +213,21 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Color _typeAccentColor(String type) {
     switch (type) {
       case 'NEW_REQUEST':
+      case 'NEW_ORDER_MONITOR':
+      case 'NEW_ORDER_KOORDINATOR':
+      case 'NEW_ORDER_ROMO':
         return const Color(0xFF1E3A8A);
       case 'ROMO_ACCEPTED':
       case 'RESCHEDULE_ACCEPTED':
+      case 'ORDER_CONFIRMED':
+      case 'ORDER_DONE':
         return const Color(0xFF059669);
       case 'ROMO_DECLINED':
       case 'RESCHEDULE_REJECTED':
         return const Color(0xFFDC2626);
       case 'STATUS_UPDATE':
       case 'RESCHEDULE_PROPOSED':
+      case 'ORDER_STATUS_CHANGED':
         return const Color(0xFFD97706);
       case 'ROMO_HANDOVER':
         return const Color(0xFF0284C7);
@@ -234,11 +240,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   IconData _typeIcon(String type, String? category) {
     if (type == 'CHAT_MESSAGE') return Icons.chat_rounded;
-    if (type == 'NEW_REQUEST') {
+    if (type == 'NEW_REQUEST' || type == 'NEW_ORDER_MONITOR' || type == 'NEW_ORDER_KOORDINATOR' || type == 'NEW_ORDER_ROMO') {
       final isKedukaan = (category ?? '').toLowerCase().contains('kedukaan');
       return isKedukaan ? Icons.church_rounded : Icons.water_drop_rounded;
     }
-    if (type == 'ROMO_ACCEPTED' || type == 'RESCHEDULE_ACCEPTED') return Icons.check_circle_rounded;
+    if (type == 'ROMO_ACCEPTED' || type == 'RESCHEDULE_ACCEPTED' || type == 'ORDER_CONFIRMED' || type == 'ORDER_DONE') return Icons.check_circle_rounded;
     if (type == 'ROMO_DECLINED' || type == 'RESCHEDULE_REJECTED') return Icons.cancel_rounded;
     if (type == 'ROMO_HANDOVER') return Icons.swap_horiz_rounded;
     if (type == 'RESCHEDULE_PROPOSED') return Icons.access_time_filled_rounded;
