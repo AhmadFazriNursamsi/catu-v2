@@ -3789,7 +3789,7 @@ export class NotificationsController {
     @Query('userId') userId?: string,
     @Query('role') role?: string,
   ) {
-    const whereClauses: string[] = [`n.type != 'CHAT_MESSAGE'`];
+    const whereClauses: string[] = [];
     const queryParams: any[] = [];
     let idx = 1;
 
@@ -4362,10 +4362,10 @@ export class ChatController {
       const groupInfo = await this.dataSource.query(
         `SELECT g.id, g.title, g.order_id, o.order_number, sc.name as category_name,
                 COALESCE(oi.item_name, sc.name) as item_name,
-                p.full_name as penerima_name
+                p.full_name as penerima_name, o.user_id as order_creator_id
          FROM chat_groups g
-         JOIN orders o ON g.order_id = o.id
-         JOIN service_categories sc ON o.service_category_id = sc.id
+         LEFT JOIN orders o ON g.order_id = o.id
+         LEFT JOIN service_categories sc ON o.service_category_id = sc.id
          LEFT JOIN order_items oi ON g.order_item_id = oi.id
          LEFT JOIN user_profiles p ON o.user_id = p.user_id
          WHERE g.id = $1`,
@@ -4378,7 +4378,7 @@ export class ChatController {
       const penerimaName = groupInfo[0]?.penerima_name || '';
 
       const members = await this.dataSource.query(
-        `SELECT user_id FROM chat_group_members WHERE chat_group_id = $1 AND user_id != $2`,
+        `SELECT DISTINCT user_id FROM chat_group_members WHERE chat_group_id = $1 AND user_id != $2 AND user_id IS NOT NULL`,
         [groupId, senderId],
       );
 
@@ -4388,11 +4388,44 @@ export class ChatController {
         : (dto.messageType === 'LOCATION' ? '📍 Berbagi lokasi' : (dto.message || 'Pesan baru'));
 
       for (const m of members) {
-        if (m.user_id && m.user_id !== senderId) {
-          targetUserIds.push(m.user_id);
+        if (m.user_id && Number(m.user_id) !== Number(senderId) && !targetUserIds.includes(Number(m.user_id))) {
+          targetUserIds.push(Number(m.user_id));
         }
       }
 
+      if (orderId) {
+        const orderCreatorId = groupInfo[0]?.order_creator_id;
+        if (orderCreatorId && Number(orderCreatorId) !== Number(senderId) && !targetUserIds.includes(Number(orderCreatorId))) {
+          targetUserIds.push(Number(orderCreatorId));
+        }
+
+        const assignments = await this.dataSource.query(
+          `SELECT user_id FROM order_assignments WHERE order_id = $1 AND user_id IS NOT NULL`,
+          [orderId],
+        );
+        for (const a of assignments) {
+          if (a.user_id && Number(a.user_id) !== Number(senderId) && !targetUserIds.includes(Number(a.user_id))) {
+            targetUserIds.push(Number(a.user_id));
+          }
+        }
+      }
+
+      // 1. Insert into notifications table for instant sync across all platforms / simulators
+      for (const targetId of targetUserIds) {
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read)
+           VALUES ($1, $2, $3, $4, $5, 'CHAT_MESSAGE', FALSE)`,
+          [
+            targetId,
+            orderId,
+            groupId,
+            `Pesan dari ${senderName}`,
+            msgBody,
+          ],
+        );
+      }
+
+      // 2. Dispatch FCM push notification
       if (targetUserIds.length > 0) {
         await this.fcmService.sendPushToUsers(targetUserIds, {
           title: `Pesan dari ${senderName}`,
