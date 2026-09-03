@@ -1271,6 +1271,15 @@ export class AuthController implements OnModuleInit {
     }
 
     const user = users[0];
+
+    // Admin tidak boleh login di aplikasi mobile
+    if (user.role_code === 'ADMIN') {
+      return {
+        statusCode: 403,
+        message: 'Akun Administrator tidak dapat login melalui aplikasi mobile. Silakan gunakan Web Portal Admin di browser komputer (http://localhost:8000).',
+      };
+    }
+
     return {
       statusCode: 200,
       message: 'Login Berhasil',

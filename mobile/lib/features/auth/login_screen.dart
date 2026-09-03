@@ -105,6 +105,15 @@ class _LoginScreenState extends State<LoginScreen>
       if (res['statusCode'] == 200 && res['user'] != null) {
         final user = res['user'];
         final status = user['accountStatus'] ?? 'APPROVED';
+        final roleCode = (user['roleCode'] ?? '').toString().toUpperCase();
+
+        if (roleCode == 'ADMIN') {
+          setState(() {
+            _backendError = 'Akun Administrator tidak dapat login di aplikasi mobile. Silakan gunakan Web Portal Admin di browser komputer.';
+            _autovalidateMode = AutovalidateMode.onUserInteraction;
+          });
+          return;
+        }
 
         if (status == 'PENDING_APPROVAL') {
           await AuthService.saveSession(user);

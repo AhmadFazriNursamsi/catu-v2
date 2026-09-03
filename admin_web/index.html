@@ -1471,6 +1471,7 @@
       const allPendingUsers = state.users.filter(u => (u.account_status || u.accountStatus || '').toUpperCase() === 'PENDING_APPROVAL');
       const parokiList = state.paroki?.length > 0 ? state.paroki : Array.from(new Set(allPendingUsers.map(u => u.paroki_name).filter(Boolean))).map(name => ({ id: name, name }));
       const roleList = [
+        { code: 'KOORDINATOR', name: '⭐ Koordinator (Keuskupan)' },
         { code: 'UMAT', name: 'Umat Katolik' },
         { code: 'PENGURUS_LINGKUNGAN', name: 'Pengurus Lingkungan' },
         { code: 'ROMO_PAROKI', name: 'Romo Paroki' },
@@ -1483,7 +1484,16 @@
 
         if (state.approvalsFilterRole) {
           const role = (u.role_code || u.roleCode || '').toUpperCase();
-          if (role !== state.approvalsFilterRole) return false;
+          const pos = (u.pengurus_position || u.pengurusPosition || '').toString().toLowerCase();
+          const isKoor = pos.includes('koordinator') || role === 'KOORDINATOR';
+
+          if (state.approvalsFilterRole === 'KOORDINATOR') {
+            if (!isKoor) return false;
+          } else if (state.approvalsFilterRole === 'UMAT') {
+            if (isKoor || role !== 'UMAT') return false;
+          } else if (role !== state.approvalsFilterRole) {
+            return false;
+          }
         }
 
         if (state.approvalsFilterParoki) {
@@ -1496,9 +1506,10 @@
           const email = (u.email || '').toLowerCase();
           const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
           const par = (u.paroki_name || u.kota_name || '').toLowerCase();
+          const keus = (u.keuskupan_name || '').toLowerCase();
           const kota = (u.kota_name || u.address || '').toLowerCase();
           const prov = (u.provinsi_name || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !par.includes(q) && !kota.includes(q) && !prov.includes(q)) return false;
+          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !par.includes(q) && !keus.includes(q) && !kota.includes(q) && !prov.includes(q)) return false;
         }
         return true;
       });
@@ -1509,7 +1520,7 @@
             <div class="p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="approvalsSearchInput" placeholder="Cari pemohon, nama, kota, nomor HP..." value="${state.approvalsSearch}"
+                <input type="text" id="approvalsSearchInput" placeholder="Cari pemohon, nama, keuskupan, kota, nomor HP..." value="${state.approvalsSearch}"
                   oninput="state.approvalsSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
               </div>
@@ -1556,8 +1567,8 @@
                     <th class="px-6 py-4">PEMOHON AKUN</th>
                     <th class="px-6 py-4">NO. WHATSAPP</th>
                     <th class="px-6 py-4">PERAN DIAJUKAN</th>
-                    <th class="px-6 py-4">KOTA / DOMISILI</th>
-                    <th class="px-6 py-4">PAROKI & DOMISILI</th>
+                    <th class="px-6 py-4">KEUSKUPAN & DOMISILI</th>
+                    <th class="px-6 py-4">PAROKI & LINGKUNGAN</th>
                     <th class="px-6 py-4 text-right">AKSI VERIFIKASI</th>
                   </tr>
                 </thead>
@@ -1586,6 +1597,17 @@
                       <td class="px-6 py-4">
                         ${(() => {
                           const r = (u.role_code || '').toUpperCase();
+                          const pos = (u.pengurus_position || u.pengurusPosition || '').toString().toLowerCase();
+                          const isKoordinator = pos.includes('koordinator') || r === 'KOORDINATOR';
+
+                          if (isKoordinator) {
+                            return `
+                              <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-900 border border-indigo-300 font-bold text-xs shadow-2xs">
+                                <i data-lucide="award" class="w-3.5 h-3.5 text-indigo-600"></i>
+                                <span>KOORDINATOR (KEUSKUPAN)</span>
+                              </span>
+                            `;
+                          }
                           const bgClass = r === 'UMAT' ? 'bg-blue-50 text-blue-900 border-blue-200'
                             : r === 'PENGURUS_LINGKUNGAN' ? 'bg-indigo-50 text-indigo-900 border-indigo-200'
                             : r === 'ROMO_PAROKI' ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
@@ -1600,23 +1622,24 @@
                         })()}
                       </td>
                       <td class="px-6 py-4">
-                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
-                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
-                          <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                        <div class="inline-flex flex-col">
+                          ${u.keuskupan_name ? `<span class="font-bold text-slate-900 text-xs">${u.keuskupan_name}</span>` : ''}
+                          <span class="text-[11px] text-slate-500">${u.kota_name || u.address || '-'}</span>
                         </div>
                       </td>
                       <td class="px-6 py-4">
-                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
-                          <i data-lucide="church" class="w-3.5 h-3.5 text-slate-400"></i>
-                          <span>${u.paroki_name || u.kota_name || '-'}</span>
+                        <div class="inline-flex flex-col">
+                          <span class="font-bold text-slate-800 text-xs">${u.paroki_name || '-'}</span>
+                          ${u.lingkungan_name ? `<span class="text-[11px] text-slate-400">Lkg. ${u.lingkungan_name}</span>` : ''}
                         </div>
                       </td>
                       <td class="px-6 py-4 text-right">
                         ${(() => {
                           const r = (u.role_code || u.roleCode || '').toUpperCase();
-                          const romoPos = (u.romo_position || u.romoPosition || '').toUpperCase();
+                          const pos = (u.pengurus_position || u.pengurusPosition || '').toString().toLowerCase();
+                          const isKoordinator = pos.includes('koordinator') || r === 'KOORDINATOR';
 
-                          if (r === 'UMAT') {
+                          if (r === 'UMAT' && !isKoordinator) {
                             return `
                               <div class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80 font-bold text-[11px] shadow-2xs" title="Persetujuan pendaftaran Umat dilakukan oleh Pengurus Lingkungan via aplikasi mobile CATU">
                                 <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-600"></i>
