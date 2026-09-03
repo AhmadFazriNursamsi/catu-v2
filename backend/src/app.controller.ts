@@ -3131,20 +3131,10 @@ export class OrdersController {
       [orderId, itemId || null, romoId, targetRomoId, reason],
     );
 
-    // Add new Romo to Chat Group & post system event
+    // Post chat system event to existing group members (Romo Baru has not accepted yet so does not join chat yet)
     const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
     if (groups.length > 0) {
       const groupId = groups[0].id;
-      const memberCheck = await this.dataSource.query(
-        `SELECT id FROM chat_group_members WHERE chat_group_id = $1 AND user_id = $2`,
-        [groupId, targetRomoId],
-      );
-      if (memberCheck.length === 0) {
-        await this.dataSource.query(
-          `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'ROMO_PAROKI')`,
-          [groupId, targetRomoId],
-        );
-      }
       await this.dataSource.query(
         `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
         [groupId, `Pemberitahuan: Romo ${prevRomoName} mengajukan pelimpahan tugas pelayanan ${itemPrefix}kepada Romo ${newRomoName} ("${reason}"). Menunggu konfirmasi dari Romo ${newRomoName}.`],
@@ -3311,13 +3301,41 @@ export class OrdersController {
         [orderId, romoId],
       );
 
-      // System chat message
+      // Add Romo Baru to chat group & Kick Romo Lama from chat group
       const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
       if (groups.length > 0) {
-        await this.dataSource.query(
-          `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
-          [groups[0].id, `Romo ${targetRomoName} telah MENERIMA pelimpahan tugas pelayanan dari Romo ${prevRomoName}. Tugas pelayanan kini resmi diemban oleh Romo ${targetRomoName}.`],
+        let romoRole = 'ROMO_PAROKI';
+        const rCheck = await this.dataSource.query(
+          `SELECT r.code FROM auth_users u JOIN roles r ON u.role_id = r.id WHERE u.id = $1`,
+          [romoId],
         );
+        if (rCheck.length > 0 && rCheck[0].code === 'ROMO_ORDO') {
+          romoRole = 'ROMO_ORDO';
+        }
+
+        for (const grp of groups) {
+          // 1. Add Romo Baru to chat group
+          await this.dataSource.query(
+            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) 
+             VALUES ($1, $2, $3) 
+             ON CONFLICT (chat_group_id, user_id) DO UPDATE SET role_in_group = $3`,
+            [grp.id, romoId, romoRole],
+          );
+
+          // 2. Automatically kick Romo Lama from chat group
+          if (prevRomoId) {
+            await this.dataSource.query(
+              `DELETE FROM chat_group_members WHERE chat_group_id = $1 AND user_id = $2`,
+              [grp.id, prevRomoId],
+            );
+          }
+
+          // 3. Post system event message to group
+          await this.dataSource.query(
+            `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
+            [grp.id, `Romo ${targetRomoName} telah MENERIMA pelimpahan tugas dan bergabung ke grup pelayanan. Romo ${prevRomoName} resmi keluar dari grup ini.`],
+          );
+        }
       }
 
       // 🔔 Notify Romo Lama
@@ -4420,8 +4438,6 @@ export class ChatController {
       } else if (user.role_code.startsWith('ROMO')) {
         whereClause = `WHERE (
           EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1)
-          OR (g.order_item_id IS NOT NULL AND (oi.accepted_romo_id = $1 OR (oi.handover_target_romo_id = $1 AND oi.handover_status = 'PENDING')))
-          OR (g.order_item_id IS NULL AND (o.accepted_romo_id = $1 OR (o.handover_target_romo_id = $1 AND o.handover_status = 'PENDING')))
         )`;
       } else {
         whereClause = `WHERE (o.user_id = $1 OR EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1))`;
