@@ -914,7 +914,9 @@ export class AuthController implements OnModuleInit {
 
       let approverName = 'Admin Aplikasi CATU';
       let assignedApproverId: number | null = null;
-      if (dto.roleCode === 'UMAT' && dto.lingkunganId) {
+      const isKoordinatorRegistration = (pengurusPositionVal && pengurusPositionVal.toLowerCase().includes('koordinator')) || dto.roleCode === 'KOORDINATOR';
+
+      if (dto.roleCode === 'UMAT' && dto.lingkunganId && !isKoordinatorRegistration) {
         const pengurus = await queryRunner.query(
           `SELECT u.id, p.full_name, u.phone_number 
            FROM user_profiles p 
@@ -1903,13 +1905,16 @@ export class AuthController implements OnModuleInit {
       SELECT 
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE u.account_status = 'PENDING_APPROVAL') as pending_approvals,
-        COUNT(*) FILTER (WHERE r.code = 'UMAT') as total_umat,
+        COUNT(*) FILTER (WHERE u.account_status = 'PENDING_APPROVAL' AND (LOWER(p.pengurus_position) LIKE '%koordinator%' OR r.code = 'KOORDINATOR')) as pending_koordinator,
+        COUNT(*) FILTER (WHERE r.code = 'UMAT' AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) as total_umat,
+        COUNT(*) FILTER (WHERE LOWER(p.pengurus_position) LIKE '%koordinator%' OR r.code = 'KOORDINATOR') as total_koordinator,
         COUNT(*) FILTER (WHERE r.code = 'ROMO_PAROKI') as total_romo_paroki,
         COUNT(*) FILTER (WHERE r.code = 'ROMO_ORDO') as total_romo_ordo,
-        COUNT(*) FILTER (WHERE r.code = 'PENGURUS_LINGKUNGAN') as total_pengurus,
+        COUNT(*) FILTER (WHERE r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) as total_pengurus,
         COUNT(*) FILTER (WHERE r.code = 'ADMIN') as total_admin
       FROM auth_users u
       JOIN roles r ON u.role_id = r.id
+      LEFT JOIN user_profiles p ON p.user_id = u.id
     `);
 
     const recentOrders = await this.dataSource.query(`
@@ -1921,7 +1926,7 @@ export class AuthController implements OnModuleInit {
     `);
 
     const recentUsers = await this.dataSource.query(`
-      SELECT u.id, u.phone_number, r.code as role_code, r.name as role_name, p.full_name, u.account_status, u.created_at
+      SELECT u.id, u.phone_number, r.code as role_code, r.name as role_name, p.full_name, u.account_status, u.created_at, p.pengurus_position
       FROM auth_users u
       JOIN roles r ON u.role_id = r.id
       LEFT JOIN user_profiles p ON p.user_id = u.id
@@ -1975,15 +1980,21 @@ export class AuthController implements OnModuleInit {
     let pIdx = 1;
 
     if (role && role !== 'ALL') {
-      whereClauses.push(`r.code = $${pIdx++}`);
-      params.push(role);
+      if (role === 'KOORDINATOR') {
+        whereClauses.push(`(LOWER(p.pengurus_position) LIKE '%koordinator%' OR r.code = 'KOORDINATOR')`);
+      } else if (role === 'UMAT') {
+        whereClauses.push(`(r.code = 'UMAT' AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%'))`);
+      } else {
+        whereClauses.push(`r.code = $${pIdx++}`);
+        params.push(role);
+      }
     }
     if (status && status !== 'ALL') {
       whereClauses.push(`u.account_status = $${pIdx++}`);
       params.push(status);
     }
     if (search && search.trim().length > 0) {
-      whereClauses.push(`(p.full_name ILIKE $${pIdx} OR u.phone_number ILIKE $${pIdx} OR par.name ILIKE $${pIdx})`);
+      whereClauses.push(`(p.full_name ILIKE $${pIdx} OR u.phone_number ILIKE $${pIdx} OR par.name ILIKE $${pIdx} OR k.name ILIKE $${pIdx})`);
       params.push(`%${search.trim()}%`);
       pIdx++;
     }
@@ -2017,6 +2028,16 @@ export class AuthController implements OnModuleInit {
       await this.dataSource.query(
         `UPDATE user_profiles SET is_jabatan_active = $1 WHERE user_id = $2`,
         [body.isJabatanActive, uid],
+      );
+    } else if (body.status === 'APPROVED') {
+      await this.dataSource.query(
+        `UPDATE user_profiles SET is_jabatan_active = true WHERE user_id = $1 AND (pengurus_position IS NOT NULL OR romo_position = 'KETUA_ROMO')`,
+        [uid],
+      );
+    } else if (body.status === 'REJECTED') {
+      await this.dataSource.query(
+        `UPDATE user_profiles SET is_jabatan_active = false WHERE user_id = $1 AND (pengurus_position IS NOT NULL OR romo_position = 'KETUA_ROMO')`,
+        [uid],
       );
     }
     return { statusCode: 200, message: `Status akun user ID ${uid} berhasil diubah menjadi ${body.status}` };

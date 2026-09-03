@@ -495,13 +495,103 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     final users = _analyticsData['users'] ?? {};
     final categories = _analyticsData['categories'] is List ? _analyticsData['categories'] as List : [];
     final recentOrders = _analyticsData['recentOrders'] is List ? _analyticsData['recentOrders'] as List : [];
-    final recentUsers = _analyticsData['recentUsers'] is List ? _analyticsData['recentUsers'] as List : [];
+
+    final int pendingKoordinatorCount = int.tryParse(users['pending_koordinator']?.toString() ?? '0') ??
+        _adminUsers.where((u) =>
+            (u['account_status'] ?? '').toString() == 'PENDING_APPROVAL' &&
+            ((u['pengurus_position'] ?? u['pengurusPosition'] ?? '').toString().toLowerCase().contains('koordinator') ||
+             (u['role_code'] ?? '').toString() == 'KOORDINATOR')).length;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Banner Khusus: Persetujuan Koordinator Keuskupan ──
+          if (pendingKoordinatorCount > 0)
+            Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4338CA), Color(0xFF6366F1)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF4F46E5).withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.stars_rounded, color: Colors.white, size: 28),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'Persetujuan Koordinator Keuskupan',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '$pendingKoordinatorCount Menunggu',
+                                style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Terdapat pendaftaran akun Koordinator Keuskupan baru yang memerlukan persetujuan Admin pusat.',
+                          style: TextStyle(fontSize: 12, color: Color(0xFFE0E7FF)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                    label: const Text('Tinjau & Setujui', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF4338CA),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _userRoleFilter = 'KOORDINATOR';
+                        _userStatusFilter = 'PENDING_APPROVAL';
+                        _selectedTabIndex = 2;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+
           // ── Stat Cards Grid ──
           LayoutBuilder(
             builder: (context, constraints) {
@@ -524,7 +614,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     width: cardW,
                     title: 'Total Pengguna',
                     value: '${users['total'] ?? _adminUsers.length}',
-                    subtext: '${users['total_umat'] ?? 0} Umat • ${users['total_pengurus'] ?? 0} Pengurus',
+                    subtext: '${users['total_umat'] ?? 0} Umat • ${users['total_koordinator'] ?? 0} Koordinator • ${users['total_pengurus'] ?? 0} Pengurus',
                     icon: Icons.people_alt_rounded,
                     accentColor: const Color(0xFF059669),
                     badge: '${users['pending_approvals'] ?? 0} Approval',
@@ -966,16 +1056,37 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   Widget _buildTab2Users() {
     final query = _userSearchController.text.trim().toLowerCase();
     final filtered = _adminUsers.where((u) {
-      if (_userRoleFilter != 'ALL' && (u['role_code'] ?? '').toString() != _userRoleFilter) return false;
+      final pos = (u['pengurus_position'] ?? u['pengurusPosition'] ?? '').toString().toLowerCase();
+      final role = (u['role_code'] ?? '').toString().toUpperCase();
+      final isKoor = pos.contains('koordinator') || role == 'KOORDINATOR';
+
+      if (_userRoleFilter != 'ALL') {
+        if (_userRoleFilter == 'KOORDINATOR') {
+          if (!isKoor) return false;
+        } else if (_userRoleFilter == 'UMAT') {
+          if (isKoor || role != 'UMAT' || (pos.isNotEmpty && pos != 'null')) return false;
+        } else if (_userRoleFilter == 'PENGURUS_LINGKUNGAN') {
+          if (isKoor || (role != 'PENGURUS_LINGKUNGAN' && (pos.isEmpty || pos == 'null'))) return false;
+        } else if (role != _userRoleFilter) {
+          return false;
+        }
+      }
       if (_userStatusFilter != 'ALL' && (u['account_status'] ?? '').toString() != _userStatusFilter) return false;
       if (query.isNotEmpty) {
         final matchName = (u['full_name'] ?? '').toString().toLowerCase().contains(query);
         final matchPhone = (u['phone_number'] ?? '').toString().toLowerCase().contains(query);
         final matchParoki = (u['paroki_name'] ?? '').toString().toLowerCase().contains(query);
-        if (!matchName && !matchPhone && !matchParoki) return false;
+        final matchKeuskupan = (u['keuskupan_name'] ?? '').toString().toLowerCase().contains(query);
+        final matchKota = (u['kota_name'] ?? '').toString().toLowerCase().contains(query);
+        if (!matchName && !matchPhone && !matchParoki && !matchKeuskupan && !matchKota) return false;
       }
       return true;
     }).toList();
+
+    final int pendingTotal = _adminUsers.where((u) => (u['account_status'] ?? '').toString() == 'PENDING_APPROVAL').length;
+    final int koordinatorTotal = _adminUsers.where((u) =>
+        (u['pengurus_position'] ?? u['pengurusPosition'] ?? '').toString().toLowerCase().contains('koordinator') ||
+        (u['role_code'] ?? '').toString() == 'KOORDINATOR').length;
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -987,7 +1098,74 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         ),
         child: Column(
           children: [
-            // Quick Filter Tabs & Search
+            // Quick Filter Pills Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildUserFilterPill(
+                      label: 'Semua (${_adminUsers.length})',
+                      isSelected: _userRoleFilter == 'ALL' && _userStatusFilter == 'ALL',
+                      onTap: () => setState(() {
+                        _userRoleFilter = 'ALL';
+                        _userStatusFilter = 'ALL';
+                      }),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildUserFilterPill(
+                      label: '⏳ Menunggu Approval ($pendingTotal)',
+                      badgeColor: const Color(0xFFDC2626),
+                      isSelected: _userStatusFilter == 'PENDING_APPROVAL',
+                      onTap: () => setState(() {
+                        _userStatusFilter = 'PENDING_APPROVAL';
+                      }),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildUserFilterPill(
+                      label: '⭐ Koordinator Keuskupan ($koordinatorTotal)',
+                      badgeColor: const Color(0xFF4F46E5),
+                      isSelected: _userRoleFilter == 'KOORDINATOR',
+                      onTap: () => setState(() {
+                        _userRoleFilter = 'KOORDINATOR';
+                      }),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildUserFilterPill(
+                      label: '🏛️ Pengurus Lingkungan',
+                      isSelected: _userRoleFilter == 'PENGURUS_LINGKUNGAN',
+                      onTap: () => setState(() {
+                        _userRoleFilter = 'PENGURUS_LINGKUNGAN';
+                      }),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildUserFilterPill(
+                      label: '✝️ Romo Paroki & Ordo',
+                      isSelected: _userRoleFilter == 'ROMO_PAROKI' || _userRoleFilter == 'ROMO_ORDO',
+                      onTap: () => setState(() {
+                        _userRoleFilter = 'ROMO_PAROKI';
+                      }),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildUserFilterPill(
+                      label: '👥 Umat',
+                      isSelected: _userRoleFilter == 'UMAT',
+                      onTap: () => setState(() {
+                        _userRoleFilter = 'UMAT';
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Divider(color: Color(0xFFE2E8F0), height: 1),
+
+            // Search Bar & Filter Dropdowns
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -998,7 +1176,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       controller: _userSearchController,
                       onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
-                        hintText: 'Cari nama umat, no. HP, paroki...',
+                        hintText: 'Cari nama, no. HP, paroki, keuskupan...',
                         prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Color(0xFF64748B)),
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
@@ -1014,7 +1192,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     value: _userRoleFilter,
                     underline: const SizedBox(),
                     items: const [
-                      DropdownMenuItem(value: 'ALL', child: Text('Semua Role')),
+                      DropdownMenuItem(value: 'ALL', child: Text('Semua Role / Jabatan')),
+                      DropdownMenuItem(value: 'KOORDINATOR', child: Text('⭐ Koordinator (Keuskupan)')),
                       DropdownMenuItem(value: 'UMAT', child: Text('Umat')),
                       DropdownMenuItem(value: 'ROMO_PAROKI', child: Text('Romo Paroki')),
                       DropdownMenuItem(value: 'ROMO_ORDO', child: Text('Romo Ordo')),
@@ -1054,8 +1233,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           columns: const [
                             DataColumn(label: Text('PENGGUNA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
                             DataColumn(label: Text('NO. WHATSAPP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                            DataColumn(label: Text('ROLE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                            DataColumn(label: Text('PAROKI / DOMISILI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                            DataColumn(label: Text('ROLE / JABATAN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                            DataColumn(label: Text('KEUSKUPAN / PAROKI / DOMISILI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
                             DataColumn(label: Text('STATUS AKUN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
                             DataColumn(label: Text('AKSI APPROVAL / KELOLA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
                           ],
@@ -1063,6 +1242,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             final userId = int.tryParse(u['id']?.toString() ?? '0') ?? 0;
                             final status = (u['account_status'] ?? 'PENDING_APPROVAL').toString();
                             final isPending = status == 'PENDING_APPROVAL';
+
+                            final roleCode = (u['role_code'] ?? u['role_name'] ?? 'UMAT').toString().toUpperCase();
+                            final pengurusPos = (u['pengurus_position'] ?? u['pengurusPosition'] ?? '').toString();
+                            final isKoordinator = pengurusPos.toLowerCase().contains('koordinator') || roleCode == 'KOORDINATOR';
 
                             Color statusColor = isPending ? const Color(0xFFD97706) : (status == 'APPROVED' ? const Color(0xFF059669) : const Color(0xFFDC2626));
 
@@ -1073,11 +1256,15 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                     children: [
                                       CircleAvatar(
                                         radius: 14,
-                                        backgroundColor: const Color(0xFF1E3A8A).withOpacity(0.1),
-                                        child: Text(
-                                          (u['full_name'] ?? 'U').toString().substring(0, 1).toUpperCase(),
-                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
-                                        ),
+                                        backgroundColor: isKoordinator
+                                            ? const Color(0xFF4F46E5).withOpacity(0.15)
+                                            : const Color(0xFF1E3A8A).withOpacity(0.1),
+                                        child: isKoordinator
+                                            ? const Icon(Icons.stars_rounded, color: Color(0xFF4F46E5), size: 16)
+                                            : Text(
+                                                (u['full_name'] ?? 'U').toString().substring(0, 1).toUpperCase(),
+                                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
+                                              ),
                                       ),
                                       const SizedBox(width: 10),
                                       Column(
@@ -1094,16 +1281,72 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 ),
                                 DataCell(Text(u['phone_number'] ?? '-')),
                                 DataCell(
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1E3A8A).withOpacity(0.08),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(u['role_name'] ?? u['role_code'] ?? 'UMAT', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
+                                  isKoordinator
+                                      ? Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF4F46E5).withOpacity(0.12),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: const Color(0xFF4F46E5).withOpacity(0.3)),
+                                          ),
+                                          child: const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.stars_rounded, size: 13, color: Color(0xFF4F46E5)),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                'KOORDINATOR (KEUSKUPAN)',
+                                                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF4F46E5)),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : (pengurusPos.isNotEmpty && pengurusPos != 'null')
+                                          ? Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFD97706).withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                'PENGURUS (${pengurusPos.toUpperCase()})',
+                                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFFD97706)),
+                                              ),
+                                            )
+                                          : Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF1E3A8A).withOpacity(0.08),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                u['role_name'] ?? roleCode,
+                                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
+                                              ),
+                                            ),
+                                ),
+                                DataCell(
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      if (u['keuskupan_name'] != null && u['keuskupan_name'].toString().isNotEmpty)
+                                        Text(
+                                          u['keuskupan_name'].toString(),
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, color: Color(0xFF0F172A)),
+                                        ),
+                                      Text(
+                                        u['paroki_name'] ?? u['kota_name'] ?? '-',
+                                        style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                      ),
+                                      if (u['lingkungan_name'] != null && u['lingkungan_name'].toString().isNotEmpty)
+                                        Text(
+                                          'Lkg. ${u['lingkungan_name']}',
+                                          style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+                                        ),
+                                    ],
                                   ),
                                 ),
-                                DataCell(Text(u['paroki_name'] ?? u['kota_name'] ?? u['keuskupan_name'] ?? '-')),
                                 DataCell(
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1116,7 +1359,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                       ? Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            ElevatedButton.icon(
+                                              ElevatedButton.icon(
                                               icon: const Icon(Icons.check_rounded, size: 14),
                                               label: const Text('Setujui', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                                               style: ElevatedButton.styleFrom(
@@ -1160,6 +1403,37 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserFilterPill({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    Color? badgeColor,
+  }) {
+    final color = badgeColor ?? const Color(0xFF1E3A8A);
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? color : Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? color : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? Colors.white : const Color(0xFF475569),
+          ),
         ),
       ),
     );
