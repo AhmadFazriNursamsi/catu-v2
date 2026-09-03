@@ -713,6 +713,7 @@ export class AuthController implements OnModuleInit {
          LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
          WHERE r.code = 'UMAT'
            AND u.account_status = 'PENDING_APPROVAL'
+           AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
            AND p.keuskupan_id = $1
          ORDER BY u.created_at DESC`,
         [targetKeuskupan],
@@ -734,7 +735,9 @@ export class AuthController implements OnModuleInit {
          LEFT JOIN wilayah w ON p.wilayah_id = w.id
          LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
          LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
-         WHERE r.code = 'UMAT' AND u.account_status = 'PENDING_APPROVAL'
+         WHERE r.code = 'UMAT'
+           AND u.account_status = 'PENDING_APPROVAL'
+           AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
          ORDER BY u.created_at DESC`,
       );
       return rows;
@@ -755,6 +758,7 @@ export class AuthController implements OnModuleInit {
        LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
        WHERE r.code = 'UMAT'
          AND u.account_status = 'PENDING_APPROVAL'
+         AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
          AND p.lingkungan_id = $1
        ORDER BY u.created_at DESC`,
       [resolvedLingkunganId],
@@ -1813,7 +1817,7 @@ export class AuthController implements OnModuleInit {
   async approveRegistration(@Body() dto: ApproveUserDto) {
     if (dto.action === 'APPROVED') {
       const targetProf = await this.dataSource.query(
-        `SELECT u.role_id, r.code as role_code, p.lingkungan_id, p.pengurus_position, p.full_name
+        `SELECT u.role_id, r.code as role_code, p.lingkungan_id, p.keuskupan_id, p.pengurus_position, p.full_name
          FROM auth_users u 
          JOIN roles r ON u.role_id = r.id 
          LEFT JOIN user_profiles p ON u.id = p.user_id 
@@ -1821,31 +1825,53 @@ export class AuthController implements OnModuleInit {
         [dto.targetUserId],
       );
 
-      if (targetProf.length > 0 && targetProf[0].role_code === 'UMAT') {
-        throw new BadRequestException('Pendaftaran akun Umat harus diverifikasi dan disetujui oleh Pengurus Lingkungan setempat melalui aplikasi mobile CATU.');
-      }
+      if (targetProf.length > 0) {
+        const roleCode = targetProf[0].role_code;
+        const pengurusPos = (targetProf[0].pengurus_position || '').toString().toLowerCase();
+        const isKoordinator = pengurusPos.includes('koordinator') || roleCode === 'KOORDINATOR';
 
-      if (targetProf.length > 0 && targetProf[0].role_code === 'PENGURUS_LINGKUNGAN' && targetProf[0].lingkungan_id && targetProf[0].pengurus_position) {
-        const existingApproved = await this.dataSource.query(
-          `SELECT u.id, p.full_name, p.pengurus_position 
-           FROM user_profiles p 
-           JOIN auth_users u ON p.user_id = u.id 
-           WHERE p.lingkungan_id = $1 
-             AND u.id != $2
-             AND u.account_status = 'APPROVED'
-             AND (
-               LOWER(p.pengurus_position) = LOWER($3)
-               OR (LOWER($3) LIKE '%ketua%' AND LOWER($3) NOT LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%ketua%' AND LOWER(p.pengurus_position) NOT LIKE '%wakil%')
-               OR (LOWER($3) LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%wakil%')
-               OR (LOWER($3) LIKE '%sekretaris%' AND LOWER(p.pengurus_position) LIKE '%sekretaris%')
-               OR (LOWER($3) LIKE '%bendahara%' AND LOWER(p.pengurus_position) LIKE '%bendahara%')
-             )`,
-          [targetProf[0].lingkungan_id, dto.targetUserId, targetProf[0].pengurus_position],
-        );
-        if (existingApproved.length > 0) {
-          throw new BadRequestException(
-            `Gagal menyetujui akun: Jabatan ${targetProf[0].pengurus_position} pada lingkungan ini sudah terisi dan aktif oleh ${existingApproved[0].full_name}. Tidak boleh ada jabatan pengurus yang ganda dalam satu lingkungan.`,
+        // Check if Koordinator in that Keuskupan already exists
+        if (isKoordinator && targetProf[0].keuskupan_id) {
+          const existingKoordinator = await this.dataSource.query(
+            `SELECT u.id, p.full_name, p.pengurus_position 
+             FROM user_profiles p 
+             JOIN auth_users u ON p.user_id = u.id 
+             WHERE p.keuskupan_id = $1 
+               AND u.id != $2
+               AND u.account_status = 'APPROVED'
+               AND LOWER(p.pengurus_position) LIKE '%koordinator%'`,
+            [targetProf[0].keuskupan_id, dto.targetUserId],
           );
+          if (existingKoordinator.length > 0) {
+            throw new BadRequestException(
+              `Gagal menyetujui akun: Jabatan Koordinator untuk keuskupan ini sudah aktif oleh ${existingKoordinator[0].full_name}.`,
+            );
+          }
+        }
+
+        // Pengurus Lingkungan duplicate position check
+        if (roleCode === 'PENGURUS_LINGKUNGAN' && targetProf[0].lingkungan_id && targetProf[0].pengurus_position) {
+          const existingApproved = await this.dataSource.query(
+            `SELECT u.id, p.full_name, p.pengurus_position 
+             FROM user_profiles p 
+             JOIN auth_users u ON p.user_id = u.id 
+             WHERE p.lingkungan_id = $1 
+               AND u.id != $2
+               AND u.account_status = 'APPROVED'
+               AND (
+                 LOWER(p.pengurus_position) = LOWER($3)
+                 OR (LOWER($3) LIKE '%ketua%' AND LOWER($3) NOT LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%ketua%' AND LOWER(p.pengurus_position) NOT LIKE '%wakil%')
+                 OR (LOWER($3) LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%wakil%')
+                 OR (LOWER($3) LIKE '%sekretaris%' AND LOWER(p.pengurus_position) LIKE '%sekretaris%')
+                 OR (LOWER($3) LIKE '%bendahara%' AND LOWER(p.pengurus_position) LIKE '%bendahara%')
+               )`,
+            [targetProf[0].lingkungan_id, dto.targetUserId, targetProf[0].pengurus_position],
+          );
+          if (existingApproved.length > 0) {
+            throw new BadRequestException(
+              `Gagal menyetujui akun: Jabatan ${targetProf[0].pengurus_position} pada lingkungan ini sudah terisi dan aktif oleh ${existingApproved[0].full_name}. Tidak boleh ada jabatan pengurus yang ganda dalam satu lingkungan.`,
+            );
+          }
         }
       }
 
