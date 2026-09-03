@@ -92,7 +92,8 @@ class _RegisterScreenState extends State<RegisterScreen>
     if (_selectedRole == 'UMAT' ||
         _selectedRole == 'PENGURUS_LINGKUNGAN' ||
         _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
-      if (_selectedUmatPosition == 'KETUA' ||
+      if (_selectedUmatPosition == 'KOORDINATOR' ||
+          _selectedUmatPosition == 'KETUA' ||
           _selectedUmatPosition == 'WAKIL' ||
           _selectedUmatPosition == 'SEKRETARIS' ||
           _selectedUmatPosition == 'BENDAHARA') {
@@ -265,7 +266,12 @@ class _RegisterScreenState extends State<RegisterScreen>
       if (_selectedUmatPosition != null &&
           _selectedUmatPosition!.isNotEmpty) {
         pengurusPosition = _selectedUmatPosition;
-        if (_selectedRole == 'UMAT') finalRoleCode = 'PENGURUS_LINGKUNGAN';
+        if (_selectedUmatPosition == 'KOORDINATOR') {
+          finalRoleCode = 'UMAT';
+          pengurusPosition = 'Koordinator';
+        } else if (_selectedRole == 'UMAT') {
+          finalRoleCode = 'PENGURUS_LINGKUNGAN';
+        }
       }
     } else if (_selectedRole == 'ROMO_ORDO') {
       romoPosition = _selectedRomoOrdoPosition;
@@ -559,6 +565,11 @@ class _RegisterScreenState extends State<RegisterScreen>
               value: null,
               child: Text('Anggota Umat',
                   style: TextStyle(fontSize: 13),
+                  overflow: TextOverflow.ellipsis)),
+          DropdownMenuItem<String?>(
+              value: 'KOORDINATOR',
+              child: Text('Koordinator (Tingkat Keuskupan)',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8)),
                   overflow: TextOverflow.ellipsis)),
           DropdownMenuItem<String?>(
               value: 'KETUA',

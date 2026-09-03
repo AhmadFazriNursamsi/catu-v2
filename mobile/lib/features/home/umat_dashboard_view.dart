@@ -99,8 +99,15 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     if (mounted) setState(() {});
   }
 
+  bool get _isKoordinator {
+    final pos = (widget.user['pengurusPosition'] ?? widget.user['pengurus_position'] ?? '').toString().toLowerCase();
+    final role = (widget.user['roleCode'] ?? widget.user['role_code'] ?? '').toString().toUpperCase();
+    return pos.contains('koordinator') || role == 'KOORDINATOR';
+  }
+
   bool get _isPengurus {
-    return widget.user['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
+    return _isKoordinator ||
+        widget.user['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
         widget.user['role_code'] == 'PENGURUS_LINGKUNGAN' ||
         (widget.user['pengurusPosition'] != null &&
             widget.user['pengurusPosition'].toString().trim().isNotEmpty) ||
@@ -113,10 +120,13 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     try {
       final rawLingkungan = widget.user['lingkunganId'] ?? widget.user['lingkungan_id'];
       final int? lingkunganId = rawLingkungan != null ? int.tryParse(rawLingkungan.toString()) : null;
+      final rawKeuskupan = widget.user['keuskupanId'] ?? widget.user['keuskupan_id'];
+      final int? keuskupanId = rawKeuskupan != null ? int.tryParse(rawKeuskupan.toString()) : null;
       final int? pengurusUserId = _userId;
 
       final list = await ApiService.getPengurusPendingUmat(
-        lingkunganId: lingkunganId,
+        lingkunganId: _isKoordinator ? null : lingkunganId,
+        keuskupanId: _isKoordinator ? keuskupanId : null,
         pengurusUserId: pengurusUserId,
       );
       if (mounted) {
@@ -595,10 +605,12 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                       children: [
                                         Row(
                                           children: [
-                                            const Expanded(
+                                            Expanded(
                                               child: Text(
-                                                'Persetujuan Umat Lingkungan',
-                                                style: TextStyle(
+                                                _isKoordinator
+                                                    ? 'Persetujuan Umat Keuskupan'
+                                                    : 'Persetujuan Umat Lingkungan',
+                                                style: const TextStyle(
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.bold,
                                                   color: Colors.white,
@@ -626,9 +638,11 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                           ],
                                         ),
                                         const SizedBox(height: 2),
-                                        const Text(
-                                          'Verifikasi & setujui pendaftaran umat baru',
-                                          style: TextStyle(
+                                        Text(
+                                          _isKoordinator
+                                              ? 'Verifikasi & setujui pendaftaran umat se-keuskupan'
+                                              : 'Verifikasi & setujui pendaftaran umat baru',
+                                          style: const TextStyle(
                                             fontSize: 11.5,
                                             color: Color(0xFFBFDBFE),
                                           ),

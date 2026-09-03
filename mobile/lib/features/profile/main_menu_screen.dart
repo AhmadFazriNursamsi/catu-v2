@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import 'edit_profile_screen.dart';
@@ -91,7 +90,11 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
   Future<void> _fetchApprovalCounts() async {
     try {
-      final isPengurus = _userData['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
+      final isKoordinator = _userData['pengurusPosition']?.toString().toLowerCase().contains('koordinator') == true ||
+          _userData['pengurus_position']?.toString().toLowerCase().contains('koordinator') == true ||
+          _userData['roleCode'] == 'KOORDINATOR' || _userData['role_code'] == 'KOORDINATOR';
+
+      final isPengurus = isKoordinator || _userData['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
           _userData['role_code'] == 'PENGURUS_LINGKUNGAN' ||
           (_userData['pengurusPosition'] != null &&
               _userData['pengurusPosition'].toString().trim().isNotEmpty) ||
@@ -103,11 +106,14 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       if (isPengurus) {
         final rawLingkungan = _userData['lingkunganId'] ?? _userData['lingkungan_id'];
         final int? lingkunganId = rawLingkungan != null ? int.tryParse(rawLingkungan.toString()) : null;
+        final rawKeuskupan = _userData['keuskupanId'] ?? _userData['keuskupan_id'];
+        final int? keuskupanId = rawKeuskupan != null ? int.tryParse(rawKeuskupan.toString()) : null;
         final rawUserId = _userData['id'] ?? _userData['userId'] ?? _userData['user_id'];
         final int? pengurusUserId = rawUserId != null ? int.tryParse(rawUserId.toString()) : null;
 
         final list = await ApiService.getPengurusPendingUmat(
-          lingkunganId: lingkunganId,
+          lingkunganId: isKoordinator ? null : lingkunganId,
+          keuskupanId: isKoordinator ? keuskupanId : null,
           pengurusUserId: pengurusUserId,
         );
         if (mounted) setState(() => _pendingPengurusCount = list.length);
@@ -185,9 +191,13 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       if (_romoPos == 'KETUA_ROMO') return 'Romo Paroki — Pastor Kepala';
       return 'Romo Paroki — Pastor Rekan';
     }
-    if (_pengurusPos == 'KETUA') return 'Umat — Ketua Lingkungan';
-    if (_pengurusPos == 'WAKIL') return 'Umat — Wakil Ketua';
-    if (_pengurusPos == 'SEKRETARIS') return 'Umat — Sekretaris';
+    if (_pengurusPos.toUpperCase().contains('KOORDINATOR') || code == 'KOORDINATOR') {
+      return 'Umat — Koordinator Keuskupan';
+    }
+    if (_pengurusPos == 'KETUA' || _pengurusPos.toLowerCase().contains('ketua')) return 'Umat — Ketua Lingkungan';
+    if (_pengurusPos == 'WAKIL' || _pengurusPos.toLowerCase().contains('wakil')) return 'Umat — Wakil Ketua';
+    if (_pengurusPos == 'SEKRETARIS' || _pengurusPos.toLowerCase().contains('sekretaris')) return 'Umat — Sekretaris';
+    if (_pengurusPos == 'BENDAHARA' || _pengurusPos.toLowerCase().contains('bendahara')) return 'Umat — Bendahara';
     return 'Umat (Anggota Lingkungan)';
   }
 
@@ -516,9 +526,11 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       ),
       child: Column(
         children: [
-          // ── Pengurus Lingkungan Approval Tile (ONLY if pending count > 0) ──
+          // ── Pengurus Lingkungan / Koordinator Keuskupan Approval Tile (ONLY if pending count > 0) ──
           if ((_userData['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
               _userData['role_code'] == 'PENGURUS_LINGKUNGAN' ||
+              _userData['roleCode'] == 'KOORDINATOR' ||
+              _userData['role_code'] == 'KOORDINATOR' ||
               (_userData['pengurusPosition'] != null &&
                   _userData['pengurusPosition'].toString().trim().isNotEmpty) ||
               (_userData['pengurus_position'] != null &&
@@ -526,7 +538,11 @@ class _MainMenuScreenState extends State<MainMenuScreen>
               _pendingPengurusCount > 0) ...[
             _buildMenuItem(
               icon: Icons.how_to_reg_rounded,
-              title: 'Persetujuan Umat Lingkungan',
+              title: (_userData['pengurusPosition']?.toString().toLowerCase().contains('koordinator') == true ||
+                      _userData['pengurus_position']?.toString().toLowerCase().contains('koordinator') == true ||
+                      _userData['roleCode'] == 'KOORDINATOR')
+                  ? 'Persetujuan Umat Keuskupan'
+                  : 'Persetujuan Umat Lingkungan',
               subtitle: '$_pendingPengurusCount umat baru menunggu verifikasi Anda',
               trailing: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

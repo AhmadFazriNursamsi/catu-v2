@@ -19,8 +19,19 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
   final TextEditingController _searchController = TextEditingController();
   final Map<int, bool> _processingMap = {};
 
+  bool get _isKoordinator {
+    final pos = (widget.user['pengurusPosition'] ?? widget.user['pengurus_position'] ?? '').toString().toLowerCase();
+    final role = (widget.user['roleCode'] ?? widget.user['role_code'] ?? '').toString().toUpperCase();
+    return pos.contains('koordinator') || role == 'KOORDINATOR';
+  }
+
   int? get _lingkunganId {
     final raw = widget.user['lingkunganId'] ?? widget.user['lingkungan_id'];
+    return raw != null ? int.tryParse(raw.toString()) : null;
+  }
+
+  int? get _keuskupanId {
+    final raw = widget.user['keuskupanId'] ?? widget.user['keuskupan_id'];
     return raw != null ? int.tryParse(raw.toString()) : null;
   }
 
@@ -31,6 +42,10 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
 
   String get _lingkunganName {
     return widget.user['lingkunganName'] ?? widget.user['lingkungan_name'] ?? 'Lingkungan';
+  }
+
+  String get _keuskupanName {
+    return widget.user['keuskupanName'] ?? widget.user['keuskupan_name'] ?? 'Keuskupan';
   }
 
   @override
@@ -48,7 +63,8 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
   Future<void> _fetchPendingList() async {
     setState(() => _isLoading = true);
     final list = await ApiService.getPengurusPendingUmat(
-      lingkunganId: _lingkunganId,
+      lingkunganId: _isKoordinator ? null : _lingkunganId,
+      keuskupanId: _isKoordinator ? _keuskupanId : null,
       pengurusUserId: _pengurusUserId,
     );
     if (mounted) {
@@ -197,16 +213,16 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Persetujuan Umat Lingkungan',
-              style: TextStyle(
+            Text(
+              _isKoordinator ? 'Persetujuan Umat Keuskupan' : 'Persetujuan Umat Lingkungan',
+              style: const TextStyle(
                 color: Color(0xFF0F172A),
                 fontWeight: FontWeight.w800,
                 fontSize: 16,
               ),
             ),
             Text(
-              _lingkunganName,
+              _isKoordinator ? _keuskupanName : _lingkunganName,
               style: const TextStyle(
                 color: Color(0xFF64748B),
                 fontSize: 12,

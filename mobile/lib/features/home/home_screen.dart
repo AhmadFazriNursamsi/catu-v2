@@ -8,7 +8,6 @@ import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/services/auth_service.dart';
-import '../auth/login_screen.dart';
 import '../news/public_news_screen.dart';
 import 'romo_dashboard_view.dart';
 import 'umat_dashboard_view.dart';
@@ -72,6 +71,13 @@ class _HomeScreenState extends State<HomeScreen> {
           _currentUserMap['role_code'] ??
           _currentUserMap['role'] ??
           'UMAT').toString().toUpperCase();
+      final String pengurusPos = (_currentUserMap['pengurusPosition'] ??
+          _currentUserMap['pengurus_position'] ??
+          '').toString().toLowerCase();
+      final bool isKoordinator = pengurusPos.contains('koordinator') || roleCode == 'KOORDINATOR';
+
+      final rawKeuskupan = _currentUserMap['keuskupanId'] ?? _currentUserMap['keuskupan_id'];
+      final int? keuskupanId = rawKeuskupan != null ? int.tryParse(rawKeuskupan.toString()) : null;
 
       final rawParoki = _currentUserMap['parokiId'] ?? _currentUserMap['paroki_id'];
       final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
@@ -80,10 +86,11 @@ class _HomeScreenState extends State<HomeScreen> {
       final int? kabupatenKotaId = rawKota != null ? int.tryParse(rawKota.toString()) : null;
 
       final latestOrders = await ApiService.getOrders(
-        userId: roleCode.startsWith('ROMO') ? null : userId,
-        parokiId: roleCode.startsWith('ROMO') ? null : parokiId,
-        kabupatenKotaId: roleCode.startsWith('ROMO') ? null : kabupatenKotaId,
+        userId: (roleCode.startsWith('ROMO') || isKoordinator) ? null : userId,
+        parokiId: (roleCode.startsWith('ROMO') || isKoordinator) ? null : parokiId,
+        kabupatenKotaId: (roleCode.startsWith('ROMO') || isKoordinator) ? null : kabupatenKotaId,
         romoId: roleCode.startsWith('ROMO') ? userId : null,
+        keuskupanId: isKoordinator ? keuskupanId : null,
       );
 
       if (mounted) {
@@ -139,6 +146,13 @@ class _HomeScreenState extends State<HomeScreen> {
           _currentUserMap['role_code'] ??
           _currentUserMap['role'] ??
           'UMAT').toString().toUpperCase();
+      final String pengurusPos = (_currentUserMap['pengurusPosition'] ??
+          _currentUserMap['pengurus_position'] ??
+          '').toString().toLowerCase();
+      final bool isKoordinator = pengurusPos.contains('koordinator') || roleCode == 'KOORDINATOR';
+
+      final rawKeuskupan = _currentUserMap['keuskupanId'] ?? _currentUserMap['keuskupan_id'];
+      final int? keuskupanId = rawKeuskupan != null ? int.tryParse(rawKeuskupan.toString()) : null;
 
       final rawParoki = _currentUserMap['parokiId'] ?? _currentUserMap['paroki_id'];
       final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
@@ -147,10 +161,11 @@ class _HomeScreenState extends State<HomeScreen> {
       final int? kabupatenKotaId = rawKota != null ? int.tryParse(rawKota.toString()) : null;
 
       final orders = await ApiService.getOrders(
-        userId: roleCode.startsWith('ROMO') ? null : userId,
-        parokiId: roleCode.startsWith('ROMO') ? null : parokiId,
-        kabupatenKotaId: roleCode.startsWith('ROMO') ? null : kabupatenKotaId,
+        userId: (roleCode.startsWith('ROMO') || isKoordinator) ? null : userId,
+        parokiId: (roleCode.startsWith('ROMO') || isKoordinator) ? null : parokiId,
+        kabupatenKotaId: (roleCode.startsWith('ROMO') || isKoordinator) ? null : kabupatenKotaId,
         romoId: roleCode.startsWith('ROMO') ? userId : null,
+        keuskupanId: isKoordinator ? keuskupanId : null,
       );
 
       if (mounted) {

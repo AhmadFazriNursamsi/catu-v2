@@ -116,10 +116,15 @@ class ApiService {
 
   // ── Pengurus Lingkungan Approval API Methods ──
 
-  static Future<List<Map<String, dynamic>>> getPengurusPendingUmat({int? lingkunganId, int? pengurusUserId}) async {
+  static Future<List<Map<String, dynamic>>> getPengurusPendingUmat({
+    int? lingkunganId,
+    int? keuskupanId,
+    int? pengurusUserId,
+  }) async {
     try {
       final queryParams = <String, String>{};
       if (lingkunganId != null) queryParams['lingkunganId'] = lingkunganId.toString();
+      if (keuskupanId != null) queryParams['keuskupanId'] = keuskupanId.toString();
       if (pengurusUserId != null) queryParams['pengurusUserId'] = pengurusUserId.toString();
 
       final uri = Uri.parse('$baseUrl/auth/pengurus/pending-umat').replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
@@ -506,8 +511,15 @@ class ApiService {
     ];
   }
 
-  // 2. Fetch Orders - filtered by userId for Umat, parokiId/romoId/kabupatenKotaId for Romo
-  static Future<List<Order>> getOrders({int? userId, int? parokiId, int? romoId, int? kabupatenKotaId}) async {
+  // 2. Fetch Orders - filtered by userId for Umat, parokiId/romoId/kabupatenKotaId for Romo, keuskupanId for Koordinator
+  static Future<List<Order>> getOrders({
+    int? userId,
+    int? parokiId,
+    int? romoId,
+    int? kabupatenKotaId,
+    int? keuskupanId,
+    int? lingkunganId,
+  }) async {
     try {
       String url = '$baseUrl/orders';
       final params = <String>[];
@@ -515,6 +527,8 @@ class ApiService {
       if (parokiId != null) params.add('parokiId=$parokiId');
       if (romoId != null) params.add('romoId=$romoId');
       if (kabupatenKotaId != null) params.add('kabupatenKotaId=$kabupatenKotaId');
+      if (keuskupanId != null) params.add('keuskupanId=$keuskupanId');
+      if (lingkunganId != null) params.add('lingkunganId=$lingkunganId');
       if (params.isNotEmpty) url += '?${params.join('&')}';
 
       final response = await http.get(Uri.parse(url));

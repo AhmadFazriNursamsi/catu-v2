@@ -135,6 +135,7 @@ export class AuthController implements OnModuleInit {
         );
 
         INSERT INTO master_positions (category, code, name, is_lead) VALUES 
+          ('PENGURUS_LINGKUNGAN', 'KOORDINATOR', 'Koordinator', TRUE),
           ('PENGURUS_LINGKUNGAN', 'KETUA_LINGKUNGAN', 'Ketua Lingkungan', TRUE),
           ('PENGURUS_LINGKUNGAN', 'WAKIL_KETUA', 'Wakil Ketua', FALSE),
           ('PENGURUS_LINGKUNGAN', 'SEKRETARIS', 'Sekretaris', FALSE),
@@ -669,18 +670,54 @@ export class AuthController implements OnModuleInit {
   }
 
   @Get('pengurus/pending-umat')
-  @ApiOperation({ summary: 'Daftar Umat Baru yang Menunggu Persetujuan Pengurus Lingkungan' })
+  @ApiOperation({ summary: 'Daftar Umat Baru yang Menunggu Persetujuan Pengurus Lingkungan / Koordinator Keuskupan' })
   async getPengurusPendingUmat(
     @Query('lingkunganId') lingkunganId?: string,
+    @Query('keuskupanId') keuskupanId?: string,
     @Query('pengurusUserId') pengurusUserId?: string,
   ) {
     let resolvedLingkunganId = lingkunganId ? parseInt(lingkunganId, 10) : null;
-    if (!resolvedLingkunganId && pengurusUserId) {
+    let resolvedKeuskupanId = keuskupanId ? parseInt(keuskupanId, 10) : null;
+    let isKoordinator = false;
+
+    if (pengurusUserId) {
       const p = await this.dataSource.query(
-        'SELECT lingkungan_id FROM user_profiles WHERE user_id = $1',
+        'SELECT lingkungan_id, keuskupan_id, pengurus_position FROM user_profiles WHERE user_id = $1',
         [parseInt(pengurusUserId, 10)],
       );
-      if (p.length > 0 && p[0].lingkungan_id) resolvedLingkunganId = p[0].lingkungan_id;
+      if (p.length > 0) {
+        const pos = (p[0].pengurus_position || '').toString().toLowerCase();
+        if (pos.includes('koordinator')) {
+          isKoordinator = true;
+          if (!resolvedKeuskupanId && p[0].keuskupan_id) resolvedKeuskupanId = p[0].keuskupan_id;
+        } else {
+          if (!resolvedLingkunganId && p[0].lingkungan_id) resolvedLingkunganId = p[0].lingkungan_id;
+        }
+      }
+    }
+
+    if (resolvedKeuskupanId || isKoordinator) {
+      const targetKeuskupan = resolvedKeuskupanId || 1;
+      const rows = await this.dataSource.query(
+        `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.created_at,
+                p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+                k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name,
+                kk.name as kota_name
+         FROM auth_users u
+         JOIN roles r ON u.role_id = r.id
+         JOIN user_profiles p ON p.user_id = u.id
+         LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
+         LEFT JOIN paroki par ON p.paroki_id = par.id
+         LEFT JOIN wilayah w ON p.wilayah_id = w.id
+         LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+         LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
+         WHERE r.code = 'UMAT'
+           AND u.account_status = 'PENDING_APPROVAL'
+           AND p.keuskupan_id = $1
+         ORDER BY u.created_at DESC`,
+        [targetKeuskupan],
+      );
+      return rows;
     }
 
     if (!resolvedLingkunganId) {
@@ -2374,6 +2411,9 @@ export class OrdersController {
     @Query('parokiId') parokiId?: string,
     @Query('romoId') romoId?: string,
     @Query('kabupatenKotaId') kabupatenKotaId?: string,
+    @Query('keuskupanId') keuskupanId?: string,
+    @Query('lingkunganId') lingkunganId?: string,
+    @Query('isKoordinator') isKoordinator?: string,
   ) {
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status, 
@@ -2412,7 +2452,13 @@ export class OrdersController {
     const queryParams: any[] = [];
     let paramIdx = 1;
 
-    if (romoId && !isNaN(parseInt(romoId))) {
+    if (keuskupanId && !isNaN(parseInt(keuskupanId))) {
+      whereClauses.push(`COALESCE(o.keuskupan_id, p.keuskupan_id) = $${paramIdx++}`);
+      queryParams.push(parseInt(keuskupanId));
+    } else if (lingkunganId && !isNaN(parseInt(lingkunganId))) {
+      whereClauses.push(`COALESCE(o.lingkungan_id, p.lingkungan_id) = $${paramIdx++}`);
+      queryParams.push(parseInt(lingkunganId));
+    } else if (romoId && !isNaN(parseInt(romoId))) {
       const parsedRId = parseInt(romoId);
       const romoRes = await this.dataSource.query(
         `SELECT r.code as role_code, p.kabupaten_kota_id, p.paroki_id
