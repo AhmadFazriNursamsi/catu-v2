@@ -918,9 +918,9 @@ export class AuthController implements OnModuleInit {
 
       let approverName = 'Admin Aplikasi CATU';
       let assignedApproverId: number | null = null;
-      const isKoordinatorRegistration = (pengurusPositionVal && pengurusPositionVal.toLowerCase().includes('koordinator')) || dto.roleCode === 'KOORDINATOR';
+      const isKoordinatorRegistration = (pengurusPositionVal && pengurusPositionVal.toLowerCase().includes('koordinator')) || (dto.roleCode as string) === 'KOORDINATOR';
 
-      if (dto.roleCode === 'UMAT' && dto.lingkunganId && !isKoordinatorRegistration) {
+      if (dto.roleCode === RoleCodeEnum.UMAT && dto.lingkunganId && !isKoordinatorRegistration) {
         const pengurus = await queryRunner.query(
           `SELECT u.id, p.full_name, u.phone_number 
            FROM user_profiles p 
