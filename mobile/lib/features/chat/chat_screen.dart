@@ -67,7 +67,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _startPolling() {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+    _pollTimer = Timer.periodic(const Duration(milliseconds: 3000), (_) {
       _pollMessages();
     });
   }
@@ -274,24 +274,42 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  static final Map<String, Uint8List> _decodedImageMemoryCache = {};
+
+  Uint8List? _getDecodedBytes(String rawUrl) {
+    if (_decodedImageMemoryCache.containsKey(rawUrl)) {
+      return _decodedImageMemoryCache[rawUrl];
+    }
+    try {
+      final commaIdx = rawUrl.indexOf(',');
+      final base64Data = commaIdx != -1 ? rawUrl.substring(commaIdx + 1) : rawUrl;
+      final bytes = base64Decode(base64Data);
+      _decodedImageMemoryCache[rawUrl] = bytes;
+      return bytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Widget _buildImageWidget(String rawUrl, {BoxFit fit = BoxFit.cover}) {
     if (rawUrl.startsWith('data:image')) {
-      try {
-        final commaIdx = rawUrl.indexOf(',');
-        final base64Data = commaIdx != -1 ? rawUrl.substring(commaIdx + 1) : rawUrl;
-        final bytes = base64Decode(base64Data);
+      final bytes = _getDecodedBytes(rawUrl);
+      if (bytes != null) {
         return Image.memory(
           bytes,
           fit: fit,
+          gaplessPlayback: true,
+          filterQuality: FilterQuality.medium,
           errorBuilder: (_, __, ___) => _buildImageError(),
         );
-      } catch (_) {
-        return _buildImageError();
       }
+      return _buildImageError();
     } else if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
       return Image.network(
         rawUrl,
         fit: fit,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
         loadingBuilder: (ctx, child, progress) {
           if (progress == null) return child;
           return Container(
@@ -640,6 +658,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       )
                     : ListView.builder(
                     controller: _scrollController,
+                    physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                    cacheExtent: 1000,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
@@ -676,42 +696,43 @@ class _ChatScreenState extends State<ChatScreen> {
                         );
                       }
 
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Align(
-                          alignment:
-                              isMe ? Alignment.centerRight : Alignment.centerLeft,
-                          child: Column(
-                            crossAxisAlignment: isMe
-                                ? CrossAxisAlignment.end
-                                : CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                constraints: BoxConstraints(
-                                  maxWidth:
-                                      MediaQuery.of(context).size.width * 0.78,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 12),
-                                decoration: BoxDecoration(
-                                  // Sent: Dark Blue (#1E5399), Received: White with Blue border (Matching DetailChat.png)
-                                  color: isMe
-                                      ? const Color(0xFF1E5399)
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: const Radius.circular(16),
-                                    topRight: const Radius.circular(16),
-                                    bottomLeft: Radius.circular(isMe ? 16 : 4),
-                                    bottomRight: Radius.circular(isMe ? 4 : 16),
+                      return RepaintBoundary(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Align(
+                            alignment:
+                                isMe ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Column(
+                              crossAxisAlignment: isMe
+                                  ? CrossAxisAlignment.end
+                                  : CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  constraints: BoxConstraints(
+                                    maxWidth:
+                                        MediaQuery.of(context).size.width * 0.78,
                                   ),
-                                  border: isMe
-                                      ? null
-                                      : Border.all(
-                                          color: const Color(0xFF1E5399),
-                                          width: 1.5,
-                                        ),
-                                ),
-                                child: Column(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    // Sent: Dark Blue (#1E5399), Received: White with Blue border (Matching DetailChat.png)
+                                    color: isMe
+                                        ? const Color(0xFF1E5399)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: const Radius.circular(16),
+                                      topRight: const Radius.circular(16),
+                                      bottomLeft: Radius.circular(isMe ? 16 : 4),
+                                      bottomRight: Radius.circular(isMe ? 4 : 16),
+                                    ),
+                                    border: isMe
+                                        ? null
+                                        : Border.all(
+                                            color: const Color(0xFF1E5399),
+                                            width: 1.5,
+                                          ),
+                                  ),
+                                  child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     if (!isMe && msg.senderName != null) ...[
@@ -778,9 +799,10 @@ class _ChatScreenState extends State<ChatScreen> {
                             ],
                           ),
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
+                ),
           ),
 
           // ── Bottom Input Field Container (Matching Reference DetailChat.png) ──
