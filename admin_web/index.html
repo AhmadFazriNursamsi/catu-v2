@@ -4667,10 +4667,11 @@
       const userName = targetUser?.full_name || targetUser?.fullName || 'Pengguna Baru';
       const isApprove = action === 'APPROVED';
       const r = (targetUser?.role_code || targetUser?.roleCode || '').toUpperCase();
-      const romoPos = (targetUser?.romo_position || targetUser?.romoPosition || '').toUpperCase();
+      const pos = (targetUser?.pengurus_position || targetUser?.pengurusPosition || '').toString().toLowerCase();
+      const isKoordinator = pos.includes('koordinator') || r === 'KOORDINATOR';
 
-      if (r === 'UMAT') {
-        showToast('Pendaftaran akun Umat diverifikasi dan disetujui oleh Pengurus Lingkungan setempat via aplikasi mobile CATU.', 'warning', 'Persetujuan Khusus Pengurus');
+      if (r === 'UMAT' && !isKoordinator) {
+        showToast('Pendaftaran akun Umat biasa diverifikasi oleh Pengurus Lingkungan via aplikasi mobile CATU.', 'warning', 'Persetujuan Khusus Pengurus');
         return;
       }
 
