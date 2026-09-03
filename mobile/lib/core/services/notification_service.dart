@@ -298,14 +298,38 @@ class NotificationService {
       final messaging = FirebaseMessaging.instance;
       await messaging.requestPermission(
         alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: true,
+        provisional: false,
+        sound: true,
+      );
+
+      // Present alert, badge, and sound in foreground on iOS
+      await messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
         badge: true,
         sound: true,
       );
 
-      final token = await messaging.getToken();
-      if (token != null) {
-        _currentToken = token;
-        debugPrint('🔥 Firebase FCM Token: $token');
+      if (Platform.isIOS) {
+        try {
+          final apns = await messaging.getAPNSToken();
+          debugPrint('🍎 APNS Token: $apns');
+        } catch (e) {
+          debugPrint('🍎 APNS Token check: $e');
+        }
+      }
+
+      try {
+        final token = await messaging.getToken();
+        if (token != null) {
+          _currentToken = token;
+          debugPrint('🔥 Firebase FCM Token: $token');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error retrieving FCM token: $e');
       }
 
       messaging.onTokenRefresh.listen((newToken) {
@@ -317,11 +341,14 @@ class NotificationService {
       });
 
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        debugPrint('🔥 FCM onMessage received: ${message.data}');
         final notif = message.notification;
-        if (notif != null) {
+        final title = notif?.title ?? message.data['title'] ?? 'Pemberitahuan CATU';
+        final body = notif?.body ?? message.data['body'] ?? message.data['message'] ?? '';
+        if (title.isNotEmpty || body.isNotEmpty) {
           showNotification(
-            title: notif.title ?? 'Pemberitahuan CATU',
-            body: notif.body ?? '',
+            title: title,
+            body: body,
             payload: jsonEncode(message.data),
           );
         }
@@ -512,11 +539,10 @@ class NotificationService {
 
             final bool hasLiveFcm = _currentToken != null && 
                                     _currentToken!.isNotEmpty && 
-                                    !_currentToken!.startsWith('mock_') && 
-                                    Platform.isAndroid;
+                                    !_currentToken!.startsWith('mock_');
 
-            // Real Android devices receive instant push from FCM directly.
-            // Only trigger in-app banner from polling on iOS Simulator or when FCM is not active.
+            // Devices with live FCM receive instant push from FCM directly.
+            // Only trigger in-app banner from polling on Simulator or when FCM is not active.
             if (!isRead && !hasLiveFcm) {
               await showNotification(
                 title: n['title'] ?? 'Pemberitahuan CATU',

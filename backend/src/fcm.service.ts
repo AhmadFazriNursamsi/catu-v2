@@ -189,10 +189,19 @@ export class FcmService implements OnModuleInit {
           },
         },
         apns: {
+          headers: {
+            'apns-priority': '10',
+            'apns-push-type': 'alert',
+          },
           payload: {
             aps: {
+              alert: {
+                title: payload.title,
+                body: payload.body,
+              },
               sound: 'notif_catu.caf',
               badge: 1,
+              contentAvailable: true,
             },
           },
         },
