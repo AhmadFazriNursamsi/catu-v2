@@ -17,17 +17,17 @@ class ApiService {
       return 'http://127.0.0.1:3005';
     }
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.10.93:3005';
+      return 'http://10.0.10.26:3005';
     }
     return AppConstants.apiBaseUrl;
   }
 
   static List<String> get _candidateBaseUrls {
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return ['http://10.0.10.93:3005', 'http://127.0.0.1:3005', 'http://10.0.2.2:3005'];
+      return ['http://10.0.10.26:3005', 'http://127.0.0.1:3005', 'http://10.0.2.2:3005'];
     }
     if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
-      return ['http://127.0.0.1:3005', 'http://10.0.10.93:3005'];
+      return ['http://127.0.0.1:3005', 'http://10.0.10.26:3005'];
     }
     return [baseUrl];
   }
