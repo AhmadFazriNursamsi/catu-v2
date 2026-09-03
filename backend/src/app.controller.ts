@@ -2779,6 +2779,28 @@ export class OrdersController {
       );
     }
 
+    // 🔔 Dispatch FCM Push to Umat & Pengurus
+    try {
+      const targetReschedUsers = Array.from(new Set([
+        order.user_id,
+        ...pengurusResched.map((p: any) => p.id),
+      ])).filter((id: number) => id && id !== romoId);
+
+      if (targetReschedUsers.length > 0) {
+        await this.fcmService.sendPushToUsers(targetReschedUsers, {
+          title: `Usulan Perubahan Jadwal: ${targetItemName || 'Pelayanan'}`,
+          body: `Romo ${romoName} mengajukan perubahan jam pelayanan ${itemPrefix}menjadi ${timeDisplay}. Alasan: "${reason || '-'}".`,
+          data: {
+            type: 'RESCHEDULE_PROPOSED',
+            orderId: orderId.toString(),
+            orderNumber: order.order_number,
+          },
+        });
+      }
+    } catch (fcmErr) {
+      console.error('Error dispatching FCM in proposeReschedule:', fcmErr);
+    }
+
     return {
       statusCode: 200,
       success: true,
@@ -2900,6 +2922,28 @@ export class OrdersController {
         );
       }
 
+      // 🔔 Dispatch FCM Push to Romo & Pengurus
+      try {
+        const targetReschedRespUsers = Array.from(new Set([
+          romoId,
+          ...pengurusRespond.map((p: any) => p.id),
+        ])).filter((id: number) => id && id !== userId);
+
+        if (targetReschedRespUsers.length > 0) {
+          await this.fcmService.sendPushToUsers(targetReschedRespUsers, {
+            title: `Perubahan Jadwal Disetujui: ${serviceTitle}`,
+            body: `Umat telah menyetujui jadwal baru untuk pelayanan ${serviceTitle} (${order.order_number}).`,
+            data: {
+              type: 'RESCHEDULE_ACCEPTED',
+              orderId: orderId.toString(),
+              orderNumber: order.order_number,
+            },
+          });
+        }
+      } catch (fcmErr) {
+        console.error('Error dispatching FCM in respondReschedule (Accept):', fcmErr);
+      }
+
       return {
         statusCode: 200,
         success: true,
@@ -2961,9 +3005,31 @@ export class OrdersController {
             p.id,
             orderId,
             `Perubahan Jadwal Ditolak: ${serviceTitle}`,
-            `Usulan perubahan jadwal ${serviceTitle} (${order.order_number}) ditolak oleh Umat. Jadwal tetap sesuai waktu semula.`,
+            `Umat menolak perubahan jadwal pelayanan ${serviceTitle} (${order.order_number}). Pelayanan tetap sesuai jadwal awal.`,
           ],
         );
+      }
+
+      // 🔔 Dispatch FCM Push to Romo & Pengurus
+      try {
+        const targetReschedRespUsers = Array.from(new Set([
+          romoId,
+          ...pengurusRespond.map((p: any) => p.id),
+        ])).filter((id: number) => id && id !== userId);
+
+        if (targetReschedRespUsers.length > 0) {
+          await this.fcmService.sendPushToUsers(targetReschedRespUsers, {
+            title: `Perubahan Jadwal Ditolak: ${serviceTitle}`,
+            body: `Umat menolak perubahan jadwal (${order.order_number}). Pelayanan tetap pada jadwal awal.`,
+            data: {
+              type: 'RESCHEDULE_REJECTED',
+              orderId: orderId.toString(),
+              orderNumber: order.order_number,
+            },
+          });
+        }
+      } catch (fcmErr) {
+        console.error('Error dispatching FCM in respondReschedule (Reject):', fcmErr);
       }
 
       return {
@@ -3126,6 +3192,40 @@ export class OrdersController {
       );
     }
 
+    // 🔔 Dispatch FCM Push to Target Romo, Umat, and Pengurus
+    try {
+      // 1. Push to Target Romo
+      await this.fcmService.sendPushToUsers(targetRomoId, {
+        title: `Permintaan Pelimpahan Pelayanan: ${serviceTitle}`,
+        body: `Romo ${prevRomoName} melimpahkan tugas pelayanan ${serviceTitle} (${order.order_number}) kepada Anda. Alasan: "${reason}".`,
+        data: {
+          type: 'ROMO_HANDOVER',
+          orderId: orderId.toString(),
+          orderNumber: order.order_number,
+        },
+      });
+
+      // 2. Push to Umat & Pengurus
+      const targetHandoverInfoUsers = Array.from(new Set([
+        order.user_id,
+        ...pengurusHandover.map((p: any) => p.id),
+      ])).filter((id: number) => id && id !== romoId && id !== targetRomoId);
+
+      if (targetHandoverInfoUsers.length > 0) {
+        await this.fcmService.sendPushToUsers(targetHandoverInfoUsers, {
+          title: `Pengajuan Ganti Romo: ${serviceTitle}`,
+          body: `Romo ${prevRomoName} mengajukan pengalihan pelayanan ${serviceTitle} (${order.order_number}) kepada Romo ${newRomoName}.`,
+          data: {
+            type: 'ROMO_HANDOVER',
+            orderId: orderId.toString(),
+            orderNumber: order.order_number,
+          },
+        });
+      }
+    } catch (fcmErr) {
+      console.error('Error dispatching FCM in handoverOrder:', fcmErr);
+    }
+
     return {
       statusCode: 200,
       success: true,
@@ -3258,6 +3358,29 @@ export class OrdersController {
         );
       }
 
+      // 🔔 Dispatch FCM Push to Romo Lama, Umat, and Pengurus (Accept)
+      try {
+        const targetHandoverAcceptUsers = Array.from(new Set([
+          prevRomoId,
+          order.user_id,
+          ...pengurusRespondHandover.map((p: any) => p.id),
+        ])).filter((id: number) => id && id !== romoId);
+
+        if (targetHandoverAcceptUsers.length > 0) {
+          await this.fcmService.sendPushToUsers(targetHandoverAcceptUsers, {
+            title: `Romo Pelayanan Diperbarui: ${serviceTitle}`,
+            body: `Pelayanan ${serviceTitle} (${order.order_number}) resmi dialihkan ke Romo ${targetRomoName} menggantikan Romo ${prevRomoName}.`,
+            data: {
+              type: 'ROMO_HANDOVER',
+              orderId: orderId.toString(),
+              orderNumber: order.order_number,
+            },
+          });
+        }
+      } catch (fcmErr) {
+        console.error('Error dispatching FCM in respondHandover (Accept):', fcmErr);
+      }
+
       return {
         statusCode: 200,
         success: true,
@@ -3335,6 +3458,29 @@ export class OrdersController {
             `Pelimpahan tugas ${serviceTitle} (${order.order_number}) kepada Romo ${targetRomoName} ditolak. Pelayanan tetap bersama Romo ${prevRomoName}.`,
           ],
         );
+      }
+
+      // 🔔 Dispatch FCM Push to Romo Lama, Umat, and Pengurus (Reject)
+      try {
+        const targetHandoverRejectUsers = Array.from(new Set([
+          prevRomoId,
+          order.user_id,
+          ...pengurusRespondHandover.map((p: any) => p.id),
+        ])).filter((id: number) => id && id !== romoId);
+
+        if (targetHandoverRejectUsers.length > 0) {
+          await this.fcmService.sendPushToUsers(targetHandoverRejectUsers, {
+            title: `Pelimpahan Tugas Ditolak: ${serviceTitle}`,
+            body: `Romo ${targetRomoName} menolak pelimpahan tugas (${order.order_number}). Pelayanan tetap bersama Romo ${prevRomoName}.`,
+            data: {
+              type: 'ROMO_HANDOVER',
+              orderId: orderId.toString(),
+              orderNumber: order.order_number,
+            },
+          });
+        }
+      } catch (fcmErr) {
+        console.error('Error dispatching FCM in respondHandover (Reject):', fcmErr);
       }
 
       return {
