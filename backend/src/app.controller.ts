@@ -4400,12 +4400,12 @@ export class ChatController {
         }
 
         const assignments = await this.dataSource.query(
-          `SELECT user_id FROM order_assignments WHERE order_id = $1 AND user_id IS NOT NULL`,
+          `SELECT romo_id FROM order_assignments WHERE order_id = $1 AND romo_id IS NOT NULL`,
           [orderId],
         );
         for (const a of assignments) {
-          if (a.user_id && Number(a.user_id) !== Number(senderId) && !targetUserIds.includes(Number(a.user_id))) {
-            targetUserIds.push(Number(a.user_id));
+          if (a.romo_id && Number(a.romo_id) !== Number(senderId) && !targetUserIds.includes(Number(a.romo_id))) {
+            targetUserIds.push(Number(a.romo_id));
           }
         }
       }
