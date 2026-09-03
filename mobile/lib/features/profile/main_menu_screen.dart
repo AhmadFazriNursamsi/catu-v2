@@ -466,6 +466,8 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     _fetchFreshUser();
   }
 
+  static final Map<String, MemoryImage> _avatarMemoryCache = {};
+
   ImageProvider _getAvatarImageProvider() {
     final avatar = _userData['avatarUrl'] ?? _userData['avatar_url'];
     if (avatar == null || avatar.toString().isEmpty) {
@@ -473,9 +475,16 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     }
     final urlStr = avatar.toString();
     if (urlStr.startsWith('data:image')) {
+      if (_avatarMemoryCache.containsKey(urlStr)) {
+        return _avatarMemoryCache[urlStr]!;
+      }
       try {
-        final base64String = urlStr.split(',').last;
-        return MemoryImage(base64Decode(base64String));
+        final commaIdx = urlStr.indexOf(',');
+        final base64String = commaIdx != -1 ? urlStr.substring(commaIdx + 1) : urlStr;
+        final bytes = base64Decode(base64String);
+        final provider = MemoryImage(bytes);
+        _avatarMemoryCache[urlStr] = provider;
+        return provider;
       } catch (_) {
         return const AssetImage('assets/images/church_1.jpg');
       }

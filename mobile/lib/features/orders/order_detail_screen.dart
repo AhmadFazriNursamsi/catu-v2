@@ -339,14 +339,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
 
   // ── Avatar ──────────────────────────────────────────────────────────────────
 
+  static final Map<String, Uint8List> _deceasedImageMemoryCache = {};
+
   Widget _buildDeceasedAvatarImage(String? attachmentUrl) {
     if (attachmentUrl != null && attachmentUrl.isNotEmpty) {
       if (attachmentUrl.startsWith('data:image')) {
         try {
-          final base64Content = attachmentUrl.split(',').last;
-          final bytes = base64Decode(base64Content);
-          return Image.memory(bytes, width: 92, height: 92, fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _defaultAvatar());
+          Uint8List? bytes = _deceasedImageMemoryCache[attachmentUrl];
+          if (bytes == null) {
+            final commaIdx = attachmentUrl.indexOf(',');
+            final base64Content = commaIdx != -1 ? attachmentUrl.substring(commaIdx + 1) : attachmentUrl;
+            bytes = base64Decode(base64Content);
+            _deceasedImageMemoryCache[attachmentUrl] = bytes;
+          }
+          return Image.memory(
+            bytes,
+            width: 92,
+            height: 92,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => _defaultAvatar(),
+          );
         } catch (_) {
           return _defaultAvatar();
         }

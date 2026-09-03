@@ -716,14 +716,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     Navigator.pop(context);
   }
 
+  static final Map<String, MemoryImage> _avatarMemoryCache = {};
+
   ImageProvider _getAvatarImageProvider() {
     if (_avatarUrl == null || _avatarUrl!.isEmpty) {
       return const AssetImage('assets/images/church_1.jpg');
     }
     if (_avatarUrl!.startsWith('data:image')) {
+      if (_avatarMemoryCache.containsKey(_avatarUrl!)) {
+        return _avatarMemoryCache[_avatarUrl!]!;
+      }
       try {
-        final base64String = _avatarUrl!.split(',').last;
-        return MemoryImage(base64Decode(base64String));
+        final commaIdx = _avatarUrl!.indexOf(',');
+        final base64String = commaIdx != -1 ? _avatarUrl!.substring(commaIdx + 1) : _avatarUrl!;
+        final bytes = base64Decode(base64String);
+        final provider = MemoryImage(bytes);
+        _avatarMemoryCache[_avatarUrl!] = provider;
+        return provider;
       } catch (_) {
         return const AssetImage('assets/images/church_1.jpg');
       }
