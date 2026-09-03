@@ -242,22 +242,23 @@ class NotificationService {
 
   static Future<void> init() async {
     if (_isInitialized) return;
+    _isInitialized = true;
 
     // 1. Setup Local Notifications
-    const androidSettings = AndroidInitializationSettings('@drawable/ic_stat_catu');
-    const darwinSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: darwinSettings,
-      macOS: darwinSettings,
-    );
-
     try {
+      const androidSettings = AndroidInitializationSettings('@drawable/ic_stat_catu');
+      const darwinSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+
+      const initSettings = InitializationSettings(
+        android: androidSettings,
+        iOS: darwinSettings,
+        macOS: darwinSettings,
+      );
+
       await _localNotifications.initialize(
         initSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
@@ -266,71 +267,67 @@ class NotificationService {
         },
       );
 
-      final androidImplementation = _localNotifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-      await androidImplementation?.requestNotificationsPermission();
-      await androidImplementation?.createNotificationChannel(_channel);
-
-      final iosImplementation = _localNotifications
-          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
-      await iosImplementation?.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-
-      final macosImplementation = _localNotifications
-          .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>();
-      await macosImplementation?.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
+      if (Platform.isAndroid) {
+        final androidImplementation = _localNotifications
+            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+        await androidImplementation?.requestNotificationsPermission();
+        await androidImplementation?.createNotificationChannel(_channel);
+      } else if (Platform.isIOS) {
+        final iosImplementation = _localNotifications
+            .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+        await iosImplementation?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+      }
     } catch (e) {
       print('Local notification init error: $e');
     }
 
-    // 2. Initialize Firebase Cloud Messaging (FCM)
+    // 2. Initialize Firebase Cloud Messaging (FCM) safely with timeout
     try {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => Firebase.app(),
+      );
+
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
       final messaging = FirebaseMessaging.instance;
-      await messaging.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: true,
-        provisional: false,
-        sound: true,
-      );
+      try {
+        await messaging.requestPermission(
+          alert: true,
+          announcement: false,
+          badge: true,
+          carPlay: false,
+          criticalAlert: true,
+          provisional: false,
+          sound: true,
+        );
+      } catch (_) {}
 
       // Present alert, badge, and sound in foreground on iOS
-      await messaging.setForegroundNotificationPresentationOptions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-
       if (Platform.isIOS) {
-        try {
-          final apns = await messaging.getAPNSToken();
-          debugPrint('🍎 APNS Token: $apns');
-        } catch (e) {
-          debugPrint('🍎 APNS Token check: $e');
-        }
+        messaging.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        ).catchError((_) {});
       }
 
-      try {
-        final token = await messaging.getToken();
+      // Safe non-blocking token fetch (Simulators will timeout safely without hanging the UI)
+      messaging.getToken().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => null,
+      ).then((token) {
         if (token != null) {
           _currentToken = token;
           debugPrint('🔥 Firebase FCM Token: $token');
         }
-      } catch (e) {
+      }).catchError((e) {
         debugPrint('⚠️ Error retrieving FCM token: $e');
-      }
+      });
 
       messaging.onTokenRefresh.listen((newToken) {
         _currentToken = newToken;
@@ -360,17 +357,19 @@ class NotificationService {
       });
 
       // Cold start from terminated state
-      final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-      if (initialMessage != null && initialMessage.data.isNotEmpty) {
-        debugPrint('🔥 FCM getInitialMessage received: ${initialMessage.data}');
-        _pendingPayload = jsonEncode(initialMessage.data);
-        handleNotificationTap(_pendingPayload);
-      }
+      FirebaseMessaging.instance.getInitialMessage().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => null,
+      ).then((initialMessage) {
+        if (initialMessage != null && initialMessage.data.isNotEmpty) {
+          debugPrint('🔥 FCM getInitialMessage received: ${initialMessage.data}');
+          _pendingPayload = jsonEncode(initialMessage.data);
+          handleNotificationTap(_pendingPayload);
+        }
+      }).catchError((_) {});
     } catch (e) {
       debugPrint('Firebase init error: $e');
     }
-
-    _isInitialized = true;
   }
 
   static Future<void> showNotification({
@@ -470,7 +469,10 @@ class NotificationService {
 
       if (_currentToken == null || _currentToken!.isEmpty) {
         try {
-          _currentToken = await FirebaseMessaging.instance.getToken();
+          _currentToken = await FirebaseMessaging.instance.getToken().timeout(
+            const Duration(seconds: 2),
+            onTimeout: () => null,
+          );
         } catch (_) {}
       }
 

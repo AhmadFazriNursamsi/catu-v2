@@ -10,9 +10,9 @@ import 'features/news/public_news_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LanguageService.init();
-  await NotificationService.init();
   final savedUser = await AuthService.initSession();
   runApp(CatuApp(initialUser: savedUser));
+  NotificationService.init();
 }
 
 class CatuApp extends StatelessWidget {
