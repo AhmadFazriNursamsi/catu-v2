@@ -2298,6 +2298,15 @@ export class OrdersController {
       );
     }
 
+    // Strictly filter out creator from observer / monitoring lists
+    if (userId) {
+      const numUserId = Number(userId);
+      pengurus = pengurus.filter((p: any) => Number(p.id) !== numUserId);
+      koordinator = koordinator.filter((k: any) => Number(k.id) !== numUserId);
+      romoParoki = romoParoki.filter((r: any) => Number(r.id) !== numUserId);
+      romoOrdo = romoOrdo.filter((ro: any) => Number(ro.id) !== numUserId);
+    }
+
     let firstGroupId: number | null = null;
 
     if (dto.items && dto.items.length > 0) {

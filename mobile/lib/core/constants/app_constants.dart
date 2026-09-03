@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppConstants {
   static const String appName = 'CATU Pelayanan';
-  static const String appVersion = 'v2.7.0-build.20260901.1621';
+  static const String appVersion = 'v2.8.0-build.20260903.1550';
   static const String apiBaseUrl = 'http://10.0.10.26:3005'; // NestJS Local Server (Docker Port 3005)
   
   // Custom HSL Colors

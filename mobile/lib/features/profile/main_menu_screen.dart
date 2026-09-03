@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import 'edit_profile_screen.dart';
@@ -1440,7 +1441,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                 style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
               ),
               const SizedBox(height: 16),
-              _buildDetailRow('Versi Aplikasi', 'v2.4.0 (Build 108)'),
+              _buildDetailRow('Versi Aplikasi', AppConstants.appVersion),
               _buildDetailRow('Pengembang', 'Tim Antigravity / CATU Tech'),
               _buildDetailRow('Hak Cipta', '© 2026 CATU. All Rights Reserved.'),
               const SizedBox(height: 20),
