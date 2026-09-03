@@ -5,7 +5,12 @@ import '../constants/app_constants.dart';
 import '../models/models.dart';
 
 class ApiService {
+  static const String prodApiUrl = 'https://apps.catu.id/catuv2-api';
+
   static String get baseUrl {
+    if (kReleaseMode) {
+      return prodApiUrl;
+    }
     if (kIsWeb) {
       final host = Uri.base.host;
       if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
@@ -23,11 +28,14 @@ class ApiService {
   }
 
   static List<String> get _candidateBaseUrls {
+    if (kReleaseMode) {
+      return [prodApiUrl];
+    }
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return ['http://10.0.10.26:3005', 'http://127.0.0.1:3005', 'http://10.0.2.2:3005'];
+      return ['http://10.0.10.26:3005', prodApiUrl, 'http://127.0.0.1:3005', 'http://10.0.2.2:3005'];
     }
     if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
-      return ['http://127.0.0.1:3005', 'http://10.0.10.26:3005'];
+      return ['http://127.0.0.1:3005', prodApiUrl, 'http://10.0.10.26:3005'];
     }
     return [baseUrl];
   }
