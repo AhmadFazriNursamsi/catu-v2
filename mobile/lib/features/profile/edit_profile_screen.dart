@@ -912,24 +912,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 14),
 
               // Dynamic Backend Read-Only Display for Provinsi & Kota
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildReadOnlyField(
-                      label: 'Provinsi',
-                      value: _selectedProvinsiName,
-                      icon: Icons.apartment_rounded,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildReadOnlyField(
-                      label: 'Kota / Kabupaten',
-                      value: _selectedKotaName,
-                      icon: Icons.location_on_rounded,
-                    ),
-                  ),
-                ],
+              _buildReadOnlyField(
+                label: 'Provinsi',
+                value: _selectedProvinsiName,
+                icon: Icons.apartment_rounded,
+              ),
+              const SizedBox(height: 14),
+
+              _buildReadOnlyField(
+                label: 'Kota / Kabupaten',
+                value: _selectedKotaName,
+                icon: Icons.location_on_rounded,
               ),
             ],
           ),
@@ -1092,17 +1085,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: readOnly ? const Color(0xFF64748B) : const Color(0xFF334155),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: readOnly ? const Color(0xFF64748B) : const Color(0xFF334155),
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (readOnly)
+            if (readOnly) ...[
+              const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
@@ -1125,6 +1121,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ],
                 ),
               ),
+            ],
           ],
         ),
         const SizedBox(height: 6),
@@ -1173,16 +1170,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF64748B),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF64748B),
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+            const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
