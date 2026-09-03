@@ -175,23 +175,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  void _onProvinsiChanged(int newProvId) async {
-    setState(() {
-      _selectedProvinsiId = newProvId;
-      _selectedKabupatenKotaId = null;
-      _dynamicKotaList = [];
-    });
-    final kotas = await ApiService.getKabupatenKotaList(provinsiId: newProvId);
-    if (mounted) {
-      setState(() {
-        _dynamicKotaList = kotas;
-        if (kotas.isNotEmpty) {
-          _selectedKabupatenKotaId = int.tryParse(kotas.first['id'].toString());
-        }
-      });
-    }
-  }
-
   bool get _isRomo {
     final code = (widget.user['roleCode'] ?? widget.user['role_code'] ?? widget.user['role'] ?? '').toString().toUpperCase();
     return code.startsWith('ROMO') || _selectedRole.contains('Romo');
@@ -200,6 +183,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool get _isRomoOrdo {
     final code = (widget.user['roleCode'] ?? widget.user['role_code'] ?? widget.user['role'] ?? '').toString().toUpperCase();
     return code == 'ROMO_ORDO' || _selectedRole == 'Romo Ordo';
+  }
+
+  String get _selectedProvinsiName {
+    if (_selectedProvinsiId != null && _dynamicProvinsiList.isNotEmpty) {
+      final match = _dynamicProvinsiList.firstWhere(
+        (p) => int.tryParse(p['id'].toString()) == _selectedProvinsiId,
+        orElse: () => {'name': ''},
+      );
+      if (match['name'] != null && match['name'].toString().isNotEmpty) {
+        return match['name'].toString();
+      }
+    }
+    final raw = widget.user['provinsiName'] ?? widget.user['provinsi_name'];
+    return (raw != null && raw.toString().isNotEmpty) ? raw.toString() : 'Banten';
+  }
+
+  String get _selectedKotaName {
+    if (_selectedKabupatenKotaId != null && _dynamicKotaList.isNotEmpty) {
+      final match = _dynamicKotaList.firstWhere(
+        (k) => int.tryParse(k['id'].toString()) == _selectedKabupatenKotaId,
+        orElse: () => {'name': ''},
+      );
+      if (match['name'] != null && match['name'].toString().isNotEmpty) {
+        return match['name'].toString();
+      }
+    }
+    final raw = widget.user['kabupatenKotaName'] ?? widget.user['kabupaten_kota_name'] ?? widget.user['cityName'];
+    return (raw != null && raw.toString().isNotEmpty) ? raw.toString() : 'Kota Tangerang Selatan';
   }
 
   void _initDataFromUserMap(Map<String, dynamic> data) {
@@ -825,6 +836,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 hint: '081234567890',
                 icon: Icons.phone_android_rounded,
                 keyboardType: TextInputType.phone,
+                readOnly: true,
               ),
               const SizedBox(height: 14),
 
@@ -834,6 +846,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 hint: 'kevin@catu.id',
                 icon: Icons.email_rounded,
                 keyboardType: TextInputType.emailAddress,
+                readOnly: false,
               ),
 
               const SizedBox(height: 24),
@@ -841,50 +854,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _buildSectionTitle(LanguageService.tr('church_data'), Icons.church_rounded),
               const SizedBox(height: 12),
 
-              _buildDropdownField(
+              _buildReadOnlyField(
                 label: LanguageService.tr('role'),
                 value: _selectedRole,
-                items: ['Umat', 'Pengurus Lingkungan', 'Romo Paroki', 'Romo Ordo'],
-                onChanged: (val) => setState(() => _selectedRole = val!),
                 icon: Icons.badge_rounded,
               ),
               const SizedBox(height: 14),
 
               if (_isRomoOrdo) ...[
-                _buildOrdoDropdownTile(),
+                _buildReadOnlyField(
+                  label: 'Ordo / Tarekat',
+                  value: _selectedOrdoName,
+                  icon: Icons.auto_stories_rounded,
+                ),
               ] else ...[
-                _buildDropdownField(
+                _buildReadOnlyField(
                   label: LanguageService.tr('keuskupan'),
                   value: _selectedKeuskupan,
-                  items: _keuskupanList,
-                  onChanged: (val) => setState(() => _selectedKeuskupan = val!),
                   icon: Icons.account_balance_rounded,
                 ),
                 const SizedBox(height: 14),
-                _buildDropdownField(
+                _buildReadOnlyField(
                   label: LanguageService.tr('paroki'),
                   value: _selectedParoki,
-                  items: _parokiList,
-                  onChanged: (val) => setState(() => _selectedParoki = val!),
                   icon: Icons.location_city_rounded,
                 ),
               ],
 
               if (!_isRomo) ...[
                 const SizedBox(height: 14),
-                _buildDropdownField(
+                _buildReadOnlyField(
                   label: LanguageService.tr('wilayah'),
                   value: _selectedWilayah,
-                  items: _wilayahList,
-                  onChanged: (val) => setState(() => _selectedWilayah = val!),
                   icon: Icons.map_rounded,
                 ),
                 const SizedBox(height: 14),
-                _buildDropdownField(
+                _buildReadOnlyField(
                   label: LanguageService.tr('lingkungan'),
                   value: _selectedLingkungan,
-                  items: _lingkunganList,
-                  onChanged: (val) => setState(() => _selectedLingkungan = val!),
                   icon: Icons.groups_rounded,
                 ),
               ],
@@ -900,25 +907,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 hint: 'Jl. Sutera Utama No. 18',
                 icon: Icons.place_rounded,
                 maxLines: 2,
+                readOnly: false,
               ),
               const SizedBox(height: 14),
 
-              // Dynamic Backend Dropdowns for Provinsi & Kota
+              // Dynamic Backend Read-Only Display for Provinsi & Kota
               Row(
                 children: [
                   Expanded(
-                    child: _buildDynamicProvinsiDropdown(),
+                    child: _buildReadOnlyField(
+                      label: 'Provinsi',
+                      value: _selectedProvinsiName,
+                      icon: Icons.apartment_rounded,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildDynamicKotaDropdown(),
+                    child: _buildReadOnlyField(
+                      label: 'Kota / Kabupaten',
+                      value: _selectedKotaName,
+                      icon: Icons.location_on_rounded,
+                    ),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 24),
-
-              _buildVerificationCheckboxCard(),
             ],
           ),
         ),
@@ -974,122 +986,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  // ── Dynamic Backend Dropdown Builders ─────────────────────────────────────
-
-  Widget _buildDynamicProvinsiDropdown() {
-    final selectedVal = _selectedProvinsiId != null &&
-            _dynamicProvinsiList.any((p) => int.tryParse(p['id'].toString()) == _selectedProvinsiId)
-        ? _selectedProvinsiId
-        : (_dynamicProvinsiList.isNotEmpty
-            ? int.tryParse(_dynamicProvinsiList.first['id'].toString())
-            : null);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Provinsi',
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF334155),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: selectedVal,
-              isExpanded: true,
-              icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                  color: Color(0xFF64748B)),
-              style: const TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF0F172A),
-              ),
-              onChanged: (val) {
-                if (val != null) _onProvinsiChanged(val);
-              },
-              items: _dynamicProvinsiList.map((p) {
-                final id = int.parse(p['id'].toString());
-                final name = p['name'].toString();
-                return DropdownMenuItem<int>(
-                  value: id,
-                  child: Text(name, overflow: TextOverflow.ellipsis),
-                );
-              }).toList(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDynamicKotaDropdown() {
-    final selectedVal = _selectedKabupatenKotaId != null &&
-            _dynamicKotaList.any((k) => int.tryParse(k['id'].toString()) == _selectedKabupatenKotaId)
-        ? _selectedKabupatenKotaId
-        : (_dynamicKotaList.isNotEmpty
-            ? int.tryParse(_dynamicKotaList.first['id'].toString())
-            : null);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Kota / Kabupaten',
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF334155),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: selectedVal,
-              isExpanded: true,
-              icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                  color: Color(0xFF64748B)),
-              style: const TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF0F172A),
-              ),
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() => _selectedKabupatenKotaId = val);
-                }
-              },
-              items: _dynamicKotaList.map((k) {
-                final id = int.parse(k['id'].toString());
-                final name = k['name'].toString();
-                return DropdownMenuItem<int>(
-                  value: id,
-                  child: Text(name, overflow: TextOverflow.ellipsis),
-                );
-              }).toList(),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -1190,39 +1086,69 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     IconData? suffixIcon,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
+    bool readOnly = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF334155),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: readOnly ? const Color(0xFF64748B) : const Color(0xFF334155),
+              ),
+            ),
+            if (readOnly)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.lock_rounded, size: 10, color: Color(0xFF64748B)),
+                    SizedBox(width: 3),
+                    Text(
+                      'Terkunci',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: readOnly ? const Color(0xFFF1F5F9) : Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
+            border: Border.all(color: readOnly ? const Color(0xFFE2E8F0) : const Color(0xFFCBD5E1)),
           ),
           child: TextField(
             controller: controller,
+            readOnly: readOnly,
             keyboardType: keyboardType,
             maxLines: maxLines,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF0F172A),
+              color: readOnly ? const Color(0xFF64748B) : const Color(0xFF0F172A),
             ),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
               prefixIcon: icon != null
-                  ? Icon(icon, size: 18, color: const Color(0xFF64748B))
+                  ? Icon(icon, size: 18, color: readOnly ? const Color(0xFF94A3B8) : const Color(0xFF64748B))
                   : null,
               suffixIcon: suffixIcon != null
                   ? Icon(suffixIcon, size: 18, color: const Color(0xFF1D4ED8))
@@ -1237,149 +1163,79 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildDropdownField({
+  Widget _buildReadOnlyField({
     required String label,
     required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
     IconData? icon,
+    String? hint,
   }) {
-    final validValue = items.contains(value) ? value : items.first;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF334155),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF64748B),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.lock_rounded, size: 10, color: Color(0xFF64748B)),
+                  SizedBox(width: 3),
+                  Text(
+                    'Terkunci',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 6),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: validValue,
-              isExpanded: true,
-              icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                  color: Color(0xFF64748B)),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF0F172A),
-              ),
-              onChanged: onChanged,
-              items: items.map((String item) {
-                return DropdownMenuItem<String>(
-                  value: item,
-                  child: Row(
-                    children: [
-                      if (icon != null) ...[
-                        Icon(icon, size: 18, color: const Color(0xFF64748B)),
-                        const SizedBox(width: 10),
-                      ],
-                      Expanded(
-                        child: Text(
-                          item,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+          child: Row(
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 18, color: const Color(0xFF94A3B8)),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: Text(
+                  value.isNotEmpty ? value : (hint ?? '-'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF475569),
                   ),
-                );
-              }).toList(),
-            ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildVerificationCheckboxCard() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1D4ED8).withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF1D4ED8).withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Checkbox.adaptive(
-            value: _notifyKetuaLingkungan,
-            activeColor: const Color(0xFF1D4ED8),
-            onChanged: (val) {
-              setState(() => _notifyKetuaLingkungan = val ?? true);
-            },
-          ),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Kirim Perubahan Data ke Ketua Lingkungan untuk Verifikasi',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1E293B),
-                height: 1.3,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOrdoDropdownTile() {
-    final displayItems = _ordoList.isNotEmpty
-        ? _ordoList.map((e) => '${e['code']} — ${e['name']}').toList()
-        : [
-            'SJ — Serikat Yesus',
-            'OFM — Ordo Fratrum Minorum',
-            'O.Carm — Ordo Carmelitarum',
-            'SVD — Societas Verbi Divini',
-            'MSF — Missionarii a Sacra Familia',
-            'CSsR — Congregatio Sanctissimi Redemptoris',
-          ];
-
-    if (!displayItems.contains(_selectedOrdoName)) {
-      displayItems.insert(0, _selectedOrdoName);
-    }
-
-    return _buildDropdownField(
-      label: 'Ordo / Tarekat',
-      value: _selectedOrdoName,
-      items: displayItems,
-      onChanged: (val) {
-        if (val != null) {
-          setState(() {
-            _selectedOrdoName = val;
-            if (_ordoList.isNotEmpty) {
-              final match = _ordoList.firstWhere(
-                (e) => '${e['code']} — ${e['name']}' == val || e['name'] == val,
-                orElse: () => _ordoList.first,
-              );
-              _selectedOrdoId = int.tryParse(match['id'].toString());
-            } else {
-              if (val.contains('SJ')) _selectedOrdoId = 2;
-              else if (val.contains('OFM')) _selectedOrdoId = 3;
-              else if (val.contains('MSC')) _selectedOrdoId = 4;
-              else if (val.contains('CSsR')) _selectedOrdoId = 5;
-              else _selectedOrdoId = 1;
-            }
-          });
-        }
-      },
-      icon: Icons.auto_awesome_rounded,
     );
   }
 }
