@@ -18,21 +18,23 @@ import '../notifications/notification_screen.dart';
 import '../admin/pengurus_approval_screen.dart';
 import '../../core/services/api_service.dart';
 
-List<LiquidNavItem> _buildNavItems() => [
+List<LiquidNavItem> _buildNavItems([bool isKoordinator = false]) {
+  if (isKoordinator) {
+    return [
       LiquidNavItem(
         icon: Icons.home_outlined,
         activeIcon: Icons.home_rounded,
         label: LanguageService.tr('nav_home'),
       ),
       LiquidNavItem(
-        icon: Icons.history_outlined,
-        activeIcon: Icons.history_rounded,
-        label: LanguageService.tr('nav_history'),
+        icon: Icons.chat_bubble_outline_rounded,
+        activeIcon: Icons.chat_bubble_rounded,
+        label: 'Chatting',
       ),
       LiquidNavItem(
-        icon: Icons.calendar_today_outlined,
-        activeIcon: Icons.calendar_today_rounded,
-        label: LanguageService.tr('nav_schedule'),
+        icon: Icons.notifications_none_rounded,
+        activeIcon: Icons.notifications_rounded,
+        label: 'Notifikasi',
       ),
       LiquidNavItem(
         icon: Icons.menu_outlined,
@@ -40,6 +42,30 @@ List<LiquidNavItem> _buildNavItems() => [
         label: LanguageService.tr('nav_profile'),
       ),
     ];
+  }
+  return [
+    LiquidNavItem(
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: LanguageService.tr('nav_home'),
+    ),
+    LiquidNavItem(
+      icon: Icons.history_outlined,
+      activeIcon: Icons.history_rounded,
+      label: LanguageService.tr('nav_history'),
+    ),
+    LiquidNavItem(
+      icon: Icons.calendar_today_outlined,
+      activeIcon: Icons.calendar_today_rounded,
+      label: LanguageService.tr('nav_schedule'),
+    ),
+    LiquidNavItem(
+      icon: Icons.menu_outlined,
+      activeIcon: Icons.menu_rounded,
+      label: LanguageService.tr('nav_profile'),
+    ),
+  ];
+}
 
 class UmatDashboardView extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -228,17 +254,39 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     final bool isApproved = accountStatus == 'APPROVED';
 
     String positionTitle = 'Umat (Anggota)';
-    if (pengurusPos == 'KETUA') positionTitle = 'Umat — Ketua Lingkungan';
-    if (pengurusPos == 'WAKIL') positionTitle = 'Umat — Wakil Ketua';
-    if (pengurusPos == 'SEKRETARIS') positionTitle = 'Umat — Sekretaris';
+    if (_isKoordinator) {
+      positionTitle = 'Koordinator Keuskupan';
+    } else if (pengurusPos == 'KETUA') {
+      positionTitle = 'Umat — Ketua Lingkungan';
+    } else if (pengurusPos == 'WAKIL') {
+      positionTitle = 'Umat — Wakil Ketua';
+    } else if (pengurusPos == 'SEKRETARIS') {
+      positionTitle = 'Umat — Sekretaris';
+    }
 
     final String periodeText =
         (startDate != null && endDate != null && startDate.isNotEmpty && endDate.isNotEmpty)
             ? '$startDate - $endDate'
             : (startYear != null && endYear != null ? '$startYear - $endYear' : '');
 
-    // ── Histori Tab ──
+    // ── Tab 1: Histori (Umat/Pengurus) OR Chatting (Koordinator) ──
     if (_currentNavIndex == 1) {
+      if (_isKoordinator) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFF1F5F9),
+          body: ChatListScreen(
+            user: widget.user,
+            orders: widget.orders,
+          ),
+          bottomNavigationBar: LiquidBottomNavBar(
+            selectedIndex: _currentNavIndex,
+            onTabSelected: (index) {
+              setState(() => _currentNavIndex = index);
+            },
+            items: _buildNavItems(true),
+          ),
+        );
+      }
       return Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
         body: HistoriScreen(
@@ -251,13 +299,31 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
           onTabSelected: (index) {
             setState(() => _currentNavIndex = index);
           },
-          items: _buildNavItems(),
+          items: _buildNavItems(false),
         ),
       );
     }
 
-    // ── Jadwal / Schedule Tab ──
+    // ── Tab 2: Jadwal (Umat/Pengurus) OR Notifikasi (Koordinator) ──
     if (_currentNavIndex == 2) {
+      if (_isKoordinator) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFF1F5F9),
+          body: NotificationScreen(
+            role: 'PENGURUS',
+            orders: widget.orders,
+            user: widget.user,
+            isRomo: false,
+          ),
+          bottomNavigationBar: LiquidBottomNavBar(
+            selectedIndex: _currentNavIndex,
+            onTabSelected: (index) {
+              setState(() => _currentNavIndex = index);
+            },
+            items: _buildNavItems(true),
+          ),
+        );
+      }
       return Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
         body: ScheduleScreen(
@@ -271,7 +337,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
           onTabSelected: (index) {
             setState(() => _currentNavIndex = index);
           },
-          items: _buildNavItems(),
+          items: _buildNavItems(false),
         ),
       );
     }
@@ -290,7 +356,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
           onTabSelected: (index) {
             setState(() => _currentNavIndex = index);
           },
-          items: _buildNavItems(),
+          items: _buildNavItems(_isKoordinator),
         ),
       );
     }
@@ -660,111 +726,314 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                       const SizedBox(height: 12),
                     ],
 
-                    // ── 4. Daftar Permintaan Pelayanan ──
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 180,
-                            child: Text(
-                              LanguageService.tr('recent_orders'),
-                              style: const TextStyle(
-                                fontSize: 20,
+                    if (_isKoordinator) ...[
+                      // ── Koordinator Communication & Monitoring Hub ──
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Pusat Komunikasi & Koordinasi',
+                              style: TextStyle(
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF0F172A),
-                                height: 1.2,
                               ),
                             ),
-                          ),
-                          ElevatedButton(
-                            onPressed: _showServiceSelectionModal,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1E5399),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 10),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14)),
-                              elevation: 0,
+                            const SizedBox(height: 4),
+                            Text(
+                              'Kelola komunikasi pesan masuk dan pantau notifikasi pelayanan se-keuskupan.',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: Colors.grey.shade600,
+                              ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.add_rounded, size: 16),
-                                const SizedBox(width: 5),
-                                Text(
-                                  LanguageService.tr('quick_services'),
-                                  style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                            const SizedBox(height: 14),
 
-                    const SizedBox(height: 14),
-
-                    // Horizontal Cards
-                    SizedBox(
-                      height: 255,
-                      child: _displayCardItems.isEmpty
-                          ? Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.event_available_rounded,
-                                        size: 48,
-                                        color: Colors.grey.shade300),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Tidak ada jadwal pelayanan aktif saat ini.\nJadwal terdahulu dapat dilihat di tab Histori.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          color: Colors.grey.shade500,
-                                          fontSize: 13),
+                            // Card 1: Chatting & Koordinasi Umat
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: () async {
+                                  HapticFeedback.selectionClick();
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ChatListScreen(
+                                        user: widget.user,
+                                        orders: widget.orders,
+                                      ),
                                     ),
-                                  ],
+                                  );
+                                  _refreshUnreadCount();
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.03),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1E5399).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                        child: const Icon(
+                                          Icons.chat_bubble_rounded,
+                                          color: Color(0xFF1E5399),
+                                          size: 26,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                const Text(
+                                                  'Ruang Chatting',
+                                                  style: TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Color(0xFF0F172A),
+                                                  ),
+                                                ),
+                                                if (_unreadChatCount > 0) ...[
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.redAccent,
+                                                      borderRadius: BorderRadius.circular(10),
+                                                    ),
+                                                    child: Text(
+                                                      '$_unreadChatCount Belum Dibaca',
+                                                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                            const SizedBox(height: 3),
+                                            const Text(
+                                              'Obrolan koordinasi dengan umat, romo, dan pengurus',
+                                              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Color(0xFF94A3B8)),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            )
-                          : ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
-                              itemCount: _displayCardItems.length,
-                              itemBuilder: (context, index) {
-                                final item = _displayCardItems[index];
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 14),
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => OrderDetailScreen(
-                                            order: item.parentOrder,
-                                            userName: userName,
-                                            selectedItemTitle: item.title,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: _buildServiceCard(item),
-                                  ),
-                                );
-                              },
                             ),
-                    ),
+
+                            const SizedBox(height: 12),
+
+                            // Card 2: Notifikasi & Pemberitahuan
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: _openNotifications,
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.03),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF7C3AED).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                        child: const Icon(
+                                          Icons.notifications_rounded,
+                                          color: Color(0xFF7C3AED),
+                                          size: 26,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                const Text(
+                                                  'Pemberitahuan & Notifikasi',
+                                                  style: TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Color(0xFF0F172A),
+                                                  ),
+                                                ),
+                                                if (_unreadNotifCount > 0) ...[
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.redAccent,
+                                                      borderRadius: BorderRadius.circular(10),
+                                                    ),
+                                                    child: Text(
+                                                      '$_unreadNotifCount Baru',
+                                                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                            const SizedBox(height: 3),
+                                            const Text(
+                                              'Pantau update, pesan baru, dan info status keuskupan',
+                                              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Color(0xFF94A3B8)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      // ── 4. Daftar Permintaan Pelayanan (Regular Umat / Pengurus Lingkungan) ──
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 180,
+                              child: Text(
+                                LanguageService.tr('recent_orders'),
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF0F172A),
+                                  height: 1.2,
+                                ),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: _showServiceSelectionModal,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1E5399),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                                elevation: 0,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.add_rounded, size: 16),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    LanguageService.tr('quick_services'),
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      // Horizontal Cards
+                      SizedBox(
+                        height: 255,
+                        child: _displayCardItems.isEmpty
+                            ? Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 20),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.event_available_rounded,
+                                          size: 48,
+                                          color: Colors.grey.shade300),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Tidak ada jadwal pelayanan aktif saat ini.\nJadwal terdahulu dapat dilihat di tab Histori.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            color: Colors.grey.shade500,
+                                            fontSize: 13),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 20),
+                                itemCount: _displayCardItems.length,
+                                itemBuilder: (context, index) {
+                                  final item = _displayCardItems[index];
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 14),
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => OrderDetailScreen(
+                                              order: item.parentOrder,
+                                              userName: userName,
+                                              selectedItemTitle: item.title,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: _buildServiceCard(item),
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
 
                     const SizedBox(height: 16),
                   ],
@@ -781,7 +1050,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
         onTabSelected: (index) {
           setState(() => _currentNavIndex = index);
         },
-        items: _buildNavItems(),
+        items: _buildNavItems(_isKoordinator),
       ),
     );
   }
