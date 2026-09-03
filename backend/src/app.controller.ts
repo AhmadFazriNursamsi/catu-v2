@@ -2119,7 +2119,7 @@ export class OrdersController {
     private fcmService: FcmService,
   ) {}
 
-  private async getPengurusForOrder(orderId: number): Promise<any[]> {
+  private async getPengurusForOrder(orderId: number, excludeUserId?: number): Promise<any[]> {
     const orderHierarchy = await this.dataSource.query(
       `SELECT o.lingkungan_id, o.paroki_id, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id 
        FROM orders o 
@@ -2164,6 +2164,10 @@ export class OrdersController {
           pengurus.push(k);
         }
       }
+    }
+
+    if (excludeUserId) {
+      pengurus = pengurus.filter((p: any) => p.id !== excludeUserId);
     }
 
     return pengurus;
@@ -2342,49 +2346,55 @@ export class OrdersController {
           [gId, `Grup Pelayanan untuk ${item.itemName} (${order.order_number}) telah dibuat. Menunggu konfirmasi kehadiran Romo.`],
         );
 
-        // 🔔 4. Notify Pengurus Lingkungan per-misa
+        // 🔔 4. Notify Pengurus Lingkungan per-misa (exclude creator)
         for (const p of pengurus) {
-          await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
-             VALUES ($1, $2, $3, $4, 'NEW_ORDER_MONITOR', false)`,
-            [
-              p.id, 
-              order.id, 
-              `Pemantauan ${item.itemName}`, 
-              `Ada permintaan ${item.itemName} (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.`
-            ],
-          );
+          if (p.id && p.id !== userId) {
+            await this.dataSource.query(
+              `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+               VALUES ($1, $2, $3, $4, 'NEW_ORDER_MONITOR', false)`,
+              [
+                p.id, 
+                order.id, 
+                `Pemantauan ${item.itemName}`, 
+                `Ada permintaan ${item.itemName} (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.`
+              ],
+            );
+          }
         }
 
-        // 🔔 4b. Notify Koordinator Keuskupan per-misa
+        // 🔔 4b. Notify Koordinator Keuskupan per-misa (exclude creator)
         for (const k of koordinator) {
-          await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
-             VALUES ($1, $2, $3, $4, 'NEW_ORDER_KOORDINATOR', false)`,
-            [
-              k.id, 
-              order.id, 
-              `Pemantauan Keuskupan: ${item.itemName}`, 
-              `Ada permintaan ${item.itemName} (${order.order_number}) di keuskupan Anda. Ketuk untuk memantau status dan koordinasi via chat.`
-            ],
-          );
+          if (k.id && k.id !== userId) {
+            await this.dataSource.query(
+              `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+               VALUES ($1, $2, $3, $4, 'NEW_ORDER_KOORDINATOR', false)`,
+              [
+                k.id, 
+                order.id, 
+                `Pemantauan Keuskupan: ${item.itemName}`, 
+                `Ada permintaan ${item.itemName} (${order.order_number}) di keuskupan Anda. Ketuk untuk memantau status dan koordinasi via chat.`
+              ],
+            );
+          }
         }
 
-        // 🔔 5. Notify Romo Paroki per-misa
+        // 🔔 5. Notify Romo Paroki per-misa (exclude creator)
         for (const rp of romoParoki) {
-          await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
-             VALUES ($1, $2, $3, $4, 'NEW_ORDER_ROMO', false)`,
-            [
-              rp.id, 
-              order.id, 
-              `Permintaan Pelayanan ${item.itemName}`, 
-              `Umat yang berada di paroki anda telah membuat permintaan pelayanan ${item.itemName} (${order.order_number}).`
-            ],
-          );
+          if (rp.id && rp.id !== userId) {
+            await this.dataSource.query(
+              `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+               VALUES ($1, $2, $3, $4, 'NEW_ORDER_ROMO', false)`,
+              [
+                rp.id, 
+                order.id, 
+                `Permintaan Pelayanan ${item.itemName}`, 
+                `Umat yang berada di paroki anda telah membuat permintaan pelayanan ${item.itemName} (${order.order_number}).`
+              ],
+            );
+          }
         }
 
-        // 🔔 6. Notify Romo Ordo per-misa
+        // 🔔 6. Notify Romo Ordo per-misa (exclude creator)
         let targetRomoOrdo = romoOrdo;
         const itemKabId = item.kabupatenKotaId || kabId;
         if (itemKabId && itemKabId !== kabId) {
@@ -2398,16 +2408,18 @@ export class OrdersController {
         }
 
         for (const ro of targetRomoOrdo) {
-          await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
-             VALUES ($1, $2, $3, $4, 'NEW_ORDER_ROMO', false)`,
-            [
-              ro.id, 
-              order.id, 
-              `Permintaan Pelayanan ${item.itemName}`, 
-              `Umat yang berada di kota anda telah membuat permintaan pelayanan ${item.itemName} (${order.order_number}).`
-            ],
-          );
+          if (ro.id && ro.id !== userId) {
+            await this.dataSource.query(
+              `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+               VALUES ($1, $2, $3, $4, 'NEW_ORDER_ROMO', false)`,
+              [
+                ro.id, 
+                order.id, 
+                `Permintaan Pelayanan ${item.itemName}`, 
+                `Umat yang berada di kota anda telah membuat permintaan pelayanan ${item.itemName} (${order.order_number}).`
+              ],
+            );
+          }
         }
       }
     } else {
@@ -2425,17 +2437,21 @@ export class OrdersController {
       }
 
       for (const p of pengurus) {
-        await this.dataSource.query(
-          `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'PENGURUS_LINGKUNGAN') ON CONFLICT DO NOTHING`,
-          [firstGroupId, p.id],
-        );
+        if (p.id !== userId) {
+          await this.dataSource.query(
+            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'PENGURUS_LINGKUNGAN') ON CONFLICT DO NOTHING`,
+            [firstGroupId, p.id],
+          );
+        }
       }
 
       for (const k of koordinator) {
-        await this.dataSource.query(
-          `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'KOORDINATOR') ON CONFLICT DO NOTHING`,
-          [firstGroupId, k.id],
-        );
+        if (k.id !== userId) {
+          await this.dataSource.query(
+            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'KOORDINATOR') ON CONFLICT DO NOTHING`,
+            [firstGroupId, k.id],
+          );
+        }
       }
 
       await this.dataSource.query(
@@ -2443,40 +2459,48 @@ export class OrdersController {
         [firstGroupId, `Grup Pelayanan ${order.order_number} telah dibuat. Menunggu konfirmasi kehadiran Romo.`],
       );
 
-      // 🔔 Notify Pengurus Lingkungan
+      // 🔔 Notify Pengurus Lingkungan (exclude creator)
       for (const p of pengurus) {
-        await this.dataSource.query(
-          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
-           VALUES ($1, $2, 'Pemantauan Pelayanan Sakramen Perminyakan', $3, 'NEW_ORDER_MONITOR', false)`,
-          [p.id, order.id, `Ada permintaan pelayanan Sakramen Perminyakan (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.`],
-        );
+        if (p.id !== userId) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+             VALUES ($1, $2, 'Pemantauan Pelayanan Sakramen Perminyakan', $3, 'NEW_ORDER_MONITOR', false)`,
+            [p.id, order.id, `Ada permintaan pelayanan Sakramen Perminyakan (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.`],
+          );
+        }
       }
 
-      // 🔔 Notify Koordinator Keuskupan
+      // 🔔 Notify Koordinator Keuskupan (exclude creator)
       for (const k of koordinator) {
-        await this.dataSource.query(
-          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
-           VALUES ($1, $2, 'Pemantauan Keuskupan: Sakramen Perminyakan', $3, 'NEW_ORDER_KOORDINATOR', false)`,
-          [k.id, order.id, `Ada permintaan pelayanan Sakramen Perminyakan (${order.order_number}) di keuskupan Anda. Ketuk untuk memantau status dan koordinasi via chat.`],
-        );
+        if (k.id !== userId) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+             VALUES ($1, $2, 'Pemantauan Keuskupan: Sakramen Perminyakan', $3, 'NEW_ORDER_KOORDINATOR', false)`,
+            [k.id, order.id, `Ada permintaan pelayanan Sakramen Perminyakan (${order.order_number}) di keuskupan Anda. Ketuk untuk memantau status dan koordinasi via chat.`],
+          );
+        }
       }
 
-      // 🔔 Notify Romo Paroki
+      // 🔔 Notify Romo Paroki (exclude creator)
       for (const rp of romoParoki) {
-        await this.dataSource.query(
-          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
-           VALUES ($1, $2, 'Permintaan Pelayanan Sakramen Perminyakan', $3, 'NEW_ORDER_ROMO', false)`,
-          [rp.id, order.id, `Umat yang berada di paroki anda telah membuat permintaan pelayanan Sakramen Perminyakan (${order.order_number}).`],
-        );
+        if (rp.id !== userId) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+             VALUES ($1, $2, 'Permintaan Pelayanan Sakramen Perminyakan', $3, 'NEW_ORDER_ROMO', false)`,
+            [rp.id, order.id, `Umat yang berada di paroki anda telah membuat permintaan pelayanan Sakramen Perminyakan (${order.order_number}).`],
+          );
+        }
       }
 
-      // 🔔 Notify Romo Ordo
+      // 🔔 Notify Romo Ordo (exclude creator)
       for (const ro of romoOrdo) {
-        await this.dataSource.query(
-          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
-           VALUES ($1, $2, 'Permintaan Pelayanan Sakramen Perminyakan', $3, 'NEW_ORDER_ROMO', false)`,
-          [ro.id, order.id, `Umat yang berada di kota anda telah membuat permintaan pelayanan Sakramen Perminyakan (${order.order_number}).`],
-        );
+        if (ro.id !== userId) {
+          await this.dataSource.query(
+            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) 
+             VALUES ($1, $2, 'Permintaan Pelayanan Sakramen Perminyakan', $3, 'NEW_ORDER_ROMO', false)`,
+            [ro.id, order.id, `Umat yang berada di kota anda telah membuat permintaan pelayanan Sakramen Perminyakan (${order.order_number}).`],
+          );
+        }
       }
     }
 
@@ -3825,7 +3849,7 @@ export class AssignmentsController {
     private fcmService: FcmService,
   ) {}
 
-  private async getPengurusForOrder(orderId: number): Promise<any[]> {
+  private async getPengurusForOrder(orderId: number, excludeUserId?: number): Promise<any[]> {
     const orderHierarchy = await this.dataSource.query(
       `SELECT o.lingkungan_id, o.paroki_id, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id 
        FROM orders o 
@@ -3870,6 +3894,10 @@ export class AssignmentsController {
           pengurus.push(k);
         }
       }
+    }
+
+    if (excludeUserId) {
+      pengurus = pengurus.filter((p: any) => p.id !== excludeUserId);
     }
 
     return pengurus;
