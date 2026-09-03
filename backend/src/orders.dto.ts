@@ -248,12 +248,12 @@ export class SendChatMessageDto {
   @IsEnum(['TEXT', 'IMAGE', 'DOCUMENT', 'LOCATION'])
   messageType: 'TEXT' | 'IMAGE' | 'DOCUMENT' | 'LOCATION';
 
-  @ApiProperty({ example: 'Selamat sore Romo, kami menunggu kedatangannya.', description: 'Isi pesan chat' })
+  @ApiPropertyOptional({ example: 'Selamat sore Romo, kami menunggu kedatangannya.', description: 'Isi pesan chat atau caption' })
   @IsString()
-  @IsNotEmpty()
-  message: string;
+  @IsOptional()
+  message?: string;
 
-  @ApiPropertyOptional({ example: 'https://s3.amazonaws.com/catu/surat_kedukaan.pdf', description: 'Link attachment URL' })
+  @ApiPropertyOptional({ example: 'data:image/jpeg;base64,...', description: 'Link attachment URL atau Base64 Data URL' })
   @IsString()
   @IsOptional()
   attachmentUrl?: string;

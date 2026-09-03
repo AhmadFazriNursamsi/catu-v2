@@ -4080,15 +4080,19 @@ export class ChatController {
     const groupId = await this.resolveGroupId(groupIdParam);
     const senderId = dto.senderId || 1;
 
+    const msgText = (dto.message && dto.message.trim().length > 0)
+      ? dto.message
+      : (dto.messageType === 'IMAGE' ? 'Foto' : (dto.messageType === 'LOCATION' ? 'Lokasi' : 'Pesan'));
+
     const result = await this.dataSource.query(
       `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message, attachment_url)
-       VALUES ($1, $2, $3, $4, $5) RETURNING id, chat_group_id, sender_id, message_type, message, attachment_url, created_at`,
-      [groupId, senderId, dto.messageType, dto.message, dto.attachmentUrl || null],
+       VALUES ($1, $2, $3::chat_message_type_enum, $4, $5) RETURNING id, chat_group_id, sender_id, message_type, message, attachment_url, created_at`,
+      [groupId, senderId, dto.messageType, msgText, dto.attachmentUrl || null],
     );
 
     await this.dataSource.query(
       `UPDATE chat_groups SET last_message_text = $1, last_message_at = CURRENT_TIMESTAMP WHERE id = $2`,
-      [dto.message, groupId],
+      [dto.messageType === 'IMAGE' ? '📷 Foto' : msgText, groupId],
     );
 
     if (result.length > 0 && result[0].id) {

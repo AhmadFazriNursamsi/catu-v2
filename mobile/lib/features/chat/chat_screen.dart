@@ -192,9 +192,9 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 75,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 65,
       );
 
       if (pickedFile == null) return;
@@ -212,7 +212,7 @@ class _ChatScreenState extends State<ChatScreen> {
         senderId: currentSenderId,
         senderName: widget.userName,
         messageType: 'IMAGE',
-        message: '',
+        message: 'Foto',
         attachmentUrl: dataUrl,
         createdAt: DateTime.now().toIso8601String(),
       );
@@ -225,7 +225,7 @@ class _ChatScreenState extends State<ChatScreen> {
       await ApiService.sendChatMessage(
         widget.groupId,
         'IMAGE',
-        '',
+        'Foto',
         senderId: currentSenderId,
         attachmentUrl: dataUrl,
       );
