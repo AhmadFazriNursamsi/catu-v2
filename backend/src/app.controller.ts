@@ -2021,7 +2021,10 @@ export class AuthController implements OnModuleInit {
 @ApiTags('Orders & Pelayanan')
 @Controller('orders')
 export class OrdersController {
-  constructor(@InjectDataSource() private dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() private dataSource: DataSource,
+    private fcmService: FcmService,
+  ) {}
 
   private async getPengurusForOrder(orderId: number): Promise<any[]> {
     const orderHierarchy = await this.dataSource.query(
@@ -2311,6 +2314,49 @@ export class OrdersController {
           [ro.id, order.id, `Umat yang berada di kota anda telah membuat permintaan pelayanan Sakramen Perminyakan (${order.order_number}).`],
         );
       }
+    }
+
+    // 🔔 7. Send Real-Time FCM Push Notifications to Romo and Pengurus
+    try {
+      const catRow = await this.dataSource.query('SELECT name FROM service_categories WHERE id = $1', [dto.serviceCategoryId]);
+      const catName = catRow[0]?.name || 'Pelayanan';
+      const isKedukaan = catName.toLowerCase().includes('kedukaan');
+
+      // Unique Romo Paroki & Romo Ordo IDs (exclude creator)
+      const allRomoIds = Array.from(new Set([
+        ...romoParoki.map((r: any) => r.id),
+        ...romoOrdo.map((ro: any) => ro.id),
+      ])).filter((id: number) => id && id !== userId);
+
+      if (allRomoIds.length > 0) {
+        await this.fcmService.sendPushToUsers(allRomoIds, {
+          title: isKedukaan ? `Permintaan Pelayanan Misa Kedukaan` : `Permintaan Sakramen Perminyakan`,
+          body: `Umat telah membuat permohonan ${catName} (${order.order_number}). Ketuk untuk melihat detail dan konfirmasi.`,
+          data: {
+            type: 'NEW_ORDER_ROMO',
+            orderId: order.id.toString(),
+            orderNumber: order.order_number,
+            categoryName: catName,
+          },
+        });
+      }
+
+      // Unique Pengurus IDs (exclude creator)
+      const allPengurusIds = Array.from(new Set(pengurus.map((p: any) => p.id))).filter((id: number) => id && id !== userId);
+      if (allPengurusIds.length > 0) {
+        await this.fcmService.sendPushToUsers(allPengurusIds, {
+          title: `Pemantauan Pelayanan: ${catName}`,
+          body: `Ada permohonan ${catName} (${order.order_number}) dari warga lingkungan Anda.`,
+          data: {
+            type: 'NEW_ORDER_MONITOR',
+            orderId: order.id.toString(),
+            orderNumber: order.order_number,
+            categoryName: catName,
+          },
+        });
+      }
+    } catch (fcmErr) {
+      console.error('Error dispatching FCM in createOrder:', fcmErr);
     }
 
     return {
@@ -3422,7 +3468,10 @@ export class NotificationsController {
 @ApiTags('Romo Assignments')
 @Controller('assignments')
 export class AssignmentsController {
-  constructor(@InjectDataSource() private dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() private dataSource: DataSource,
+    private fcmService: FcmService,
+  ) {}
 
   private async getPengurusForOrder(orderId: number): Promise<any[]> {
     const orderHierarchy = await this.dataSource.query(
@@ -3724,6 +3773,38 @@ export class AssignmentsController {
             ],
           );
         }
+      }
+
+      // 🔔 Dispatch Real-Time FCM Push to Umat & Pengurus
+      try {
+        const targetUserIds = Array.from(new Set([
+          orderInfo.user_id,
+          ...pengurusStatusList.map((p: any) => p.id),
+        ])).filter((id: number) => id && id !== romoId);
+
+        if (targetUserIds.length > 0) {
+          const notifTitle = newStatus === 'CONFIRMED'
+            ? `Pelayanan Dikonfirmasi: ${serviceTitle}`
+            : (newStatus === 'DONE' ? `Pelayanan Selesai: ${serviceTitle}` : `Pelayanan: ${serviceTitle} (${newStatus})`);
+          const notifBody = newStatus === 'CONFIRMED'
+            ? `Romo ${romoName} telah mengkonfirmasi kehadiran untuk melayani ${serviceTitle} (${orderInfo.order_number}).`
+            : (newStatus === 'DONE'
+                ? `Pelayanan ${serviceTitle} (${orderInfo.order_number}) telah selesai dilaksanakan oleh Romo ${romoName}.`
+                : `Status pelayanan ${serviceTitle} (${orderInfo.order_number}) diubah menjadi ${newStatus} oleh Romo ${romoName}.`);
+
+          await this.fcmService.sendPushToUsers(targetUserIds, {
+            title: notifTitle,
+            body: notifBody,
+            data: {
+              type: newStatus === 'CONFIRMED' ? 'ORDER_CONFIRMED' : (newStatus === 'DONE' ? 'ORDER_DONE' : 'ORDER_STATUS_CHANGED'),
+              orderId: orderId.toString(),
+              orderNumber: orderInfo.order_number,
+              categoryName: orderInfo.category_name,
+            },
+          });
+        }
+      } catch (fcmErr) {
+        console.error('Error dispatching FCM in respondAssignment:', fcmErr);
       }
     }
 

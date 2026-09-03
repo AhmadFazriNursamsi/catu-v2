@@ -95,6 +95,12 @@ export class FcmService implements OnModuleInit {
         normalizedType = 'ANDROID';
       }
 
+      // Remove this token from any other user accounts on this physical device to avoid overlapping notifications
+      await this.dataSource.query(
+        `DELETE FROM user_devices WHERE fcm_token = $1 AND user_id != $2`,
+        [fcmToken, userId],
+      );
+
       await this.dataSource.query(
         `INSERT INTO user_devices (user_id, fcm_token, device_type, device_model, last_active_at)
          VALUES ($1, $2, $3::device_type_enum, $4, CURRENT_TIMESTAMP)
@@ -152,8 +158,9 @@ export class FcmService implements OnModuleInit {
         return { sent: 0, failed: 0 };
       }
 
-      const tokens: string[] = rows.map((r: any) => r.fcm_token);
-      this.logger.log(`Sending FCM Push to ${tokens.length} devices for users: ${targetUserIds.join(', ')}`);
+      // Deduplicate tokens so each physical device receives at most 1 push notification per event
+      const tokens: string[] = Array.from(new Set(rows.map((r: any) => r.fcm_token as string)));
+      this.logger.log(`Sending FCM Push to ${tokens.length} unique devices for users: ${targetUserIds.join(', ')}`);
 
       // 2. If Firebase live is not configured, log simulation
       if (!this.isFirebaseInitialized) {
