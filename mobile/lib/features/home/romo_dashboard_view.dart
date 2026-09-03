@@ -267,6 +267,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         body: HistoriScreen(
           orders: widget.orders,
           userName: userName,
+          userId: romoId,
           onRefresh: widget.onRefresh,
           isRomo: true,
           romoId: romoId,

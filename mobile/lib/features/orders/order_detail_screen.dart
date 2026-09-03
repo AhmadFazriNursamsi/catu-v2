@@ -13,6 +13,7 @@ import '../chat/chat_screen.dart';
 class OrderDetailScreen extends StatefulWidget {
   final Order order;
   final String userName;
+  final int? userId;
   final String? selectedItemTitle;
   final int? selectedItemId;
   final bool isRomo;
@@ -22,6 +23,7 @@ class OrderDetailScreen extends StatefulWidget {
     Key? key,
     required this.order,
     required this.userName,
+    this.userId,
     this.selectedItemTitle,
     this.selectedItemId,
     this.isRomo = false,
@@ -1765,7 +1767,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
 
   void _openChat(Order order) async {
     HapticFeedback.lightImpact();
-    final int? currentSenderId = widget.isRomo ? widget.romoId : (order.userId ?? 1);
+    final int? currentSenderId = widget.userId ?? (widget.isRomo ? widget.romoId : (order.userId ?? 1));
     
     int targetGroupId = order.id;
     try {
@@ -1795,7 +1797,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
             scheduledTimeStart: order.jamMulaiLabel,
             scheduledTimeEnd: order.jamSelesaiLabel,
             penerimaName: order.penerimaName,
-            requesterName: widget.userName,
+            requesterName: order.pemohonName.isNotEmpty ? order.pemohonName : (order.penerimaName.isNotEmpty ? order.penerimaName : 'Umat Pemohon'),
           ),
         ),
       ),
@@ -3144,7 +3146,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           borderRadius: BorderRadius.circular(20),
           onTap: () async {
             HapticFeedback.lightImpact();
-            final int? currentSenderId = widget.isRomo ? widget.romoId : (order.userId ?? 1);
+            final int? currentSenderId = widget.userId ?? (widget.isRomo ? widget.romoId : (order.userId ?? 1));
             
             int targetGroupId = order.id;
             try {
@@ -3174,7 +3176,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                     scheduledTimeStart: order.jamMulaiLabel,
                     scheduledTimeEnd: order.jamSelesaiLabel,
                     penerimaName: order.penerimaName,
-                    requesterName: widget.userName,
+                    requesterName: order.pemohonName.isNotEmpty ? order.pemohonName : (order.penerimaName.isNotEmpty ? order.penerimaName : 'Umat Pemohon'),
                   ),
                 ),
               ),

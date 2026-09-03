@@ -4593,13 +4593,46 @@ export class ChatController {
     }
 
     for (const p of pengurus) {
-      memberList.push({
-        user_id: p.user_id,
-        role_in_group: 'PENGURUS_LINGKUNGAN',
-        full_name: p.full_name || 'Pengurus Lingkungan',
-        phone_number: p.phone_number || '-',
-        lingkungan_name: p.lingkungan_name ? `Pengurus Lingkungan ${p.lingkungan_name}` : 'Pengurus Lingkungan',
-      });
+      if (!memberList.some((m: any) => m.user_id === p.user_id)) {
+        memberList.push({
+          user_id: p.user_id,
+          role_in_group: 'PENGURUS_LINGKUNGAN',
+          full_name: p.full_name || 'Pengurus Lingkungan',
+          phone_number: p.phone_number || '-',
+          lingkungan_name: p.lingkungan_name ? `Pengurus Lingkungan ${p.lingkungan_name}` : 'Pengurus Lingkungan',
+        });
+      }
+    }
+
+    // 2b. Koordinator Keuskupan
+    const keuskupanId = order.keuskupan_id || (
+      await this.dataSource.query('SELECT keuskupan_id FROM user_profiles WHERE user_id = $1', [order.pemohon_id])
+    )[0]?.keuskupan_id;
+
+    if (keuskupanId) {
+      const koordinator = await this.dataSource.query(
+        `SELECT u.id as user_id, 'KOORDINATOR' as role_in_group, p.full_name, u.phone_number,
+                COALESCE(k.name, 'Keuskupan') as keuskupan_name
+         FROM auth_users u
+         JOIN user_profiles p ON u.id = p.user_id
+         JOIN roles r ON u.role_id = r.id
+         LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
+         WHERE (r.code = 'KOORDINATOR' OR LOWER(p.pengurus_position) LIKE '%koordinator%') AND p.keuskupan_id = $1
+         ORDER BY u.id ASC`,
+        [keuskupanId],
+      );
+
+      for (const k of koordinator) {
+        if (!memberList.some((m: any) => m.user_id === k.user_id)) {
+          memberList.push({
+            user_id: k.user_id,
+            role_in_group: 'KOORDINATOR',
+            full_name: k.full_name || 'Koordinator Keuskupan',
+            phone_number: k.phone_number || '-',
+            lingkungan_name: k.keuskupan_name ? `Koordinator ${k.keuskupan_name}` : 'Koordinator Keuskupan',
+          });
+        }
+      }
     }
 
     // 3. Romo (ONLY IF accepted and status != PENDING)

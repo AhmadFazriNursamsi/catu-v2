@@ -176,7 +176,7 @@ class _ChatScreenState extends State<ChatScreen> {
       senderId: currentSenderId,
     );
 
-    final backendMsgs = await ApiService.getGroupMessages(widget.groupId);
+    final backendMsgs = await ApiService.getGroupMessages(widget.groupId, userId: widget.userId);
     if (mounted && backendMsgs.isNotEmpty) {
       setState(() {
         _messages = backendMsgs;
@@ -230,7 +230,7 @@ class _ChatScreenState extends State<ChatScreen> {
         attachmentUrl: dataUrl,
       );
 
-      final backendMsgs = await ApiService.getGroupMessages(widget.groupId);
+      final backendMsgs = await ApiService.getGroupMessages(widget.groupId, userId: widget.userId);
       if (mounted && backendMsgs.isNotEmpty) {
         setState(() {
           _messages = backendMsgs;
@@ -520,6 +520,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       builder: (_) => OrderDetailScreen(
                         order: order,
                         userName: widget.userName,
+                        userId: widget.userId,
                         selectedItemId: group?.orderItemId,
                         selectedItemTitle: group?.orderTitle,
                         isRomo: widget.isRomo,
@@ -547,6 +548,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       builder: (_) => OrderDetailScreen(
                         order: fallbackOrder,
                         userName: widget.userName,
+                        userId: widget.userId,
                         selectedItemId: group?.orderItemId,
                         selectedItemTitle: group?.orderTitle,
                         isRomo: widget.isRomo,
@@ -668,8 +670,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       final currentUserId = widget.userId;
                       final bool isMe = !isSystem && (
                           (msg.senderId != null && currentUserId != null && msg.senderId == currentUserId) ||
-                          (msg.senderName != null && widget.userName.isNotEmpty && msg.senderName == widget.userName) ||
-                          (msg.senderId == null && msg.senderName == null)
+                          (msg.senderId != null && currentUserId == null && msg.senderName != null && widget.userName.isNotEmpty && msg.senderName == widget.userName)
                       );
 
                       if (isSystem) {
@@ -976,6 +977,7 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
   Color _getRoleBadgeBg(String role) {
     final r = role.toUpperCase();
     if (r.contains('ROMO')) return const Color(0xFFF3E8FF);
+    if (r.contains('KOORDINATOR')) return const Color(0xFFEDE9FE);
     if (r.contains('PEMOHON') || r.contains('UMAT')) return const Color(0xFFDCFCE7);
     if (r.contains('SEKRETARIAT') || r.contains('ADMIN')) return const Color(0xFFDBEAFE);
     return const Color(0xFFFEF3C7);
@@ -984,6 +986,7 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
   Color _getRoleBadgeText(String role) {
     final r = role.toUpperCase();
     if (r.contains('ROMO')) return const Color(0xFF7C3AED);
+    if (r.contains('KOORDINATOR')) return const Color(0xFF6D28D9);
     if (r.contains('PEMOHON') || r.contains('UMAT')) return const Color(0xFF15803D);
     if (r.contains('SEKRETARIAT') || r.contains('ADMIN')) return const Color(0xFF1D4ED8);
     return const Color(0xFFB45309);
@@ -993,6 +996,7 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
     final r = role.toUpperCase();
     if (r.contains('ROMO_ORDO')) return 'ROMO ORDO';
     if (r.contains('ROMO')) return 'ROMO';
+    if (r.contains('KOORDINATOR')) return 'KOORDINATOR KEUSKUPAN';
     if (r.contains('PEMOHON') || r.contains('UMAT')) return 'PEMOHON';
     if (r.contains('SEKRETARIAT') || r.contains('ADMIN')) return 'SEKRETARIAT';
     if (r.contains('PENGURUS')) return 'PENGURUS LINGKUNGAN';
@@ -1002,6 +1006,7 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
   IconData _getRoleIcon(String role) {
     final r = role.toUpperCase();
     if (r.contains('ROMO')) return Icons.star_rounded;
+    if (r.contains('KOORDINATOR')) return Icons.shield_rounded;
     if (r.contains('PEMOHON') || r.contains('UMAT')) return Icons.person_rounded;
     if (r.contains('SEKRETARIAT')) return Icons.admin_panel_settings_rounded;
     return Icons.house_rounded;

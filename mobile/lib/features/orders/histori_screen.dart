@@ -8,6 +8,7 @@ import '../orders/order_detail_screen.dart';
 class HistoriScreen extends StatefulWidget {
   final List<Order> orders;
   final String userName;
+  final int? userId;
   final VoidCallback onRefresh;
   final bool isRomo;
   final int? romoId;
@@ -16,6 +17,7 @@ class HistoriScreen extends StatefulWidget {
     Key? key,
     required this.orders,
     required this.userName,
+    this.userId,
     required this.onRefresh,
     this.isRomo = false,
     this.romoId,
@@ -834,6 +836,7 @@ class _HistoriScreenState extends State<HistoriScreen>
           builder: (_) => OrderDetailScreen(
             order: order,
             userName: widget.userName,
+            userId: widget.userId,
             selectedItemTitle: displayItem?.itemName,
             isRomo: widget.isRomo,
             romoId: widget.romoId,

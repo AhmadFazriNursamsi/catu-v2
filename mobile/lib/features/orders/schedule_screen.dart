@@ -1370,6 +1370,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               builder: (_) => OrderDetailScreen(
                 order: order,
                 userName: widget.userName,
+                userId: widget.userId,
                 selectedItemTitle: entry.item?.itemName,
                 isRomo: widget.isRomo,
                 romoId: widget.romoId,
