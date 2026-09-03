@@ -365,13 +365,29 @@ class NotificationService {
       } catch (_) {}
     }
 
-    // 2. Deduplicate identical notifications within a 10-second window based on title & body
-    final String notifKey = '${title.trim().toLowerCase()}|${body.trim().toLowerCase()}';
+    // 2. Robust Deduplication within a 6-second window
+    String notifKey = '${title.trim().toLowerCase()}|${body.trim().toLowerCase()}';
+    if (payload != null && payload.isNotEmpty) {
+      try {
+        final Map<String, dynamic> data = jsonDecode(payload);
+        final ord = data['orderId'] ?? data['order_id'] ?? data['orderNumber'] ?? '';
+        final tp = data['type'] ?? data['notifType'] ?? '';
+        if (ord.toString().isNotEmpty) {
+          notifKey = 'order_${ord}_$tp';
+        }
+      } catch (_) {}
+    } else {
+      final match = RegExp(r'ORD-\d+-\d+').firstMatch(body);
+      if (match != null) {
+        notifKey = 'order_${match.group(0)}';
+      }
+    }
+
     final nowMs = DateTime.now().millisecondsSinceEpoch;
     if (_recentNotificationTimestamps.containsKey(notifKey)) {
       final lastTime = _recentNotificationTimestamps[notifKey]!;
-      if (nowMs - lastTime < 10000) {
-        debugPrint('🔇 Suppressing duplicate notification within 10s: $title');
+      if (nowMs - lastTime < 6000) {
+        debugPrint('🔇 Suppressing duplicate notification within 6s: $notifKey');
         return;
       }
     }
@@ -484,7 +500,7 @@ class NotificationService {
       }
     }).catchError((_) {});
 
-    // Poll every 3 seconds for instant notifications
+    // Poll every 3 seconds for UI updates, only show local notification banner as fallback for Simulator/Mock
     _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       try {
         final notifs = await ApiService.getNotifications(userId: intUid);
@@ -493,7 +509,15 @@ class NotificationService {
           if (id != null && !_knownNotifIds.contains(id)) {
             _knownNotifIds.add(id);
             final isRead = n['isRead'] == true || n['is_read'] == true;
-            if (!isRead) {
+
+            final bool hasLiveFcm = _currentToken != null && 
+                                    _currentToken!.isNotEmpty && 
+                                    !_currentToken!.startsWith('mock_') && 
+                                    Platform.isAndroid;
+
+            // Real Android devices receive instant push from FCM directly.
+            // Only trigger in-app banner from polling on iOS Simulator or when FCM is not active.
+            if (!isRead && !hasLiveFcm) {
               await showNotification(
                 title: n['title'] ?? 'Pemberitahuan CATU',
                 body: n['body'] ?? '',
