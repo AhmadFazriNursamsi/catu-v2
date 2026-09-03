@@ -488,8 +488,7 @@ class NotificationService {
           if (id != null && !_knownNotifIds.contains(id)) {
             _knownNotifIds.add(id);
             final isRead = n['isRead'] == true || n['is_read'] == true;
-            // Only show local notification fallback from polling if FCM is not active
-            if (!isRead && (_currentToken == null || _currentToken!.isEmpty)) {
+            if (!isRead) {
               await showNotification(
                 title: n['title'] ?? 'Pemberitahuan CATU',
                 body: n['body'] ?? '',
