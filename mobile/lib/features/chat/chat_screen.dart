@@ -736,9 +736,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                           ),
                                         ),
                                       ),
-                                      if (msg.message.isNotEmpty) const SizedBox(height: 6),
+                                      if (msg.message.isNotEmpty && msg.message != 'Foto') const SizedBox(height: 6),
                                     ],
-                                    if (msg.message.isNotEmpty)
+                                    if (msg.message.isNotEmpty && (msg.messageType != 'IMAGE' || msg.message != 'Foto'))
                                       Text(
                                         msg.message,
                                         style: TextStyle(
