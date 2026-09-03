@@ -3404,7 +3404,7 @@ export class NotificationsController {
     @Query('userId') userId?: string,
     @Query('role') role?: string,
   ) {
-    const whereClauses: string[] = [];
+    const whereClauses: string[] = [`n.type != 'CHAT_MESSAGE'`];
     const queryParams: any[] = [];
     let idx = 1;
 
@@ -3976,17 +3976,6 @@ export class ChatController {
       for (const m of members) {
         if (m.user_id && m.user_id !== senderId) {
           targetUserIds.push(m.user_id);
-          await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read)
-             VALUES ($1, $2, $3, $4, $5, 'CHAT_MESSAGE', false)`,
-            [
-              m.user_id,
-              orderId,
-              groupId,
-              `Pesan dari ${senderName}`,
-              msgBody,
-            ],
-          );
         }
       }
 

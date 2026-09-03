@@ -524,7 +524,9 @@ class NotificationService {
     final items = raw
         .map((s) {
           try {
-            return NotificationItem.fromJson(jsonDecode(s));
+            final item = NotificationItem.fromJson(jsonDecode(s));
+            if (item.type.toUpperCase() == 'CHAT_MESSAGE') return null;
+            return item;
           } catch (_) {
             return null;
           }
@@ -548,10 +550,13 @@ class NotificationService {
         final rawNotifs = await ApiService.getNotifications(userId: userId);
         final List<NotificationItem> backendItems = [];
         for (final r in rawNotifs) {
+          final type = r['type'] ?? 'STATUS_UPDATE';
+          if (type.toString().toUpperCase() == 'CHAT_MESSAGE') {
+            continue; // Do not show chat messages in internal notification list!
+          }
           final id = 'backend_${r['id']}';
           final title = r['title'] ?? 'Pemberitahuan';
           final body = r['body'] ?? '';
-          final type = r['type'] ?? 'STATUS_UPDATE';
           final isRead = r['isRead'] == true || r['is_read'] == true;
           final rawOrder = r['orderId'] ?? r['order_id'];
           final orderId = rawOrder != null ? rawOrder.toString() : null;
