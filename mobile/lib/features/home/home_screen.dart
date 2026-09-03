@@ -71,34 +71,9 @@ class _HomeScreenState extends State<HomeScreen> {
           _currentUserMap['role_code'] ??
           _currentUserMap['role'] ??
           'UMAT').toString().toUpperCase();
-      final String pengurusPos = (_currentUserMap['pengurusPosition'] ??
-          _currentUserMap['pengurus_position'] ??
-          '').toString().toLowerCase();
-      final bool isKoordinator = pengurusPos.contains('koordinator') || roleCode == 'KOORDINATOR';
-      final bool isPengurusLingkungan = !isKoordinator && (
-        roleCode == 'PENGURUS_LINGKUNGAN' ||
-        pengurusPos.isNotEmpty
-      );
-
-      final rawKeuskupan = _currentUserMap['keuskupanId'] ?? _currentUserMap['keuskupan_id'];
-      final int? keuskupanId = rawKeuskupan != null ? int.tryParse(rawKeuskupan.toString()) : null;
-
-      final rawLingkungan = _currentUserMap['lingkunganId'] ?? _currentUserMap['lingkungan_id'];
-      final int? lingkunganId = rawLingkungan != null ? int.tryParse(rawLingkungan.toString()) : null;
-
-      final rawParoki = _currentUserMap['parokiId'] ?? _currentUserMap['paroki_id'];
-      final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
-
-      final rawKota = _currentUserMap['kabupatenKotaId'] ?? _currentUserMap['kabupaten_kota_id'];
-      final int? kabupatenKotaId = rawKota != null ? int.tryParse(rawKota.toString()) : null;
-
       final latestOrders = await ApiService.getOrders(
-        userId: (roleCode.startsWith('ROMO') || isKoordinator || isPengurusLingkungan) ? null : userId,
-        parokiId: (roleCode.startsWith('ROMO') || isKoordinator) ? null : parokiId,
-        lingkunganId: isPengurusLingkungan ? lingkunganId : null,
-        kabupatenKotaId: (roleCode.startsWith('ROMO') || isKoordinator) ? null : kabupatenKotaId,
+        userId: roleCode.startsWith('ROMO') ? null : userId,
         romoId: roleCode.startsWith('ROMO') ? userId : null,
-        keuskupanId: isKoordinator ? keuskupanId : null,
       );
 
       if (mounted) {
@@ -154,34 +129,10 @@ class _HomeScreenState extends State<HomeScreen> {
           _currentUserMap['role_code'] ??
           _currentUserMap['role'] ??
           'UMAT').toString().toUpperCase();
-      final String pengurusPos = (_currentUserMap['pengurusPosition'] ??
-          _currentUserMap['pengurus_position'] ??
-          '').toString().toLowerCase();
-      final bool isKoordinator = pengurusPos.contains('koordinator') || roleCode == 'KOORDINATOR';
-      final bool isPengurusLingkungan = !isKoordinator && (
-        roleCode == 'PENGURUS_LINGKUNGAN' ||
-        pengurusPos.isNotEmpty
-      );
-
-      final rawKeuskupan = _currentUserMap['keuskupanId'] ?? _currentUserMap['keuskupan_id'];
-      final int? keuskupanId = rawKeuskupan != null ? int.tryParse(rawKeuskupan.toString()) : null;
-
-      final rawLingkungan = _currentUserMap['lingkunganId'] ?? _currentUserMap['lingkungan_id'];
-      final int? lingkunganId = rawLingkungan != null ? int.tryParse(rawLingkungan.toString()) : null;
-
-      final rawParoki = _currentUserMap['parokiId'] ?? _currentUserMap['paroki_id'];
-      final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
-
-      final rawKota = _currentUserMap['kabupatenKotaId'] ?? _currentUserMap['kabupaten_kota_id'];
-      final int? kabupatenKotaId = rawKota != null ? int.tryParse(rawKota.toString()) : null;
 
       final orders = await ApiService.getOrders(
-        userId: (roleCode.startsWith('ROMO') || isKoordinator || isPengurusLingkungan) ? null : userId,
-        parokiId: (roleCode.startsWith('ROMO') || isKoordinator) ? null : parokiId,
-        lingkunganId: isPengurusLingkungan ? lingkunganId : null,
-        kabupatenKotaId: (roleCode.startsWith('ROMO') || isKoordinator) ? null : kabupatenKotaId,
+        userId: roleCode.startsWith('ROMO') ? null : userId,
         romoId: roleCode.startsWith('ROMO') ? userId : null,
-        keuskupanId: isKoordinator ? keuskupanId : null,
       );
 
       if (mounted) {
