@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - /Users/admin/.gemini/antigravity-cli/brain/bbf474c9-06e7-4dd8-89fb-679b58a5c795/schema.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   backend:
     build:
