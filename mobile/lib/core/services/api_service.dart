@@ -15,7 +15,7 @@ class ApiService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString('catu_custom_api_base_url');
-      if (saved != null && saved.isNotEmpty) {
+      if (saved != null && saved.isNotEmpty && !saved.contains('10.0.10.92')) {
         _customBaseUrl = saved;
         _activeBaseUrl = saved;
       }
