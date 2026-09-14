@@ -56,8 +56,7 @@ class ApiService {
     }
     candidates.addAll([
       AppConstants.apiBaseUrl,
-      'http://192.168.1.110:3005',
-      'http://10.0.10.92:3005',
+      'http://127.0.0.1:3005',
     ]);
     if (defaultTargetPlatform == TargetPlatform.android) {
       candidates.add('http://10.0.2.2:3005');
