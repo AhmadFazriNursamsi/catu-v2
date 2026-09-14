@@ -29,23 +29,67 @@ export interface NewsArticleItem {
 @Injectable()
 export class NewsService {
   private readonly logger = new Logger(NewsService.name);
+  private scrapeIntervalTimer: NodeJS.Timeout | null = null;
 
   constructor(private readonly dataSource: DataSource) {}
 
   async onModuleInit() {
-    // Initial auto-scrape on startup if empty
+    // Ensure default working Catholic news sources are seeded
+    await this.ensureSourcesSeed();
+
+    // Initial scrape check on startup after short delay
     setTimeout(() => {
-      this.ensureInitialScrape();
+      this.checkAndAutoScrape();
     }, 5000);
+
+    // Periodic background auto-scrape every 30 minutes
+    this.scrapeIntervalTimer = setInterval(() => {
+      this.logger.log('[NewsService] Periodic auto-scrape triggered by timer (every 30m)...');
+      this.scrapeAll().catch((err) => this.logger.error(`[NewsService] Periodic scrape error: ${err.message}`));
+    }, 30 * 60 * 1000);
   }
 
-  async ensureInitialScrape() {
+  onModuleDestroy() {
+    if (this.scrapeIntervalTimer) {
+      clearInterval(this.scrapeIntervalTimer);
+      this.scrapeIntervalTimer = null;
+    }
+  }
+
+  async ensureSourcesSeed() {
+    try {
+      await this.dataSource.query(`
+        INSERT INTO news_sources (name, code, base_url, feed_url, is_active, crawl_interval_minutes, logo_url)
+        VALUES 
+          ('Pena Katolik', 'PENA_KATOLIK', 'https://penakatolik.com', 'https://penakatolik.com/feed/', true, 60, 'https://penakatolik.com/favicon.ico'),
+          ('Dokpen KWI', 'DOKPEN_KWI', 'https://dokpenkwi.org', 'https://dokpenkwi.org/feed/', true, 60, 'https://dokpenkwi.org/favicon.ico')
+        ON CONFLICT (code) DO UPDATE 
+        SET feed_url = EXCLUDED.feed_url, is_active = EXCLUDED.is_active;
+
+        UPDATE news_sources SET is_active = FALSE WHERE code IN ('SESAWI_NET', 'HIDUP_KATOLIK');
+      `);
+    } catch (e) {
+      this.logger.warn(`Failed to seed news sources: ${e.message}`);
+    }
+  }
+
+  async checkAndAutoScrape() {
     try {
       const countRes = await this.dataSource.query('SELECT COUNT(*) FROM news_articles');
       const count = parseInt(countRes[0]?.count || '0', 10);
-      if (count === 0) {
-        this.logger.log('No articles found in DB. Starting initial scrape...');
+
+      const recentScrape = await this.dataSource.query(
+        `SELECT MAX(last_scraped_at) as "latestScrape" FROM news_sources WHERE is_active = TRUE`
+      );
+      const latestScrape = recentScrape[0]?.latestScrape;
+
+      const isStale = !latestScrape || (Date.now() - new Date(latestScrape).getTime()) > 30 * 60 * 1000;
+
+      if (count === 0 || isStale) {
+        this.logger.log(`[NewsService] News data is stale or empty (articles: ${count}, last scrape: ${latestScrape}). Scraping latest news...`);
         await this.scrapeAll();
+      } else {
+        this.logger.log(`[NewsService] News sources were recently scraped at ${latestScrape}. Next cycle scheduled in background.`);
       }
     } catch (e) {
       this.logger.error(`Initial scrape check error: ${e.message}`);
@@ -84,6 +128,10 @@ export class NewsService {
     // 3. Check img tag in content/description
     const imgMatch = rawContent.match(/<img[^>]+src=["']([^"']+)["']/i);
     if (imgMatch && imgMatch[1] && isImage(imgMatch[1])) return imgMatch[1];
+
+    // 4. Check img tag anywhere in itemXml
+    const xmlImgMatch = itemXml.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (xmlImgMatch && xmlImgMatch[1] && isImage(xmlImgMatch[1])) return xmlImgMatch[1];
 
     return null;
   }
@@ -251,10 +299,18 @@ export class NewsService {
     const sources = await this.dataSource.query('SELECT * FROM news_sources WHERE is_active = TRUE');
     const results: any[] = [];
 
-    for (const src of sources) {
+    const promises = sources.map(async (src: any) => {
       if (src.feed_url) {
         const res = await this.scrapeFeed(src);
-        results.push({ source: src.name, ...res });
+        return { source: src.name, ...res };
+      }
+      return null;
+    });
+
+    const settled = await Promise.allSettled(promises);
+    for (const item of settled) {
+      if (item.status === 'fulfilled' && item.value) {
+        results.push(item.value);
       }
     }
 

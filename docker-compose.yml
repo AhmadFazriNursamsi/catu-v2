@@ -21,6 +21,8 @@ services:
     restart: always
     ports:
       - "3005:3000"
+    extra_hosts:
+      - "oauth2.googleapis.com:142.251.10.95"
     environment:
       DB_HOST: postgres
       DB_PORT: 5432

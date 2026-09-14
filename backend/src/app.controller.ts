@@ -2,6 +2,7 @@ import { Controller, Post, Put, Delete, Body, Get, Param, Query, OnModuleInit, B
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import {
   RegisterUserDto,
@@ -42,7 +43,10 @@ import { FcmService } from './fcm.service';
 @ApiTags('Auth & Registration')
 @Controller('auth')
 export class AuthController implements OnModuleInit {
-  constructor(@InjectDataSource() private dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() private dataSource: DataSource,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async onModuleInit() {
     try {
@@ -1231,6 +1235,12 @@ export class AuthController implements OnModuleInit {
   })
   @ApiResponse({ status: 200, description: 'Login berhasil, mengembalikan token JWT dan profil user lengkap.', type: LoginResponseDto })
   async login(@Body() dto: LoginDto) {
+    let phone = dto.phoneNumber.trim();
+    if (phone.startsWith('0')) phone = phone.substring(1);
+    if (phone.startsWith('62')) phone = phone.substring(2);
+    const fullPhone = `62${phone}`;
+    const localPhone = `0${phone}`;
+
     const users = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.password_hash, u.account_status, r.code as role_code, 
               p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.ordo_id, p.kabupaten_kota_id, kk.provinsi_id,
@@ -1245,8 +1255,8 @@ export class AuthController implements OnModuleInit {
        LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
        LEFT JOIN ordo ord ON p.ordo_id = ord.id
        LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
-       WHERE u.phone_number = $1`,
-      [dto.phoneNumber],
+       WHERE u.phone_number = $1 OR u.phone_number = $2`,
+      [fullPhone, localPhone],
     );
 
     if (!users.length) {
@@ -1254,17 +1264,7 @@ export class AuthController implements OnModuleInit {
     }
 
     const dbPasswordHash = users[0].password_hash;
-    let isPasswordValid = false;
-    if (dbPasswordHash && (dbPasswordHash.startsWith('$2b$') || dbPasswordHash.startsWith('$2a$'))) {
-      isPasswordValid = await bcrypt.compare(dto.password, dbPasswordHash);
-      if (!isPasswordValid) {
-        if (dto.password.toLowerCase() === 'password123') {
-          isPasswordValid = await bcrypt.compare('Password123', dbPasswordHash) || await bcrypt.compare('password123', dbPasswordHash);
-        }
-      }
-    } else {
-      isPasswordValid = dbPasswordHash === dto.password || (dbPasswordHash && dbPasswordHash.toLowerCase() === dto.password.toLowerCase());
-    }
+    const isPasswordValid = await bcrypt.compare(dto.password, dbPasswordHash);
 
     if (!isPasswordValid) {
       return { statusCode: 401, message: 'Nomor HP atau Password salah' };
@@ -1280,10 +1280,18 @@ export class AuthController implements OnModuleInit {
       };
     }
 
+    const accessToken = this.jwtService.sign({
+      sub: user.id,
+      uuid: user.uuid,
+      phoneNumber: user.phone_number,
+      roleCode: user.role_code,
+      fullName: user.full_name,
+    });
+
     return {
       statusCode: 200,
       message: 'Login Berhasil',
-      accessToken: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock_jwt_token_user_${user.id}`,
+      accessToken,
       user: {
         id: user.id,
         uuid: user.uuid,
@@ -1363,21 +1371,25 @@ export class AuthController implements OnModuleInit {
     }
 
     const dbPasswordHash = user.password_hash;
-    let isPasswordValid = false;
-    if (dbPasswordHash && (dbPasswordHash.startsWith('$2b$') || dbPasswordHash.startsWith('$2a$'))) {
-      isPasswordValid = await bcrypt.compare(dto.password, dbPasswordHash);
-    } else {
-      isPasswordValid = dbPasswordHash === dto.password;
-    }
+    const isPasswordValid = await bcrypt.compare(dto.password, dbPasswordHash);
 
     if (!isPasswordValid) {
       return { statusCode: 401, message: 'Nomor WhatsApp / HP atau kata sandi salah' };
     }
 
+    const accessToken = this.jwtService.sign({
+      sub: user.id,
+      uuid: user.uuid,
+      phoneNumber: user.phone_number,
+      roleCode: user.role_code,
+      fullName: user.full_name,
+      isAdmin: true,
+    });
+
     return {
       statusCode: 200,
       message: 'Login Administrator Berhasil',
-      accessToken: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock_jwt_token_admin_${user.id}`,
+      accessToken,
       user: {
         id: user.id,
         uuid: user.uuid,
@@ -4476,6 +4488,11 @@ export class ChatController {
          DO UPDATE SET last_read_message_id = GREATEST(COALESCE(chat_group_members.last_read_message_id, 0), $3)`,
         [groupId, userId, maxId],
       );
+      await this.dataSource.query(
+        `UPDATE notifications SET is_read = TRUE 
+         WHERE user_id = $1 AND (chat_group_id = $2 OR (order_id = (SELECT order_id FROM chat_groups WHERE id = $2) AND type = 'CHAT_MESSAGE'))`,
+        [userId, groupId],
+      );
     }
 
     return { success: true, groupId, userId, lastReadMessageId: maxId };
@@ -4499,13 +4516,22 @@ export class ChatController {
         );
         const maxId = maxMsg[0]?.max_id || 0;
         if (maxId > 0) {
-          await this.dataSource.query(
-            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group, last_read_message_id)
-             VALUES ($1, $2, 'MEMBER', $3)
-             ON CONFLICT (chat_group_id, user_id)
-             DO UPDATE SET last_read_message_id = GREATEST(COALESCE(chat_group_members.last_read_message_id, 0), $3)`,
-            [groupId, uId, maxId],
-          );
+          try {
+            await this.dataSource.query(
+              `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group, last_read_message_id)
+               VALUES ($1, $2, 'MEMBER', $3)
+               ON CONFLICT (chat_group_id, user_id)
+               DO UPDATE SET last_read_message_id = GREATEST(COALESCE(chat_group_members.last_read_message_id, 0), $3)`,
+              [groupId, uId, maxId],
+            );
+            await this.dataSource.query(
+              `UPDATE notifications SET is_read = TRUE 
+               WHERE user_id = $1 AND (chat_group_id = $2 OR (order_id = (SELECT order_id FROM chat_groups WHERE id = $2) AND type = 'CHAT_MESSAGE'))`,
+              [uId, groupId],
+            );
+          } catch (readReceiptErr) {
+            // Non-blocking: background read receipt failure should never fail message retrieval
+          }
         }
       }
     }
@@ -4785,7 +4811,8 @@ export class ChatController {
               COALESCE(oi.scheduled_time_start::text, o.scheduled_time::text) as scheduled_time_start, 
               COALESCE(oi.scheduled_time_end::text, '') as scheduled_time_end,
               o.notes, ul.name as urgency_name, p.full_name as penerima_name,
-              p.full_name as requester_name, p.avatar_url as requester_avatar,
+              p.full_name as requester_name, 
+              CASE WHEN LENGTH(p.avatar_url) > 500 THEN NULL ELSE p.avatar_url END as requester_avatar,
               COALESCE(
                 (
                   SELECT COUNT(*)::int

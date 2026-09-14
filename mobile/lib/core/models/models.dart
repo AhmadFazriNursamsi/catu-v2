@@ -863,25 +863,38 @@ class ChatGroupItem {
     return '$orderCategory • $dateFormatted - $timeFormatted';
   }
 
-  /// Formatted Last Message Time (HH:mm format in local device time)
-  String get formattedLastTime {
-    if (lastMessageAt == null || lastMessageAt!.isEmpty) {
-      return '15:30';
-    }
-    final raw = lastMessageAt!;
+  /// DateTime of the last message in local timezone
+  DateTime? get lastMessageDateTime {
+    if (lastMessageAt == null || lastMessageAt!.isEmpty) return null;
     try {
-      final dt = DateTime.parse(raw).toLocal();
+      return DateTime.parse(lastMessageAt!).toLocal();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Formatted Last Message Time (HH:mm for today, Kemarin for yesterday, or date)
+  String get formattedLastTime {
+    final dt = lastMessageDateTime;
+    if (dt == null) return '';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final msgDate = DateTime(dt.year, dt.month, dt.day);
+    final diffDays = today.difference(msgDate).inDays;
+
+    if (diffDays == 0) {
       final hh = dt.hour.toString().padLeft(2, '0');
       final mm = dt.minute.toString().padLeft(2, '0');
       return '$hh:$mm';
-    } catch (_) {
-      if (raw.contains('T')) {
-        final parts = raw.split('T');
-        if (parts.length > 1 && parts[1].length >= 5) {
-          return parts[1].substring(0, 5);
-        }
-      }
-      return raw;
+    } else if (diffDays == 1) {
+      return 'Kemarin';
+    } else if (diffDays < 7) {
+      const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+      return days[dt.weekday - 1];
+    } else {
+      final d = dt.day.toString().padLeft(2, '0');
+      final m = dt.month.toString().padLeft(2, '0');
+      return '$d/$m/${dt.year.toString().substring(2)}';
     }
   }
 

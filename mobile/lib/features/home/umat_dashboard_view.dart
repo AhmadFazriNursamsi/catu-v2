@@ -140,6 +140,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
   Future<void> _refreshUnreadCount() async {
     final role = _isPengurus ? 'PENGURUS' : 'UMAT';
     final count = await NotificationService.unreadCount(role, userId: _userId);
+    NotificationService.updateBadgeCount(count);
     int chatUnread = 0;
     try {
       final groups = await ApiService.getChatGroups(_userId ?? 1);

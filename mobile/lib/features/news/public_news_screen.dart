@@ -142,7 +142,7 @@ class _PublicNewsScreenState extends State<PublicNewsScreen> {
 
   Future<void> _handleRefresh() async {
     HapticFeedback.mediumImpact();
-    ApiService.triggerNewsScrape();
+    await ApiService.triggerNewsScrape();
     await _loadArticles(refresh: true);
   }
 

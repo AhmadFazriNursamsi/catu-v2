@@ -1,16 +1,44 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../models/models.dart';
 
 class ApiService {
   static const String prodApiUrl = 'https://apps.catu.id/catuv2-api';
 
-  static String get baseUrl {
-    if (kReleaseMode) {
-      return prodApiUrl;
+  static String? _customBaseUrl;
+  static String _activeBaseUrl = AppConstants.apiBaseUrl;
+
+  static Future<void> loadCustomBaseUrl() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString('catu_custom_api_base_url');
+      if (saved != null && saved.isNotEmpty) {
+        _customBaseUrl = saved;
+        _activeBaseUrl = saved;
+      }
+    } catch (_) {}
+  }
+
+  static Future<void> setCustomBaseUrl(String newUrl) async {
+    String cleanUrl = newUrl.trim();
+    if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+      cleanUrl = 'http://$cleanUrl';
     }
+    if (!cleanUrl.contains(':3005') && !cleanUrl.endsWith(':3000')) {
+      cleanUrl = '$cleanUrl:3005';
+    }
+    _customBaseUrl = cleanUrl;
+    _activeBaseUrl = cleanUrl;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('catu_custom_api_base_url', cleanUrl);
+    } catch (_) {}
+  }
+
+  static String get baseUrl {
     if (kIsWeb) {
       final host = Uri.base.host;
       if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
@@ -18,26 +46,25 @@ class ApiService {
       }
       return 'http://127.0.0.1:3005';
     }
-    if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
-      return 'http://127.0.0.1:3005';
-    }
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.10.26:3005';
-    }
-    return AppConstants.apiBaseUrl;
+    return _customBaseUrl ?? _activeBaseUrl;
   }
 
   static List<String> get _candidateBaseUrls {
-    if (kReleaseMode) {
-      return [prodApiUrl];
+    final List<String> candidates = [];
+    if (_customBaseUrl != null && _customBaseUrl!.isNotEmpty) {
+      candidates.add(_customBaseUrl!);
     }
+    candidates.addAll([
+      AppConstants.apiBaseUrl,
+      'http://192.168.1.110:3005',
+      'http://10.0.10.92:3005',
+    ]);
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return ['http://10.0.10.26:3005', prodApiUrl, 'http://127.0.0.1:3005', 'http://10.0.2.2:3005'];
+      candidates.add('http://10.0.2.2:3005');
+    } else if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
+      candidates.add('http://127.0.0.1:3005');
     }
-    if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
-      return ['http://127.0.0.1:3005', prodApiUrl, 'http://10.0.10.26:3005'];
-    }
-    return [baseUrl];
+    return candidates.toSet().toList();
   }
 
   // 1. Auth Login
@@ -54,6 +81,7 @@ class ApiService {
         ).timeout(const Duration(seconds: 4));
 
         if (response.statusCode == 200 || response.statusCode == 201) {
+          _activeBaseUrl = hostUrl;
           return jsonDecode(response.body);
         } else {
           final errBody = jsonDecode(response.body);
@@ -63,7 +91,7 @@ class ApiService {
         // Try next candidate URL
       }
     }
-    return {'statusCode': 500, 'message': 'Koneksi ke backend ($baseUrl) gagal. Pastikan HP terhubung via USB / Wi-Fi lokal.'};
+    return {'statusCode': 500, 'message': 'Koneksi ke backend ($baseUrl) gagal. Pastikan HP dan komputer terhubung ke jaringan Wi-Fi yang sama.'};
   }
 
   // 1a. Forgot Password: Request OTP

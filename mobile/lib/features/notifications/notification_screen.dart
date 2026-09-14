@@ -92,6 +92,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
           setState(() {
             _allItems = items;
           });
+          final unreadCount = items.where((n) => !n.isRead).length;
+          NotificationService.updateBadgeCount(unreadCount);
         }
       }
     } catch (_) {}
@@ -118,6 +120,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _allItems = items;
         _isLoading = false;
       });
+      final unreadCount = items.where((n) => !n.isRead).length;
+      NotificationService.updateBadgeCount(unreadCount);
     }
   }
 
@@ -193,7 +197,28 @@ class _NotificationScreenState extends State<NotificationScreen> {
         parokiId: _parokiId,
         kabupatenKotaId: _kabupatenKotaId,
       );
-      setState(() => _allItems.clear());
+      if (mounted) {
+        setState(() => _allItems.clear());
+      }
+      await NotificationService.updateBadgeCount(0);
+    }
+  }
+
+  Future<void> _markAllRead() async {
+    HapticFeedback.mediumImpact();
+    await NotificationService.markAllRead(
+      widget.role,
+      userId: _userId,
+      parokiId: _parokiId,
+      kabupatenKotaId: _kabupatenKotaId,
+    );
+    if (mounted) {
+      setState(() {
+        for (var n in _allItems) {
+          n.isRead = true;
+        }
+      });
+      await NotificationService.updateBadgeCount(0);
     }
   }
 
@@ -353,6 +378,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
               ],
             ),
           ),
+          // Mark All Read
+          if (unread > 0)
+            IconButton(
+              icon: const Icon(Icons.done_all_rounded, size: 22),
+              color: const Color(0xFF1E3A8A),
+              tooltip: 'Tandai semua dibaca',
+              onPressed: _markAllRead,
+            ),
           // Delete All
           if (_allItems.isNotEmpty)
             IconButton(
@@ -583,7 +616,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
             onTap: () async {
               HapticFeedback.selectionClick();
               await NotificationService.markRead(item.id);
-              if (mounted) setState(() => item.isRead = true);
+              if (mounted) {
+                setState(() => item.isRead = true);
+                final remaining = _allItems.where((n) => !n.isRead).length;
+                NotificationService.updateBadgeCount(remaining);
+              }
 
               // 0. Check if chat message notification
               if (item.type == 'CHAT_MESSAGE') {

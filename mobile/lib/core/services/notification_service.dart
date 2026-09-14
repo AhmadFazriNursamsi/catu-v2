@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -115,7 +116,7 @@ class NotificationService {
   static final Map<String, int> _recentNotificationTimestamps = {};
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'catu_custom_sound_channel_v1',
+    'catu_custom_sound_channel_v2',
     'Pelayanan & Chat CATU',
     description: 'Notifikasi penting untuk permintaan pelayanan Romo, persetujuan jadwal, dan pesan chat umat',
     importance: Importance.max,
@@ -155,6 +156,35 @@ class NotificationService {
     }
   }
 
+  static Future<void> clearBadge() async {
+    try {
+      if (Platform.isIOS) {
+        const channel = MethodChannel('catu/notification_tap');
+        await channel.invokeMethod('clearBadge');
+      }
+    } catch (_) {}
+  }
+
+  static Future<void> updateBadgeCount(int count) async {
+    try {
+      if (Platform.isIOS) {
+        const channel = MethodChannel('catu/notification_tap');
+        await channel.invokeMethod('setBadge', {'count': count});
+      }
+    } catch (_) {}
+  }
+
+  static Future<void> syncBadgeCount({int? userId, String? role}) async {
+    try {
+      if (!Platform.isIOS) return;
+      final userMap = currentUser ?? await _loadStoredUser();
+      final uId = userId ?? (userMap?['id'] != null ? int.tryParse(userMap!['id'].toString()) : null);
+      final r = role ?? userMap?['roleCode'] ?? userMap?['role_code'] ?? userMap?['role'] ?? 'UMAT';
+      final unread = await unreadCount(r.toString(), userId: uId);
+      await updateBadgeCount(unread);
+    } catch (_) {}
+  }
+
   static Future<void> handleNotificationTap(String? payloadStr) async {
     if (payloadStr == null || payloadStr.isEmpty) return;
     try {
@@ -163,13 +193,20 @@ class NotificationService {
       final String type = (data['type'] ?? data['notifType'] ?? data['notification_type'] ?? '').toString().toUpperCase();
       final int notifId = int.tryParse(data['id']?.toString() ?? '') ?? 0;
       if (notifId > 0) {
-        ApiService.markNotificationRead(notifId);
+        await ApiService.markNotificationRead(notifId);
       }
 
       final navState = navigatorKey.currentState;
       if (navState == null) {
-        debugPrint('👉 navState is null, queuing payload for checkPendingNotificationTap');
+        debugPrint('👉 navState is null, queuing payload for retry');
         _pendingPayload = payloadStr;
+        Future.delayed(const Duration(milliseconds: 600), () {
+          if (navigatorKey.currentState != null && _pendingPayload != null) {
+            final p = _pendingPayload;
+            _pendingPayload = null;
+            handleNotificationTap(p);
+          }
+        });
         return;
       }
 
@@ -193,12 +230,15 @@ class NotificationService {
         }
 
         if (groupId != null && groupId > 0) {
+          if (currentUserId != null) {
+            ApiService.markGroupAsRead(groupId, currentUserId);
+          }
           ChatGroupItem? preloadedGroup;
           try {
             preloadedGroup = await ApiService.getChatGroupDetails(groupId, userId: currentUserId);
           } catch (_) {}
 
-          navState.push(
+          await navState.push(
             MaterialPageRoute(
               builder: (_) => ChatScreen(
                 groupId: groupId!,
@@ -211,7 +251,7 @@ class NotificationService {
             ),
           );
         } else {
-          navState.push(
+          await navState.push(
             MaterialPageRoute(
               builder: (_) => ChatListScreen(
                 user: userMap ?? {},
@@ -220,11 +260,12 @@ class NotificationService {
             ),
           );
         }
+        await syncBadgeCount(userId: currentUserId, role: role);
         return;
       }
 
       // 🔔 2. GENERAL NOTIFICATION -> Cukup sampai di List Notif saja
-      navState.push(
+      await navState.push(
         MaterialPageRoute(
           builder: (_) => NotificationScreen(
             role: role.toString(),
@@ -235,14 +276,41 @@ class NotificationService {
           ),
         ),
       );
+      await syncBadgeCount(userId: currentUserId, role: role);
     } catch (e) {
       debugPrint('Error handling notification tap: $e');
     }
   }
 
+  static void _setupNativeIosTapListener() {
+    if (!Platform.isIOS) return;
+    const channel = MethodChannel('catu/notification_tap');
+    channel.setMethodCallHandler((call) async {
+      if (call.method == 'onTap') {
+        debugPrint('🍎 Native iOS onTap triggered: ${call.arguments}');
+        if (call.arguments != null) {
+          final args = call.arguments;
+          final jsonStr = args is String ? args : jsonEncode(args);
+          handleNotificationTap(jsonStr);
+        }
+      }
+    });
+
+    Future.delayed(const Duration(milliseconds: 600), () {
+      channel.invokeMethod('getInitialTap').then((res) {
+        if (res != null) {
+          debugPrint('🍎 Native iOS getInitialTap triggered: $res');
+          final jsonStr = res is String ? res : jsonEncode(res);
+          handleNotificationTap(jsonStr);
+        }
+      }).catchError((_) {});
+    });
+  }
+
   static Future<void> init() async {
     if (_isInitialized) return;
     _isInitialized = true;
+    _setupNativeIosTapListener();
 
     // 1. Setup Local Notifications
     try {
@@ -309,6 +377,9 @@ class NotificationService {
 
       // Present alert, badge, and sound in foreground on iOS
       if (Platform.isIOS) {
+        messaging.getNotificationSettings().then((s) {
+          debugPrint('🍎 iOS Notification Settings: status=${s.authorizationStatus}, sound=${s.sound}, alert=${s.alert}');
+        }).catchError((_) {});
         messaging.setForegroundNotificationPresentationOptions(
           alert: true,
           badge: true,
@@ -316,18 +387,35 @@ class NotificationService {
         ).catchError((_) {});
       }
 
-      // Safe non-blocking token fetch (Simulators will timeout safely without hanging the UI)
-      messaging.getToken().timeout(
-        const Duration(seconds: 3),
-        onTimeout: () => null,
-      ).then((token) {
-        if (token != null) {
-          _currentToken = token;
-          debugPrint('🔥 Firebase FCM Token: $token');
+      // Safe non-blocking token fetch (with APNs retry on iOS)
+      Future<void> initToken() async {
+        try {
+          if (Platform.isIOS) {
+            String? apnsToken;
+            for (int i = 0; i < 6; i++) {
+              apnsToken = await messaging.getAPNSToken();
+              if (apnsToken != null) break;
+              await Future.delayed(const Duration(seconds: 1));
+            }
+            if (apnsToken == null) {
+              debugPrint('⚠️ APNS Token is not yet available from Apple.');
+            } else {
+              debugPrint('🍏 APNS Token received: $apnsToken');
+            }
+          }
+          final token = await messaging.getToken().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => null,
+          );
+          if (token != null) {
+            _currentToken = token;
+            debugPrint('🔥 Firebase FCM Token: $token');
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error retrieving FCM token: $e');
         }
-      }).catchError((e) {
-        debugPrint('⚠️ Error retrieving FCM token: $e');
-      });
+      }
+      initToken();
 
       messaging.onTokenRefresh.listen((newToken) {
         _currentToken = newToken;
@@ -339,15 +427,19 @@ class NotificationService {
 
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         debugPrint('🔥 FCM onMessage received: ${message.data}');
-        final notif = message.notification;
-        final title = notif?.title ?? message.data['title'] ?? 'Pemberitahuan CATU';
-        final body = notif?.body ?? message.data['body'] ?? message.data['message'] ?? '';
-        if (title.isNotEmpty || body.isNotEmpty) {
-          showNotification(
-            title: title,
-            body: body,
-            payload: jsonEncode(message.data),
-          );
+        if (!Platform.isIOS) {
+          final notif = message.notification;
+          final title = notif?.title ?? message.data['title'] ?? 'Pemberitahuan CATU';
+          final body = notif?.body ?? message.data['body'] ?? message.data['message'] ?? '';
+          if (title.isNotEmpty || body.isNotEmpty) {
+            showNotification(
+              title: title,
+              body: body,
+              payload: jsonEncode(message.data),
+            );
+          }
+        } else {
+          syncBadgeCount();
         }
       });
 

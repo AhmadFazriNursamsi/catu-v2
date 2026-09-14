@@ -21,7 +21,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<Order> _orders = [];
   bool _isLoading = true;
   late Map<String, dynamic> _currentUserMap;
@@ -31,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentUserMap = Map<String, dynamic>.from(widget.user);
     AuthService.saveSession(_currentUserMap);
     NotificationService.setCurrentUser(_currentUserMap);
@@ -42,12 +43,22 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.syncBadgeCount();
       NotificationService.checkPendingNotificationTap();
     });
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      NotificationService.syncBadgeCount();
+      NotificationService.checkPendingNotificationTap();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pollTimer?.cancel();
     LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     super.dispose();

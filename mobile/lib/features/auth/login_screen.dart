@@ -215,6 +215,73 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
+  void _showServerConfigDialog() {
+    final controller = TextEditingController(
+      text: ApiService.baseUrl.replaceAll('http://', '').replaceAll(':3005', ''),
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: const [
+            Icon(Icons.settings_ethernet_rounded, color: AppConstants.primaryBlue, size: 24),
+            SizedBox(width: 10),
+            Text('Konfigurasi Server IP', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Masukkan alamat IP lokal laptop/server backend:',
+              style: TextStyle(fontSize: 12.5, color: AppConstants.textMuted),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                hintText: 'Contoh: 192.168.1.110',
+                labelText: 'IP Server Backend',
+                prefixText: 'http://',
+                suffixText: ':3005',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.primaryBlue,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              final newIp = controller.text.trim();
+              if (newIp.isNotEmpty) {
+                await ApiService.setCustomBaseUrl('http://$newIp:3005');
+                if (mounted) {
+                  setState(() {
+                    _backendError = null;
+                  });
+                }
+              }
+              if (mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenW = MediaQuery.of(context).size.width;
@@ -778,6 +845,17 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
 
+          // ── Server IP Config Button ──
+          Positioned(
+            top: 44,
+            right: 16,
+            child: IconButton(
+              icon: const Icon(Icons.settings_ethernet_rounded, color: Colors.white70, size: 24),
+              tooltip: 'Konfigurasi Server IP',
+              onPressed: _showServerConfigDialog,
+            ),
+          ),
+
           // ── Content ──
           SafeArea(
             child: FadeTransition(
@@ -877,21 +955,42 @@ class _LoginScreenState extends State<LoginScreen>
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(color: Colors.red.shade200),
                                       ),
-                                      child: Row(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Icon(Icons.error_outline_rounded,
-                                              color: Colors.red.shade700, size: 20),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Text(
-                                              _backendError!,
-                                              style: TextStyle(
-                                                color: Colors.red.shade800,
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
+                                          Row(
+                                            children: [
+                                              Icon(Icons.error_outline_rounded,
+                                                  color: Colors.red.shade700, size: 20),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Text(
+                                                  _backendError!,
+                                                  style: TextStyle(
+                                                    color: Colors.red.shade800,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          if (_backendError!.toLowerCase().contains('backend') || _backendError!.toLowerCase().contains('koneksi')) ...[
+                                            const SizedBox(height: 8),
+                                            Align(
+                                              alignment: Alignment.centerRight,
+                                              child: TextButton.icon(
+                                                onPressed: _showServerConfigDialog,
+                                                icon: const Icon(Icons.tune_rounded, size: 16),
+                                                label: const Text('Ubah IP Server', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                                style: TextButton.styleFrom(
+                                                  foregroundColor: Colors.red.shade800,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  visualDensity: VisualDensity.compact,
+                                                ),
                                               ),
                                             ),
-                                          ),
+                                          ],
                                         ],
                                       ),
                                     ),

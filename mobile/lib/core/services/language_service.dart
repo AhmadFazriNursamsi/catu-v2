@@ -36,7 +36,7 @@ class LanguageService {
   static final Map<String, Map<String, String>> _translations = {
     'id': {
       // Common & App
-      'app_name': 'CATU Mobile',
+      'app_name': 'CATU',
       'welcome': 'Selamat Datang',
       'save': 'Simpan',
       'save_changes': 'Simpan Perubahan',
@@ -204,7 +204,7 @@ class LanguageService {
     },
     'en': {
       // Common & App
-      'app_name': 'CATU Mobile',
+      'app_name': 'CATU',
       'welcome': 'Welcome',
       'save': 'Save',
       'save_changes': 'Save Changes',
@@ -372,7 +372,7 @@ class LanguageService {
     },
     'la': {
       // Common & App
-      'app_name': 'CATU Mobile',
+      'app_name': 'CATU',
       'welcome': 'Pax et Bonum',
       'save': 'Servare',
       'save_changes': 'Mutata Servare',

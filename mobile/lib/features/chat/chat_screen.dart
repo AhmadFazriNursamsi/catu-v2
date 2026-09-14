@@ -114,6 +114,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (NotificationService.activeChatGroupId == widget.groupId) {
       NotificationService.activeChatGroupId = null;
     }
+    NotificationService.syncBadgeCount(userId: widget.userId);
     _pollTimer?.cancel();
     LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _messageController.dispose();
@@ -123,6 +124,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _loadMessages() async {
     _loadGroupDetails();
+    if (widget.userId != null && widget.groupId > 0) {
+      ApiService.markGroupAsRead(widget.groupId, widget.userId!);
+      NotificationService.syncBadgeCount(userId: widget.userId);
+    }
     final msgs = await ApiService.getGroupMessages(widget.groupId, userId: widget.userId);
     if (mounted) {
       setState(() {

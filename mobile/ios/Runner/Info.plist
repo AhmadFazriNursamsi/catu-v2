@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Catu Mobile</string>
+	<string>CATU</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>catu_mobile</string>
+	<string>CATU</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -84,5 +84,7 @@
 	<string>Aplikasi CATU memerlukan akses ke galeri foto untuk memilih foto profil pengguna.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Aplikasi CATU memerlukan izin untuk menyimpan foto ke galeri.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Aplikasi CATU memerlukan akses ke jaringan lokal untuk berkomunikasi dengan server backend.</string>
 </dict>
 </plist>

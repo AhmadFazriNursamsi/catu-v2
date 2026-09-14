@@ -8,6 +8,8 @@ export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 export ANDROID_HOME="/opt/homebrew/share/android-commandlinetools"
 export ANDROID_NDK_HOME="/opt/homebrew/share/android-commandlinetools/ndk/28.2.13676358"
 export ANDROID_NDK_ROOT="/opt/homebrew/share/android-commandlinetools/ndk/28.2.13676358"
+export GRADLE_OPTS="-Djava.net.preferIPv6Addresses=true -Djava.net.preferIPv4Stack=false"
+export JAVA_TOOL_OPTIONS="-Djava.net.preferIPv6Addresses=true -Djava.net.preferIPv4Stack=false"
 export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
 
 echo "🏷️ Step 0.5: Auto-updating app version & build timestamp..."

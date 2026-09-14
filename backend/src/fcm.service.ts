@@ -9,6 +9,7 @@ export interface PushNotificationPayload {
   title: string;
   body: string;
   data?: Record<string, string>;
+  badge?: number;
 }
 
 @Injectable()
@@ -145,11 +146,12 @@ export class FcmService implements OnModuleInit {
     if (targetUserIds.length === 0) return { sent: 0, failed: 0 };
 
     try {
-      // 1. Fetch active FCM tokens for the given users
+      // 1. Fetch active FCM tokens for the given users with unread notification counts
       const rows = await this.dataSource.query(
-        `SELECT id, user_id, fcm_token, device_type 
-         FROM user_devices 
-         WHERE user_id = ANY($1::int[]) AND fcm_token IS NOT NULL AND fcm_token != ''`,
+        `SELECT ud.id, ud.user_id, ud.fcm_token, ud.device_type,
+                (SELECT COUNT(*)::int FROM notifications n WHERE n.user_id = ud.user_id AND n.is_read = false) as unread_count
+         FROM user_devices ud 
+         WHERE ud.user_id = ANY($1::int[]) AND ud.fcm_token IS NOT NULL AND ud.fcm_token != ''`,
         [targetUserIds],
       );
 
@@ -158,56 +160,71 @@ export class FcmService implements OnModuleInit {
         return { sent: 0, failed: 0 };
       }
 
-      // Deduplicate tokens so each physical device receives at most 1 push notification per event
-      const tokens: string[] = Array.from(new Set(rows.map((r: any) => r.fcm_token as string)));
-      this.logger.log(`Sending FCM Push to ${tokens.length} unique devices for users: ${targetUserIds.join(', ')}`);
+      // Deduplicate tokens
+      const uniqueDevices: any[] = [];
+      const seenTokens = new Set<string>();
+      for (const r of rows) {
+        if (!seenTokens.has(r.fcm_token)) {
+          seenTokens.add(r.fcm_token);
+          uniqueDevices.push(r);
+        }
+      }
+
+      this.logger.log(`Sending FCM Push to ${uniqueDevices.length} unique devices for users: ${targetUserIds.join(', ')}`);
 
       // 2. If Firebase live is not configured, log simulation
       if (!this.isFirebaseInitialized) {
-        this.logger.log(`[FCM SIMULATION] Title: "${payload.title}" | Body: "${payload.body}" | Tokens: ${tokens.length}`);
-        return { sent: tokens.length, failed: 0 };
+        this.logger.log(`[FCM SIMULATION] Title: "${payload.title}" | Body: "${payload.body}" | Tokens: ${uniqueDevices.length}`);
+        return { sent: uniqueDevices.length, failed: 0 };
       }
 
-      // 3. Send using Firebase Admin SDK
-      const message: admin.messaging.MulticastMessage = {
-        tokens,
-        notification: {
-          title: payload.title,
-          body: payload.body,
-        },
-        data: payload.data || {},
-        android: {
-          priority: 'high',
+      // 3. Send using Firebase Admin SDK with per-user dynamic badge count
+      const messages: admin.messaging.Message[] = uniqueDevices.map((dev: any) => {
+        const unreadCount = payload.badge !== undefined
+          ? payload.badge
+          : Math.max(1, parseInt(dev.unread_count || '1', 10));
+
+        return {
+          token: dev.fcm_token,
           notification: {
-            icon: 'ic_stat_catu',
-            color: '#1E5399',
-            sound: 'notif_catu',
-            channelId: 'catu_custom_sound_channel_v1',
-            clickAction: 'FLUTTER_NOTIFICATION_CLICK',
-            defaultSound: false,
-            defaultVibrateTimings: true,
+            title: payload.title,
+            body: payload.body,
           },
-        },
-        apns: {
-          headers: {
-            'apns-priority': '10',
-            'apns-push-type': 'alert',
-          },
-          payload: {
-            aps: {
-              alert: {
-                title: payload.title,
-                body: payload.body,
-              },
-              sound: 'notif_catu.caf',
-              badge: 1,
-              contentAvailable: true,
+          data: payload.data || {},
+          android: {
+            priority: 'high',
+            notification: {
+              icon: 'ic_stat_catu',
+              color: '#1E5399',
+              sound: 'notif_catu',
+              channelId: 'catu_custom_sound_channel_v2',
+              clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+              defaultSound: false,
+              defaultVibrateTimings: true,
+              notificationCount: unreadCount,
             },
           },
-        },
-      };
+          apns: {
+            headers: {
+              'apns-priority': '10',
+              'apns-push-type': 'alert',
+            },
+            payload: {
+              aps: {
+                alert: {
+                  title: payload.title,
+                  body: payload.body,
+                },
+                sound: 'notif_catu.caf',
+                badge: unreadCount,
+              },
+              ...(payload.data || {}),
+            },
+          },
+        };
+      });
 
-      const response = await admin.messaging().sendEachForMulticast(message);
+      const response = await admin.messaging().sendEach(messages);
       let sentCount = response.successCount;
       let failCount = response.failureCount;
 
@@ -221,7 +238,7 @@ export class FcmService implements OnModuleInit {
               errCode === 'messaging/registration-token-not-registered' ||
               errCode === 'messaging/invalid-registration-token'
             ) {
-              tokensToDelete.push(tokens[idx]);
+              tokensToDelete.push(uniqueDevices[idx].fcm_token);
             }
           }
         });

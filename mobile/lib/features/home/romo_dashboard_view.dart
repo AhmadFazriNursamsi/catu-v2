@@ -127,6 +127,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       parokiId: parokiId,
       kabupatenKotaId: kabupatenKotaId,
     );
+    NotificationService.updateBadgeCount(count);
 
     int chatUnread = 0;
     if (romoId != null) {

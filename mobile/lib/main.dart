@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/constants/app_constants.dart';
+import 'core/services/api_service.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/language_service.dart';
 import 'core/services/notification_service.dart';
@@ -9,6 +10,7 @@ import 'features/news/public_news_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.loadCustomBaseUrl();
   await LanguageService.init();
   final savedUser = await AuthService.initSession();
   runApp(CatuApp(initialUser: savedUser));
