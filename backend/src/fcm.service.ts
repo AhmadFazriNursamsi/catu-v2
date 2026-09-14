@@ -150,7 +150,7 @@ export class FcmService implements OnModuleInit {
       const rows = await this.dataSource.query(
         `SELECT ud.id, ud.user_id, ud.fcm_token, ud.device_type,
                 (SELECT COUNT(*)::int FROM notifications n WHERE n.user_id = ud.user_id AND n.is_read = false) as unread_count
-         FROM user_devices ud 
+         FROM user_devices ud
          WHERE ud.user_id = ANY($1::int[]) AND ud.fcm_token IS NOT NULL AND ud.fcm_token != ''`,
         [targetUserIds],
       );

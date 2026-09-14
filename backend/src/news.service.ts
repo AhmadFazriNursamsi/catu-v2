@@ -60,10 +60,10 @@ export class NewsService {
     try {
       await this.dataSource.query(`
         INSERT INTO news_sources (name, code, base_url, feed_url, is_active, crawl_interval_minutes, logo_url)
-        VALUES 
+        VALUES
           ('Pena Katolik', 'PENA_KATOLIK', 'https://penakatolik.com', 'https://penakatolik.com/feed/', true, 60, 'https://penakatolik.com/favicon.ico'),
           ('Dokpen KWI', 'DOKPEN_KWI', 'https://dokpenkwi.org', 'https://dokpenkwi.org/feed/', true, 60, 'https://dokpenkwi.org/favicon.ico')
-        ON CONFLICT (code) DO UPDATE 
+        ON CONFLICT (code) DO UPDATE
         SET feed_url = EXCLUDED.feed_url, is_active = EXCLUDED.is_active;
 
         UPDATE news_sources SET is_active = FALSE WHERE code IN ('SESAWI_NET', 'HIDUP_KATOLIK');
@@ -214,7 +214,7 @@ export class NewsService {
         const rawContent = contentMatch ? contentMatch[1] : rawDesc;
         const summary = this.cleanText(rawDesc).substring(0, 300);
         const author = creatorMatch ? this.cleanText(creatorMatch[1]) : source.name;
-        
+
         let publishedAt = new Date();
         if (pubDateMatch) {
           const parsed = new Date(pubDateMatch[1].trim());
@@ -242,7 +242,7 @@ export class NewsService {
         const isFeatured = total <= 2; // Feature the latest 2 items per source
 
         await this.dataSource.query(
-          `INSERT INTO news_articles 
+          `INSERT INTO news_articles
             (source_id, category_id, guid, title, slug, summary, content_html, content_text, author, original_url, image_url, published_at, status, is_featured)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'PUBLISHED', $13)
            ON CONFLICT (guid) DO NOTHING`,
@@ -362,7 +362,7 @@ export class NewsService {
     const total = parseInt(countRes[0]?.total || '0', 10);
 
     const query = `
-      SELECT 
+      SELECT
         a.id,
         a.source_id as "sourceId",
         s.name as "sourceName",
@@ -394,7 +394,7 @@ export class NewsService {
 
     // Get Featured articles for top carousel
     const featuredQuery = `
-      SELECT 
+      SELECT
         a.id,
         a.source_id as "sourceId",
         s.name as "sourceName",
@@ -434,7 +434,7 @@ export class NewsService {
     const whereClause = isId ? 'a.id = $1' : 'a.slug = $1';
 
     const query = `
-      SELECT 
+      SELECT
         a.id,
         a.source_id as "sourceId",
         s.name as "sourceName",
@@ -474,7 +474,7 @@ export class NewsService {
 
     // Related articles in same category
     const relatedQuery = `
-      SELECT 
+      SELECT
         a.id,
         s.name as "sourceName",
         c.name as "categoryName",
@@ -499,7 +499,7 @@ export class NewsService {
 
   async getCategories() {
     const query = `
-      SELECT 
+      SELECT
         c.id,
         c.name,
         c.slug,
@@ -518,7 +518,7 @@ export class NewsService {
 
   async getSources() {
     const query = `
-      SELECT 
+      SELECT
         s.id,
         s.name,
         s.code,

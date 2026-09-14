@@ -118,10 +118,10 @@ export class CreateOrderDto {
 }
 
 export class RespondOrderAssignmentDto {
-  @ApiProperty({ 
-    example: 'CONFIRMED', 
-    enum: ['CONFIRMED', 'IN_PROGRESS', 'DONE', 'CLOSE', 'FAIL', 'DECLINED', 'ACCEPTED'], 
-    description: 'Status pelayanan: CONFIRMED (terima), IN_PROGRESS (berlangsung), DONE (selesai), CLOSE (ditutup), FAIL (gagal), DECLINED (tolak)' 
+  @ApiProperty({
+    example: 'CONFIRMED',
+    enum: ['CONFIRMED', 'IN_PROGRESS', 'DONE', 'CLOSE', 'FAIL', 'DECLINED', 'ACCEPTED'],
+    description: 'Status pelayanan: CONFIRMED (terima), IN_PROGRESS (berlangsung), DONE (selesai), CLOSE (ditutup), FAIL (gagal), DECLINED (tolak)'
   })
   @IsEnum(['CONFIRMED', 'IN_PROGRESS', 'DONE', 'CLOSE', 'FAIL', 'DECLINED', 'ACCEPTED'])
   status: 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CLOSE' | 'FAIL' | 'DECLINED' | 'ACCEPTED';
@@ -511,5 +511,3 @@ export class UpdatePositionDto {
   @IsOptional()
   isLead?: boolean;
 }
-
-

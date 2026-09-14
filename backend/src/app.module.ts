@@ -1,6 +1,8 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import {
   AuthController,
   OrdersController,
@@ -14,6 +16,7 @@ import { NewsController } from './news.controller';
 import { NewsService } from './news.service';
 import { FcmService } from './fcm.service';
 import { AppService } from './app.service';
+import { HealthController } from './health.controller';
 import { HttpLoggerMiddleware } from './logger.middleware';
 
 @Module({
@@ -38,8 +41,15 @@ import { HttpLoggerMiddleware } from './logger.middleware';
       secret: process.env.JWT_SECRET || 'catu_v2_secure_jwt_production_secret_key_2026_@#!',
       signOptions: { expiresIn: '30d' },
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 120,
+      },
+    ]),
   ],
   controllers: [
+    HealthController,
     AuthController,
     OrdersController,
     NotificationsController,
@@ -49,7 +59,15 @@ import { HttpLoggerMiddleware } from './logger.middleware';
     MasterDataController,
     NewsController,
   ],
-  providers: [AppService, NewsService, FcmService],
+  providers: [
+    AppService,
+    NewsService,
+    FcmService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
   exports: [FcmService],
 })
 export class AppModule implements NestModule {
