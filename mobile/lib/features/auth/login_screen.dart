@@ -10,7 +10,6 @@ import 'forgot_password_screen.dart';
 import 'pending_approval_screen.dart';
 import '../news/public_news_screen.dart';
 import '../../core/services/language_service.dart';
-import '../../core/services/notification_service.dart';
 import '../../core/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -127,8 +126,8 @@ class _LoginScreenState extends State<LoginScreen>
             context: context,
             builder: (ctx) => AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              title: Row(
-                children: const [
+              title: const Row(
+                children: [
                   Icon(Icons.cancel, color: Colors.red, size: 28),
                   SizedBox(width: 10),
                   Text('Pendaftaran Ditolak', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
@@ -223,8 +222,8 @@ class _LoginScreenState extends State<LoginScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Row(
-          children: const [
+        title: const Row(
+          children: [
             Icon(Icons.settings_ethernet_rounded, color: AppConstants.primaryBlue, size: 24),
             SizedBox(width: 10),
             Text('Konfigurasi Server IP', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -273,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen>
                   });
                 }
               }
-              if (mounted) Navigator.pop(ctx);
+              if (ctx.mounted) Navigator.pop(ctx);
             },
             child: const Text('Simpan'),
           ),
@@ -332,7 +331,7 @@ class _LoginScreenState extends State<LoginScreen>
                           border: Border.all(color: const Color(0xFFD97706), width: 2),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFD97706).withOpacity(0.4),
+                              color: const Color(0xFFD97706).withValues(alpha: 0.4),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -345,9 +344,9 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                       ),
                       const SizedBox(width: 14),
-                      Column(
+                      const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
                             'CATU WEB PORTAL',
                             style: TextStyle(
@@ -399,9 +398,9 @@ class _LoginScreenState extends State<LoginScreen>
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
+                          color: Colors.white.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withOpacity(0.25)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                         ),
                         child: const Text(
                           '🔐 Admin & Staff Portal',
@@ -455,8 +454,8 @@ class _LoginScreenState extends State<LoginScreen>
                   const Spacer(),
 
                   // Bottom Version Footer
-                  Row(
-                    children: const [
+                  const Row(
+                    children: [
                       Icon(Icons.shield_rounded, size: 14, color: Color(0xFF94A3B8)),
                       SizedBox(width: 8),
                       Text(
@@ -497,7 +496,7 @@ class _LoginScreenState extends State<LoginScreen>
                       border: Border.all(color: const Color(0xFFE2E8F0)),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF1E3A8A).withOpacity(0.08),
+                          color: const Color(0xFF1E3A8A).withValues(alpha: 0.08),
                           blurRadius: 30,
                           offset: const Offset(0, 10),
                         ),
@@ -702,9 +701,9 @@ class _LoginScreenState extends State<LoginScreen>
                                         height: 20,
                                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2),
                                       )
-                                    : Row(
+                                    : const Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
-                                        children: const [
+                                        children: [
                                           Icon(Icons.login_rounded, color: Colors.white, size: 18),
                                           SizedBox(width: 8),
                                           Text(
@@ -730,9 +729,9 @@ class _LoginScreenState extends State<LoginScreen>
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(color: const Color(0xFFBFDBFE)),
                               ),
-                              child: Row(
+                              child: const Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
+                                children: [
                                   Icon(Icons.info_outline_rounded, color: Color(0xFF2563EB), size: 16),
                                   SizedBox(width: 8),
                                   Expanded(
@@ -765,9 +764,9 @@ class _LoginScreenState extends State<LoginScreen>
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
+            color: Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withOpacity(0.12)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
           ),
           child: Icon(icon, color: const Color(0xFFD97706), size: 18),
         ),
@@ -829,7 +828,7 @@ class _LoginScreenState extends State<LoginScreen>
               height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.07),
+                color: Colors.white.withValues(alpha: 0.07),
               ),
             ),
           ),
@@ -840,7 +839,7 @@ class _LoginScreenState extends State<LoginScreen>
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.06),
+                color: Colors.white.withValues(alpha: 0.06),
               ),
             ),
           ),
@@ -887,7 +886,7 @@ class _LoginScreenState extends State<LoginScreen>
                         LanguageService.tr('login_title'),
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withOpacity(0.75),
+                          color: Colors.white.withValues(alpha: 0.75),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -901,14 +900,14 @@ class _LoginScreenState extends State<LoginScreen>
                             width: 1,
                           ),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.verified_outlined, size: 13, color: Color(0xFFFCD34D)),
-                            const SizedBox(width: 5),
+                            Icon(Icons.verified_outlined, size: 13, color: Color(0xFFFCD34D)),
+                            SizedBox(width: 5),
                             Text(
                               AppConstants.appVersion,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -929,7 +928,7 @@ class _LoginScreenState extends State<LoginScreen>
                             borderRadius: BorderRadius.circular(24),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 30,
                                 spreadRadius: 0,
                                 offset: const Offset(0, 10),
@@ -1124,10 +1123,10 @@ class _LoginScreenState extends State<LoginScreen>
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: AppConstants.primaryBlue,
                                         disabledBackgroundColor:
-                                            AppConstants.primaryBlue.withOpacity(0.6),
+                                            AppConstants.primaryBlue.withValues(alpha: 0.6),
                                         elevation: 4,
                                         shadowColor:
-                                            AppConstants.primaryBlue.withOpacity(0.4),
+                                            AppConstants.primaryBlue.withValues(alpha: 0.4),
                                         shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(14)),
                                       ),
@@ -1252,14 +1251,14 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             ],
                           ),
-                          child: Row(
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.build_circle_outlined, size: 14, color: Colors.white),
-                              const SizedBox(width: 6),
+                              Icon(Icons.build_circle_outlined, size: 14, color: Colors.white),
+                              SizedBox(width: 6),
                               Text(
                                 AppConstants.appVersion,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,

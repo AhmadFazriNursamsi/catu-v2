@@ -48,12 +48,12 @@ class UmatDashboardView extends StatefulWidget {
   final VoidCallback onLogout;
 
   const UmatDashboardView({
-    Key? key,
+    super.key,
     required this.user,
     required this.orders,
     required this.onRefresh,
     required this.onLogout,
-  }) : super(key: key);
+  });
 
   @override
   State<UmatDashboardView> createState() => _UmatDashboardViewState();
@@ -509,13 +509,13 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                           borderRadius: BorderRadius.circular(22),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF1E5399).withOpacity(0.18),
+                              color: const Color(0xFF1E5399).withValues(alpha: 0.18),
                               blurRadius: 24,
                               spreadRadius: 2,
                               offset: const Offset(0, 8),
                             ),
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
+                              color: Colors.black.withValues(alpha: 0.08),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -535,10 +535,10 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                     ),
 
                     // ── 3. Spiritual Quote ──
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(28, 16, 28, 20),
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(28, 16, 28, 20),
                       child: Column(
-                        children: const [
+                        children: [
                           Text(
                             '" Sungguh, Allah itu keselamatanku; aku percaya dengan tidak gementar, sebab Tuhan Allah itu kekuatanku dan mazmurku, Ia telah menjadi keselamatanku. "',
                             textAlign: TextAlign.center,
@@ -590,7 +590,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                 borderRadius: BorderRadius.circular(18),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF1E3A8A).withOpacity(0.3),
+                                    color: const Color(0xFF1E3A8A).withValues(alpha: 0.3),
                                     blurRadius: 14,
                                     offset: const Offset(0, 4),
                                   ),
@@ -601,7 +601,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.18),
+                                      color: Colors.white.withValues(alpha: 0.18),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(Icons.how_to_reg_rounded, color: Colors.white, size: 24),
@@ -851,7 +851,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                 leading: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E5399).withOpacity(0.1),
+                    color: const Color(0xFF1E5399).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.sanitizer_rounded,
@@ -894,7 +894,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                 leading: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0D9488).withOpacity(0.1),
+                    color: const Color(0xFF0D9488).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.personal_injury_rounded,

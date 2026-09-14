@@ -26,7 +26,7 @@ class SearchableSelectField<T> extends StatelessWidget {
   final String emptyMessage;
 
   const SearchableSelectField({
-    Key? key,
+    super.key,
     required this.label,
     this.hint,
     required this.icon,
@@ -36,7 +36,7 @@ class SearchableSelectField<T> extends StatelessWidget {
     this.isLoading = false,
     this.enabled = true,
     this.emptyMessage = 'Tidak ada data ditemukan',
-  }) : super(key: key);
+  });
 
   String get _selectedLabel {
     if (value == null) return hint ?? 'Select $label';
@@ -127,14 +127,14 @@ class _SearchModalSheet<T> extends StatefulWidget {
   final ValueChanged<T> onSelected;
 
   const _SearchModalSheet({
-    Key? key,
+    super.key,
     required this.title,
     required this.icon,
     required this.items,
     required this.selectedValue,
     required this.emptyMessage,
     required this.onSelected,
-  }) : super(key: key);
+  });
 
   @override
   State<_SearchModalSheet<T>> createState() => _SearchModalSheetState<T>();
@@ -284,7 +284,7 @@ class _SearchModalSheetState<T> extends State<_SearchModalSheet<T>> {
 
                       return ListTile(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        tileColor: isSelected ? AppConstants.primaryBlue.withOpacity(0.08) : Colors.transparent,
+                        tileColor: isSelected ? AppConstants.primaryBlue.withValues(alpha: 0.08) : Colors.transparent,
                         title: Text(
                           item.label,
                           style: TextStyle(

@@ -15,7 +15,7 @@ import '../admin/admin_dashboard_view.dart';
 
 class HomeScreen extends StatefulWidget {
   final Map<String, dynamic> user;
-  const HomeScreen({Key? key, required this.user}) : super(key: key);
+  const HomeScreen({super.key, required this.user});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();

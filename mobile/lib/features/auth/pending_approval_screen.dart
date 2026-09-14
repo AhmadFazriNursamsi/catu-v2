@@ -62,7 +62,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
             matched = list.first;
           }
           final found = matched;
-          if (found != null && mounted) {
+          if (mounted) {
             setState(() {
               _currentUser['ordoName'] = found['name'] ?? found['code'];
             });
@@ -289,9 +289,9 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xFF38BDF8)),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Icon(Icons.verified_outlined, size: 14, color: Color(0xFF0284C7)),
                     SizedBox(width: 6),
                     Text(
@@ -319,7 +319,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                     border: Border.all(color: const Color(0xFFF59E0B), width: 3),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFF59E0B).withOpacity(0.25),
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.25),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -406,7 +406,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF64748B).withOpacity(0.06),
+                      color: const Color(0xFF64748B).withValues(alpha: 0.06),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),
@@ -415,8 +415,8 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: const [
+                    const Row(
+                      children: [
                         Icon(Icons.badge_outlined, color: AppConstants.primaryBlue, size: 18),
                         SizedBox(width: 8),
                         Text(
@@ -523,9 +523,9 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                           height: 22,
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                         )
-                      : Row(
+                      : const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
+                          children: [
                             Icon(Icons.refresh_rounded, size: 20),
                             SizedBox(width: 8),
                             Text(
@@ -566,10 +566,10 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
               const SizedBox(height: 24),
 
               // Versioning Badge
-              Center(
+              const Center(
                 child: Text(
                   AppConstants.appVersion,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     color: Color(0xFF94A3B8),
                     fontWeight: FontWeight.bold,

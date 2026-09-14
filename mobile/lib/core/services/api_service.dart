@@ -210,7 +210,7 @@ class ApiService {
         return jsonDecode(response.body);
       }
     } catch (e) {
-      print('Error getAdminAnalytics: $e');
+      debugPrint('Error getAdminAnalytics: $e');
     }
     return {'statusCode': 500, 'orders': {}, 'users': {}, 'categories': []};
   }
@@ -231,7 +231,7 @@ class ApiService {
         }
       }
     } catch (e) {
-      print('Error getAdminUsers: $e');
+      debugPrint('Error getAdminUsers: $e');
     }
     return [];
   }
@@ -310,7 +310,7 @@ class ApiService {
         return jsonDecode(response.body);
       }
     } catch (e) {
-      print('Error runUnitTests: $e');
+      debugPrint('Error runUnitTests: $e');
     }
     return {'statusCode': 500, 'message': 'Gagal menjalankan unit tests'};
   }
@@ -402,7 +402,7 @@ class ApiService {
         }).toList();
       }
     } catch (e) {
-      print('Error getRoles: $e');
+      debugPrint('Error getRoles: $e');
     }
     return [
       {'code': 'UMAT', 'label': 'Umat', 'category': 'Umat'},
@@ -428,7 +428,7 @@ class ApiService {
         return List<Map<String, dynamic>>.from(data);
       }
     } catch (e) {
-      print('Error getProvinsiList: $e');
+      debugPrint('Error getProvinsiList: $e');
     }
     return [
       {'id': 31, 'name': 'DKI JAKARTA'},
@@ -445,7 +445,7 @@ class ApiService {
         return List<Map<String, dynamic>>.from(data);
       }
     } catch (e) {
-      print('Error getKabupatenKotaList: $e');
+      debugPrint('Error getKabupatenKotaList: $e');
     }
     return [
       {'id': 3175, 'provinsi_id': 31, 'name': 'JAKARTA TIMUR', 'type': 'KOTA'},
@@ -461,7 +461,7 @@ class ApiService {
         return List<Map<String, dynamic>>.from(data);
       }
     } catch (e) {
-      print('Error getKeuskupanList: $e');
+      debugPrint('Error getKeuskupanList: $e');
     }
     return [
       {'id': 1, 'name': 'Keuskupan Agung Jakarta'},
@@ -481,7 +481,7 @@ class ApiService {
         return List<Map<String, dynamic>>.from(data);
       }
     } catch (e) {
-      print('Error getParokiList: $e');
+      debugPrint('Error getParokiList: $e');
     }
     return [
       {'id': 10, 'keuskupan_id': 1, 'name': 'Paroki Santo Antonius Padua - Otista'},
@@ -500,7 +500,7 @@ class ApiService {
         return List<Map<String, dynamic>>.from(data);
       }
     } catch (e) {
-      print('Error getWilayahList: $e');
+      debugPrint('Error getWilayahList: $e');
     }
     return [
       {'id': 101, 'paroki_id': 10, 'name': 'Wilayah St. Agustinus'},
@@ -518,7 +518,7 @@ class ApiService {
         return List<Map<String, dynamic>>.from(data);
       }
     } catch (e) {
-      print('Error getLingkunganList: $e');
+      debugPrint('Error getLingkunganList: $e');
     }
     return [
       {'id': 1001, 'wilayah_id': 101, 'name': 'Lingkungan St. Agnes 1'},
@@ -535,7 +535,7 @@ class ApiService {
         return List<Map<String, dynamic>>.from(data);
       }
     } catch (e) {
-      print('Error getOrdoList: $e');
+      debugPrint('Error getOrdoList: $e');
     }
     return [
       {'id': 1, 'code': 'SJ', 'name': 'SJ - Serikat Yesus (Jesuit)'},
@@ -573,7 +573,7 @@ class ApiService {
         return data.map((json) => Order.fromJson(json)).toList();
       }
     } catch (e) {
-      print('Error getOrders: $e');
+      debugPrint('Error getOrders: $e');
     }
     return [];
   }
@@ -589,7 +589,7 @@ class ApiService {
         }
       }
     } catch (e) {
-      print('Error getOrderById: $e');
+      debugPrint('Error getOrderById: $e');
     }
     try {
       final orders = await getOrders();
@@ -737,7 +737,7 @@ class ApiService {
         }
       }
     } catch (e) {
-      print('Error getAvailableRomos: $e');
+      debugPrint('Error getAvailableRomos: $e');
     }
     return [];
   }
@@ -811,7 +811,7 @@ class ApiService {
         return data.map((e) => e as Map<String, dynamic>).toList();
       }
     } catch (e) {
-      print('Error getNotifications: $e');
+      debugPrint('Error getNotifications: $e');
     }
     return [];
   }
@@ -850,7 +850,7 @@ class ApiService {
         return data.map((json) => ChatMessage.fromJson(json)).toList();
       }
     } catch (e) {
-      print('Error getGroupMessages: $e');
+      debugPrint('Error getGroupMessages: $e');
     }
     return [];
   }
@@ -896,7 +896,7 @@ class ApiService {
         }
       }
     } catch (e) {
-      print('Error getChatGroups: $e');
+      debugPrint('Error getChatGroups: $e');
     }
     return [];
   }
@@ -911,7 +911,7 @@ class ApiService {
         return raw is int ? raw : int.tryParse(raw?.toString() ?? '') ?? orderId;
       }
     } catch (e) {
-      print('Error getChatGroupIdForOrder: $e');
+      debugPrint('Error getChatGroupIdForOrder: $e');
     }
     return orderId;
   }
@@ -942,7 +942,7 @@ class ApiService {
         return data.cast<Map<String, dynamic>>();
       }
     } catch (e) {
-      print('Error getGroupMembers: $e');
+      debugPrint('Error getGroupMembers: $e');
     }
     return [];
   }
@@ -966,7 +966,7 @@ class ApiService {
         return List<Map<String, dynamic>>.from(data);
       }
     } catch (e) {
-      print('Error getPendingRomoList: $e');
+      debugPrint('Error getPendingRomoList: $e');
     }
     return [];
   }
@@ -1023,7 +1023,7 @@ class ApiService {
         return jsonDecode(response.body);
       }
     } catch (e) {
-      print('Error getNews: $e');
+      debugPrint('Error getNews: $e');
     }
     return {'articles': [], 'featuredArticles': [], 'total': 0, 'totalPages': 0};
   }
@@ -1035,7 +1035,7 @@ class ApiService {
         return jsonDecode(response.body);
       }
     } catch (e) {
-      print('Error getNewsCategories: $e');
+      debugPrint('Error getNewsCategories: $e');
     }
     return [];
   }
@@ -1047,7 +1047,7 @@ class ApiService {
         return jsonDecode(response.body);
       }
     } catch (e) {
-      print('Error getNewsDetail: $e');
+      debugPrint('Error getNewsDetail: $e');
     }
     return null;
   }
@@ -1059,7 +1059,7 @@ class ApiService {
         return jsonDecode(response.body);
       }
     } catch (e) {
-      print('Error searchLiveNews: $e');
+      debugPrint('Error searchLiveNews: $e');
     }
     return {'results': []};
   }
@@ -1068,7 +1068,7 @@ class ApiService {
     try {
       await http.post(Uri.parse('$baseUrl/news/scrape/run')).timeout(const Duration(seconds: 15));
     } catch (e) {
-      print('Error triggerNewsScrape: $e');
+      debugPrint('Error triggerNewsScrape: $e');
     }
   }
 
@@ -1093,7 +1093,7 @@ class ApiService {
 
       return jsonDecode(response.body);
     } catch (e) {
-      print('Error registerDeviceToken: $e');
+      debugPrint('Error registerDeviceToken: $e');
       return {'success': false, 'message': e.toString()};
     }
   }
@@ -1114,7 +1114,7 @@ class ApiService {
 
       return jsonDecode(response.body);
     } catch (e) {
-      print('Error unregisterDeviceToken: $e');
+      debugPrint('Error unregisterDeviceToken: $e');
       return {'success': false, 'message': e.toString()};
     }
   }

@@ -146,8 +146,8 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: const [
+        title: const Row(
+          children: [
             Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 26),
             SizedBox(width: 10),
             Text('Tolak Pendaftaran', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
@@ -433,7 +433,7 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF64748B).withOpacity(0.06),
+            color: const Color(0xFF64748B).withValues(alpha: 0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

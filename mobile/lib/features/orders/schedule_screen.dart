@@ -69,7 +69,7 @@ class ScheduleScreen extends StatefulWidget {
   final bool showPendingOnly;
 
   const ScheduleScreen({
-    Key? key,
+    super.key,
     required this.orders,
     required this.userName,
     required this.onRefresh,
@@ -77,7 +77,7 @@ class ScheduleScreen extends StatefulWidget {
     this.romoId,
     this.userId,
     this.showPendingOnly = false,
-  }) : super(key: key);
+  });
 
   @override
   State<ScheduleScreen> createState() => _ScheduleScreenState();
@@ -463,14 +463,6 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     return const Color(0xFF1D4ED8);
   }
 
-  String _categoryEmoji(String category) {
-    final lower = category.toLowerCase();
-    if (lower.contains('kedukaan') || lower.contains('misa')) return '⛪';
-    if (lower.contains('minyak') || lower.contains('perminyakan')) return '🕯️';
-    if (lower.contains('baptis')) return '✝️';
-    return '📿';
-  }
-
   // ── Build ────────────────────────────────────────────────────────────────────
 
   @override
@@ -634,9 +626,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: const Color(0xFFFFEDD5)),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
+                          children: [
                             Icon(Icons.hourglass_top_rounded, size: 11, color: Color(0xFFEA580C)),
                             SizedBox(width: 4),
                             Text(

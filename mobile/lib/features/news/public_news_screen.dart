@@ -9,7 +9,7 @@ import '../auth/login_screen.dart';
 import 'news_detail_screen.dart';
 
 class PublicNewsScreen extends StatefulWidget {
-  const PublicNewsScreen({Key? key}) : super(key: key);
+  const PublicNewsScreen({super.key});
 
   @override
   State<PublicNewsScreen> createState() => _PublicNewsScreenState();
@@ -369,7 +369,7 @@ class _PublicNewsScreenState extends State<PublicNewsScreen> {
                   children: [
                     Text(
                       _searchQuery.isNotEmpty
-                          ? 'Hasil Pencarian "${_searchQuery}"'
+                          ? 'Hasil Pencarian "$_searchQuery"'
                           : 'Kabar & Berita Terbaru',
                       style: const TextStyle(
                         fontSize: 15,
@@ -617,9 +617,9 @@ class FeaturedNewsCarousel extends StatefulWidget {
   final List<NewsArticle> articles;
 
   const FeaturedNewsCarousel({
-    Key? key,
+    super.key,
     required this.articles,
-  }) : super(key: key);
+  });
 
   @override
   State<FeaturedNewsCarousel> createState() => _FeaturedNewsCarouselState();

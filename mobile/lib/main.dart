@@ -19,7 +19,7 @@ void main() async {
 
 class CatuApp extends StatelessWidget {
   final Map<String, dynamic>? initialUser;
-  const CatuApp({Key? key, this.initialUser}) : super(key: key);
+  const CatuApp({super.key, this.initialUser});
 
   @override
   Widget build(BuildContext context) {

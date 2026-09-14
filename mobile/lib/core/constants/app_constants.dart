@@ -4,7 +4,7 @@ class AppConstants {
   static const String appName = 'CATU Pelayanan';
   static const String appVersion = 'v2.5.0-build.20260914.103355';
   static const String apiBaseUrl = 'http://10.0.10.92:3005'; // NestJS Local Server (Docker Port 3005)
-  
+
   // Custom HSL Colors
   static const Color primaryBlue = Color(0xFF1E3A8A); // Deep Catholic Church Blue
   static const Color accentGold = Color(0xFFD97706);  // Sacred Gold Accent

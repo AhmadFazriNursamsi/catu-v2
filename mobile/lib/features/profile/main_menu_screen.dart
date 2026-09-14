@@ -17,11 +17,11 @@ class MainMenuScreen extends StatefulWidget {
   final VoidCallback onLogout;
 
   const MainMenuScreen({
-    Key? key,
+    super.key,
     required this.user,
     required this.onRefresh,
     required this.onLogout,
-  }) : super(key: key);
+  });
 
   @override
   State<MainMenuScreen> createState() => _MainMenuScreenState();
@@ -149,11 +149,6 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   String get _userName =>
       _userData['fullName'] ?? _userData['full_name'] ?? 'Umat';
 
-  String get _phoneNumber =>
-      _userData['phoneNumber'] ?? _userData['phone_number'] ?? '-';
-
-  String get _email => _userData['email'] ?? 'umat@catu.id';
-
   String get _pengurusPos =>
       _userData['pengurusPosition'] ?? _userData['pengurus_position'] ?? '';
 
@@ -162,14 +157,8 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
   bool get _isApproved => _accountStatus == 'APPROVED';
 
-  String get _keuskupan =>
-      _userData['keuskupanName'] ?? _userData['keuskupan_name'] ?? 'Keuskupan Agung Jakarta';
-
   String get _paroki =>
       _userData['parokiName'] ?? _userData['paroki_name'] ?? 'Paroki Alam Sutera - St. Laurensius';
-
-  String get _lingkungan =>
-      _userData['lingkunganName'] ?? _userData['lingkungan_name'] ?? 'Lingkungan St. Angela Merici';
 
   String get _roleCode =>
       _userData['roleCode'] ?? _userData['role_code'] ?? _userData['role'] ?? 'UMAT';
@@ -857,71 +846,6 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
   // ── Modals & Dialogs ──────────────────────────────────────────────────────
 
-  void _showProfileModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-              24, 16, 24, MediaQuery.of(ctx).padding.bottom + 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Profil Saya',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildDetailRow('Nama Lengkap', _userName),
-              _buildDetailRow('Nomor HP', _phoneNumber),
-              _buildDetailRow('Email', _email),
-              _buildDetailRow('Keuskupan', _keuskupan),
-              _buildDetailRow('Paroki', _paroki),
-              _buildDetailRow('Lingkungan', _lingkungan),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1D4ED8),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Tutup',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   void _showVerificationModal() {
     showModalBottomSheet(
       context: context,
@@ -1320,7 +1244,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                     },
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         );

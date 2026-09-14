@@ -85,20 +85,10 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 
   bool get _needsMasaJabatan {
-    if (_selectedRole == 'ROMO_PAROKI' &&
-        _selectedRomoParokiPosition == 'KETUA_ROMO') return true;
-    if (_selectedRole == 'ROMO_ORDO' &&
-        _selectedRomoOrdoPosition == 'KETUA_ROMO') return true;
-    if (_selectedRole == 'UMAT' ||
-        _selectedRole == 'PENGURUS_LINGKUNGAN' ||
-        _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
-      if (_selectedUmatPosition == 'KOORDINATOR' ||
-          _selectedUmatPosition == 'KETUA' ||
-          _selectedUmatPosition == 'WAKIL' ||
-          _selectedUmatPosition == 'SEKRETARIS' ||
-          _selectedUmatPosition == 'BENDAHARA') {
-        return true;
-      }
+    if (_selectedRole == 'ROMO_PAROKI' && _selectedRomoParokiPosition == 'KETUA_ROMO') return true;
+    if (_selectedRole == 'ROMO_ORDO' && _selectedRomoOrdoPosition == 'KETUA_ROMO') return true;
+    if (const {'UMAT', 'PENGURUS_LINGKUNGAN', 'KOORDINATOR_KEUSKUPAN'}.contains(_selectedRole)) {
+      return const {'KOORDINATOR', 'KETUA', 'WAKIL', 'SEKRETARIS', 'BENDAHARA'}.contains(_selectedUmatPosition);
     }
     return false;
   }
@@ -554,7 +544,7 @@ class _RegisterScreenState extends State<RegisterScreen>
         _selectedRole == 'PENGURUS_LINGKUNGAN' ||
         _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
       return DropdownButtonFormField<String?>(
-        value: _selectedUmatPosition,
+        initialValue: _selectedUmatPosition,
         decoration: _fieldDeco(
             label: 'Jabatan / Peran Umat', icon: Icons.badge_outlined),
         dropdownColor: Colors.white,
@@ -596,7 +586,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       );
     } else if (_selectedRole == 'ROMO_ORDO') {
       return DropdownButtonFormField<String>(
-        value: _selectedRomoOrdoPosition,
+        initialValue: _selectedRomoOrdoPosition,
         decoration: _fieldDeco(
             label: 'Jabatan Romo Ordo', icon: Icons.military_tech_outlined),
         dropdownColor: Colors.white,
@@ -622,7 +612,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       );
     } else if (_selectedRole == 'ROMO_PAROKI') {
       return DropdownButtonFormField<String>(
-        value: _selectedRomoParokiPosition,
+        initialValue: _selectedRomoParokiPosition,
         decoration: _fieldDeco(
             label: 'Jabatan Romo Paroki', icon: Icons.church_outlined),
         dropdownColor: Colors.white,

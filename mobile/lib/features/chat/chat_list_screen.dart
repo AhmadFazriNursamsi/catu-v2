@@ -23,10 +23,10 @@ class ChatListScreen extends StatefulWidget {
   final List<Order> orders;
 
   const ChatListScreen({
-    Key? key,
+    super.key,
     required this.user,
     required this.orders,
-  }) : super(key: key);
+  });
 
   @override
   State<ChatListScreen> createState() => _ChatListScreenState();

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
-import '../../core/services/notification_service.dart';
 import '../../widgets/searchable_select_field.dart';
 import '../../core/services/language_service.dart';
 
@@ -591,11 +590,11 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                                 horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
                               color: _getUrgensiColor(_selectedUrgensi)
-                                  .withOpacity(0.08),
+                                  .withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: _getUrgensiColor(_selectedUrgensi)
-                                    .withOpacity(0.3),
+                                    .withValues(alpha: 0.3),
                               ),
                             ),
                             child: Row(
@@ -876,7 +875,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 16,
                     offset: const Offset(0, -4),
                   ),
@@ -892,12 +891,12 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1E5399),
                       disabledBackgroundColor:
-                          const Color(0xFF1E5399).withOpacity(0.5),
+                          const Color(0xFF1E5399).withValues(alpha: 0.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                       elevation: 2,
-                      shadowColor: const Color(0xFF1E5399).withOpacity(0.35),
+                      shadowColor: const Color(0xFF1E5399).withValues(alpha: 0.35),
                     ),
                     child: _isLoading
                         ? const SizedBox(
@@ -948,7 +947,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1E5399).withOpacity(0.25),
+            color: const Color(0xFF1E5399).withValues(alpha: 0.25),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -959,7 +958,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
@@ -1013,7 +1012,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -1027,7 +1026,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
               Container(
                 padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, size: 18, color: iconColor),
@@ -1149,7 +1148,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
         ],
         DropdownButtonFormField<T>(
           key: ValueKey('${label}_${safeValue}_${items.length}_$_isSameParish'),
-          value: safeValue,
+          initialValue: safeValue,
           validator: validator,
           isExpanded: true,
           icon: const Icon(Icons.keyboard_arrow_down_rounded,
@@ -1177,7 +1176,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                  color: const Color(0xFFCBD5E1).withOpacity(0.5), width: 1.2),
+                  color: const Color(0xFFCBD5E1).withValues(alpha: 0.5), width: 1.2),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

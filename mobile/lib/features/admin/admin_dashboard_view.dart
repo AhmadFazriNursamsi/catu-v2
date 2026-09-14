@@ -1,12 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
-import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
-import '../../core/services/language_service.dart';
-import '../../core/utils/fade_slide_route.dart';
 import '../orders/order_detail_screen.dart';
 
 class AdminDashboardView extends StatefulWidget {
@@ -16,12 +11,12 @@ class AdminDashboardView extends StatefulWidget {
   final VoidCallback onLogout;
 
   const AdminDashboardView({
-    Key? key,
+    super.key,
     required this.user,
     required this.orders,
     required this.onRefresh,
     required this.onLogout,
-  }) : super(key: key);
+  });
 
   @override
   State<AdminDashboardView> createState() => _AdminDashboardViewState();
@@ -350,9 +345,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Column(
+                const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text('CATU ADMIN', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5)),
                     Text('PORTAL PUSAT SISTEM', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFFD97706), letterSpacing: 0.8)),
                   ],
@@ -388,12 +383,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red.withOpacity(0.2)),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
                 ),
-                child: Row(
-                  children: const [
+                child: const Row(
+                  children: [
                     Icon(Icons.logout_rounded, color: Color(0xFFEF4444), size: 18),
                     SizedBox(width: 10),
                     Text('Keluar Akun Admin', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFEF4444))),
@@ -432,7 +427,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           decoration: BoxDecoration(
             color: isSelected ? const Color(0xFF1E3A8A) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
-            border: isSelected ? Border.all(color: const Color(0xFF3B82F6).withOpacity(0.4)) : null,
+            border: isSelected ? Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.4)) : null,
           ),
           child: Row(
             children: [
@@ -521,7 +516,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF4F46E5).withOpacity(0.3),
+                    color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -532,7 +527,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.stars_rounded, color: Colors.white, size: 28),
@@ -661,8 +656,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: const [
+                      const Row(
+                        children: [
                           Icon(Icons.pie_chart_rounded, size: 18, color: Color(0xFF1E3A8A)),
                           SizedBox(width: 8),
                           Text('Distribusi Kategori Pelayanan', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
@@ -728,8 +723,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: const [
+                          const Row(
+                            children: [
                               Icon(Icons.history_rounded, size: 18, color: Color(0xFF1E3A8A)),
                               SizedBox(width: 8),
                               Text('Aktivitas Pelayanan Terbaru', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
@@ -775,7 +770,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -787,7 +782,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.08),
+                  color: accentColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: accentColor, size: 22),
@@ -796,7 +791,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: (badgeColor ?? accentColor).withOpacity(0.12),
+                    color: (badgeColor ?? accentColor).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -837,7 +832,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
+              color: statusColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.assignment_rounded, size: 16, color: statusColor),
@@ -858,7 +853,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.12),
+              color: statusColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(status, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor)),
@@ -957,7 +952,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: DataTable(
-                          headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
+                          headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
                           columns: const [
                             DataColumn(label: Text('NO. ORDER', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
                             DataColumn(label: Text('KATEGORI & PELAYANAN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
@@ -1000,7 +995,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 DataCell(
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(color: statusColor.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+                                    decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
                                     child: Text(status, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor)),
                                   ),
                                 ),
@@ -1229,7 +1224,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: DataTable(
-                          headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
+                          headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
                           columns: const [
                             DataColumn(label: Text('PENGGUNA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
                             DataColumn(label: Text('NO. WHATSAPP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
@@ -1257,8 +1252,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                       CircleAvatar(
                                         radius: 14,
                                         backgroundColor: isKoordinator
-                                            ? const Color(0xFF4F46E5).withOpacity(0.15)
-                                            : const Color(0xFF1E3A8A).withOpacity(0.1),
+                                            ? const Color(0xFF4F46E5).withValues(alpha: 0.15)
+                                            : const Color(0xFF1E3A8A).withValues(alpha: 0.1),
                                         child: isKoordinator
                                             ? const Icon(Icons.stars_rounded, color: Color(0xFF4F46E5), size: 16)
                                             : Text(
@@ -1285,9 +1280,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                       ? Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF4F46E5).withOpacity(0.12),
+                                            color: const Color(0xFF4F46E5).withValues(alpha: 0.12),
                                             borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(color: const Color(0xFF4F46E5).withOpacity(0.3)),
+                                            border: Border.all(color: const Color(0xFF4F46E5).withValues(alpha: 0.3)),
                                           ),
                                           child: const Row(
                                             mainAxisSize: MainAxisSize.min,
@@ -1305,7 +1300,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                           ? Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFFD97706).withOpacity(0.1),
+                                                color: const Color(0xFFD97706).withValues(alpha: 0.1),
                                                 borderRadius: BorderRadius.circular(6),
                                               ),
                                               child: Text(
@@ -1316,7 +1311,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                           : Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFF1E3A8A).withOpacity(0.08),
+                                                color: const Color(0xFF1E3A8A).withValues(alpha: 0.08),
                                                 borderRadius: BorderRadius.circular(6),
                                               ),
                                               child: Text(
@@ -1350,7 +1345,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 DataCell(
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(color: statusColor.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+                                    decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
                                     child: Text(status, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor)),
                                   ),
                                 ),
@@ -1542,7 +1537,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           final p = _parokiList[idx];
           return ListTile(
             leading: CircleAvatar(
-              backgroundColor: const Color(0xFF1E3A8A).withOpacity(0.08),
+              backgroundColor: const Color(0xFF1E3A8A).withValues(alpha: 0.08),
               child: const Icon(Icons.church_rounded, color: Color(0xFF1E3A8A), size: 18),
             ),
             title: Text(p['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
@@ -1558,7 +1553,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           final k = _keuskupanList[idx];
           return ListTile(
             leading: CircleAvatar(
-              backgroundColor: const Color(0xFFD97706).withOpacity(0.08),
+              backgroundColor: const Color(0xFFD97706).withValues(alpha: 0.08),
               child: const Icon(Icons.account_balance_rounded, color: Color(0xFFD97706), size: 18),
             ),
             title: Text(k['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
@@ -1574,7 +1569,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           final o = _ordoList[idx];
           return ListTile(
             leading: CircleAvatar(
-              backgroundColor: const Color(0xFF7C3AED).withOpacity(0.08),
+              backgroundColor: const Color(0xFF7C3AED).withValues(alpha: 0.08),
               child: const Icon(Icons.people_alt_rounded, color: Color(0xFF7C3AED), size: 18),
             ),
             title: Text(o['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
@@ -1601,8 +1596,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: const [
+            const Row(
+              children: [
                 Icon(Icons.chat_rounded, color: Color(0xFF1E3A8A), size: 20),
                 SizedBox(width: 8),
                 Text('Monitoring WhatsApp-Style Group Chat Pelayanan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
@@ -1687,9 +1682,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
+                const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text('Live Quality Assurance & Unit Test Runner', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
                     SizedBox(height: 4),
                     Text('Eksekusi otomatis seluruh test suite backend NestJS (Jest Runner) langsung dari browser.', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
@@ -1722,10 +1717,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   border: Border.all(color: const Color(0xFF1E293B)),
                 ),
                 child: _testResults == null
-                    ? Center(
+                    ? const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
+                          children: [
                             Icon(Icons.terminal_rounded, size: 48, color: Color(0xFF475569)),
                             SizedBox(height: 12),
                             Text('Klik "Jalankan Live Tests" untuk menguji seluruh modul API CATU v2', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
@@ -1741,7 +1736,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF10B981).withOpacity(0.2),
+                                    color: const Color(0xFF10B981).withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(color: const Color(0xFF10B981)),
                                   ),
@@ -1771,7 +1766,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                       ),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                                        decoration: BoxDecoration(color: const Color(0xFF10B981).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)),
                                         child: Text(t['status'] ?? 'PASSED', style: const TextStyle(color: Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.bold)),
                                       ),
                                     ],

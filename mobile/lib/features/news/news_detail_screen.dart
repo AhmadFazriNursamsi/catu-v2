@@ -10,9 +10,9 @@ class NewsDetailScreen extends StatefulWidget {
   final NewsArticle article;
 
   const NewsDetailScreen({
-    Key? key,
+    super.key,
     required this.article,
-  }) : super(key: key);
+  });
 
   @override
   State<NewsDetailScreen> createState() => _NewsDetailScreenState();
@@ -84,7 +84,6 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final cleanContent = _stripHtmlTags(_article.contentHtml.isNotEmpty ? _article.contentHtml : _article.summary);
 
     return Scaffold(

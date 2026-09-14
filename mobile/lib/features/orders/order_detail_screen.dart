@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
-import '../../core/services/notification_service.dart';
 import '../../core/services/language_service.dart';
 import '../chat/chat_screen.dart';
 
@@ -20,7 +19,7 @@ class OrderDetailScreen extends StatefulWidget {
   final int? romoId;
 
   const OrderDetailScreen({
-    Key? key,
+    super.key,
     required this.order,
     required this.userName,
     this.userId,
@@ -28,7 +27,7 @@ class OrderDetailScreen extends StatefulWidget {
     this.selectedItemId,
     this.isRomo = false,
     this.romoId,
-  }) : super(key: key);
+  });
 
   @override
   State<OrderDetailScreen> createState() => _OrderDetailScreenState();
@@ -555,9 +554,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                   border: Border.all(
                                       color: Colors.white.withValues(alpha: 0.3)),
                                 ),
-                                child: Row(
+                                child: const Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: const [
+                                  children: [
                                     Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 15),
                                     SizedBox(width: 4),
                                     Text(
@@ -993,8 +992,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: const [
+        title: const Row(
+          children: [
             Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 24),
             SizedBox(width: 10),
             Text('Selesaikan Pelayanan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -1768,7 +1767,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   void _openChat(Order order) async {
     HapticFeedback.lightImpact();
     final int? currentSenderId = widget.userId ?? (widget.isRomo ? widget.romoId : (order.userId ?? 1));
-    
+
     int targetGroupId = order.id;
     try {
       final res = await ApiService.getChatGroupIdForOrder(order.id);
@@ -1900,8 +1899,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFF59E0B)),
             ),
-            child: Row(
-              children: const [
+            child: const Row(
+              children: [
                 Icon(Icons.pending_actions_rounded, color: Color(0xFFB45309), size: 20),
                 SizedBox(width: 8),
                 Expanded(
@@ -1922,8 +1921,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFEF4444)),
             ),
-            child: Row(
-              children: const [
+            child: const Row(
+              children: [
                 Icon(Icons.info_outline_rounded, color: Color(0xFFDC2626), size: 20),
                 SizedBox(width: 8),
                 Expanded(
@@ -2251,7 +2250,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                     style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.3),
                   ),
                   const SizedBox(height: 18),
-                  
+
                   // Pick Date
                   const Text('Tanggal Pelayanan Baru', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
                   const SizedBox(height: 6),
@@ -3147,7 +3146,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           onTap: () async {
             HapticFeedback.lightImpact();
             final int? currentSenderId = widget.userId ?? (widget.isRomo ? widget.romoId : (order.userId ?? 1));
-            
+
             int targetGroupId = order.id;
             try {
               final res = await ApiService.getChatGroupIdForOrder(order.id);
@@ -3705,7 +3704,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                       );
 
                       if (confirm == true) {
-                        Navigator.pop(ctx);
+                        if (ctx.mounted) Navigator.pop(ctx);
                         _submitHandover(
                           order: order,
                           targetItem: targetItem,

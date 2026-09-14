@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/models/models.dart';
@@ -664,9 +664,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       )
                     : ListView.builder(
+                    scrollCacheExtent: const ScrollCacheExtent.pixels(1000.0),
                     controller: _scrollController,
                     physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                    cacheExtent: 1000,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {

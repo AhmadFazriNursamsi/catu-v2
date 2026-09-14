@@ -14,14 +14,14 @@ class HistoriScreen extends StatefulWidget {
   final int? romoId;
 
   const HistoriScreen({
-    Key? key,
+    super.key,
     required this.orders,
     required this.userName,
     this.userId,
     required this.onRefresh,
     this.isRomo = false,
     this.romoId,
-  }) : super(key: key);
+  });
 
   @override
   State<HistoriScreen> createState() => _HistoriScreenState();

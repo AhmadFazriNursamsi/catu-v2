@@ -5,7 +5,6 @@ import '../../core/models/models.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/widgets/liquid_bottom_nav_bar.dart';
 import '../chat/chat_list_screen.dart';
-import '../chat/chat_screen.dart';
 import '../orders/histori_screen.dart';
 import '../orders/order_detail_screen.dart';
 import '../orders/schedule_screen.dart';
@@ -39,12 +38,12 @@ class RomoDashboardView extends StatefulWidget {
   final VoidCallback onLogout;
 
   const RomoDashboardView({
-    Key? key,
+    super.key,
     required this.user,
     required this.orders,
     required this.onRefresh,
     required this.onLogout,
-  }) : super(key: key);
+  });
 
   @override
   State<RomoDashboardView> createState() => _RomoDashboardViewState();
@@ -188,10 +187,6 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     final romoId = widget.user['id'] != null
         ? int.tryParse(widget.user['id'].toString())
         : (widget.user['userId'] != null ? int.tryParse(widget.user['userId'].toString()) : null);
-    final rawParoki = widget.user['parokiId'] ?? widget.user['paroki_id'];
-    final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
-    final rawKota = widget.user['kabupatenKotaId'] ?? widget.user['kabupaten_kota_id'];
-    final int? kabupatenKotaId = rawKota != null ? int.tryParse(rawKota.toString()) : null;
 
     await Navigator.push(
       context,
@@ -506,13 +501,13 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                             borderRadius: BorderRadius.circular(22),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF1E5399).withOpacity(0.18),
+                                color: const Color(0xFF1E5399).withValues(alpha: 0.18),
                                 blurRadius: 24,
                                 spreadRadius: 2,
                                 offset: const Offset(0, 8),
                               ),
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
+                                color: Colors.black.withValues(alpha: 0.08),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -532,10 +527,10 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                       ),
 
               // ── 3. Spiritual Quote ──
-              Padding(
-                padding: const EdgeInsets.fromLTRB(28, 16, 28, 20),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(28, 16, 28, 20),
                 child: Column(
-                  children: const [
+                  children: [
                     Text(
                       '" Sungguh, Allah itu keselamatanku; aku percaya dengan tidak gementar, sebab Tuhan Allah itu kekuatanku dan mazmurku, Ia telah menjadi keselamatanku. "',
                       textAlign: TextAlign.center,
@@ -816,53 +811,6 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     );
   }
 
-  void _showMenuBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        final userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Romo';
-        final phone = widget.user['phoneNumber'] ?? widget.user['phone_number'] ?? '';
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const CircleAvatar(backgroundColor: Color(0xFF1E5399), child: Icon(Icons.person, color: Colors.white)),
-                title: Text(userName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(phone),
-              ),
-              const Divider(height: 24),
-              ListTile(
-                leading: const Icon(Icons.refresh_rounded, color: Color(0xFF1E5399)),
-                title: const Text('Refresh Data Pelayanan'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  widget.onRefresh();
-                  _refreshPendingApprovals();
-                  _refreshUnreadCount();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-                title: const Text('Keluar (Logout)', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  widget.onLogout();
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   bool _isDateBeforeToday(String dateStr) {
     if (dateStr.isEmpty) return false;
     try {
@@ -872,19 +820,6 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       return DateTime(d.year, d.month, d.day).isBefore(today);
-    } catch (_) {
-      return false;
-    }
-  }
-
-  bool _isDateToday(String dateStr) {
-    if (dateStr.isEmpty) return false;
-    try {
-      String cleanStr = dateStr;
-      if (cleanStr.contains('T')) cleanStr = cleanStr.split('T').first;
-      final d = DateTime.parse(cleanStr);
-      final now = DateTime.now();
-      return d.year == now.year && d.month == now.month && d.day == now.day;
     } catch (_) {
       return false;
     }
@@ -1223,7 +1158,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
     return GestureDetector(
       onTap: () async {
-        final bool? refreshed = await Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => OrderDetailScreen(

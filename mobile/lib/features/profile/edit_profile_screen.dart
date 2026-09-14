@@ -13,10 +13,10 @@ class EditProfileScreen extends StatefulWidget {
   final VoidCallback onSaved;
 
   const EditProfileScreen({
-    Key? key,
+    super.key,
     required this.user,
     required this.onSaved,
-  }) : super(key: key);
+  });
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -46,7 +46,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   int? _selectedOrdoId;
   String _selectedOrdoName = 'SJ — Serikat Yesus';
 
-  bool _notifyKetuaLingkungan = true;
+  final bool _notifyKetuaLingkungan = true;
   bool _isSaving = false;
 
   final List<String> _keuskupanList = [

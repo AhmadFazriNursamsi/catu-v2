@@ -6,7 +6,6 @@ import 'package:file_picker/file_picker.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
-import '../../core/services/notification_service.dart';
 import '../../widgets/searchable_select_field.dart';
 import '../../core/services/language_service.dart';
 
@@ -15,10 +14,10 @@ class CreateKedukaanScreen extends StatefulWidget {
   final Map<String, dynamic>? user;
 
   const CreateKedukaanScreen({
-    Key? key,
+    super.key,
     this.userId,
     this.user,
-  }) : super(key: key);
+  });
 
   @override
   State<CreateKedukaanScreen> createState() => _CreateKedukaanScreenState();
@@ -480,14 +479,6 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     return 1;
   }
 
-  Color _getUrgensiColor(String? label) {
-    if (label == null) return const Color(0xFF64748B);
-    final u = label.toLowerCase();
-    if (u.contains('darurat') || u.contains('kritis') || u.contains('sangat')) return Colors.red.shade700;
-    if (u.contains('penting')) return Colors.amber.shade800;
-    return Colors.blue.shade700;
-  }
-
   Future<void> _submit() async {
     setState(() {
       _autovalidateMode = AutovalidateMode.onUserInteraction;
@@ -847,9 +838,9 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                                       ),
                                     ],
                                   )
-                                : Column(
+                                : const Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    children: const [
+                                    children: [
                                       Icon(Icons.add_photo_alternate_rounded,
                                           size: 40, color: Color(0xFF1E5399)),
                                       SizedBox(height: 8),
@@ -1020,7 +1011,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
                                         color: AppConstants.primaryBlue
-                                            .withOpacity(0.1),
+                                            .withValues(alpha: 0.1),
                                         shape: BoxShape.circle,
                                       ),
                                       child: const Icon(
@@ -1244,7 +1235,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 10,
                     offset: const Offset(0, -4),
                   ),
@@ -1328,7 +1319,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1356,8 +1347,8 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Colors.black.withOpacity(0.2),
-                            Colors.black.withOpacity(0.75),
+                            Colors.black.withValues(alpha: 0.2),
+                            Colors.black.withValues(alpha: 0.75),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -1365,12 +1356,12 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                       ),
                     ),
                   ),
-                  Positioned(
+                  const Positioned(
                     bottom: 12,
                     left: 16,
                     right: 16,
                     child: Row(
-                      children: const [
+                      children: [
                         Icon(Icons.personal_injury_rounded,
                             color: Colors.white, size: 24),
                         SizedBox(width: 10),
@@ -1422,7 +1413,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1436,7 +1427,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: iconColor, size: 20),
@@ -1551,7 +1542,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
         const SizedBox(height: 6),
         DropdownButtonFormField<T>(
           key: ValueKey('${label}_${value}_${items.length}'),
-          value: value,
+          initialValue: value,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle:

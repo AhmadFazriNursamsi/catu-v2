@@ -18,11 +18,11 @@ class LiquidBottomNavBar extends StatelessWidget {
   final List<LiquidNavItem> items;
 
   const LiquidBottomNavBar({
-    Key? key,
+    super.key,
     required this.selectedIndex,
     required this.onTabSelected,
     required this.items,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,13 +34,13 @@ class LiquidBottomNavBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(34),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1E5399).withOpacity(0.15),
+            color: const Color(0xFF1E5399).withValues(alpha: 0.15),
             blurRadius: 24,
             spreadRadius: 2,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -72,7 +72,7 @@ class LiquidBottomNavBar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(26),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF1E5399).withOpacity(0.35),
+                          color: const Color(0xFF1E5399).withValues(alpha: 0.35),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),

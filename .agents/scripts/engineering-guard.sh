@@ -85,9 +85,9 @@ case "$CB_KIND" in
     ;;
 
   flutter)
-    echo "==> [full] Checking Flutter project dependencies..."
-    (cd "${CB_DIR}" && flutter pub get)
-    echo "==> [full] Dependencies verified."
+    echo "==> [full] Checking Flutter project dependencies & running test suite..."
+    (cd "${CB_DIR}" && flutter pub get && flutter test)
+    echo "==> [full] Flutter tests & dependencies verified."
     ;;
 
   generic)

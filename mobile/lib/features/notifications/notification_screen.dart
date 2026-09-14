@@ -616,11 +616,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
             onTap: () async {
               HapticFeedback.selectionClick();
               await NotificationService.markRead(item.id);
-              if (mounted) {
-                setState(() => item.isRead = true);
-                final remaining = _allItems.where((n) => !n.isRead).length;
-                NotificationService.updateBadgeCount(remaining);
-              }
+              if (!mounted) return;
+              setState(() => item.isRead = true);
+              final remaining = _allItems.where((n) => !n.isRead).length;
+              NotificationService.updateBadgeCount(remaining);
 
               // 0. Check if chat message notification
               if (item.type == 'CHAT_MESSAGE') {

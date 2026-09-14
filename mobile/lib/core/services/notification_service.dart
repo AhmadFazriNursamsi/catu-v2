@@ -330,7 +330,7 @@ class NotificationService {
       await _localNotifications.initialize(
         initSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
-          print('Notification tapped: ${response.payload}');
+          debugPrint('Notification tapped: ${response.payload}');
           handleNotificationTap(response.payload);
         },
       );
@@ -350,7 +350,7 @@ class NotificationService {
         );
       }
     } catch (e) {
-      print('Local notification init error: $e');
+      debugPrint('Local notification init error: $e');
     }
 
     // 2. Initialize Firebase Cloud Messaging (FCM) safely with timeout
@@ -550,7 +550,7 @@ class NotificationService {
         payload: payload,
       );
     } catch (e) {
-      print('Error showNotification: $e');
+      debugPrint('Error showNotification: $e');
     }
   }
 
@@ -579,7 +579,7 @@ class NotificationService {
         debugPrint('NotificationService: Registered FCM device token for user $intUid ($deviceType)');
       }
     } catch (e) {
-      print('Error registerUserDevice: $e');
+      debugPrint('Error registerUserDevice: $e');
     }
   }
 
@@ -595,7 +595,7 @@ class NotificationService {
         );
       }
     } catch (e) {
-      print('Error unregisterUserDevice: $e');
+      debugPrint('Error unregisterUserDevice: $e');
     }
   }
 
@@ -631,8 +631,8 @@ class NotificationService {
             _knownNotifIds.add(id);
             final isRead = n['isRead'] == true || n['is_read'] == true;
 
-            final bool hasLiveFcm = _currentToken != null && 
-                                    _currentToken!.isNotEmpty && 
+            final bool hasLiveFcm = _currentToken != null &&
+                                    _currentToken!.isNotEmpty &&
                                     !_currentToken!.startsWith('mock_');
 
             // Devices with live FCM receive instant push from FCM directly.
@@ -707,7 +707,7 @@ class NotificationService {
           final body = r['body'] ?? '';
           final isRead = r['isRead'] == true || r['is_read'] == true;
           final rawOrder = r['orderId'] ?? r['order_id'];
-          final orderId = rawOrder != null ? rawOrder.toString() : null;
+          final orderId = rawOrder?.toString();
           final categoryName = r['categoryName'] ?? r['category_name'];
           final createdAt = DateTime.tryParse(r['createdAt'] ?? r['created_at'] ?? '') ?? DateTime.now();
           final rawGroup = r['groupId'] ?? r['group_id'];
@@ -732,7 +732,7 @@ class NotificationService {
         backendItems.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         return backendItems;
       } catch (e) {
-        print('Error getNotifications from backend: $e');
+        debugPrint('Error getNotifications from backend: $e');
       }
     }
 
@@ -957,7 +957,7 @@ class NotificationService {
         ? (misaItemName != null && misaItemName.isNotEmpty ? misaItemName : 'Misa Kedukaan')
         : (categoryName ?? 'Sakramen Perminyakan');
     final actText = isAccepted ? 'mengkonfirmasi' : 'menolak';
-    final uniqueId = await _uniqueId('romo_${orderId}');
+    final uniqueId = await _uniqueId('romo_$orderId');
     await add(NotificationItem(
       id: uniqueId,
       title: isAccepted ? '$servicePhrase Dikonfirmasi ✓' : '$servicePhrase Ditolak',
@@ -984,7 +984,7 @@ class NotificationService {
     final servicePhrase = isKedukaan
         ? (misaItemName != null && misaItemName.isNotEmpty ? misaItemName : 'Misa Kedukaan')
         : (categoryName ?? serviceName ?? 'Sakramen Perminyakan');
-    final uniqueId = await _uniqueId('done_${orderId}');
+    final uniqueId = await _uniqueId('done_$orderId');
     await add(NotificationItem(
       id: uniqueId,
       title: '$servicePhrase Selesai ✓',
