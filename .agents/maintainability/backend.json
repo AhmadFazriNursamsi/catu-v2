@@ -1,0 +1,27 @@
+{
+  "codebase": "backend",
+  "limits": {
+    "sourceLines": 350,
+    "functionLines": 120,
+    "directCodeFilesPerDirectory": 12
+  },
+  "files": {
+    "backend/src/orders.dto.ts": 515,
+    "backend/src/news.service.ts": 583,
+    "backend/src/app.controller.ts": 5385
+  },
+  "functions": {
+    "backend/src/news.service.ts": [
+      121
+    ],
+    "backend/src/app.controller.ts": [
+      474,
+      239,
+      203,
+      191,
+      130
+    ]
+  },
+  "directories": {},
+  "bypasses": {}
+}

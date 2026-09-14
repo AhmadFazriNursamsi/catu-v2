@@ -1,0 +1,12 @@
+{
+  "codebase": "admin-web",
+  "limits": {
+    "sourceLines": 350,
+    "functionLines": 120,
+    "directCodeFilesPerDirectory": 12
+  },
+  "files": {},
+  "functions": {},
+  "directories": {},
+  "bypasses": {}
+}

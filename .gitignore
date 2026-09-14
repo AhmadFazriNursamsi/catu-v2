@@ -17,6 +17,8 @@ mobile/.dart_tool/
 .DS_Store
 .vscode/
 .idea/
+__pycache__/
+*.pyc
 
 # Firebase private credentials
 firebase-service-account.json

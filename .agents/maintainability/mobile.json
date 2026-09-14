@@ -1,0 +1,139 @@
+{
+  "codebase": "mobile",
+  "limits": {
+    "sourceLines": 350,
+    "functionLines": 120,
+    "directCodeFilesPerDirectory": 12
+  },
+  "files": {
+    "mobile/lib/core/models/models.dart": 958,
+    "mobile/lib/core/services/notification_service.dart": 1000,
+    "mobile/lib/core/services/api_service.dart": 1143,
+    "mobile/lib/core/services/language_service.dart": 542,
+    "mobile/lib/features/home/umat_dashboard_view.dart": 1355,
+    "mobile/lib/features/home/romo_dashboard_view.dart": 1496,
+    "mobile/lib/features/chat/chat_screen.dart": 1218,
+    "mobile/lib/features/chat/chat_list_screen.dart": 923,
+    "mobile/lib/features/auth/pending_approval_screen.dart": 615,
+    "mobile/lib/features/auth/register_screen.dart": 1381,
+    "mobile/lib/features/auth/login_screen.dart": 1284,
+    "mobile/lib/features/auth/forgot_password_screen.dart": 917,
+    "mobile/lib/features/admin/romo_approval_screen.dart": 690,
+    "mobile/lib/features/admin/admin_dashboard_view.dart": 1791,
+    "mobile/lib/features/admin/pengurus_approval_screen.dart": 649,
+    "mobile/lib/features/profile/edit_profile_screen.dart": 1241,
+    "mobile/lib/features/profile/main_menu_screen.dart": 1623,
+    "mobile/lib/features/news/news_detail_screen.dart": 527,
+    "mobile/lib/features/news/public_news_screen.dart": 825,
+    "mobile/lib/features/orders/schedule_screen.dart": 1836,
+    "mobile/lib/features/orders/create_perminyakan_screen.dart": 1272,
+    "mobile/lib/features/orders/histori_screen.dart": 1215,
+    "mobile/lib/features/orders/create_kedukaan_screen.dart": 1658,
+    "mobile/lib/features/orders/order_detail_screen.dart": 3775,
+    "mobile/lib/features/notifications/notification_screen.dart": 989
+  },
+  "functions": {
+    "mobile/lib/features/home/umat_dashboard_view.dart": [
+      583,
+      297,
+      133
+    ],
+    "mobile/lib/features/home/romo_dashboard_view.dart": [
+      572,
+      302
+    ],
+    "mobile/lib/features/chat/chat_screen.dart": [
+      449,
+      197
+    ],
+    "mobile/lib/features/chat/chat_list_screen.dart": [
+      205,
+      177,
+      170
+    ],
+    "mobile/lib/features/auth/pending_approval_screen.dart": [
+      373
+    ],
+    "mobile/lib/features/auth/register_screen.dart": [
+      571,
+      143,
+      126
+    ],
+    "mobile/lib/features/auth/login_screen.dart": [
+      486,
+      460
+    ],
+    "mobile/lib/features/auth/forgot_password_screen.dart": [
+      179,
+      168,
+      136
+    ],
+    "mobile/lib/features/admin/romo_approval_screen.dart": [
+      215,
+      180
+    ],
+    "mobile/lib/features/admin/admin_dashboard_view.dart": [
+      354,
+      266,
+      178
+    ],
+    "mobile/lib/features/admin/pengurus_approval_screen.dart": [
+      231,
+      164
+    ],
+    "mobile/lib/features/profile/edit_profile_screen.dart": [
+      223,
+      125
+    ],
+    "mobile/lib/features/profile/main_menu_screen.dart": [
+      182,
+      178,
+      132
+    ],
+    "mobile/lib/features/news/news_detail_screen.dart": [
+      367
+    ],
+    "mobile/lib/features/news/public_news_screen.dart": [
+      269,
+      154
+    ],
+    "mobile/lib/features/orders/schedule_screen.dart": [
+      385,
+      233,
+      147
+    ],
+    "mobile/lib/features/orders/create_order_screen.dart": [
+      137
+    ],
+    "mobile/lib/features/orders/create_perminyakan_screen.dart": [
+      459,
+      133
+    ],
+    "mobile/lib/features/orders/histori_screen.dart": [
+      308
+    ],
+    "mobile/lib/features/orders/create_kedukaan_screen.dart": [
+      688,
+      127
+    ],
+    "mobile/lib/features/orders/order_detail_screen.dart": [
+      521,
+      382,
+      360,
+      239,
+      162,
+      155,
+      152,
+      134,
+      128
+    ],
+    "mobile/lib/features/notifications/notification_screen.dart": [
+      374
+    ],
+    "mobile/lib/widgets/searchable_select_field.dart": [
+      139
+    ]
+  },
+  "directories": {},
+  "bypasses": {}
+}

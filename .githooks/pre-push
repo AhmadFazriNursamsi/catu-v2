@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# .githooks/pre-push — Base-Branch Pre-Push Guard Dispatcher
+# Runs full engineering guards serially for affected codebases when pushing to main.
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${REPO_ROOT}/.agents/scripts/lib/codebases.sh"
+
+BASE_BRANCH="main"
+
+echo "==> [pre-push] Inspecting push targets..."
+
+# Read push standard input lines: <local_ref> <local_oid> <remote_ref> <remote_oid>
+while read -r local_ref local_oid remote_ref remote_oid; do
+  # Only enforce on pushes to base branch
+  if [ "$remote_ref" != "refs/heads/${BASE_BRANCH}" ]; then
+    echo "==> [pre-push] Push is not targeting '${BASE_BRANCH}' ($remote_ref). Skipping base-branch gates."
+    continue
+  fi
+
+  # Zero commit means branch deletion
+  if [ "$local_oid" = "0000000000000000000000000000000000000000" ]; then
+    echo "ERROR: [pre-push] Deleting base branch '${BASE_BRANCH}' is forbidden." >&2
+    exit 1
+  fi
+
+  # Determine range to check
+  if [ "$remote_oid" = "0000000000000000000000000000000000000000" ]; then
+    RANGE="${local_oid}~1..${local_oid}"
+  else
+    RANGE="${remote_oid}..${local_oid}"
+  fi
+
+  echo "==> [pre-push] Analyzing push range: ${RANGE}"
+
+  # 1. Run git diff whitespace and conflict check
+  git diff --check "${RANGE}"
+
+  # 2. Syntax-check all governance shell scripts
+  find "${REPO_ROOT}/.agents/scripts" -name "*.sh" -exec bash -n {} +
+  find "${REPO_ROOT}/.githooks" -type f -exec bash -n {} +
+
+  # 3. Classify affected codebases
+  CHANGED_FILES=$(git diff --name-only "${RANGE}")
+  AFFECTED_CODEBASES=()
+
+  for file in $CHANGED_FILES; do
+    cb="$(find_codebase_for_file "$file" || true)"
+    if [ -n "$cb" ]; then
+      # Add if not already present
+      if [[ ! " ${AFFECTED_CODEBASES[*]:-} " =~ " ${cb} " ]]; then
+        AFFECTED_CODEBASES+=("$cb")
+      fi
+    fi
+  done
+
+  if [ ${#AFFECTED_CODEBASES[@]} -eq 0 ]; then
+    echo "==> [pre-push] No product codebases affected by changes in ${RANGE}. Pre-push checks passed."
+    continue
+  fi
+
+  # 4. Invoke engineering guards SERIALLY in canonical registry order
+  echo "==> [pre-push] Affected codebases: ${AFFECTED_CODEBASES[*]}"
+  for cb in $(get_codebases); do
+    if [[ " ${AFFECTED_CODEBASES[*]} " =~ " ${cb} " ]]; then
+      echo "----------------------------------------------------------"
+      echo "==> [pre-push] Executing FULL guard for affected codebase '$cb'..."
+      "${REPO_ROOT}/.agents/scripts/engineering-guard.sh" "$cb" full
+    fi
+  done
+done
+
+echo "==> [pre-push] All base-branch pre-push checks PASSED."

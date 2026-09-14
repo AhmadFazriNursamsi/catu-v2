@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit — Cheap development loop pre-commit hook
+# Intentionally cheap to keep trial/error frictionless.
+exit 0
