@@ -1,30 +1,34 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import {
-  AuthController,
-  OrdersController,
-  NotificationsController,
-  AssignmentsController,
-  ChatController,
-  TestRunnerController,
-  MasterDataController,
-} from './app.controller';
-import { NewsController } from './news.controller';
-import { NewsService } from './news.service';
-import { FcmService } from './fcm.service';
+
+import { DatabaseInitModule } from './database/database-init.module';
+import { FcmModule } from './modules/fcm/fcm.module';
+import { HealthModule } from './modules/health/health.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { OrdersModule } from './modules/orders/orders.module';
+import { AssignmentsModule } from './modules/assignments/assignments.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { MasterDataModule } from './modules/master-data/master-data.module';
+import { NewsModule } from './modules/news/news.module';
+import { TestRunnerModule } from './modules/test-runner/test-runner.module';
+
 import { AppService } from './app.service';
-import { HealthController } from './health.controller';
 import { HttpLoggerMiddleware } from './logger.middleware';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'catu_postgres',
-      port: parseInt(process.env.DB_PORT || '5432'),
+      port: parseInt(process.env.DB_PORT || '5432', 10),
       username: process.env.DB_USERNAME || process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD || 'postgrespassword',
       database: process.env.DB_NAME || 'catu_v2_db',
@@ -47,28 +51,25 @@ import { HttpLoggerMiddleware } from './logger.middleware';
         limit: 120,
       },
     ]),
-  ],
-  controllers: [
-    HealthController,
-    AuthController,
-    OrdersController,
-    NotificationsController,
-    AssignmentsController,
-    ChatController,
-    TestRunnerController,
-    MasterDataController,
-    NewsController,
+    DatabaseInitModule,
+    FcmModule,
+    HealthModule,
+    AuthModule,
+    OrdersModule,
+    AssignmentsModule,
+    ChatModule,
+    NotificationsModule,
+    MasterDataModule,
+    NewsModule,
+    TestRunnerModule,
   ],
   providers: [
     AppService,
-    NewsService,
-    FcmService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
   ],
-  exports: [FcmService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
