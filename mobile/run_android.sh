@@ -4,6 +4,8 @@
 # ================================================
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_ENV_FILE="$PROJECT_DIR/../.env"
+BACKEND_HOST_PORT="${BACKEND_PORT:-}"
 export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
 export ANDROID_HOME="/opt/homebrew/share/android-commandlinetools"
 export ANDROID_NDK_HOME="/opt/homebrew/share/android-commandlinetools/ndk/28.2.13676358"
@@ -15,9 +17,19 @@ export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
 echo "🏷️ Step 0.5: Auto-updating app version & build timestamp..."
 BUILD_TS=$(date +"%Y%m%d.%H%M%S")
 VERSION_STRING="v2.5.0-build.$BUILD_TS"
-LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "10.0.10.48")
+API_BASE_URL="${CATU_API_URL:-${PUBLIC_API_URL:-}}"
+if [ -z "$API_BASE_URL" ] && [ -f "$ROOT_ENV_FILE" ]; then
+  API_BASE_URL=$(sed -n 's/^PUBLIC_API_URL=//p' "$ROOT_ENV_FILE" | head -1)
+fi
+if [ -z "$BACKEND_HOST_PORT" ] && [ -f "$ROOT_ENV_FILE" ]; then
+  BACKEND_HOST_PORT=$(sed -n 's/^BACKEND_PORT=//p' "$ROOT_ENV_FILE" | head -1)
+fi
+if [ -z "$API_BASE_URL" ]; then
+  echo "❌ Set CATU_API_URL or PUBLIC_API_URL before running this script."
+  exit 1
+fi
 echo "   Build Version: $VERSION_STRING"
-echo "   Local API IP : $LOCAL_IP (Port 3005)"
+echo "   API URL      : $API_BASE_URL"
 
 cat <<CONST_EOF > "$PROJECT_DIR/lib/core/constants/app_constants.dart"
 import 'package:flutter/material.dart';
@@ -25,7 +37,7 @@ import 'package:flutter/material.dart';
 class AppConstants {
   static const String appName = 'CATU Pelayanan';
   static const String appVersion = '$VERSION_STRING';
-  static const String apiBaseUrl = 'http://$LOCAL_IP:3005'; // NestJS Local Server (Docker Port 3005)
+  static const String apiBaseUrl = String.fromEnvironment('CATU_API_URL');
   
   // Custom HSL Colors
   static const Color primaryBlue = Color(0xFF1E3A8A); // Deep Catholic Church Blue
@@ -51,9 +63,13 @@ if [ -z "$ANDROID_DEVICE" ]; then
 fi
 
 echo "   Connected Device ID: $ANDROID_DEVICE"
-echo "   Bridging backend port 3005 via USB ADB reverse..."
-adb -s "$ANDROID_DEVICE" reverse tcp:3005 tcp:3005 2>/dev/null || true
+if [ -n "$BACKEND_HOST_PORT" ]; then
+  echo "   Bridging backend port $BACKEND_HOST_PORT via USB ADB reverse..."
+  adb -s "$ANDROID_DEVICE" reverse "tcp:$BACKEND_HOST_PORT" "tcp:$BACKEND_HOST_PORT" 2>/dev/null || true
+else
+  echo "   Skipping ADB reverse; BACKEND_PORT is not configured."
+fi
 
 echo ""
 echo "🚀 Step 3: Running Flutter on Android device ($ANDROID_DEVICE)..."
-flutter run -d "$ANDROID_DEVICE"
+flutter run -d "$ANDROID_DEVICE" "--dart-define=CATU_API_URL=$API_BASE_URL"

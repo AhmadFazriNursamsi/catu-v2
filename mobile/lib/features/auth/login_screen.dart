@@ -216,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   void _showServerConfigDialog() {
     final controller = TextEditingController(
-      text: ApiService.baseUrl.replaceAll('http://', '').replaceAll(':3005', ''),
+      text: ApiService.baseUrl,
     );
     showDialog(
       context: context,
@@ -226,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen>
           children: [
             Icon(Icons.settings_ethernet_rounded, color: AppConstants.primaryBlue, size: 24),
             SizedBox(width: 10),
-            Text('Konfigurasi Server IP', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('Konfigurasi URL Server', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -234,18 +234,16 @@ class _LoginScreenState extends State<LoginScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Masukkan alamat IP lokal laptop/server backend:',
+              'Masukkan URL lengkap laptop/server backend:',
               style: TextStyle(fontSize: 12.5, color: AppConstants.textMuted),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: TextInputType.url,
               decoration: InputDecoration(
-                hintText: 'Contoh: 192.168.1.110',
-                labelText: 'IP Server Backend',
-                prefixText: 'http://',
-                suffixText: ':3005',
+                hintText: 'URL backend sesuai environment',
+                labelText: 'URL Server Backend',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -263,9 +261,9 @@ class _LoginScreenState extends State<LoginScreen>
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () async {
-              final newIp = controller.text.trim();
-              if (newIp.isNotEmpty) {
-                await ApiService.setCustomBaseUrl('http://$newIp:3005');
+              final newUrl = controller.text.trim();
+              if (newUrl.isNotEmpty) {
+                await ApiService.setCustomBaseUrl(newUrl);
                 if (mounted) {
                   setState(() {
                     _backendError = null;

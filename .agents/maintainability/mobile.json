@@ -8,7 +8,7 @@
   "files": {
     "mobile/lib/core/models/models.dart": 958,
     "mobile/lib/core/services/notification_service.dart": 978,
-    "mobile/lib/core/services/api_service.dart": 1141,
+    "mobile/lib/core/services/api_service.dart": 1136,
     "mobile/lib/core/services/language_service.dart": 542,
     "mobile/lib/features/home/umat_dashboard_view.dart": 1355,
     "mobile/lib/features/home/romo_dashboard_view.dart": 1431,
@@ -16,7 +16,7 @@
     "mobile/lib/features/chat/chat_list_screen.dart": 923,
     "mobile/lib/features/auth/pending_approval_screen.dart": 615,
     "mobile/lib/features/auth/register_screen.dart": 1371,
-    "mobile/lib/features/auth/login_screen.dart": 1283,
+    "mobile/lib/features/auth/login_screen.dart": 1281,
     "mobile/lib/features/auth/forgot_password_screen.dart": 917,
     "mobile/lib/features/admin/romo_approval_screen.dart": 690,
     "mobile/lib/features/admin/admin_dashboard_view.dart": 1786,

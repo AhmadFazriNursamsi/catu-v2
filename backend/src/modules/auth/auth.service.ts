@@ -728,7 +728,7 @@ async getRoles() {
     if (user.role_code === 'ADMIN') {
       return {
         statusCode: 403,
-        message: 'Akun Administrator tidak dapat login melalui aplikasi mobile. Silakan gunakan Web Portal Admin di browser komputer (http://localhost:8000).',
+        message: 'Akun Administrator tidak dapat login melalui aplikasi mobile. Silakan gunakan Web Portal Admin di browser komputer.',
       };
     }
 

@@ -6,18 +6,20 @@ import '../constants/app_constants.dart';
 import '../models/models.dart';
 
 class ApiService {
-  static const String prodApiUrl = 'https://apps.catu.id/catuv2-api';
-
   static String? _customBaseUrl;
-  static String _activeBaseUrl = AppConstants.apiBaseUrl;
+  static String _activeBaseUrl = _normalizeBaseUrl(AppConstants.apiBaseUrl);
+
+  static String _normalizeBaseUrl(String url) {
+    return url.trim().replaceAll(RegExp(r'/+$'), '');
+  }
 
   static Future<void> loadCustomBaseUrl() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString('catu_custom_api_base_url');
       if (saved != null && saved.isNotEmpty) {
-        _customBaseUrl = saved;
-        _activeBaseUrl = saved;
+        _customBaseUrl = _normalizeBaseUrl(saved);
+        _activeBaseUrl = _customBaseUrl!;
         return;
       }
     } catch (_) {}
@@ -30,12 +32,9 @@ class ApiService {
   }
 
   static Future<void> setCustomBaseUrl(String newUrl) async {
-    String cleanUrl = newUrl.trim();
+    String cleanUrl = _normalizeBaseUrl(newUrl);
     if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
       cleanUrl = 'http://$cleanUrl';
-    }
-    if (!cleanUrl.contains(':3005') && !cleanUrl.endsWith(':3000')) {
-      cleanUrl = '$cleanUrl:3005';
     }
     _customBaseUrl = cleanUrl;
     _activeBaseUrl = cleanUrl;
@@ -46,28 +45,24 @@ class ApiService {
   }
 
   static String get baseUrl {
-    if (kIsWeb) {
-      final host = Uri.base.host;
-      if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
-        return 'http://$host:3005';
-      }
-      return 'http://127.0.0.1:3005';
+    final configuredBaseUrl = _normalizeBaseUrl(_customBaseUrl ?? AppConstants.apiBaseUrl);
+    if (configuredBaseUrl.isNotEmpty) {
+      return configuredBaseUrl;
     }
-    return _customBaseUrl ?? _activeBaseUrl;
+    if (kIsWeb && Uri.base.origin.isNotEmpty && Uri.base.origin != 'null') {
+      return Uri.base.origin;
+    }
+    return _activeBaseUrl;
   }
 
   static List<String> get _candidateBaseUrls {
     final List<String> candidates = [];
-    if (_customBaseUrl != null && _customBaseUrl!.isNotEmpty) {
-      candidates.add(_customBaseUrl!);
+    final configuredBaseUrl = _normalizeBaseUrl(_customBaseUrl ?? AppConstants.apiBaseUrl);
+    if (configuredBaseUrl.isNotEmpty) {
+      candidates.add(configuredBaseUrl);
     }
-    candidates.addAll([
-      'http://127.0.0.1:3005',
-      'http://10.0.10.92:3005',
-      AppConstants.apiBaseUrl,
-    ]);
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      candidates.add('http://10.0.2.2:3005');
+    if (kIsWeb && Uri.base.origin.isNotEmpty && Uri.base.origin != 'null') {
+      candidates.add(Uri.base.origin);
     }
     return candidates.toSet().toList();
   }

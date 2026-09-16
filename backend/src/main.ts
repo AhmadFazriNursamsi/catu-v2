@@ -58,8 +58,9 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT || 3000;
-  await app.listen(port);
-  console.log(`🚀 Aplikasi CATU v2 Backend berjalan di: http://localhost:${port}`);
-  console.log(`📚 Dokumentasi Swagger OpenAPI berjalan di: http://localhost:${port}/api/docs`);
+  const host = process.env.HOST || '0.0.0.0';
+  await app.listen(port, host);
+  console.log(`🚀 Aplikasi CATU v2 Backend berjalan di: http://${host}:${port}`);
+  console.log(`📚 Dokumentasi Swagger OpenAPI berjalan di: http://${host}:${port}/api/docs`);
 }
 bootstrap();

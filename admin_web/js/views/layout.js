@@ -15,7 +15,7 @@
       const activePengurusCount = state.users.filter(u => (u.role_code || u.roleCode) === 'PENGURUS_LINGKUNGAN' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const activeRomoParokiCount = state.users.filter(u => (u.role_code || u.roleCode) === 'ROMO_PAROKI' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const activeRomoOrdoCount = state.users.filter(u => (u.role_code || u.roleCode) === 'ROMO_ORDO' && (u.account_status || u.accountStatus) === 'APPROVED').length;
-      const activeAnnotationsCount = state.agentation.annotations.filter(a => !a.resolved).length;
+      const activeAnnotationsCount = AGENTATION_ENABLED ? state.agentation.annotations.filter(a => !a.resolved).length : 0;
       const isOpen = state.isSidebarOpen !== false;
 
       return `
@@ -77,6 +77,7 @@
                     ${renderNavItem('master', 'map-pin', 'Master Data Gereja')}
                     ${renderNavItem('chat', 'messages-square', 'Monitoring Chat')}
                     ${renderNavItem('qa', 'flask-conical', 'QA & Live Tests')}
+                    ${renderNavItem('settings', 'settings', 'Pengaturan Aplikasi')}
                   </div>
                 </div>
               </nav>
@@ -85,6 +86,7 @@
             <!-- Sidebar Bottom Action Section -->
             ${isOpen ? `
               <div class="p-4 border-t border-slate-800 space-y-2">
+                ${AGENTATION_ENABLED ? `
                 <button onclick="toggleAgentationMode()"
                   class="w-full py-2.5 px-3 rounded-xl ${state.agentation.enabled ? 'bg-amber-500 text-slate-950 font-black ring-2 ring-amber-300' : 'bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold'} text-xs flex items-center justify-between transition shadow">
                   <div class="flex items-center space-x-2">
@@ -95,6 +97,7 @@
                     ${activeAnnotationsCount}
                   </span>
                 </button>
+                ` : ''}
 
                 <button id="logoutBtn" class="w-full py-2.5 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold flex items-center space-x-2 transition">
                   <i data-lucide="log-out" class="w-4 h-4"></i>
@@ -103,6 +106,7 @@
               </div>
             ` : `
               <div class="p-2.5 border-t border-slate-800 space-y-2 flex flex-col items-center">
+                ${AGENTATION_ENABLED ? `
                 <button onclick="toggleAgentationMode()" title="🎯 Agentation UI (${activeAnnotationsCount} catatan)"
                   class="w-11 h-11 rounded-xl relative flex items-center justify-center ${state.agentation.enabled ? 'bg-amber-500 text-slate-950 font-black ring-2 ring-amber-300' : 'bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold'} text-xs transition shadow">
                   <i data-lucide="scan" class="w-5 h-5"></i>
@@ -110,6 +114,7 @@
                     <span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-slate-900">${activeAnnotationsCount}</span>
                   ` : ''}
                 </button>
+                ` : ''}
 
                 <button id="logoutBtn" title="Keluar Akun Admin" class="w-11 h-11 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center transition">
                   <i data-lucide="log-out" class="w-5 h-5"></i>
@@ -134,6 +139,7 @@
               </div>
 
               <div class="flex items-center space-x-3 lg:space-x-4">
+                ${AGENTATION_ENABLED ? `
                 <button onclick="toggleAgentationMode()"
                   class="flex items-center px-3 py-1.5 rounded-full text-xs font-bold transition ${
                     state.agentation.enabled ? 'bg-amber-500 text-slate-950 ring-2 ring-amber-300' : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'
@@ -141,6 +147,7 @@
                   <span class="w-2 h-2 rounded-full ${state.agentation.enabled ? 'bg-slate-950 animate-ping' : 'bg-amber-500'} mr-2"></span>
                   ${state.agentation.enabled ? '🎯 Agentation Aktif' : '🎯 Mode Revisi UI'}
                 </button>
+                ` : ''}
 
                 <div class="hidden sm:flex items-center px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800">
                   <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-2"></span>
@@ -169,7 +176,7 @@
           </div>
         </div>
 
-        ${renderAgentationToolbar()}
+        ${AGENTATION_ENABLED ? renderAgentationToolbar() : ''}
         ${state.activeOrderDetail ? renderOrderDetailModal() : ''}
         ${state.activeChatOrder ? renderChatModal() : ''}
         ${state.activeUserProfile ? renderUserProfileModal() : ''}
@@ -177,7 +184,7 @@
         ${state.activeMasterModal ? renderMasterModal() : ''}
         ${state.deleteConfirmModal ? renderDeleteConfirmModal() : ''}
         ${state.actionConfirmModal ? renderActionConfirmModal() : ''}
-        ${state.agentation.pendingPin ? renderAgentationPendingDialog() : ''}
+        ${AGENTATION_ENABLED && state.agentation.pendingPin ? renderAgentationPendingDialog() : ''}
         ${renderToastsContainer()}
       `;
     }
@@ -227,6 +234,7 @@
       if (tab === 'master') return 'Master Data Wilayah & Gereja';
       if (tab === 'chat') return 'Monitoring Group Chat Pelayanan';
       if (tab === 'qa') return 'QA & Live Test Runner';
+      if (tab === 'settings') return 'Pengaturan Aplikasi';
       return tab;
     }
 
@@ -255,6 +263,10 @@
         refreshBtn.addEventListener('click', () => {
           loadDashboardData();
         });
+      }
+
+      if (state.currentTab === 'settings' && typeof initializeSettingsView === 'function') {
+        initializeSettingsView();
       }
     }
 

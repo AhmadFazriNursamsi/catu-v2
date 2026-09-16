@@ -251,7 +251,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFF10B981), shape: BoxShape.circle)),
                 const SizedBox(width: 6),
                 const Text(
-                  'Backend Online (Port 3005)',
+                  'Backend Online',
                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF065F46)),
                 ),
               ],

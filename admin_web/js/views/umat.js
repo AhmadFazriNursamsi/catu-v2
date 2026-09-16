@@ -14,7 +14,7 @@ function renderUmatTable(filteredUmat) {
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-                  ${umats.length === 0 ? `
+                  ${filteredUmat.length === 0 ? `
                     <tr>
                       <td colspan="7" class="text-center py-16 text-slate-400 space-y-3">
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
@@ -23,7 +23,7 @@ function renderUmatTable(filteredUmat) {
                         <p class="font-bold text-slate-700 text-sm">Tidak ada data umat yang sesuai filter</p>
                       </td>
                     </tr>
-                  ` : umats.map(u => `
+                  ` : filteredUmat.map(u => `
                     <tr class="hover:bg-slate-50/80 transition duration-150 group">
                       <td class="px-6 py-4">
                         <p class="font-bold text-slate-900 text-sm tracking-tight">${u.full_name || 'Umat'}</p>
@@ -168,7 +168,7 @@ function renderUmatTable(filteredUmat) {
               </div>
             </div>
 
-            ${renderUmatTable(filteredUmat)}
+            ${renderUmatTable(umats)}
       `;
     }
 

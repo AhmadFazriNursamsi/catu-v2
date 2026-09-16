@@ -16,6 +16,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { MasterDataModule } from './modules/master-data/master-data.module';
 import { NewsModule } from './modules/news/news.module';
 import { TestRunnerModule } from './modules/test-runner/test-runner.module';
+import { ApkModule } from './modules/apk/apk.module';
 
 import { AppService } from './app.service';
 import { HttpLoggerMiddleware } from './logger.middleware';
@@ -62,6 +63,7 @@ import { HttpLoggerMiddleware } from './logger.middleware';
     MasterDataModule,
     NewsModule,
     TestRunnerModule,
+    ApkModule,
   ],
   providers: [
     AppService,

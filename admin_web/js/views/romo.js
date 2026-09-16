@@ -1,5 +1,5 @@
 // ── Romo Paroki & Romo Ordo Management Views ──
-function renderRomoOrdoTable(filtered) {
+function renderRomoParokiTable(filtered) {
       return `<div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
                 <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
@@ -13,7 +13,7 @@ function renderRomoOrdoTable(filtered) {
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-                  ${list.length === 0 ? `
+                  ${filtered.length === 0 ? `
                     <tr>
                       <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
@@ -22,7 +22,7 @@ function renderRomoOrdoTable(filtered) {
                         <p class="font-bold text-slate-700 text-sm">Tidak ada Romo Paroki yang sesuai filter</p>
                       </td>
                     </tr>
-                  ` : list.map(u => `
+                  ` : filtered.map(u => `
                     <tr class="hover:bg-slate-50/80 transition duration-150 group">
                       <td class="px-6 py-4">
                         <p class="font-bold text-slate-900 text-sm tracking-tight">${u.full_name || 'Romo Paroki'}</p>
@@ -69,10 +69,6 @@ function renderRomoOrdoTable(filtered) {
             </div>
           </div>
         </div>`;
-    }
-
-function renderRomoParokiTable(filtered) {
-      return `${renderRomoOrdoTable(filtered)}`;
     }
 
     function renderRomoParokiTab() {
@@ -156,7 +152,7 @@ function renderRomoParokiTable(filtered) {
               </div>
             </div>
 
-            ${renderRomoParokiTable(filtered)}
+            ${renderRomoParokiTable(list)}
       `;
     }
 
