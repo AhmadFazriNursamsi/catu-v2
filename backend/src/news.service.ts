@@ -541,7 +541,7 @@ export class NewsService {
 
     try {
       // Query local SearXNG container
-      const searchUrl = `http://catu_searxng:8080/search?q=${encodeURIComponent(query + ' katolik')}&format=json&categories=news`;
+      const searchUrl = `${(process.env.SEARXNG_INTERNAL_URL || 'http://catu_searxng:8080').replace(/\/+$/, '')}/search?q=${encodeURIComponent(query + ' katolik')}&format=json&categories=news`;
       const response = await axios.get(searchUrl, { timeout: 6000 });
       const rawResults = response.data?.results || [];
 

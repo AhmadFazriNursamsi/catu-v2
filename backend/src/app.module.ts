@@ -30,7 +30,7 @@ import { HttpLoggerMiddleware } from './logger.middleware';
       host: process.env.DB_HOST || 'catu_postgres',
       port: parseInt(process.env.DB_PORT || '5432', 10),
       username: process.env.DB_USERNAME || process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || 'postgrespassword',
+      password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME || 'catu_v2_db',
       autoLoadEntities: true,
       synchronize: false,
@@ -42,7 +42,7 @@ import { HttpLoggerMiddleware } from './logger.middleware';
     }),
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET || 'catu_v2_secure_jwt_production_secret_key_2026_@#!',
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '30d' },
     }),
     ThrottlerModule.forRoot([

@@ -5,12 +5,14 @@ services:
     image: postgres:16-alpine
     container_name: catu_postgres
     restart: always
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: catu_v2_db
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-catu_v2_db}
     ports:
-      - "5432:5432"
+      - "${DB_EXTERNAL_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -22,17 +24,23 @@ services:
     container_name: catu_backend
     restart: always
     ports:
-      - "3005:3000"
+      - "${BACKEND_PORT:-3005}:3000"
     extra_hosts:
       - "oauth2.googleapis.com:142.251.10.95"
+    env_file:
+      - .env
     environment:
-      NODE_ENV: production
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgrespassword
-      DB_NAME: catu_v2_db
-      PORT: 3000
+      NODE_ENV: ${NODE_ENV:-production}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-catu_v2_db}
+      PORT: ${PORT:-3000}
+      JWT_SECRET: ${JWT_SECRET}
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/app/firebase-service-account.json}
+      SEARXNG_BASE_URL: ${SEARXNG_BASE_URL:-http://localhost:8080/}
+      SEARXNG_INTERNAL_URL: ${SEARXNG_INTERNAL_URL:-http://catu_searxng:8080}
     volumes:
       - ./backend/firebase-service-account.json:/app/firebase-service-account.json
     depends_on:
@@ -45,7 +53,7 @@ services:
     container_name: catu_admin_web
     restart: always
     ports:
-      - "8000:80"
+      - "${ADMIN_WEB_PORT:-8000}:80"
     volumes:
       - ./admin_web:/usr/share/nginx/html
     depends_on:
@@ -56,12 +64,14 @@ services:
     container_name: catu_searxng
     restart: always
     ports:
-      - "8080:8080"
+      - "${SEARXNG_PORT:-8080}:8080"
     volumes:
       - ./searxng:/etc/searxng
+    env_file:
+      - .env
     environment:
-      - SEARXNG_BASE_URL=http://localhost:8080/
-      - SEARXNG_SECRET_KEY=catu_super_secret_key_2026
+      - SEARXNG_BASE_URL=${SEARXNG_BASE_URL:-http://localhost:8080/}
+      - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY}
       - SEARXNG_BIND_ADDRESS=0.0.0.0:8080
 
 volumes:
