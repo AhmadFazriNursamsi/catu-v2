@@ -9,15 +9,23 @@ BOOTED_SIM=$(xcrun simctl list devices | grep -i "Booted" | head -1 | grep -oE "
 SIMULATOR_ID="${BOOTED_SIM:-AD34C126-B786-46F3-BBCE-06A06AD21752}"
 BUNDLE_ID="com.example.catuMobile"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_ENV_FILE="$PROJECT_DIR/../.env"
 IOS_DIR="$PROJECT_DIR/ios"
 
 
 echo "🏷️ Step 0.5: Auto-updating app version & build timestamp..."
 BUILD_TS=$(date +"%Y%m%d.%H%M%S")
 VERSION_STRING="v2.5.0-build.$BUILD_TS"
-LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "10.0.10.48")
+API_BASE_URL="${CATU_API_URL:-${PUBLIC_API_URL:-}}"
+if [ -z "$API_BASE_URL" ] && [ -f "$ROOT_ENV_FILE" ]; then
+  API_BASE_URL=$(sed -n 's/^PUBLIC_API_URL=//p' "$ROOT_ENV_FILE" | head -1)
+fi
+if [ -z "$API_BASE_URL" ]; then
+  echo "❌ Set CATU_API_URL or PUBLIC_API_URL before running this script."
+  exit 1
+fi
 echo "   Build Version: $VERSION_STRING"
-echo "   Local API IP : $LOCAL_IP (Port 3005)"
+echo "   API URL      : $API_BASE_URL"
 
 cat <<EOF > "$PROJECT_DIR/lib/core/constants/app_constants.dart"
 import 'package:flutter/material.dart';
@@ -25,7 +33,7 @@ import 'package:flutter/material.dart';
 class AppConstants {
   static const String appName = 'CATU Pelayanan';
   static const String appVersion = '$VERSION_STRING';
-  static const String apiBaseUrl = 'http://$LOCAL_IP:3005'; // NestJS Local Server (Docker Port 3005)
+  static const String apiBaseUrl = String.fromEnvironment('CATU_API_URL');
   
   // Custom HSL Colors
   static const Color primaryBlue = Color(0xFF1E3A8A); // Deep Catholic Church Blue
@@ -48,6 +56,7 @@ cd "$IOS_DIR" && xcodebuild \
   -scheme Runner \
   -configuration Debug \
   -destination "id=$SIMULATOR_ID" \
+  DART_DEFINES="$(printf 'CATU_API_URL=%s' "$API_BASE_URL" | base64 | tr -d '\n')" \
   CODE_SIGNING_ALLOWED=NO \
   build 2>&1 | grep -E "(BUILD SUCCEEDED|BUILD FAILED|error:)" | tail -5
 
@@ -79,4 +88,3 @@ xcrun simctl launch "$SIMULATOR_ID" "$BUNDLE_ID"
 echo ""
 echo "✅ CATU berhasil berjalan di iPhone 17 Pro Simulator!"
 echo "   Bundle ID: $BUNDLE_ID"
-

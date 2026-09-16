@@ -222,6 +222,3 @@
     if (state.currentUser && (state.currentUser.roleCode === 'ADMIN' || state.currentUser.role_code === 'ADMIN')) {
       loadDashboardData();
     }
-  </script>
-</body>
-</html>

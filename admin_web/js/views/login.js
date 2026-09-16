@@ -75,14 +75,15 @@
 
               <form id="loginForm" class="space-y-4">
                 <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1.5">Nomor WhatsApp / HP</label>
+                  <label class="block text-xs font-bold text-slate-700 mb-1.5">Nomor WhatsApp</label>
                   <div class="relative rounded-xl shadow-sm">
                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                       <span class="text-xs font-bold text-slate-700 border-r border-slate-300 pr-2">+62</span>
                     </div>
-                    <input type="tel" id="phoneInput" required placeholder="89999999999" value="89999999999"
+                    <input type="tel" id="phoneInput" required placeholder="81234567890" autocomplete="username" inputmode="numeric" aria-describedby="phoneHint"
                       class="block w-full pl-14 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white" />
                   </div>
+                  <p id="phoneHint" class="mt-1.5 text-[11px] font-medium text-slate-400">Masukkan nomor tanpa 0 di depan atau tanda +62.</p>
                 </div>
 
                 <div>
@@ -91,7 +92,7 @@
                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                       <i data-lucide="lock" class="w-4 h-4 text-blue-900"></i>
                     </div>
-                    <input type="password" id="passwordInput" required placeholder="••••••••" value="Password123"
+                    <input type="password" id="passwordInput" required placeholder="Masukkan kata sandi" autocomplete="current-password"
                       class="block w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white" />
                     <button type="button" id="togglePasswordBtn" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
                       <i data-lucide="eye" class="w-4 h-4"></i>

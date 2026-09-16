@@ -24,6 +24,7 @@ body {
   border-radius: 4px;
 }
 
+/* AGENTATION_CSS_START */
 /* Agentation Inspector Highlight Box */
 #agentation-inspector-box {
   position: fixed;
@@ -63,6 +64,7 @@ body {
   80% { transform: translate(-50%, -50%) scale(1.15); }
   100% { transform: translate(-50%, -50%) scale(1); }
 }
+/* AGENTATION_CSS_END */
 
 @keyframes slideInRight {
   0% { transform: translateX(100%) scale(0.95); opacity: 0; }

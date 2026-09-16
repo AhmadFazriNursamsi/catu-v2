@@ -1,22 +1,6 @@
 name: catu
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: catu_postgres
-    restart: always
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME:-catu_v2_db}
-    ports:
-      - "${DB_EXTERNAL_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
-
   backend:
     build:
       context: ./backend
@@ -24,55 +8,47 @@ services:
     container_name: catu_backend
     restart: always
     ports:
-      - "${BACKEND_PORT:-3005}:3000"
+      - "0.0.0.0:${BACKEND_PORT:-8001}:3000"
     extra_hosts:
       - "oauth2.googleapis.com:142.251.10.95"
     env_file:
       - .env
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      DB_HOST: ${DB_HOST:-postgres}
+      HOST: ${HOST:-0.0.0.0}
+      DB_HOST: ${DB_HOST:-shared-postgres}
       DB_PORT: ${DB_PORT:-5432}
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME:-catu_v2_db}
+      DB_NAME: ${DB_NAME:-catu}
       PORT: ${PORT:-3000}
       JWT_SECRET: ${JWT_SECRET}
       FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/app/firebase-service-account.json}
-      SEARXNG_BASE_URL: ${SEARXNG_BASE_URL:-http://localhost:8080/}
-      SEARXNG_INTERNAL_URL: ${SEARXNG_INTERNAL_URL:-http://catu_searxng:8080}
+      SEARXNG_BASE_URL: ${SEARXNG_BASE_URL:-http://localhost:8888/}
+      SEARXNG_INTERNAL_URL: ${SEARXNG_INTERNAL_URL:-http://shared-searxng:8080}
     volumes:
       - ./backend/firebase-service-account.json:/app/firebase-service-account.json
-    depends_on:
-      - postgres
+      - ../Sensio/sensio-env/secrets/sensio_env_config_token:/run/secrets/sensio_env_config_token:ro
 
   admin_web:
     build:
       context: ./admin_web
       dockerfile: Dockerfile
+      args:
+        NODE_ENV: ${NODE_ENV:-production}
     container_name: catu_admin_web
     restart: always
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:?PUBLIC_API_URL must be configured}
+      PUBLIC_APK_URL: ${PUBLIC_APK_URL:?PUBLIC_APK_URL must be configured}
+      ADMIN_WEB_ALLOWED_HOSTS: ${ADMIN_WEB_ALLOWED_HOSTS:?ADMIN_WEB_ALLOWED_HOSTS must be configured}
     ports:
-      - "${ADMIN_WEB_PORT:-8000}:80"
-    volumes:
-      - ./admin_web:/usr/share/nginx/html
+      - "0.0.0.0:${ADMIN_WEB_PORT:-8000}:80"
     depends_on:
       - backend
 
-  searxng:
-    image: searxng/searxng:latest
-    container_name: catu_searxng
-    restart: always
-    ports:
-      - "${SEARXNG_PORT:-8080}:8080"
-    volumes:
-      - ./searxng:/etc/searxng
-    env_file:
-      - .env
-    environment:
-      - SEARXNG_BASE_URL=${SEARXNG_BASE_URL:-http://localhost:8080/}
-      - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY}
-      - SEARXNG_BIND_ADDRESS=0.0.0.0:8080
-
-volumes:
-  postgres_data:
+networks:
+  default:
+    name: shared-network
+    external: true

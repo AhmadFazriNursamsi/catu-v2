@@ -1,10 +1,12 @@
 // ── Global Config, State & Utility Badges ──
+    const CATU_NODE_ENV = window.CATU_RUNTIME_CONFIG?.nodeEnv || 'production';
+    const AGENTATION_ENABLED = CATU_NODE_ENV !== 'production';
+
     // Config & State
-    const API_BASE = window.location.pathname.startsWith('/catuv2-admin')
-      ? `${window.location.origin}/catuv2-api`
-      : (window.location.hostname === 'apps.catu.id'
-          ? 'https://apps.catu.id/catuv2-api'
-          : `http://${window.location.hostname || 'localhost'}:3005`);
+    const configuredApiBase = window.CATU_RUNTIME_CONFIG?.apiBaseUrl?.trim();
+    const API_BASE = (configuredApiBase || window.location.origin).replace(/\/+$/, '');
+    const configuredApkDownloadUrl = window.CATU_RUNTIME_CONFIG?.apkDownloadUrl?.trim();
+    const APK_DOWNLOAD_URL = (configuredApkDownloadUrl || '').replace(/\/+$/, '');
     let rawStoredUser = null;
     try {
       rawStoredUser = JSON.parse(localStorage.getItem('catu_admin_user') || 'null');
@@ -12,9 +14,11 @@
 
     // Load persisted Agentation annotations
     let rawStoredAnnotations = [];
-    try {
-      rawStoredAnnotations = JSON.parse(localStorage.getItem('catu_agentation_annotations') || '[]');
-    } catch(e) { rawStoredAnnotations = []; }
+    if (AGENTATION_ENABLED) {
+      try {
+        rawStoredAnnotations = JSON.parse(localStorage.getItem('catu_agentation_annotations') || '[]');
+      } catch(e) { rawStoredAnnotations = []; }
+    }
 
     const state = {
       currentUser: (rawStoredUser && (rawStoredUser.roleCode === 'ADMIN' || rawStoredUser.role_code === 'ADMIN')) ? rawStoredUser : null,
@@ -100,7 +104,7 @@
         enabled: false,
         expanded: false,
         showDrawer: false,
-        annotations: rawStoredAnnotations,
+        annotations: AGENTATION_ENABLED ? rawStoredAnnotations : [],
         pendingPin: null,
         activePinId: null,
         selectedCategory: 'BUG',

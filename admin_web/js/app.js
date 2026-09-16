@@ -24,7 +24,7 @@
       try {
         lucide.createIcons();
       } catch(e) {}
-      renderAgentationPins();
+      if (AGENTATION_ENABLED) renderAgentationPins();
 
       // Restore focus and cursor position to the input smoothly
       if (focusedId) {
@@ -55,6 +55,7 @@
       if (state.currentTab === 'master') return renderMasterTab();
       if (state.currentTab === 'chat') return renderChatTab();
       if (state.currentTab === 'qa') return renderQATab();
+      if (state.currentTab === 'settings') return renderSettingsTab();
       return '';
     }
 
@@ -70,7 +71,7 @@ function renderModals() {
     ${typeof renderOrderDetailModal === 'function' ? renderOrderDetailModal() : ''}
     ${typeof renderChatModal === 'function' ? renderChatModal() : ''}
     ${typeof renderToastsContainer === 'function' ? renderToastsContainer() : ''}
-    ${typeof renderAgentationPendingDialog === 'function' ? renderAgentationPendingDialog() : ''}
+    ${AGENTATION_ENABLED && typeof renderAgentationPendingDialog === 'function' ? renderAgentationPendingDialog() : ''}
   `;
 }
 

@@ -56,7 +56,7 @@ graph TD
         ApiSvc[ApiService HTTP Client]
     end
 
-    subgraph GatewayLayer [API Gateway & Backend - NestJS :3005]
+    subgraph GatewayLayer [API Gateway & Backend - NestJS :8001]
         AuthMod[AuthController / Guard]
         OrderMod[OrdersController / Workflow]
         ChatMod[ChatController / Group Hub]

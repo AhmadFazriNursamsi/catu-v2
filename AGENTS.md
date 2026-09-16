@@ -29,8 +29,8 @@ Every task must follow this serial execution lifecycle:
   - Pre-commit hook is intentionally cheap/no-op to preserve a fast feedback loop.
   - Pre-push hook enforces serial `full` engineering guards on affected codebases when pushing to `main`.
 - **Runtime safety**:
-  - Backend authoritative runtime is local Docker Compose (`catu_backend`, `catu_postgres`) on ports 3005 and 5432.
-  - Mobile client communicates with local API endpoints (`127.0.0.1:3005`, `10.0.10.92:3005`).
+  - Backend authoritative runtime is local Docker Compose (`catu_backend`, shared PostgreSQL) on ports 8001 and 5432.
+  - Mobile client receives its API endpoint through `CATU_API_URL` build/local configuration.
   - Do not introduce arbitrary network restrictions that break legitimate local HTTP/IP development connectivity.
 
 ---

@@ -540,8 +540,8 @@ export class NewsService {
     const query = q.trim();
 
     try {
-      // Query local SearXNG container
-      const searchUrl = `${(process.env.SEARXNG_INTERNAL_URL || 'http://catu_searxng:8080').replace(/\/+$/, '')}/search?q=${encodeURIComponent(query + ' katolik')}&format=json&categories=news`;
+      const searxngBaseUrl = process.env.SEARXNG_INTERNAL_URL; if (!searxngBaseUrl) throw new Error('SEARXNG_INTERNAL_URL is not configured');
+      const searchUrl = `${searxngBaseUrl.replace(/\/+$/, '')}/search?q=${encodeURIComponent(query + ' katolik')}&format=json&categories=news`;
       const response = await axios.get(searchUrl, { timeout: 6000 });
       const rawResults = response.data?.results || [];
 

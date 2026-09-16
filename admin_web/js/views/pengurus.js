@@ -14,7 +14,7 @@ function renderPengurusTable(filteredPengurus) {
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-                  ${list.length === 0 ? `
+                  ${filteredPengurus.length === 0 ? `
                     <tr>
                       <td colspan="7" class="text-center py-16 text-slate-400 space-y-3">
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
@@ -23,7 +23,7 @@ function renderPengurusTable(filteredPengurus) {
                         <p class="font-bold text-slate-700 text-sm">Tidak ada data pengurus lingkungan yang sesuai filter</p>
                       </td>
                     </tr>
-                  ` : list.map(u => {
+                  ` : filteredPengurus.map(u => {
                     const currentYear = new Date().getFullYear();
                     const endY = u.jabatan_end_year || (u.jabatan_end_date ? new Date(u.jabatan_end_date).getFullYear() : null);
                     const isExpired = (endY && endY < currentYear) || u.is_jabatan_active === false;
@@ -177,7 +177,7 @@ function renderPengurusTable(filteredPengurus) {
               </div>
             </div>
 
-            ${renderPengurusTable(filteredPengurus)}
+            ${renderPengurusTable(list)}
       `;
     }
 

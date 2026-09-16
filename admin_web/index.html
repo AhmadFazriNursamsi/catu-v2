@@ -10,11 +10,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="h-full text-slate-800 antialiased">
   <div id="app" class="h-full"></div>
 
+  <script src="js/runtime-config.js"></script>
+
+  <!-- AGENTATION_START -->
   <!-- Agentation Inspector Highlight Box -->
   <div id="agentation-inspector-box">
     <div id="agentation-inspector-label">element</div>
@@ -22,10 +26,13 @@
 
   <!-- Agentation Pins Layer Container -->
   <div id="agentation-pins-layer" class="fixed inset-0 pointer-events-none z-[99992]"></div>
+  <!-- AGENTATION_END -->
 
   <!-- ── Modular Scripts ── -->
   <script src="js/config.js"></script>
+  <!-- AGENTATION_START -->
   <script src="js/services/agentation.js"></script>
+  <!-- AGENTATION_END -->
   <script src="js/api.js"></script>
   <script src="js/modals/combobox.js"></script>
   <script src="js/modals/master-cascading.js"></script>
@@ -46,6 +53,7 @@
   <script src="js/views/master-columns.js"></script>
   <script src="js/views/master-table.js"></script>
   <script src="js/views/master.js"></script>
+  <script src="js/views/settings.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

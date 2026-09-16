@@ -24,7 +24,7 @@ graph TD
     end
 
     subgraph Backend [NestJS Backend Container]
-        Nest[NestJS REST API :3005]
+        Nest[NestJS REST API :8001]
         ChatCtrl[ChatController]
         OrderCtrl[OrdersController]
         NotifCtrl[NotificationController]
