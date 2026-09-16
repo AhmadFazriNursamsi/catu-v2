@@ -48,7 +48,7 @@ import { HttpLoggerMiddleware } from './logger.middleware';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 120,
+        limit: 300,
       },
     ]),
     DatabaseInitModule,

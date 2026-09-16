@@ -7,7 +7,7 @@
   },
   "files": {
     "mobile/lib/core/models/models.dart": 958,
-    "mobile/lib/core/services/notification_service.dart": 1000,
+    "mobile/lib/core/services/notification_service.dart": 978,
     "mobile/lib/core/services/api_service.dart": 1141,
     "mobile/lib/core/services/language_service.dart": 542,
     "mobile/lib/features/home/umat_dashboard_view.dart": 1355,
@@ -30,7 +30,7 @@
     "mobile/lib/features/orders/histori_screen.dart": 1215,
     "mobile/lib/features/orders/create_kedukaan_screen.dart": 1649,
     "mobile/lib/features/orders/order_detail_screen.dart": 3774,
-    "mobile/lib/features/notifications/notification_screen.dart": 988
+    "mobile/lib/features/notifications/notification_screen.dart": 977
   },
   "functions": {
     "mobile/lib/features/home/umat_dashboard_view.dart": [

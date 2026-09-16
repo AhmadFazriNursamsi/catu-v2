@@ -66,7 +66,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   void _startPolling() {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    _pollTimer = Timer.periodic(const Duration(seconds: 12), (_) {
       _silentRefreshNotifications();
     });
   }
@@ -75,25 +75,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
     if (!mounted || _isSilentRefreshing || _isLoading) return;
     _isSilentRefreshing = true;
     try {
-      final items = await NotificationService.getForRole(
-        widget.role,
-        userId: _userId,
-        parokiId: _parokiId,
-        kabupatenKotaId: _kabupatenKotaId,
-      );
+      final items = await NotificationService.getForRole(widget.role, userId: _userId, parokiId: _parokiId, kabupatenKotaId: _kabupatenKotaId);
       if (mounted) {
+        if (items.isEmpty && _allItems.isNotEmpty) { _isSilentRefreshing = false; return; }
         bool hasChanges = items.length != _allItems.length;
         if (!hasChanges && items.isNotEmpty && _allItems.isNotEmpty) {
-          if (items.first.id != _allItems.first.id || items.first.isRead != _allItems.first.isRead) {
-            hasChanges = true;
-          }
+          if (items.first.id != _allItems.first.id || items.first.isRead != _allItems.first.isRead) hasChanges = true;
         }
         if (hasChanges) {
-          setState(() {
-            _allItems = items;
-          });
-          final unreadCount = items.where((n) => !n.isRead).length;
-          NotificationService.updateBadgeCount(unreadCount);
+          setState(() { _allItems = items; });
+          NotificationService.updateBadgeCount(items.where((n) => !n.isRead).length);
         }
       }
     } catch (_) {}
@@ -108,20 +99,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _loadNotifications() async {
-    setState(() => _isLoading = true);
-    final items = await NotificationService.getForRole(
-      widget.role,
-      userId: _userId,
-      parokiId: _parokiId,
-      kabupatenKotaId: _kabupatenKotaId,
-    );
-    if (mounted) {
-      setState(() {
-        _allItems = items;
-        _isLoading = false;
-      });
-      final unreadCount = items.where((n) => !n.isRead).length;
-      NotificationService.updateBadgeCount(unreadCount);
+    if (_allItems.isEmpty) setState(() => _isLoading = true);
+    try {
+      final items = await NotificationService.getForRole(widget.role, userId: _userId, parokiId: _parokiId, kabupatenKotaId: _kabupatenKotaId);
+      if (mounted) {
+        setState(() {
+          if (items.isNotEmpty || _allItems.isEmpty) _allItems = items;
+          _isLoading = false;
+        });
+        NotificationService.updateBadgeCount(items.where((n) => !n.isRead).length);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

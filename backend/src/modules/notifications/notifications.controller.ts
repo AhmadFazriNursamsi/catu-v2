@@ -12,6 +12,7 @@ import {
   ApiOperation,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { NotificationsService } from './notifications.service';
 
 @ApiTags('Notifications')
@@ -43,6 +44,7 @@ export class NotificationsController {
     return await this.notificationsService.testPush(body);
   }
 
+  @SkipThrottle()
   @Get()
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Mendapatkan daftar notifikasi untuk user' })

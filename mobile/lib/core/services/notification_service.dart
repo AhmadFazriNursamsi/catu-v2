@@ -693,68 +693,46 @@ class NotificationService {
     int? parokiId,
     int? kabupatenKotaId,
   }) async {
+    final Map<String, NotificationItem> merged = {};
+    try {
+      final all = await getAll();
+      for (final n in all) {
+        if (n.role == role) merged[n.id] = n;
+      }
+    } catch (_) {}
+
     if (userId != null && userId > 0) {
       try {
         final rawNotifs = await ApiService.getNotifications(userId: userId);
-        final List<NotificationItem> backendItems = [];
         for (final r in rawNotifs) {
-          final type = r['type'] ?? 'STATUS_UPDATE';
-          if (type.toString().toUpperCase() == 'CHAT_MESSAGE') {
-            continue; // Do not show chat messages in internal notification list!
-          }
-          final id = 'backend_${r['id']}';
-          final title = r['title'] ?? 'Pemberitahuan';
-          final body = r['body'] ?? '';
-          final isRead = r['isRead'] == true || r['is_read'] == true;
-          final rawOrder = r['orderId'] ?? r['order_id'];
-          final orderId = rawOrder?.toString();
-          final categoryName = r['categoryName'] ?? r['category_name'];
-          final createdAt = DateTime.tryParse(r['createdAt'] ?? r['created_at'] ?? '') ?? DateTime.now();
-          final rawGroup = r['groupId'] ?? r['group_id'];
-          final int? groupId = rawGroup != null ? int.tryParse(rawGroup.toString()) : null;
-          final orderNumber = r['orderNumber'] ?? r['order_number'];
+          final type = (r['type'] ?? 'STATUS_UPDATE').toString().toUpperCase();
+          if (type == 'CHAT_MESSAGE') continue;
 
-          backendItems.add(NotificationItem(
+          final id = 'backend_${r['id']}';
+          final rawOrder = r['orderId'] ?? r['order_id'];
+          final rawGroup = r['groupId'] ?? r['group_id'];
+          merged[id] = NotificationItem(
             id: id,
-            title: title,
-            body: body,
+            title: r['title'] ?? 'Pemberitahuan',
+            body: r['body'] ?? '',
             type: type,
             role: role,
-            createdAt: createdAt,
-            isRead: isRead,
-            orderId: orderId,
-            categoryName: categoryName,
-            groupId: groupId,
-            orderNumber: orderNumber,
-          ));
+            createdAt: DateTime.tryParse(r['createdAt'] ?? r['created_at'] ?? '')?.toLocal() ?? DateTime.now(),
+            isRead: r['isRead'] == true || r['is_read'] == true,
+            orderId: rawOrder?.toString(),
+            categoryName: r['categoryName'] ?? r['category_name'],
+            groupId: rawGroup != null ? int.tryParse(rawGroup.toString()) : null,
+            orderNumber: r['orderNumber'] ?? r['order_number'],
+          );
         }
-
-        backendItems.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        return backendItems;
       } catch (e) {
         debugPrint('Error getNotifications from backend: $e');
       }
     }
 
-    final all = await getAll();
-    final filtered = all.where((n) {
-      if (n.role != role) return false;
-      if (role == 'ROMO_PAROKI') {
-        if (parokiId != null && n.parokiId != null) {
-          return n.parokiId == parokiId;
-        }
-        return true;
-      }
-      if (role == 'ROMO_ORDO') {
-        if (kabupatenKotaId != null && n.kabupatenKotaId != null) {
-          return n.kabupatenKotaId == kabupatenKotaId;
-        }
-        return true;
-      }
-      return true;
-    }).toList();
-
-    return filtered;
+    final items = merged.values.toList();
+    items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return items;
   }
 
   // ─── Unread Count ─────────────────────────────────────────────────────────

@@ -810,7 +810,7 @@ class ApiService {
       if (userId != null) queryParams['userId'] = userId.toString();
       if (role != null) queryParams['role'] = role;
       final uri = Uri.parse('$baseUrl/notifications').replace(queryParameters: queryParams);
-      final response = await http.get(uri);
+      final response = await http.get(uri).timeout(const Duration(seconds: 4));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((e) => e as Map<String, dynamic>).toList();
