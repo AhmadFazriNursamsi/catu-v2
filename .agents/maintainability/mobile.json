@@ -8,7 +8,7 @@
   "files": {
     "mobile/lib/core/models/models.dart": 958,
     "mobile/lib/core/services/notification_service.dart": 1000,
-    "mobile/lib/core/services/api_service.dart": 1142,
+    "mobile/lib/core/services/api_service.dart": 1141,
     "mobile/lib/core/services/language_service.dart": 542,
     "mobile/lib/features/home/umat_dashboard_view.dart": 1355,
     "mobile/lib/features/home/romo_dashboard_view.dart": 1431,
@@ -24,7 +24,7 @@
     "mobile/lib/features/profile/edit_profile_screen.dart": 1241,
     "mobile/lib/features/profile/main_menu_screen.dart": 1547,
     "mobile/lib/features/news/news_detail_screen.dart": 526,
-    "mobile/lib/features/news/public_news_screen.dart": 825,
+    "mobile/lib/features/news/public_news_screen.dart": 655,
     "mobile/lib/features/orders/schedule_screen.dart": 1828,
     "mobile/lib/features/orders/create_perminyakan_screen.dart": 1271,
     "mobile/lib/features/orders/histori_screen.dart": 1215,

@@ -15,11 +15,18 @@ class ApiService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString('catu_custom_api_base_url');
-      if (saved != null && saved.isNotEmpty && !saved.contains('10.0.10.92')) {
+      if (saved != null && saved.isNotEmpty) {
         _customBaseUrl = saved;
         _activeBaseUrl = saved;
+        return;
       }
     } catch (_) {}
+    for (final host in _candidateBaseUrls) {
+      try {
+        final res = await http.get(Uri.parse('$host/health')).timeout(const Duration(milliseconds: 1000));
+        if (res.statusCode == 200) { _activeBaseUrl = host; break; }
+      } catch (_) {}
+    }
   }
 
   static Future<void> setCustomBaseUrl(String newUrl) async {
@@ -55,13 +62,12 @@ class ApiService {
       candidates.add(_customBaseUrl!);
     }
     candidates.addAll([
-      AppConstants.apiBaseUrl,
       'http://127.0.0.1:3005',
+      'http://10.0.10.92:3005',
+      AppConstants.apiBaseUrl,
     ]);
     if (defaultTargetPlatform == TargetPlatform.android) {
       candidates.add('http://10.0.2.2:3005');
-    } else if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
-      candidates.add('http://127.0.0.1:3005');
     }
     return candidates.toSet().toList();
   }
@@ -1001,40 +1007,33 @@ class ApiService {
     int limit = 10,
     String? sourceCode,
   }) async {
-    try {
-      final queryParams = <String>[
-        'page=$page',
-        'limit=$limit',
-      ];
-      if (categorySlug != null && categorySlug.isNotEmpty && categorySlug != 'semua') {
-        queryParams.add('categorySlug=${Uri.encodeComponent(categorySlug)}');
-      }
-      if (search != null && search.trim().isNotEmpty) {
-        queryParams.add('search=${Uri.encodeComponent(search.trim())}');
-      }
-      if (sourceCode != null && sourceCode.isNotEmpty) {
-        queryParams.add('sourceCode=${Uri.encodeComponent(sourceCode)}');
-      }
+    final queryParams = <String>['page=$page', 'limit=$limit'];
+    if (categorySlug != null && categorySlug.isNotEmpty && categorySlug != 'semua') {
+      queryParams.add('categorySlug=${Uri.encodeComponent(categorySlug)}');
+    }
+    if (search != null && search.trim().isNotEmpty) {
+      queryParams.add('search=${Uri.encodeComponent(search.trim())}');
+    }
+    if (sourceCode != null && sourceCode.isNotEmpty) {
+      queryParams.add('sourceCode=${Uri.encodeComponent(sourceCode)}');
+    }
 
-      final url = '$baseUrl/news?${queryParams.join('&')}';
-      final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 8));
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      }
-    } catch (e) {
-      debugPrint('Error getNews: $e');
+    final query = queryParams.join('&');
+    for (final host in [baseUrl, ..._candidateBaseUrls]) {
+      try {
+        final res = await http.get(Uri.parse('$host/news?$query')).timeout(const Duration(seconds: 4));
+        if (res.statusCode == 200) { _activeBaseUrl = host; return jsonDecode(res.body); }
+      } catch (_) {}
     }
     return {'articles': [], 'featuredArticles': [], 'total': 0, 'totalPages': 0};
   }
 
   static Future<List<dynamic>> getNewsCategories() async {
-    try {
-      final response = await http.get(Uri.parse('$baseUrl/news/categories')).timeout(const Duration(seconds: 6));
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      }
-    } catch (e) {
-      debugPrint('Error getNewsCategories: $e');
+    for (final host in [baseUrl, ..._candidateBaseUrls]) {
+      try {
+        final res = await http.get(Uri.parse('$host/news/categories')).timeout(const Duration(seconds: 3));
+        if (res.statusCode == 200) { _activeBaseUrl = host; return jsonDecode(res.body); }
+      } catch (_) {}
     }
     return [];
   }
