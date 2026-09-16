@@ -92,9 +92,9 @@
     // Config & State
     const API_BASE = window.location.pathname.startsWith('/catuv2-admin')
       ? `${window.location.origin}/catuv2-api`
-      : (window.location.port === '8000' || window.location.port === '3000'
-          ? `http://${window.location.hostname}:3005`
-          : `${window.location.origin}/catuv2-api`);
+      : (window.location.hostname === 'apps.catu.id'
+          ? 'https://apps.catu.id/catuv2-api'
+          : `http://${window.location.hostname || 'localhost'}:3005`);
     let rawStoredUser = null;
     try {
       rawStoredUser = JSON.parse(localStorage.getItem('catu_admin_user') || 'null');
@@ -334,7 +334,7 @@
                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                       <i data-lucide="lock" class="w-4 h-4 text-blue-900"></i>
                     </div>
-                    <input type="password" id="passwordInput" required placeholder="••••••••" value="password123"
+                    <input type="password" id="passwordInput" required placeholder="••••••••" value="Password123"
                       class="block w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white" />
                     <button type="button" id="togglePasswordBtn" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
                       <i data-lucide="eye" class="w-4 h-4"></i>
