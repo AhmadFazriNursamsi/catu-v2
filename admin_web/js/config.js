@@ -4,7 +4,7 @@
 
     // Config & State
     const configuredApiBase = window.CATU_RUNTIME_CONFIG?.apiBaseUrl?.trim();
-    const API_BASE = (configuredApiBase || window.location.origin).replace(/\/+$/, '');
+    const API_BASE = (configuredApiBase || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? `http://${window.location.hostname}:3005` : window.location.origin)).replace(/\/+$/, '');
     const configuredApkDownloadUrl = window.CATU_RUNTIME_CONFIG?.apkDownloadUrl?.trim();
     const APK_DOWNLOAD_URL = (configuredApkDownloadUrl || '').replace(/\/+$/, '');
     let rawStoredUser = null;
@@ -114,10 +114,10 @@
     function showToast(message, type = 'success', title = '', duration = 4000) {
       const id = 'toast_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
       const defaultTitles = {
-        success: 'Aksi Berhasil! ✨',
-        error: 'Terjadi Kesalahan!',
-        warning: 'Pemberitahuan Penting',
-        info: 'Informasi Sistem'
+        success: 'Aksi Berhasil',
+        error: 'Terjadi Kesalahan',
+        warning: 'Pemberitahuan',
+        info: 'Informasi'
       };
       
       const toastObj = {
@@ -139,32 +139,42 @@
     }
 
     function dismissToast(id) {
-      const idx = state.toasts.findIndex(t => t.id === id);
-      if (idx !== -1) {
-        state.toasts.splice(idx, 1);
-        renderApp();
-      }
+      state.toasts = state.toasts.filter(t => t.id !== id);
+      renderApp();
     }
+
+    function getMasterEntityLabel(s) {
+      if (s === 'keuskupan') return 'Keuskupan';
+      if (s === 'paroki') return 'Paroki';
+      if (s === 'wilayah') return 'Wilayah';
+      if (s === 'lingkungan') return 'Lingkungan';
+      if (s === 'ordo') return 'Ordo / Kongregasi';
+      if (s === 'services') return 'Kategori Pelayanan';
+      if (s === 'roles') return 'Jenis User / Peran Pengguna';
+      if (s === 'positions') return 'Jabatan & Struktur Pengurus / Romo';
+      return s || 'Data Master';
+    }
+    window.getMasterEntityLabel = getMasterEntityLabel;
+    window.getEntityLabel = getMasterEntityLabel;
 
     function renderToastsContainer() {
       if (!state.toasts || state.toasts.length === 0) return '';
-
       return `
-        <div class="fixed top-6 right-6 z-[99999] flex flex-col space-y-3 pointer-events-none max-w-sm w-full animate-fade-in">
+        <div class="fixed bottom-6 right-6 z-[99999] flex flex-col space-y-3 pointer-events-none max-w-sm w-full">
           ${state.toasts.map(toast => {
             const isSuccess = toast.type === 'success';
             const isError = toast.type === 'error';
             const isWarning = toast.type === 'warning';
             
-            const borderBg = isSuccess ? 'border-emerald-200/90 bg-gradient-to-r from-emerald-50/95 via-white to-white' :
-              isError ? 'border-rose-200/90 bg-gradient-to-r from-rose-50/95 via-white to-white' :
-              isWarning ? 'border-amber-200/90 bg-gradient-to-r from-amber-50/95 via-white to-white' :
-              'border-blue-200/90 bg-gradient-to-r from-blue-50/95 via-white to-white';
+            const borderBg = isSuccess ? 'border-emerald-200 bg-white' :
+              isError ? 'border-rose-200 bg-white' :
+              isWarning ? 'border-amber-200 bg-white' :
+              'border-blue-200 bg-white';
 
-            const iconBg = isSuccess ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/30' :
-              isError ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/30' :
-              isWarning ? 'bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/30' :
-              'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-md shadow-blue-500/30';
+            const iconBg = isSuccess ? 'bg-emerald-50 text-emerald-700' :
+              isError ? 'bg-rose-50 text-rose-700' :
+              isWarning ? 'bg-amber-50 text-amber-700' :
+              'bg-blue-50 text-blue-700';
 
             const iconName = isSuccess ? 'check-circle-2' : isError ? 'alert-octagon' : isWarning ? 'alert-triangle' : 'info';
             const titleColor = isSuccess ? 'text-emerald-950' : isError ? 'text-rose-950' : isWarning ? 'text-amber-950' : 'text-blue-950';
@@ -198,7 +208,7 @@
         return 'bg-blue-50 text-blue-800 border border-blue-200';
       }
       if (s === 'ROMO_ASSIGNED' || s === 'PROCESS' || s === 'ASSIGNED') {
-        return 'bg-purple-50 text-purple-800 border border-purple-200';
+        return 'bg-blue-50 text-blue-800 border border-blue-200';
       }
       if (s === 'FAIL' || s === 'REJECTED' || s === 'CANCELLED' || s === 'TIDAK AKTIF') {
         return 'bg-rose-50 text-rose-800 border border-rose-200';
@@ -211,35 +221,13 @@
       const r = (roleCode || '').toUpperCase();
 
       if (!p) {
-        if (r === 'PENGURUS_LINGKUNGAN') return '<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold text-xs shadow-2xs"><span>Pengurus Lingkungan</span></span>';
-        if (r === 'ROMO_PAROKI') return '<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 font-bold text-xs shadow-2xs"><span>Romo Paroki</span></span>';
-        if (r === 'ROMO_ORDO') return '<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-purple-50 text-purple-900 border border-purple-200 font-bold text-xs shadow-2xs"><span>Romo Ordo</span></span>';
-        return '<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs shadow-2xs"><span>-</span></span>';
+        if (r === 'PENGURUS_LINGKUNGAN') return '<span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-blue-900 border border-blue-200 font-bold text-xs"><span>Pengurus Lingkungan</span></span>';
+        if (r === 'ROMO_PAROKI') return '<span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-blue-900 border border-blue-200 font-bold text-xs"><span>Romo Paroki</span></span>';
+        if (r === 'ROMO_ORDO') return '<span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-blue-900 border border-blue-200 font-bold text-xs"><span>Romo Ordo</span></span>';
+        return '<span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs"><span>-</span></span>';
       }
 
-      const pLower = p.toLowerCase();
-      // Pimpinan / Ketua / Kepala / Provinsial -> Amber
-      if (pLower.includes('ketua') || pLower.includes('kepala') || pLower.includes('pimpinan') || pLower.includes('provinsial')) {
-        return `<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-amber-50 text-amber-950 border border-amber-200 font-bold text-xs shadow-2xs"><span>${p}</span></span>`;
-      }
-      // Wakil / Sekretaris -> Indigo
-      if (pLower.includes('wakil') || pLower.includes('sekretaris')) {
-        return `<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold text-xs shadow-2xs"><span>${p}</span></span>`;
-      }
-      // Bendahara -> Teal
-      if (pLower.includes('bendahara')) {
-        return `<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-teal-50 text-teal-900 border border-teal-200 font-bold text-xs shadow-2xs"><span>${p}</span></span>`;
-      }
-      // Romo Paroki -> Emerald
-      if (r === 'ROMO_PAROKI' || pLower.includes('paroki')) {
-        return `<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 font-bold text-xs shadow-2xs"><span>${p}</span></span>`;
-      }
-      // Romo Ordo -> Purple
-      if (r === 'ROMO_ORDO' || pLower.includes('ordo')) {
-        return `<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-purple-50 text-purple-900 border border-purple-200 font-bold text-xs shadow-2xs"><span>${p}</span></span>`;
-      }
-      // Default / General Pengurus -> Blue
-      return `<span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-blue-50 text-blue-900 border border-blue-200 font-bold text-xs shadow-2xs"><span>${p}</span></span>`;
+      return `<span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-blue-900 border border-blue-200 font-bold text-xs"><span>${p}</span></span>`;
     }
 
     // ══════════════════════════════════════════════════════════════════════════

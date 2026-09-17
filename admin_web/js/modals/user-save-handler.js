@@ -1,31 +1,30 @@
 // ── User Edit Open & Save Handlers ──
 function renderEditUserHeader(u, uName, status, roleCode) {
-  return `<div class="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 p-6 text-white relative">
-              <button onclick="state.activeEditUser = null; renderApp();" 
-                class="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition">
-                <i data-lucide="x" class="w-4 h-4"></i>
-              </button>
-              
-              <div class="flex items-center space-x-4">
-                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-white font-black text-2xl flex items-center justify-center shadow-lg border-2 border-white/20">
-                  <i data-lucide="user-cog" class="w-7 h-7"></i>
+  return `<div class="p-6 border-b border-slate-100 flex items-start justify-between gap-4">
+              <div class="flex items-center space-x-3.5 min-w-0">
+                <div class="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="user-cog" class="w-5 h-5 text-slate-600"></i>
                 </div>
-                <div>
-                  <div class="flex items-center space-x-2 mb-1">
-                    <h3 class="text-lg font-extrabold text-white leading-tight">Perbarui Profil Pengguna</h3>
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide ${status === 'APPROVED' ? 'bg-emerald-500 text-white' : 'bg-amber-400 text-slate-900'}">
-                      ${status}
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2 mb-1">
+                    <h3 class="text-base font-bold text-slate-900 tracking-tight">Perbarui Profil Pengguna</h3>
+                    <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${status === 'APPROVED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}">
+                      <span class="w-1.5 h-1.5 rounded-full ${status === 'APPROVED' ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
+                      <span>${status}</span>
                     </span>
                   </div>
-                  <div class="flex items-center space-x-2 text-xs text-slate-300">
-                    <span class="font-extrabold text-amber-300">${uName}</span>
+                  <div class="flex items-center space-x-2 text-xs text-slate-500 font-medium">
+                    <span class="font-bold text-slate-800 truncate">${uName}</span>
                     <span>•</span>
-                    <span class="px-2 py-0.5 rounded bg-white/10 text-white font-bold text-[10px]">${roleCode}</span>
-                    <span>•</span>
-                    <span>ID #${u.id}</span>
+                    <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold text-[10px]">${roleCode}</span>
                   </div>
                 </div>
-              </div>`;
+              </div>
+              <button onclick="state.activeEditUser = null; renderApp();" 
+                class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                title="Tutup">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>`;
 }
 
     function onEditPhoneInput(input) {

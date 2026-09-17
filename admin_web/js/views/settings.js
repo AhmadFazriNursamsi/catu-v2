@@ -24,10 +24,10 @@ function renderSettingsTab() {
         </p>
       </div>
 
-      <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div class="border-b border-slate-100 bg-gradient-to-r from-blue-950 to-blue-900 px-6 py-5 text-white lg:px-8">
+      <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+        <div class="border-b border-slate-800 bg-slate-900 px-6 py-5 text-white lg:px-8">
           <div class="flex items-start gap-4">
-            <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-blue-950 shadow-lg shadow-blue-950/20">
+            <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-amber-600 text-white shadow-xs">
               <i data-lucide="smartphone" class="h-5 w-5"></i>
             </div>
             <div>
@@ -58,7 +58,7 @@ function renderSettingsTab() {
             `}
           </div>
 
-          <div class="flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 p-5 text-center">
+          <div class="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center">
             <div id="apkQrCode" class="flex h-[272px] w-[272px] items-center justify-center overflow-hidden rounded-2xl bg-white p-4 shadow-inner">
               <span class="text-xs font-semibold text-slate-400">Menyiapkan QR code...</span>
             </div>

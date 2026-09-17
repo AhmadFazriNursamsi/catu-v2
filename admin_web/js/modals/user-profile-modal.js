@@ -21,35 +21,35 @@
       const initial = uName.charAt(0).toUpperCase();
 
       return `
-        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
-          <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
-            <!-- Modal Header with Banner & Avatar -->
-            <div class="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 p-6 text-white relative">
-              <button onclick="state.activeUserProfile = null; renderApp();" class="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition">
-                <i data-lucide="x" class="w-4 h-4"></i>
-              </button>
-              
-              <div class="flex items-center space-x-4">
-                <div class="w-14 h-14 rounded-2xl bg-amber-500 text-white font-extrabold text-2xl flex items-center justify-center shadow-lg border-2 border-white/20">
+        <div class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
+            <!-- Clean Header: Avatar, Name, Status, Role, Dismiss -->
+            <div class="p-6 border-b border-slate-100 flex items-start justify-between gap-4">
+              <div class="flex items-center space-x-3.5 min-w-0">
+                <div class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 font-bold text-lg flex items-center justify-center flex-shrink-0">
                   ${initial}
                 </div>
-                <div>
-                  <div class="flex items-center space-x-2 mb-1">
-                    <h3 class="text-lg font-extrabold text-white leading-tight">${uName}</h3>
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide ${uStatus === 'APPROVED' ? 'bg-emerald-500 text-white' : 'bg-amber-400 text-slate-900'}">
-                      ${uStatus}
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2 mb-1">
+                    <h3 class="text-base font-bold text-slate-900 tracking-tight truncate">${uName}</h3>
+                    <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${uStatus === 'APPROVED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}">
+                      <span class="w-1.5 h-1.5 rounded-full ${uStatus === 'APPROVED' ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
+                      <span>${uStatus}</span>
                     </span>
                   </div>
-                  <div class="flex items-center space-x-2 text-xs text-slate-300">
-                    <span class="inline-flex items-center text-amber-300 font-bold">
-                      <i data-lucide="shield" class="w-3.5 h-3.5 mr-1"></i>
+                  <div class="flex items-center space-x-2 text-xs text-slate-500 font-medium">
+                    <span class="inline-flex items-center font-semibold text-slate-700">
+                      <i data-lucide="shield" class="w-3.5 h-3.5 mr-1 text-slate-400"></i>
                       ${uRole}
                     </span>
-                    <span>•</span>
-                    <span>ID #${u.id}</span>
                   </div>
                 </div>
               </div>
+              <button onclick="state.activeUserProfile = null; renderApp();" 
+                class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                title="Tutup">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
             </div>
 
             <!-- Modal Content Body -->
@@ -123,34 +123,34 @@
                   </div>
                 </div>
               ` : `
-                <div class="bg-purple-50/50 rounded-2xl p-4 border border-purple-100 space-y-2.5">
-                  <p class="font-extrabold text-purple-950 text-xs flex items-center">
-                    <i data-lucide="cross" class="w-3.5 h-3.5 mr-1.5 text-purple-700"></i>
+                <div class="bg-blue-50/40 rounded-2xl p-4 border border-blue-100/80 space-y-2.5">
+                  <p class="font-extrabold text-blue-950 text-xs flex items-center">
+                    <i data-lucide="cross" class="w-3.5 h-3.5 mr-1.5 text-blue-700"></i>
                     Ordo Religius
                   </p>
-                  <div class="bg-white p-3 rounded-xl border border-purple-100/80">
+                  <div class="bg-white p-3 rounded-xl border border-blue-100/80">
                     <p class="text-[10px] font-bold text-slate-400 uppercase">Nama Ordo</p>
-                    <p class="font-extrabold text-purple-950 mt-0.5 text-sm">${u.ordo_name || u.ordoName || '-'}</p>
+                    <p class="font-extrabold text-blue-950 mt-0.5 text-sm">${u.ordo_name || u.ordoName || '-'}</p>
                   </div>
                 </div>
               `}
 
               <!-- Section 3: Jabatan Kepengurusan / Pastoral (Khusus Pengurus & Romo) -->
               ${uRoleCode === 'PENGURUS_LINGKUNGAN' ? `
-                <div class="bg-indigo-50/50 rounded-2xl p-4 border border-indigo-100 space-y-2.5">
-                  <p class="font-extrabold text-indigo-950 text-xs flex items-center">
-                    <i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-indigo-700"></i>
+                <div class="bg-blue-50/40 rounded-2xl p-4 border border-blue-100/80 space-y-2.5">
+                  <p class="font-extrabold text-blue-950 text-xs flex items-center">
+                    <i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-blue-700"></i>
                     Detail Jabatan Pengurus Lingkungan
                   </p>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
-                    <div class="bg-white p-2.5 rounded-xl border border-indigo-100/80">
+                    <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
                       <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Posisi Kepengurusan</p>
                       ${getUserPositionBadge(u.pengurus_position || 'Ketua Lingkungan', 'PENGURUS_LINGKUNGAN')}
                     </div>
-                    <div class="bg-white p-2.5 rounded-xl border border-indigo-100/80">
+                    <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
                       <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Masa Jabatan</p>
-                      <p class="font-extrabold text-amber-800 text-xs flex items-center">
-                        <i data-lucide="calendar" class="w-3 h-3 mr-1 text-amber-600"></i>
+                      <p class="font-extrabold text-blue-950 text-xs flex items-center">
+                        <i data-lucide="calendar" class="w-3 h-3 mr-1 text-blue-600"></i>
                         ${periode}
                       </p>
                     </div>
@@ -159,12 +159,12 @@
               ` : ''}
 
               ${uRoleCode === 'ROMO_PAROKI' ? `
-                <div class="bg-emerald-50/50 rounded-2xl p-4 border border-emerald-100 space-y-2.5">
-                  <p class="font-extrabold text-emerald-950 text-xs flex items-center">
-                    <i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-emerald-700"></i>
+                <div class="bg-blue-50/40 rounded-2xl p-4 border border-blue-100/80 space-y-2.5">
+                  <p class="font-extrabold text-blue-950 text-xs flex items-center">
+                    <i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-blue-700"></i>
                     Detail Jabatan Pastoral Paroki
                   </p>
-                  <div class="bg-white p-3 rounded-xl border border-emerald-100/80">
+                  <div class="bg-white p-3 rounded-xl border border-blue-100/80">
                     <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Posisi Pastoral</p>
                     ${getUserPositionBadge(u.romo_position || 'Romo Paroki', 'ROMO_PAROKI')}
                   </div>
@@ -172,12 +172,12 @@
               ` : ''}
 
               ${uRoleCode === 'ROMO_ORDO' ? `
-                <div class="bg-purple-50/50 rounded-2xl p-4 border border-purple-100 space-y-2.5">
-                  <p class="font-extrabold text-purple-950 text-xs flex items-center">
-                    <i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-purple-700"></i>
+                <div class="bg-blue-50/40 rounded-2xl p-4 border border-blue-100/80 space-y-2.5">
+                  <p class="font-extrabold text-blue-950 text-xs flex items-center">
+                    <i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-blue-700"></i>
                     Detail Jabatan di Ordo Religius
                   </p>
-                  <div class="bg-white p-3 rounded-xl border border-purple-100/80">
+                  <div class="bg-white p-3 rounded-xl border border-blue-100/80">
                     <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Posisi di Ordo</p>
                     ${getUserPositionBadge(u.romo_position || 'Romo Ordo', 'ROMO_ORDO')}
                   </div>
@@ -187,14 +187,14 @@
             </div>
 
             <!-- Modal Footer Buttons -->
-            <div class="p-5 bg-slate-50 border-t border-slate-200 flex justify-end space-x-2">
+            <div class="p-4 bg-slate-50/80 border-t border-slate-100 flex justify-end space-x-2">
               <button onclick="state.activeUserProfile = null; openEditUserModal('${u.id}');"
-                class="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5">
-                <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-xs">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-500"></i>
                 <span>Edit Profil</span>
               </button>
               <button onclick="state.activeUserProfile = null; renderApp();"
-                class="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-blue-950 hover:bg-slate-900 text-white text-xs font-extrabold transition">
+                class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-blue-950 hover:bg-blue-900 text-white text-xs font-bold transition shadow-xs">
                 <span>Tutup</span>
               </button>
             </div>

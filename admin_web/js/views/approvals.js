@@ -164,7 +164,7 @@ function renderApprovalsTable(filtered) {
 
       return `
         <div class="space-y-6 animate-fade-in">
-          <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
             <div class="p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -222,7 +222,7 @@ function renderApprovalsTable(filtered) {
 
       return `
         <div class="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-5">
+          <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-5">
             <div class="flex items-start space-x-4">
               <div class="w-12 h-12 rounded-2xl ${modal.iconBg || 'bg-blue-50 text-blue-700 border-blue-200'} border flex items-center justify-center flex-shrink-0 shadow-xs">
                 <i data-lucide="${modal.icon || 'help-circle'}" class="w-6 h-6"></i>

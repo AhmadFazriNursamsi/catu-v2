@@ -1,129 +1,162 @@
 // ── Admin Login View & Handlers ──
-    function renderLoginPage() {
+    function renderLoginHero() {
       return `
-        <div class="min-h-full flex flex-col lg:flex-row">
-          <div class="church-bg lg:w-[54%] p-8 lg:p-14 flex flex-col justify-between text-white relative">
-            <div>
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3.5">
-                  <div class="w-12 h-12 rounded-xl bg-white p-1.5 shadow-lg border-2 border-amber-500 flex items-center justify-center flex-shrink-0">
-                    <img src="assets/images/logoCatu.png" alt="CATU Logo" class="h-full object-contain" />
-                  </div>
-                  <div>
-                    <h1 class="text-xl font-extrabold tracking-wider text-white">CATU WEB PORTAL</h1>
-                    <p class="text-[11px] font-bold text-amber-400 tracking-wider">CARI & BANTU PELAYANAN GEREJA</p>
-                  </div>
-                </div>
-                <div class="hidden sm:inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold text-white/90">
-                  <i data-lucide="shield-alert" class="w-3.5 h-3.5 mr-1.5 text-amber-400"></i>
-                  Portal Khusus Administrator
-                </div>
-              </div>
+        <section class="hero">
+          <div class="hero-content">
+            <div class="brand">
+              <img src="assets/logo-catu-light.png" alt="CATU — Cari & Bantu" />
             </div>
 
-            <div class="my-12 lg:my-0 max-w-xl">
-              <h2 class="text-3xl lg:text-4xl font-extrabold leading-tight tracking-tight text-white mb-4">
-                Sistem Informasi & Manajemen<br/><span class="text-amber-400">Pelayanan Umat Katolik</span>
-              </h2>
-              <p class="text-slate-300 text-sm lg:text-base leading-relaxed mb-8">
-                Platform terpusat untuk monitoring pelayanan Misa Kedukaan, Sakramen Perminyakan, verifikasi pendaftaran berjenjang, dan koordinasi lintas paroki.
+            <div class="hero-main">
+              <div class="eyebrow">PORTAL ADMINISTRASI</div>
+              <h1>
+                Pelayanan Gereja
+                <span>dalam Satu Sistem</span>
+              </h1>
+              <p class="hero-description">
+                Kelola data umat, administrasi paroki, dan berbagai layanan gereja secara mudah, aman, dan terintegrasi.
               </p>
 
-              <div class="space-y-4">
-                <div class="flex items-start space-x-3.5 p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
-                  <div class="p-2 rounded-lg bg-amber-500/20 text-amber-400">
-                    <i data-lucide="church" class="w-5 h-5"></i>
-                  </div>
-                  <div>
-                    <h3 class="text-sm font-bold text-white">Integrasi Lintas Paroki & Ordo</h3>
-                    <p class="text-xs text-slate-300">Pengelolaan permohonan pelayanan sakramental secara transparan dan terstruktur.</p>
+              <div class="features">
+                <div class="feature">
+                  <div class="feature-icon"><i data-lucide="users" class="w-5 h-5"></i></div>
+                  <div class="feature-body">
+                    <h3>Data Umat Terpadu</h3>
+                    <p>Informasi umat lebih rapi dan akurat.</p>
                   </div>
                 </div>
-
-                <div class="flex items-start space-x-3.5 p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
-                  <div class="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
-                    <i data-lucide="user-check" class="w-5 h-5"></i>
+                <div class="feature">
+                  <div class="feature-icon"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+                  <div class="feature-body">
+                    <h3>Administrasi Paroki</h3>
+                    <p>Kelola kegiatan dan layanan dengan efisien.</p>
                   </div>
-                  <div>
-                    <h3 class="text-sm font-bold text-white">Persetujuan Akun Berjenjang</h3>
-                    <p class="text-xs text-slate-300">Verifikasi pendaftaran Umat, Romo, dan Pengurus Lingkungan dengan satu klik.</p>
+                </div>
+                <div class="feature">
+                  <div class="feature-icon"><i data-lucide="shield-check" class="w-5 h-5"></i></div>
+                  <div class="feature-body">
+                    <h3>Aman & Terpercaya</h3>
+                    <p>Data Anda kami jaga dengan baik.</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="flex items-center text-xs text-slate-400 space-x-2 pt-6 border-t border-white/10">
-              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
-              <span>CATU Platform v2.5.0 • Powered by NestJS & PostgreSQL 16</span>
-            </div>
-          </div>
-
-          <div class="cross-bg lg:w-[46%] p-8 lg:p-14 flex items-center justify-center">
-            <div class="w-full max-w-md bg-white rounded-3xl p-8 lg:p-10 shadow-2xl border border-slate-200">
-              <div class="text-center mb-8">
-                <img src="assets/images/logoCatu.png" alt="CATU Logo" class="h-16 mx-auto mb-4 object-contain" />
-                <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Masuk Portal Admin</h2>
-                <p class="text-xs text-slate-500 mt-1">Masukkan kredensial Administrator untuk mengakses dashboard.</p>
+            <div class="hero-footer">
+              <div class="location">
+                <span class="location-dot">●</span>
+                <span>Gereja Katedral Jakarta</span>
               </div>
-
-              ${state.loginError ? `
-                <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start space-x-2.5">
-                  <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0 text-red-600"></i>
-                  <span>${state.loginError}</span>
-                </div>
-              ` : ''}
-
-              <form id="loginForm" class="space-y-4">
-                <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1.5">Nomor WhatsApp</label>
-                  <div class="relative rounded-xl shadow-sm">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <span class="text-xs font-bold text-slate-700 border-r border-slate-300 pr-2">+62</span>
-                    </div>
-                    <input type="tel" id="phoneInput" required placeholder="81234567890" autocomplete="username" inputmode="numeric" aria-describedby="phoneHint"
-                      class="block w-full pl-14 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white" />
-                  </div>
-                  <p id="phoneHint" class="mt-1.5 text-[11px] font-medium text-slate-400">Masukkan nomor tanpa 0 di depan atau tanda +62.</p>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1.5">Kata Sandi</label>
-                  <div class="relative rounded-xl shadow-sm">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                      <i data-lucide="lock" class="w-4 h-4 text-blue-900"></i>
-                    </div>
-                    <input type="password" id="passwordInput" required placeholder="Masukkan kata sandi" autocomplete="current-password"
-                      class="block w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:bg-white" />
-                    <button type="button" id="togglePasswordBtn" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
-                      <i data-lucide="eye" class="w-4 h-4"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="pt-2">
-                  <button type="submit" id="submitBtn" ${state.loginLoading ? 'disabled' : ''}
-                    class="w-full py-3.5 px-4 bg-blue-950 hover:bg-blue-900 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-950/20 flex items-center justify-center space-x-2 transition duration-200 disabled:opacity-50">
-                    ${state.loginLoading ? `
-                      <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      <span>Memverifikasi...</span>
-                    ` : `
-                      <i data-lucide="log-in" class="w-4 h-4"></i>
-                      <span>MASUK KE PORTAL ADMIN</span>
-                    `}
-                  </button>
-                </div>
-              </form>
+              <div class="tagline">BERSAMA DALAM IMAN, MELAYANI DENGAN KASIH</div>
             </div>
           </div>
+        </section>
+      `;
+    }
+
+    function renderLoginCard(state) {
+      return `
+        <div class="login-card">
+          <div class="login-brand">
+            <img src="assets/logo-catu.png" alt="CATU" />
+          </div>
+          <h2 class="login-title">Masuk Portal Admin</h2>
+          <p class="login-subtitle">
+            Masukkan kredensial administrator untuk mengakses dashboard.
+          </p>
+
+          ${state.loginError ? `
+            <div class="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start space-x-2.5">
+              <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-red-600 mt-0.5"></i>
+              <span>${state.loginError}</span>
+            </div>
+          ` : ''}
+
+          <form class="form" id="loginForm">
+            <div class="field">
+              <label for="username">Nomor WhatsApp / Akun</label>
+              <div class="field-control">
+                <span class="field-icon"><i data-lucide="phone" class="w-5 h-5"></i></span>
+                <input id="username" name="username" type="text" autocomplete="username" placeholder="Masukkan nomor WhatsApp akun Anda" required />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="password">Kata sandi</label>
+              <div class="field-control">
+                <span class="field-icon"><i data-lucide="lock" class="w-5 h-5"></i></span>
+                <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Masukkan kata sandi Anda" required />
+                <button type="button" class="password-toggle" id="togglePassword" aria-label="Tampilkan kata sandi">
+                  <i data-lucide="eye" class="w-5 h-5"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-options">
+              <label class="remember">
+                <input type="checkbox" name="remember" id="rememberMe" />
+                <span>Ingat saya</span>
+              </label>
+              <a href="javascript:void(0)" onclick="alert('Silakan hubungi administrator paroki untuk bantuan reset kata sandi.')" class="forgot">
+                Lupa kata sandi?
+              </a>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn" ${state.loginLoading ? 'disabled' : ''}>
+              ${state.loginLoading ? `
+                <span class="flex items-center space-x-2">
+                  <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>Memverifikasi...</span>
+                </span>
+                <span></span>
+              ` : `
+                <span>Masuk</span>
+                <span class="arrow"><i data-lucide="arrow-right" class="w-5 h-5"></i></span>
+              `}
+            </button>
+
+            <div class="support" onclick="alert('Hubungi tim administrator CATU di nomor WhatsApp paroki untuk bantuan.')">
+              <div class="support-content">
+                <div class="support-icon">
+                  <i data-lucide="headphones" class="w-5 h-5"></i>
+                </div>
+                <div class="support-text">
+                  <h4>Butuh bantuan?</h4>
+                  <p>Hubungi tim operasional atau administrator CATU untuk bantuan akses akun.</p>
+                </div>
+              </div>
+              <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400"></i>
+            </div>
+          </form>
         </div>
       `;
     }
 
+    function renderLoginPage() {
+      return `
+        <main class="login-page">
+          ${renderLoginHero()}
+
+          <section class="login-side">
+            ${renderLoginCard(state)}
+
+            <div class="side-footer">
+              <i data-lucide="shield" class="w-5 h-5 text-[#165AA7]"></i>
+              <div>
+                <div class="font-medium text-slate-600">Sistem Administrasi Pastoral</div>
+                <div class="text-slate-400 text-[10.5px]">Keuskupan Agung Jakarta</div>
+              </div>
+            </div>
+          </section>
+        </main>
+      `;
+    }
+
     function attachLoginListeners() {
-      const toggleBtn = document.getElementById('togglePasswordBtn');
-      if (toggleBtn) {
+      const toggleBtn = document.getElementById('togglePassword') || document.getElementById('togglePasswordBtn');
+      const pass = document.getElementById('password') || document.getElementById('passwordInput');
+      if (toggleBtn && pass) {
         toggleBtn.addEventListener('click', () => {
-          const pass = document.getElementById('passwordInput');
           pass.type = pass.type === 'password' ? 'text' : 'password';
         });
       }
@@ -132,8 +165,18 @@
       if (form) {
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
-          const phone = document.getElementById('phoneInput').value.trim();
-          const password = document.getElementById('passwordInput').value.trim();
+          const phoneInput = document.getElementById('username') || document.getElementById('phoneInput');
+          const passInput = document.getElementById('password') || document.getElementById('passwordInput');
+          let phone = phoneInput ? phoneInput.value.trim() : '';
+          const password = passInput ? passInput.value.trim() : '';
+
+          // Normalize phone: strip non-digits, remove leading '62' or '0'
+          phone = phone.replace(/[^0-9]/g, '');
+          if (phone.startsWith('62')) {
+            phone = phone.substring(2);
+          } else if (phone.startsWith('0')) {
+            phone = phone.substring(1);
+          }
 
           state.loginLoading = true;
           state.loginError = '';

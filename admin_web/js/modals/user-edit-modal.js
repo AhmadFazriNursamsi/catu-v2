@@ -15,10 +15,10 @@
       const uName = u.full_name || u.fullName || 'Pengguna';
 
       return `
-        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
-          <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 custom-scrollbar my-8 overflow-hidden">
+        <div class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-xl border border-slate-200 custom-scrollbar my-8 overflow-hidden">
             
-            <!-- Modern Gradient Header -->
+            <!-- Modal Header -->
             ${renderEditUserHeader(u, uName, status, roleCode)}
             </div>
 
@@ -117,16 +117,13 @@
                   </div>
                 </div>
 
-                <!-- Section 3: Domisili Wilayah & Gereja (Searchable Combobox) -->
+                <!-- Section 3: Domisili Wilayah & Gereja -->
                 <div class="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/80 space-y-4 shadow-xs">
-                  <div class="flex items-center justify-between pb-1 border-b border-slate-200/60">
+                  <div class="pb-1 border-b border-slate-200/60">
                     <h4 class="font-extrabold text-blue-950 flex items-center text-xs">
                       <i data-lucide="church" class="w-4 h-4 mr-1.5 text-blue-700"></i>
-                      3. Domisili Wilayah Administratif & Gereja (Searchable Combobox)
+                      3. Domisili Wilayah Administratif & Gereja
                     </h4>
-                    <span class="text-[10px] text-blue-800 font-extrabold bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
-                      🔍 Klik untuk cari di dalam combobox
-                    </span>
                   </div>
 
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -245,15 +242,15 @@
 
                 <!-- Section 4: Data Kepengurusan (Kondisional) -->
                 ${roleCode === 'PENGURUS_LINGKUNGAN' ? `
-                  <div class="bg-indigo-50/80 p-5 rounded-2xl border border-indigo-200/80 space-y-4 shadow-xs">
-                    <h4 class="font-extrabold text-indigo-950 flex items-center text-xs pb-1 border-b border-indigo-200/60">
-                      <i data-lucide="briefcase" class="w-4 h-4 mr-1.5 text-indigo-700"></i>
+                  <div class="bg-blue-50/40 p-5 rounded-2xl border border-blue-100/80 space-y-4 shadow-xs">
+                    <h4 class="font-extrabold text-blue-950 flex items-center text-xs pb-1 border-b border-blue-100/80">
+                      <i data-lucide="briefcase" class="w-4 h-4 mr-1.5 text-blue-700"></i>
                       4. Data Kepengurusan Lingkungan
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pengurus *</label>
-                        <select id="editPengurusPosition" class="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl font-black text-indigo-950 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs">
+                        <select id="editPengurusPosition" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
                           <option value="Ketua Lingkungan" ${u.pengurus_position === 'Ketua Lingkungan' ? 'selected' : ''}>Ketua Lingkungan (Pimpinan)</option>
                           <option value="Wakil Ketua" ${u.pengurus_position === 'Wakil Ketua' ? 'selected' : ''}>Wakil Ketua</option>
                           <option value="Sekretaris" ${u.pengurus_position === 'Sekretaris' ? 'selected' : ''}>Sekretaris</option>
@@ -261,25 +258,25 @@
                       </div>
                       <div>
                         <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Mulai</label>
-                        <input type="number" id="editJabatanStartYear" value="${u.jabatan_start_year || 2024}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
+                        <input type="number" id="editJabatanStartYear" value="${u.jabatan_start_year || 2024}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
                       </div>
                       <div>
                         <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Selesai</label>
-                        <input type="number" id="editJabatanEndYear" value="${u.jabatan_end_year || 2027}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs" />
+                        <input type="number" id="editJabatanEndYear" value="${u.jabatan_end_year || 2027}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
                       </div>
                     </div>
                   </div>
                 ` : ''}
 
                 ${roleCode === 'ROMO_PAROKI' ? `
-                  <div class="bg-emerald-50/80 p-5 rounded-2xl border border-emerald-200/80 space-y-4 shadow-xs">
-                    <h4 class="font-extrabold text-emerald-950 flex items-center text-xs pb-1 border-b border-emerald-200/60">
-                      <i data-lucide="church" class="w-4 h-4 mr-1.5 text-emerald-700"></i>
+                  <div class="bg-blue-50/40 p-5 rounded-2xl border border-blue-100/80 space-y-4 shadow-xs">
+                    <h4 class="font-extrabold text-blue-950 flex items-center text-xs pb-1 border-b border-blue-100/80">
+                      <i data-lucide="church" class="w-4 h-4 mr-1.5 text-blue-700"></i>
                       4. Posisi Pastoral Romo Paroki
                     </h4>
                     <div>
                       <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pastoral *</label>
-                      <select id="editRomoPosition" class="w-full px-3.5 py-2.5 bg-white border border-emerald-200 rounded-xl font-black text-emerald-950 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs">
+                      <select id="editRomoPosition" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
                         <option value="Kepala Romo Paroki" ${u.romo_position === 'Kepala Romo Paroki' ? 'selected' : ''}>Kepala Romo Paroki (Pimpinan Paroki)</option>
                         <option value="Romo Paroki" ${u.romo_position === 'Romo Paroki' || !u.romo_position ? 'selected' : ''}>Romo Paroki (Pastor Rekan)</option>
                       </select>
@@ -288,14 +285,14 @@
                 ` : ''}
 
                 ${roleCode === 'ROMO_ORDO' ? `
-                  <div class="bg-purple-50/80 p-5 rounded-2xl border border-purple-200/80 space-y-4 shadow-xs">
-                    <h4 class="font-extrabold text-purple-950 flex items-center text-xs pb-1 border-b border-purple-200/60">
-                      <i data-lucide="cross" class="w-4 h-4 mr-1.5 text-purple-700"></i>
+                  <div class="bg-blue-50/40 p-5 rounded-2xl border border-blue-100/80 space-y-4 shadow-xs">
+                    <h4 class="font-extrabold text-blue-950 flex items-center text-xs pb-1 border-b border-blue-100/80">
+                      <i data-lucide="cross" class="w-4 h-4 mr-1.5 text-blue-700"></i>
                       4. Posisi Struktur Romo Ordo
                     </h4>
                     <div>
                       <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan di Ordo / Kongregasi *</label>
-                      <select id="editRomoOrdoPosition" class="w-full px-3.5 py-2.5 bg-white border border-purple-200 rounded-xl font-black text-purple-950 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-xs">
+                      <select id="editRomoOrdoPosition" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
                         <option value="Ketua Romo Ordo" ${u.romo_position === 'Ketua Romo Ordo' ? 'selected' : ''}>Ketua Romo Ordo (Pimpinan / Provinsial)</option>
                         <option value="Romo Ordo" ${u.romo_position === 'Romo Ordo' || !u.romo_position ? 'selected' : ''}>Romo Ordo (Imam Anggota)</option>
                       </select>
@@ -309,7 +306,7 @@
                     Batal
                   </button>
                   <button type="submit" ${state.isSavingProfile ? 'disabled' : ''}
-                    class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-xs flex items-center space-x-2 shadow-md shadow-amber-500/20 transition transform hover:-translate-y-0.5 disabled:opacity-50">
+                    class="px-6 py-2.5 rounded-xl bg-blue-950 hover:bg-blue-900 text-white font-bold text-xs flex items-center space-x-2 shadow-xs transition disabled:opacity-50">
                     ${state.isSavingProfile ? `
                       <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                       <span>Menyimpan Perubahan...</span>

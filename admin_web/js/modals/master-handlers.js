@@ -260,26 +260,29 @@
         }
 
         state.activeMasterModal = null;
-        showToast(`Data ${getEntityLabel(type)} "${modal.data.name || ''}" berhasil disimpan ke sistem!`, 'success', mode === 'CREATE' ? 'Data Berhasil Ditambahkan! 🎉' : 'Perubahan Berhasil Disimpan! ✨');
-        await loadMasterData(state.masterSubTab);
 
-        // Also refresh global lookups
+        const savedItem = result.data || result;
+        if (savedItem && savedItem.id) {
+          state.lastCreatedMasterId = savedItem.id;
+        }
+
         try {
-          const [kRes, pRes, oRes, scRes, rRes, posRes] = await Promise.all([
-            fetch(`${API_BASE}/master/keuskupan`),
-            fetch(`${API_BASE}/master/paroki`),
-            fetch(`${API_BASE}/master/ordo`),
-            fetch(`${API_BASE}/master/service-categories`),
-            fetch(`${API_BASE}/master/roles`),
-            fetch(`${API_BASE}/master/positions`),
-          ]);
-          state.keuskupan = await kRes.json();
-          state.paroki = await pRes.json();
-          state.ordo = await oRes.json();
-          state.serviceCategories = await scRes.json();
-          state.roles = await rRes.json();
-          state.positions = await posRes.json();
+          const label = typeof getMasterEntityLabel === 'function' ? getMasterEntityLabel(type) : (type || 'Data');
+          showToast(`Data ${label} "${modal.data.name || ''}" berhasil disimpan ke sistem!`, 'success', mode === 'CREATE' ? 'Data Berhasil Ditambahkan! 🎉' : 'Perubahan Berhasil Disimpan! ✨');
         } catch (_) {}
+
+        // Align target subtab and reset search/filters so newly created data is immediately visible
+        state.masterSubTab = type;
+        state.masterSearch = '';
+        if (mode === 'CREATE') {
+          state.masterFilterKeuskupanId = '';
+          state.masterFilterParokiId = '';
+          state.masterFilterWilayahId = '';
+        }
+
+        // Authoritatively re-fetch fresh grid data and global lookups from database
+        await loadMasterData(state.masterSubTab);
+        await refreshMasterLookups();
         renderApp();
       } catch (err) {
         state.masterModalError = err.message || 'Terjadi kesalahan sistem.';

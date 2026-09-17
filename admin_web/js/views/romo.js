@@ -23,26 +23,21 @@ function renderRomoParokiTable(filtered) {
                       </td>
                     </tr>
                   ` : filtered.map(u => `
-                    <tr class="hover:bg-slate-50/80 transition duration-150 group">
+                    <tr onclick="viewUserProfileModal('${u.id}')" class="hover:bg-slate-50/80 transition duration-150 cursor-pointer group">
                       <td class="px-6 py-4">
-                        <p class="font-bold text-slate-900 text-sm tracking-tight">${u.full_name || 'Romo Paroki'}</p>
+                        <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${u.full_name || 'Romo Paroki'}</p>
                         <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
                       </td>
-                      <td class="px-6 py-4">
-                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
-                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
-                          <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
-                        </div>
+                      <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                        <span class="truncate block max-w-[170px]">${u.kota_name || u.address || '-'}</span>
                       </td>
-                      <td class="px-6 py-4">
-                        <div class="inline-flex items-center px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
-                          <span>${u.paroki_name || '-'}</span>
-                        </div>
+                      <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                        <span class="truncate block max-w-[180px]">${u.paroki_name || '-'}</span>
                       </td>
-                      <td class="px-6 py-4">
-                        ${getUserPositionBadge(u.romo_position || 'Romo Paroki', 'ROMO_PAROKI')}
+                      <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
+                        ${u.romo_position || 'Romo Paroki'}
                       </td>
-                      <td class="px-6 py-4 font-bold text-slate-800">
+                      <td class="px-6 py-4 font-semibold text-slate-700">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
                           <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
                           <span>${u.phone_number}</span>
@@ -50,13 +45,14 @@ function renderRomoParokiTable(filtered) {
                       </td>
                       <td class="px-6 py-4 text-right">
                         <div class="inline-flex items-center justify-end space-x-2">
-                          <button onclick="openEditUserModal('${u.id}')"
-                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold border border-amber-200 text-xs transition shadow-sm transform hover:-translate-y-0.5">
-                            <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-600"></i>
+                          <button onclick="event.stopPropagation(); openEditUserModal('${u.id}')"
+                            class="inline-flex items-center space-x-1 text-xs font-semibold text-slate-600 hover:text-slate-900 transition py-1 px-1.5 rounded hover:bg-slate-100">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-500"></i>
                             <span>Edit</span>
                           </button>
-                          <button onclick="viewUserProfileModal('${u.id}')"
-                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold border border-blue-200 text-xs transition shadow-sm transform hover:-translate-y-0.5">
+                          <span class="text-slate-300">·</span>
+                          <button onclick="event.stopPropagation(); viewUserProfileModal('${u.id}')"
+                            class="inline-flex items-center space-x-1 text-xs font-semibold text-blue-700 hover:text-blue-900 transition py-1 px-1.5 rounded hover:bg-blue-50">
                             <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-600"></i>
                             <span>Detail</span>
                           </button>
@@ -108,7 +104,7 @@ function renderRomoParokiTable(filtered) {
 
       return `
         <div class="space-y-6 animate-fade-in">
-          <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
             <div class="p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -194,7 +190,7 @@ function renderRomoParokiTable(filtered) {
 
       return `
         <div class="space-y-6 animate-fade-in">
-          <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
             <div class="p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -261,26 +257,21 @@ function renderRomoParokiTable(filtered) {
                       </td>
                     </tr>
                   ` : list.map(u => `
-                    <tr class="hover:bg-slate-50/80 transition duration-150 group">
+                    <tr onclick="viewUserProfileModal('${u.id}')" class="hover:bg-slate-50/80 transition duration-150 cursor-pointer group">
                       <td class="px-6 py-4">
-                        <p class="font-bold text-slate-900 text-sm tracking-tight">${u.full_name || 'Romo Ordo'}</p>
+                        <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${u.full_name || 'Romo Ordo'}</p>
                         <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
                       </td>
-                      <td class="px-6 py-4">
-                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border border-slate-200 text-xs shadow-sm">
-                          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i>
-                          <span class="truncate max-w-[170px]">${u.kota_name || u.address || '-'}</span>
-                        </div>
+                      <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                        <span class="truncate block max-w-[170px]">${u.kota_name || u.address || '-'}</span>
                       </td>
-                      <td class="px-6 py-4">
-                        <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs shadow-sm">
-                          <span>${u.ordo_name || 'Ordo Religius'}</span>
-                        </span>
+                      <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                        <span class="truncate block max-w-[180px]">${u.ordo_name || 'Ordo Religius'}</span>
                       </td>
-                      <td class="px-6 py-4">
-                        ${getUserPositionBadge(u.romo_position || 'Romo Ordo', 'ROMO_ORDO')}
+                      <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
+                        ${u.romo_position || 'Romo Ordo'}
                       </td>
-                      <td class="px-6 py-4 font-bold text-slate-800">
+                      <td class="px-6 py-4 font-semibold text-slate-700">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
                           <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
                           <span>${u.phone_number}</span>
@@ -288,13 +279,14 @@ function renderRomoParokiTable(filtered) {
                       </td>
                       <td class="px-6 py-4 text-right">
                         <div class="inline-flex items-center justify-end space-x-2">
-                          <button onclick="openEditUserModal('${u.id}')"
-                            class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold border border-amber-200 text-xs transition shadow-sm transform hover:-translate-y-0.5">
-                            <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-600"></i>
+                          <button onclick="event.stopPropagation(); openEditUserModal('${u.id}')"
+                            class="inline-flex items-center space-x-1 text-xs font-semibold text-slate-600 hover:text-slate-900 transition py-1 px-1.5 rounded hover:bg-slate-100">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-500"></i>
                             <span>Edit</span>
                           </button>
-                          <button onclick="viewUserProfileModal('${u.id}')"
-                            class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold border border-blue-200 text-xs transition shadow-sm transform hover:-translate-y-0.5">
+                          <span class="text-slate-300">·</span>
+                          <button onclick="event.stopPropagation(); viewUserProfileModal('${u.id}')"
+                            class="inline-flex items-center space-x-1 text-xs font-semibold text-blue-700 hover:text-blue-900 transition py-1 px-1.5 rounded hover:bg-blue-50">
                             <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-600"></i>
                             <span>Detail</span>
                           </button>

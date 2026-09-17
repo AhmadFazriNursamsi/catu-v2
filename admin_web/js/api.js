@@ -44,6 +44,28 @@
       await loadMasterData(subTab);
     }
 
+    async function refreshMasterLookups() {
+      try {
+        const t = Date.now();
+        const [kRes, pRes, oRes, scRes, rRes, posRes] = await Promise.all([
+          fetch(`${API_BASE}/master/keuskupan?_t=${t}`, { cache: 'no-store' }),
+          fetch(`${API_BASE}/master/paroki?_t=${t}`, { cache: 'no-store' }),
+          fetch(`${API_BASE}/master/ordo?_t=${t}`, { cache: 'no-store' }),
+          fetch(`${API_BASE}/master/service-categories?_t=${t}`, { cache: 'no-store' }),
+          fetch(`${API_BASE}/master/roles?_t=${t}`, { cache: 'no-store' }),
+          fetch(`${API_BASE}/master/positions?_t=${t}`, { cache: 'no-store' }),
+        ]);
+        state.keuskupan = await kRes.json();
+        state.paroki = await pRes.json();
+        state.ordo = await oRes.json();
+        state.serviceCategories = await scRes.json();
+        state.roles = await rRes.json();
+        state.positions = await posRes.json();
+      } catch (err) {
+        console.error('Error refreshing master lookups:', err);
+      }
+    }
+
     async function loadMasterData(subTab) {
       if (subTab) state.masterSubTab = subTab;
       state.isMasterLoading = true;
@@ -51,26 +73,30 @@
 
       try {
         const tab = state.masterSubTab;
+        const t = Date.now();
         let url = '';
         if (tab === 'keuskupan') {
-          url = `${API_BASE}/master/keuskupan`;
+          url = `${API_BASE}/master/keuskupan?_t=${t}`;
         } else if (tab === 'paroki') {
-          url = `${API_BASE}/master/paroki${state.masterFilterKeuskupanId ? '?keuskupanId=' + state.masterFilterKeuskupanId : ''}`;
+          url = `${API_BASE}/master/paroki?_t=${t}`;
         } else if (tab === 'wilayah') {
-          url = `${API_BASE}/master/wilayah${state.masterFilterParokiId ? '?parokiId=' + state.masterFilterParokiId : ''}`;
+          url = `${API_BASE}/master/wilayah?_t=${t}`;
         } else if (tab === 'lingkungan') {
-          url = `${API_BASE}/master/lingkungan${state.masterFilterWilayahId ? '?wilayahId=' + state.masterFilterWilayahId : ''}`;
+          url = `${API_BASE}/master/lingkungan?_t=${t}`;
         } else if (tab === 'ordo') {
-          url = `${API_BASE}/master/ordo`;
+          url = `${API_BASE}/master/ordo?_t=${t}`;
         } else if (tab === 'services') {
-          url = `${API_BASE}/master/service-categories`;
+          url = `${API_BASE}/master/service-categories?_t=${t}`;
         } else if (tab === 'roles') {
-          url = `${API_BASE}/master/roles`;
+          url = `${API_BASE}/master/roles?_t=${t}`;
         } else if (tab === 'positions') {
-          url = `${API_BASE}/master/positions`;
+          url = `${API_BASE}/master/positions?_t=${t}`;
         }
 
-        const res = await fetch(url);
+        const res = await fetch(url, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
         const data = await res.json();
         state.masterDataList = Array.isArray(data) ? data : [];
 
@@ -123,9 +149,18 @@
         }
 
         const deletedName = del.name;
+        const delId = del.id;
         state.deleteConfirmModal = null;
+
+        // Optimistically remove deleted item immediately from current grid
+        if (Array.isArray(state.masterDataList)) {
+          state.masterDataList = state.masterDataList.filter(item => String(item.id) !== String(delId));
+        }
+        renderApp();
+
         showToast(`Data "${deletedName}" berhasil dihapus dari database.`, 'success', 'Data Terhapus! 🗑️');
         await loadMasterData(state.masterSubTab);
+        await refreshMasterLookups();
         renderApp();
       } catch (err) {
         del.errorMessage = err.message || 'Terjadi kesalahan saat menghapus data.';

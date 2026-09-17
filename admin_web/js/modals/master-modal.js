@@ -17,47 +17,47 @@
       };
 
       return `
-        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
-          <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 custom-scrollbar my-8 overflow-hidden">
-            <!-- Header Banner -->
-            <div class="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 p-6 text-white relative">
-              <button onclick="state.activeMasterModal = null; renderApp();"
-                class="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition">
-                <i data-lucide="x" class="w-4 h-4"></i>
-              </button>
-
-              <div class="flex items-center space-x-3.5">
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-white flex items-center justify-center shadow-lg border-2 border-white/20">
-                  <i data-lucide="${isEdit ? 'edit' : 'plus'}" class="w-6 h-6"></i>
+        <div class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl border border-slate-200 custom-scrollbar my-8 overflow-hidden">
+            <!-- Header -->
+            <div class="p-6 border-b border-slate-100 flex items-start justify-between gap-4">
+              <div class="flex items-center space-x-3.5 min-w-0">
+                <div class="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="${isEdit ? 'edit-3' : 'plus'}" class="w-5 h-5 text-slate-600"></i>
                 </div>
-                <div>
-                  <h3 class="text-base font-black text-white">${getTitle()}</h3>
-                  <p class="text-xs text-slate-300">
+                <div class="min-w-0">
+                  <h3 class="text-base font-bold text-slate-900 tracking-tight">${getTitle()}</h3>
+                  <p class="text-xs text-slate-500 font-medium">
                     ${isEdit ? `Mengubah data ID #${data.id}` : 'Menyimpan entitas baru ke database'}
                   </p>
                 </div>
               </div>
+              <button onclick="state.activeMasterModal = null; renderApp();" 
+                class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                title="Tutup">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
             </div>
 
             <!-- Form Body -->
             <div class="p-6 space-y-4 text-xs">
               ${state.masterModalError ? `
-                <div class="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start space-x-2 shadow-xs">
+                <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start space-x-2 shadow-xs">
                   <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-rose-600 mt-0.5"></i>
                   <span>${state.masterModalError}</span>
                 </div>
               ` : ''}
 
-              <form id="masterDataForm" onsubmit="handleSaveMaster(event)" class="space-y-4">
+              <form id="masterForm" onsubmit="handleSaveMaster(event)" class="space-y-4">
                 ${renderMasterModalFields(type, data)}
 
                 <div class="pt-4 border-t border-slate-200 flex items-center justify-end space-x-2.5">
                   <button type="button" onclick="state.activeMasterModal = null; renderApp();"
-                    class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs transition">
+                    class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
                     Batal
                   </button>
                   <button type="submit" ${state.isSavingMaster ? 'disabled' : ''}
-                    class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs flex items-center space-x-2 shadow-md shadow-amber-500/20 transition transform hover:-translate-y-0.5 disabled:opacity-50">
+                    class="px-5 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs flex items-center space-x-2 shadow-sm transition disabled:opacity-50">
                     ${state.isSavingMaster ? `
                       <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                       <span>Menyimpan...</span>
@@ -80,12 +80,7 @@
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Nama Keuskupan *</label>
             <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Keuskupan Agung Jakarta"
-              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
-          </div>
-          <div>
-            <label class="block font-extrabold text-slate-700 mb-1.5">Kode Singkatan</label>
-            <input type="text" id="masterCodeInput" value="${data.code || ''}" placeholder="misal: KAJ"
-              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
           </div>
         `;
       } else if (type === 'paroki') {
@@ -105,12 +100,7 @@
           <div>
             <label class="block font-bold text-slate-700 mb-1.5">Nama Paroki *</label>
             <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Paroki Santa Maria Regina"
-              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
-          </div>
-          <div>
-            <label class="block font-bold text-slate-700 mb-1.5">Alamat Lengkap Paroki</label>
-            <textarea id="masterAddressInput" rows="2" placeholder="misal: Jl. Bintaro Utama Sektor 7..."
-              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">${data.address || ''}</textarea>
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
           </div>
         `;
       } else if (type === 'wilayah') {
@@ -311,7 +301,7 @@
 
       return `
         <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
             <div class="flex items-start space-x-3.5">
               <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0">
                 <i data-lucide="alert-triangle" class="w-6 h-6"></i>
