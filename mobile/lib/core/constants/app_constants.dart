@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 class AppConstants {
   static const String appName = 'CATU Pelayanan';
   static const String appVersion = 'v2.5.0-build.20260914.103355';
-  static const String apiBaseUrl = String.fromEnvironment('CATU_API_URL');
+  static const String apiBaseUrl = String.fromEnvironment(
+    'CATU_API_URL',
+    defaultValue: String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.10.92:3005'),
+  );
 
   // Custom HSL Colors
   static const Color primaryBlue = Color(0xFF1E3A8A); // Deep Catholic Church Blue
