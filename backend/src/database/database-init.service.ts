@@ -476,7 +476,7 @@ export class DatabaseInitService implements OnModuleInit {
           (6, 'CSsR', 'CSsR - Kongregasi Sang Penebus'),
           (7, 'O.Carm', 'O.Carm - Ordo Karmel'),
           (8, 'SCJ', 'SCJ - Hati Kudus Yesus')
-        ON CONFLICT (code) DO NOTHING;
+        ON CONFLICT (id) DO UPDATE SET code = EXCLUDED.code, name = EXCLUDED.name;
       `);
     } catch (e) {
       console.log('Auto-migration user_profiles notice:', e);
