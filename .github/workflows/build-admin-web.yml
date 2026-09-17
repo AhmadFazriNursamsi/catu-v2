@@ -19,6 +19,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set lowercase repository owner
+        run: |
+          echo "REPO_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -36,5 +40,5 @@ jobs:
           file: ./admin_web/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/catu-v2-admin-web:latest
-            ghcr.io/${{ github.repository_owner }}/catu-v2-admin-web:${{ github.sha }}
+            ghcr.io/${{ env.REPO_OWNER }}/catu-v2-admin-web:latest
+            ghcr.io/${{ env.REPO_OWNER }}/catu-v2-admin-web:${{ github.sha }}
