@@ -19,7 +19,10 @@ BUILD_TS=$(date +"%Y%m%d.%H%M%S")
 VERSION_STRING="v2.5.0-build.$BUILD_TS"
 API_BASE_URL="${CATU_API_URL:-${PUBLIC_API_URL:-}}"
 if [ -z "$API_BASE_URL" ] && [ -f "$ROOT_ENV_FILE" ]; then
-  API_BASE_URL=$(sed -n 's/^PUBLIC_API_URL=//p' "$ROOT_ENV_FILE" | head -1)
+  API_BASE_URL=$(sed -n 's/^CATU_API_URL=//p' "$ROOT_ENV_FILE" | head -1)
+  if [ -z "$API_BASE_URL" ]; then
+    API_BASE_URL=$(sed -n 's/^PUBLIC_API_URL=//p' "$ROOT_ENV_FILE" | head -1)
+  fi
 fi
 if [ -z "$BACKEND_HOST_PORT" ] && [ -f "$ROOT_ENV_FILE" ]; then
   BACKEND_HOST_PORT=$(sed -n 's/^BACKEND_PORT=//p' "$ROOT_ENV_FILE" | head -1)
@@ -37,7 +40,10 @@ import 'package:flutter/material.dart';
 class AppConstants {
   static const String appName = 'CATU Pelayanan';
   static const String appVersion = '$VERSION_STRING';
-  static const String apiBaseUrl = String.fromEnvironment('CATU_API_URL');
+  static const String apiBaseUrl = String.fromEnvironment(
+    'CATU_API_URL',
+    defaultValue: String.fromEnvironment('API_BASE_URL', defaultValue: '$API_BASE_URL'),
+  );
   
   // Custom HSL Colors
   static const Color primaryBlue = Color(0xFF1E3A8A); // Deep Catholic Church Blue

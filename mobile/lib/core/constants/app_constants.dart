@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 class AppConstants {
   static const String appName = 'CATU Pelayanan';
-  static const String appVersion = 'v2.5.0-build.20260914.103355';
+  static const String appVersion = 'v2.5.0-build.20260917.102806';
   static const String apiBaseUrl = String.fromEnvironment(
     'CATU_API_URL',
-    defaultValue: String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.10.92:3005'),
+    defaultValue: String.fromEnvironment('API_BASE_URL', defaultValue: 'https://api-catu.farismunir.my.id'),
   );
-
+  
   // Custom HSL Colors
   static const Color primaryBlue = Color(0xFF1E3A8A); // Deep Catholic Church Blue
   static const Color accentGold = Color(0xFFD97706);  // Sacred Gold Accent
