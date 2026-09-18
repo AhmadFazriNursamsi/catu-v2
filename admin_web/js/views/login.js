@@ -88,16 +88,6 @@
               </div>
             </div>
 
-            <div class="form-options">
-              <label class="remember">
-                <input type="checkbox" name="remember" id="rememberMe" />
-                <span>Ingat saya</span>
-              </label>
-              <a href="javascript:void(0)" onclick="alert('Silakan hubungi administrator paroki untuk bantuan reset kata sandi.')" class="forgot">
-                Lupa kata sandi?
-              </a>
-            </div>
-
             <button type="submit" class="submit-btn" id="submitBtn" ${state.loginLoading ? 'disabled' : ''}>
               ${state.loginLoading ? `
                 <span class="flex items-center space-x-2">
