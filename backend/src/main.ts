@@ -14,6 +14,16 @@ async function bootstrap() {
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ limit: '50mb', extended: true }));
 
+  // Transparently support both /api/* and non-/api/* routes
+  app.use((req: any, _res: any, next: any) => {
+    if (req.url === '/api') {
+      req.url = '/';
+    } else if (req.url.startsWith('/api/') && !req.url.startsWith('/api/docs')) {
+      req.url = req.url.replace(/^\/api/, '');
+    }
+    next();
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -56,6 +66,7 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('docs', app, document);
 
   const port = process.env.PORT || 3000;
   const host = process.env.HOST || '0.0.0.0';

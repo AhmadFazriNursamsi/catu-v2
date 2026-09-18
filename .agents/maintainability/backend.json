@@ -8,25 +8,32 @@
   "files": {
     "backend/src/orders.dto.ts": 513,
     "backend/src/news.service.ts": 583,
-    "backend/src/modules/assignments/assignments.controller.ts": 434,
-    "backend/src/modules/chat/chat.controller.ts": 670,
-    "backend/src/modules/auth/auth.controller.ts": 2142,
-    "backend/src/modules/master-data/master-data.controller.ts": 539,
-    "backend/src/modules/orders/orders.controller.ts": 1679
+    "backend/src/database/database-init.service.ts": 486,
+    "backend/src/modules/assignments/assignments.service.ts": 376,
+    "backend/src/modules/chat/chat.service.ts": 585,
+    "backend/src/modules/auth/auth.service.ts": 1517,
+    "backend/src/modules/master-data/master-data.service.ts": 414,
+    "backend/src/modules/orders/orders.service.ts": 1597
   },
   "functions": {
     "backend/src/news.service.ts": [
       121
     ],
-    "backend/src/modules/assignments/assignments.controller.ts": [
-      130
-    ],
-    "backend/src/modules/auth/auth.controller.ts": [
+    "backend/src/database/database-init.service.ts": [
       474
     ],
-    "backend/src/modules/orders/orders.controller.ts": [
+    "backend/src/modules/assignments/assignments.service.ts": [
+      130
+    ],
+    "backend/src/modules/chat/chat.service.ts": [
+      139
+    ],
+    "backend/src/modules/auth/auth.service.ts": [
+      320
+    ],
+    "backend/src/modules/orders/orders.service.ts": [
+      399,
       239,
-      203,
       191
     ]
   },
