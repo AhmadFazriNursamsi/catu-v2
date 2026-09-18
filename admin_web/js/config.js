@@ -25,6 +25,7 @@
       token: localStorage.getItem('catu_admin_token') || '',
       currentTab: 'overview',
       isSidebarOpen: localStorage.getItem('catu_sidebar_open') !== 'false',
+      isMobileMenuOpen: false,
       analytics: null,
       orders: [],
       users: [],

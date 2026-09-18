@@ -59,7 +59,7 @@ function renderSettingsTab() {
           </div>
 
           <div class="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center">
-            <div id="apkQrCode" class="flex h-[272px] w-[272px] items-center justify-center overflow-hidden rounded-2xl bg-white p-4 shadow-inner">
+            <div id="apkQrCode" class="flex h-[272px] w-[272px] max-w-full items-center justify-center overflow-hidden rounded-2xl bg-white p-4 shadow-inner">
               <span class="text-xs font-semibold text-slate-400">Menyiapkan QR code...</span>
             </div>
             <p id="apkQrStatus" class="mt-4 text-xs font-semibold leading-relaxed text-slate-500">Memuat QR code...</p>

@@ -71,8 +71,8 @@
 
       return `
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
-          <div class="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center space-x-3 flex-1 min-w-[280px]">
+          <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <div class="flex items-center space-x-3 w-full sm:flex-1 min-w-0">
               <div class="relative w-full">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
                 <input type="text" id="orderSearchInput" placeholder="Cari nomor order, pemohon, paroki..." value="${state.orderSearch}"
@@ -80,9 +80,9 @@
                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
               </div>
             </div>
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-2 w-full sm:w-auto">
               <select onchange="state.orderStatusFilter = this.value; renderApp();"
-                class="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-950">
+                class="w-full sm:w-auto px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-950">
                 <option value="ALL" ${state.orderStatusFilter === 'ALL' ? 'selected' : ''}>Semua Status</option>
                 <option value="PENDING" ${state.orderStatusFilter === 'PENDING' ? 'selected' : ''}>Menunggu Konfirmasi</option>
                 <option value="CONFIRMED" ${state.orderStatusFilter === 'CONFIRMED' ? 'selected' : ''}>Telah Dikonfirmasi</option>
@@ -95,7 +95,7 @@
           </div>
 
           <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
+            <table class="w-full min-w-[680px] text-left text-xs">
               <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                 <tr>
                   <th class="px-6 py-3.5">NO. ORDER</th>

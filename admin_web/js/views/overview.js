@@ -30,7 +30,7 @@
           </div>
 
           <!-- 4 Pastoral KPI Cards -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5">
             <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs cursor-pointer hover:border-blue-900/40 transition" onclick="setTab('orders')">
               <div class="flex items-center justify-between mb-3">
                 <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center font-bold">
@@ -92,7 +92,7 @@
 
           <!-- Section: Permohonan Sakramen Terbaru -->
           <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+            <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 class="text-sm font-extrabold text-slate-900">Permohonan Sakramen Terbaru</h3>
                 <p class="text-xs text-slate-500 mt-0.5">Daftar permohonan terkini yang diajukan oleh umat paroki.</p>
@@ -104,7 +104,7 @@
             </div>
 
             <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs">
+              <table class="w-full min-w-[640px] text-left text-xs">
                 <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                   <tr>
                     <th class="px-6 py-3.5">NO. ORDER</th>

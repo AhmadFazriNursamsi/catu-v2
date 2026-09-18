@@ -5,28 +5,38 @@
       renderApp();
     }
 
+    function toggleMobileMenu() {
+      state.isMobileMenuOpen = !state.isMobileMenuOpen;
+      renderApp();
+    }
+
+    function closeMobileMenu() {
+      if (state.isMobileMenuOpen) {
+        state.isMobileMenuOpen = false;
+        renderApp();
+      }
+    }
+
     // ══════════════════════════════════════════════════════════════════════════
     // 2. DASHBOARD MAIN LAYOUT & SIDEBAR (COLLAPSIBLE / TUTUP BUKA)
     // ══════════════════════════════════════════════════════════════════════════
     function renderSidebarHeader(isOpen) {
-      if (isOpen) {
-        return `
-          <div class="p-5 flex items-center space-x-3 border-b border-slate-800">
+      return `
+        <div class="${isOpen ? 'p-4 sm:p-5' : 'p-3.5'} flex items-center justify-between border-b border-slate-800">
+          <div class="flex items-center space-x-3">
             <div class="w-9 h-9 rounded-xl bg-white p-1 shadow border border-blue-500/60 flex items-center justify-center flex-shrink-0">
               <img src="assets/images/logoCatu.png" alt="CATU" class="h-full object-contain" />
             </div>
-            <div>
-              <h2 class="text-sm font-extrabold text-white tracking-wide">CATU</h2>
-              <p class="text-[9px] font-bold text-blue-300 tracking-wider">PELAYANAN PASTORAL</p>
-            </div>
+            ${isOpen ? `
+              <div>
+                <h2 class="text-sm font-extrabold text-white tracking-wide">CATU</h2>
+                <p class="text-[9px] font-bold text-blue-300 tracking-wider">PELAYANAN PASTORAL</p>
+              </div>
+            ` : ''}
           </div>
-        `;
-      }
-      return `
-        <div class="p-3.5 flex flex-col items-center border-b border-slate-800">
-          <div class="w-10 h-10 rounded-xl bg-white p-1 shadow border border-blue-500/60 flex items-center justify-center flex-shrink-0">
-            <img src="assets/images/logoCatu.png" alt="CATU" class="h-full object-contain" />
-          </div>
+          <button onclick="closeMobileMenu()" class="p-1.5 text-slate-400 hover:text-white rounded-lg lg:hidden transition" aria-label="Tutup Menu">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
         </div>
       `;
     }
@@ -110,19 +120,25 @@
       const activeRomoOrdoCount = state.users.filter(u => (u.role_code || u.roleCode) === 'ROMO_ORDO' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const activeAnnotationsCount = AGENTATION_ENABLED ? state.agentation.annotations.filter(a => !a.resolved).length : 0;
       const isOpen = state.isSidebarOpen !== false;
+      const isMobileOpen = Boolean(state.isMobileMenuOpen);
 
       return `
         <div class="h-full flex relative overflow-hidden">
-          <!-- Sidebar Nav (Left) - Collapsible -->
-          <div class="${isOpen ? 'w-64' : 'w-20'} bg-slate-900 border-r border-slate-800 flex flex-col justify-between flex-shrink-0 transition-all duration-300 ease-in-out">
+          <!-- Mobile Backdrop Overlay -->
+          ${isMobileOpen ? `
+            <div onclick="closeMobileMenu()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 lg:hidden transition-opacity"></div>
+          ` : ''}
+
+          <!-- Sidebar Nav (Left) - Drawer on mobile, Collapsible on desktop -->
+          <aside class="fixed inset-y-0 left-0 z-50 ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} lg:translate-x-0 lg:static lg:z-auto ${isOpen ? 'w-64' : 'w-20'} bg-slate-900 border-r border-slate-800 flex flex-col justify-between flex-shrink-0 transition-all duration-300 ease-in-out">
             <div class="overflow-y-auto custom-scrollbar">
               <!-- Sidebar Header -->
-              ${renderSidebarHeader(isOpen)}
+              ${renderSidebarHeader(isOpen || isMobileOpen)}
 
               <!-- Nav Items -->
-              <nav class="${isOpen ? 'p-3 space-y-4' : 'p-2 space-y-3'}">
+              <nav class="${(isOpen || isMobileOpen) ? 'p-3 space-y-4' : 'p-2 space-y-3'}">
                 <div>
-                  ${isOpen ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Pelayanan Pastoral</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
+                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Pelayanan Pastoral</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
                     ${renderNavItem('overview', 'layout-dashboard', 'Ringkasan Pastoral')}
                     ${renderNavItem('orders', 'clipboard-list', 'Permohonan Sakramen', (state.orders || []).filter(o => getEffectiveOrderStatus(o) === 'PENDING').length, 'bg-blue-600')}
@@ -130,7 +146,7 @@
                 </div>
 
                 <div>
-                  ${isOpen ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Data Keumatan</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
+                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Data Keumatan</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
                     ${renderNavItem('umat', 'users', 'Umat Katolik', activeUmatCount, 'bg-blue-600')}
                     ${renderNavItem('pengurus', 'briefcase', 'Pengurus Lingkungan', activePengurusCount, 'bg-blue-600')}
@@ -140,7 +156,7 @@
                 </div>
 
                 <div>
-                  ${isOpen ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Tata Kelola & Wilayah</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
+                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Tata Kelola & Wilayah</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
                     ${(pendingApprovalsCount > 0 || state.currentTab === 'approvals') ? renderNavItem('approvals', 'shield-check', 'Persetujuan Pendaftaran', pendingApprovalsCount, 'bg-blue-600') : ''}
                     ${renderNavItem('master', 'database', 'Master Data')}
@@ -151,18 +167,26 @@
             </div>
 
             <!-- Sidebar Bottom Action Section -->
-            ${renderSidebarBottom(isOpen, adminName, activeAnnotationsCount)}
-          </div>
+            ${renderSidebarBottom(isOpen || isMobileOpen, adminName, activeAnnotationsCount)}
+          </aside>
 
           <!-- Main Content View -->
           <div class="flex-1 flex flex-col overflow-hidden bg-slate-100 min-w-0">
-            <header class="bg-white border-b border-slate-200 px-6 lg:px-8 py-4 flex items-center justify-between flex-shrink-0">
-              <div>
-                <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">${getTabTitle(state.currentTab)}</h1>
+            <header class="bg-white border-b border-slate-200 px-4 py-3 sm:px-6 lg:px-8 sm:py-4 flex items-center justify-between flex-shrink-0">
+              <div class="flex items-center space-x-2.5 min-w-0">
+                <button onclick="toggleMobileMenu()" class="p-2 -ml-1.5 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition lg:hidden" aria-label="Buka Menu Navigasi">
+                  <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+                <h1 class="text-base sm:text-xl font-extrabold text-slate-900 tracking-tight truncate">${getTabTitle(state.currentTab)}</h1>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button id="refreshBtn" class="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" title="Muat Ulang Data">
+                  <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                </button>
               </div>
             </header>
 
-            <main class="flex-1 overflow-y-auto p-6 lg:p-8 custom-scrollbar relative" id="main-content-scroll">
+            <main class="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-8 custom-scrollbar relative" id="main-content-scroll">
               ${renderActiveTab()}
             </main>
           </div>
@@ -183,7 +207,7 @@
 
     function renderNavItem(id, icon, label, badge, badgeColor = 'bg-blue-600') {
       const active = state.currentTab === id;
-      const isOpen = state.isSidebarOpen !== false;
+      const isOpen = (state.isSidebarOpen !== false) || Boolean(state.isMobileMenuOpen);
 
       if (!isOpen) {
         return `
@@ -231,6 +255,7 @@
 
     function setTab(tab) {
       state.currentTab = tab;
+      state.isMobileMenuOpen = false;
       if (tab === 'master') {
         loadMasterData(state.masterSubTab || 'paroki');
       }

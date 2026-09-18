@@ -525,51 +525,93 @@ body {
 
 @media (max-width: 900px) {
   .login-page {
-    display: block;
-    height: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
     overflow-y: auto;
+    overflow-x: hidden;
+    padding: 24px 16px;
+    box-sizing: border-box;
+    background-color: #F7FAFE;
   }
   .hero {
-    height: auto;
-    min-height: 520px;
-    background-position: center;
-  }
-  .hero-content {
-    height: auto;
-    min-height: 520px;
-    padding: 36px 24px;
-  }
-  .hero h1 {
-    font-size: 38px;
-  }
-  .features {
     display: none;
   }
   .login-side {
+    width: 100%;
+    max-width: 480px;
     height: auto;
     min-height: auto;
-    padding: 40px 20px 60px;
+    padding: 0;
+    background: transparent;
   }
   .side-top {
     position: static;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     text-align: center;
   }
   .side-top-line {
     margin: 6px auto 0;
   }
   .login-card {
+    width: 100%;
+    max-width: 100%;
     padding: 30px 24px;
+    border-radius: 24px;
+    box-shadow: 0 12px 35px rgba(25, 55, 90, 0.08);
+  }
+  .side-footer {
+    justify-content: center;
+    text-align: center;
+    margin-top: 20px;
   }
 }
 
-@media (max-width: 560px) {
-  .hero-content { padding: 24px 18px; }
-  .brand img { width: 135px; }
-  .hero h1 { font-size: 32px; letter-spacing: -1.2px; }
-  .hero-description { font-size: 13px; }
-  .hero-footer { display: none; }
-  .login-card { padding: 24px 18px; border-radius: 20px; }
+@media (max-width: 480px) {
+  .login-page {
+    padding: 16px 12px;
+  }
+  .login-card {
+    padding: 22px 16px;
+    border-radius: 18px;
+  }
+  .login-brand img {
+    width: 130px;
+  }
+  .field input {
+    height: 50px;
+    font-size: 13.5px;
+    padding: 0 42px;
+  }
+  .submit-btn {
+    height: 50px;
+    font-size: 14px;
+    padding: 0 18px;
+  }
+  .support {
+    padding: 12px 14px;
+    min-height: auto;
+    border-radius: 14px;
+  }
+  .support-icon {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+  }
+  .support-text h4 {
+    font-size: 12px;
+  }
+  .support-text p {
+    font-size: 11px;
+  }
+}
+
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
 }
 
 .custom-scrollbar::-webkit-scrollbar {

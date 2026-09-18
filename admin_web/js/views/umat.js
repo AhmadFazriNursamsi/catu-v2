@@ -1,7 +1,7 @@
 // ── Umat Management View ──
 function renderUmatTable(filteredUmat) {
       return `<div class="overflow-x-auto">
-              <table class="w-full text-left text-xs">
+              <table class="w-full min-w-[760px] text-left text-xs">
                 <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
                   <tr>
                     <th class="px-6 py-4">NAMA LENGKAP UMAT</th>
@@ -119,7 +119,7 @@ function renderUmatTable(filteredUmat) {
       return `
         <div class="space-y-6 animate-fade-in">
           <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
-            <div class="p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" id="umatSearchInput" placeholder="Cari nama umat, kota, no. WhatsApp, paroki..." value="${state.umatSearch}"
@@ -127,10 +127,10 @@ function renderUmatTable(filteredUmat) {
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
               </div>
 
-              <div class="flex flex-wrap items-center gap-3">
-                <div class="relative">
+              <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
+                <div class="relative w-full sm:w-auto">
                   <select onchange="state.umatFilterParoki = this.value; renderApp();"
-                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-[210px] truncate">
+                    class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-none sm:max-w-[210px] truncate">
                     <option value="">Semua Paroki</option>
                     ${parokiList.map(p => `
                       <option value="${p.id || p.name}" ${String(state.umatFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>${p.name}</option>
@@ -138,9 +138,9 @@ function renderUmatTable(filteredUmat) {
                   </select>
                 </div>
 
-                <div class="relative">
+                <div class="relative w-full sm:w-auto">
                   <select onchange="state.umatFilterLingkungan = this.value; renderApp();"
-                    class="pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-[200px] truncate">
+                    class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-none sm:max-w-[200px] truncate">
                     <option value="">Semua Lingkungan</option>
                     ${lingList.map(l => `
                       <option value="${l}" ${state.umatFilterLingkungan === l ? 'selected' : ''}>${l}</option>

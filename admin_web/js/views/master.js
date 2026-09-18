@@ -63,7 +63,7 @@
       return `
         <div class="space-y-6 animate-fade-in">
           <!-- Sub-Tab Navigation Bar -->
-          <div class="bg-white/95 backdrop-blur-md rounded-2xl p-2 shadow-xs border border-slate-200/90 flex flex-wrap gap-2">
+          <div class="bg-white/95 backdrop-blur-md rounded-2xl p-2 shadow-xs border border-slate-200/90 flex overflow-x-auto custom-scrollbar gap-1.5 sm:gap-2">
             ${[
               { id: 'keuskupan', icon: 'landmark', label: 'Keuskupan', count: state.keuskupan?.length },
               { id: 'paroki', icon: 'church', label: 'Paroki', count: state.paroki?.length },
@@ -77,7 +77,7 @@
               const active = sub === tab.id;
               return `
                 <button onclick="setMasterSubTab('${tab.id}')"
-                  class="flex items-center space-x-2.5 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                  class="flex-shrink-0 whitespace-nowrap flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-all ${
                     active 
                       ? 'bg-blue-950 text-white shadow-xs' 
                       : 'text-slate-600 hover:bg-slate-100 hover:text-blue-950'
@@ -102,7 +102,7 @@
           <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
             
             <!-- Header Toolbar -->
-            <div class="p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
               <!-- Search Input -->
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -117,7 +117,7 @@
               </div>
 
               <!-- Filters & Action Controls -->
-              <div class="flex flex-wrap items-center gap-3">
+              <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
 
                 <span class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold whitespace-nowrap">
                   ${filtered.length} Data
@@ -154,7 +154,7 @@
               </div>
             ` : `
               <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
+                <table class="w-full min-w-[640px] text-left text-xs">
                   <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
                     <tr>
                       ${renderMasterTableHeaders(sub)}
