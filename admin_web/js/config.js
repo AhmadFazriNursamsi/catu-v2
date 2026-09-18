@@ -83,6 +83,19 @@
       loginError: '',
       testResults: null,
       isRunningTests: false,
+
+      // Activity Logs State
+      activityLogs: [],
+      activityLogsLoading: false,
+      activityLogsPage: 1,
+      activityLogsLimit: 20,
+      activityLogsTotal: 0,
+      activityLogsTotalPages: 1,
+      activityLogsSearch: '',
+      activityLogsFilterRole: '',
+      activityLogsFilterAction: '',
+      activityLogsFilterEntity: '',
+      activeLogDetailModal: null,
       
       // Modals
       activeChatOrder: null,

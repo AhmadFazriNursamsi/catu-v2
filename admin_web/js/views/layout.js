@@ -160,6 +160,7 @@
                   <div class="space-y-1">
                     ${(pendingApprovalsCount > 0 || state.currentTab === 'approvals') ? renderNavItem('approvals', 'shield-check', 'Persetujuan Pendaftaran', pendingApprovalsCount, 'bg-blue-600') : ''}
                     ${renderNavItem('master', 'database', 'Master Data')}
+                    ${renderNavItem('activity_logs', 'scroll-text', 'Log Aktivitas')}
                     ${renderNavItem('settings', 'settings', 'Pengaturan Portal')}
                   </div>
                 </div>
@@ -248,6 +249,7 @@
       if (tab === 'romo_ordo') return 'Data Romo Ordo';
       if (tab === 'approvals') return 'Persetujuan Pendaftaran Akun';
       if (tab === 'master') return 'Master Data';
+      if (tab === 'activity_logs') return 'Log Aktivitas & Audit Trail';
       if (tab === 'chat') return 'Monitoring Komunikasi Chat';
       if (tab === 'settings') return 'Pengaturan Portal';
       return tab;
@@ -258,6 +260,9 @@
       state.isMobileMenuOpen = false;
       if (tab === 'master') {
         loadMasterData(state.masterSubTab || 'paroki');
+      }
+      if (tab === 'activity_logs') {
+        loadActivityLogs(1);
       }
       renderApp();
     }

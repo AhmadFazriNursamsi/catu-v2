@@ -55,6 +55,7 @@
       if (state.currentTab === 'master') return renderMasterTab();
       if (state.currentTab === 'chat') return renderChatTab();
       if (state.currentTab === 'qa') return renderQATab();
+      if (state.currentTab === 'activity_logs') return renderActivityLogsTab();
       if (state.currentTab === 'settings') return renderSettingsTab();
       return '';
     }
@@ -70,6 +71,7 @@ function renderModals() {
     ${typeof renderUserProfileModal === 'function' ? renderUserProfileModal() : ''}
     ${typeof renderOrderDetailModal === 'function' ? renderOrderDetailModal() : ''}
     ${typeof renderChatModal === 'function' ? renderChatModal() : ''}
+    ${typeof renderActivityLogDetailModal === 'function' ? renderActivityLogDetailModal() : ''}
     ${typeof renderToastsContainer === 'function' ? renderToastsContainer() : ''}
     ${AGENTATION_ENABLED && typeof renderAgentationPendingDialog === 'function' ? renderAgentationPendingDialog() : ''}
   `;
