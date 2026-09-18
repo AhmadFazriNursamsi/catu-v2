@@ -1,5 +1,5 @@
 // ── Registration Approvals View & Confirmation Modal ──
-function renderApprovalsTable(filtered) {
+function renderApprovalsTable(pendings) {
       return `<div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
                 <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
@@ -107,9 +107,7 @@ function renderApprovalsTable(filtered) {
                   `).join('')}
                 </tbody>
               </table>
-            </div>
-          </div>
-        </div>`;
+            </div>`;
     }
 
     function renderApprovalsTab() {
@@ -208,7 +206,9 @@ function renderApprovalsTable(filtered) {
               </div>
             </div>
 
-            ${renderApprovalsTable(filtered)}
+            ${renderApprovalsTable(pendings)}
+          </div>
+        </div>
       `;
     }
 

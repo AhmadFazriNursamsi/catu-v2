@@ -1,5 +1,5 @@
 window.CATU_RUNTIME_CONFIG = {
   nodeEnv: 'development',
-  apiBaseUrl: 'http://localhost:3005',
-  apkDownloadUrl: '',
+  apiBaseUrl: 'https://catu.devoutsys.com/api',
+  apkDownloadUrl: 'https://catu.devoutsys.com/api/public/apk',
 };
