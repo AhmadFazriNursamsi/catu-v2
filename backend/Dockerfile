@@ -17,6 +17,7 @@ WORKDIR /app
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/drizzle ./drizzle
 # Firebase credentials are provided at runtime through a secret or volume.
 
 EXPOSE 3000

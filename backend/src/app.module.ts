@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 import { DatabaseInitModule } from './database/database-init.module';
+import { DrizzleModule } from './database/drizzle.module';
 import { FcmModule } from './modules/fcm/fcm.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -53,6 +54,7 @@ import { HttpLoggerMiddleware } from './logger.middleware';
       },
     ]),
     DatabaseInitModule,
+    DrizzleModule,
     FcmModule,
     HealthModule,
     AuthModule,
