@@ -101,18 +101,18 @@
               `}
             </button>
 
-            <div class="support" onclick="alert('Hubungi tim administrator CATU di nomor WhatsApp paroki untuk bantuan.')">
+            <a href="https://wa.me/6285213499965?text=Halo%20Admin%20CATU,%20saya%20butuh%20bantuan%20akses%20akun" target="_blank" rel="noopener noreferrer" class="support">
               <div class="support-content">
                 <div class="support-icon">
                   <i data-lucide="headphones" class="w-5 h-5"></i>
                 </div>
                 <div class="support-text">
                   <h4>Butuh bantuan?</h4>
-                  <p>Hubungi tim operasional atau administrator CATU untuk bantuan akses akun.</p>
+                  <p>Hubungi tim operasional atau administrator CATU untuk bantuan akses akun. <span class="font-semibold text-[#165AA7] block sm:inline mt-0.5 sm:mt-0">+62 852-1349-9965</span></p>
                 </div>
               </div>
               <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400"></i>
-            </div>
+            </a>
           </form>
         </div>
       `;
