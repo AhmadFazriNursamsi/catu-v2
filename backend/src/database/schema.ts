@@ -135,24 +135,32 @@ export const orderItems = pgTable('order_items', {
 export const orderReschedules = pgTable('order_reschedules', {
   id: serial('id').primaryKey(),
   orderId: integer('order_id').references(() => orders.id).notNull(),
-  requestedByUserId: integer('requested_by_user_id').references(() => authUsers.id),
-  oldDate: varchar('old_date', { length: 50 }),
-  oldTime: varchar('old_time', { length: 50 }),
-  newDate: varchar('new_date', { length: 50 }),
-  newTime: varchar('new_time', { length: 50 }),
-  reason: text('reason'),
-  status: varchar('status', { length: 50 }).default('PENDING'),
+  itemId: integer('item_id'),
+  proposedBy: integer('proposed_by').references(() => authUsers.id).notNull(),
+  previousDate: varchar('previous_date', { length: 50 }),
+  previousTimeStart: varchar('previous_time_start', { length: 50 }),
+  previousTimeEnd: varchar('previous_time_end', { length: 50 }),
+  proposedDate: varchar('proposed_date', { length: 50 }).notNull(),
+  proposedTimeStart: varchar('proposed_time_start', { length: 50 }).notNull(),
+  proposedTimeEnd: varchar('proposed_time_end', { length: 50 }),
+  reason: text('reason').notNull(),
+  status: varchar('status', { length: 50 }).default('PENDING_UMAT'),
+  respondedBy: integer('responded_by').references(() => authUsers.id),
+  respondedAt: timestamp('responded_at'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const orderRomoHandovers = pgTable('order_romo_handovers', {
   id: serial('id').primaryKey(),
   orderId: integer('order_id').references(() => orders.id).notNull(),
-  fromRomoId: integer('from_romo_id').references(() => authUsers.id),
-  toRomoId: integer('to_romo_id').references(() => authUsers.id),
-  reason: text('reason'),
-  status: varchar('status', { length: 50 }).default('PENDING'),
+  itemId: integer('item_id'),
+  previousRomoId: integer('previous_romo_id').references(() => authUsers.id).notNull(),
+  newRomoId: integer('new_romo_id').references(() => authUsers.id),
+  handoverType: varchar('handover_type', { length: 50 }).notNull(),
+  reason: text('reason').notNull(),
+  status: varchar('status', { length: 50 }).default('COMPLETED'),
   createdAt: timestamp('created_at').defaultNow(),
+  respondedAt: timestamp('responded_at'),
 });
 
 export const chatGroups = pgTable('chat_groups', {
@@ -166,16 +174,19 @@ export const chatGroupMembers = pgTable('chat_group_members', {
   id: serial('id').primaryKey(),
   chatGroupId: integer('chat_group_id').references(() => chatGroups.id).notNull(),
   userId: integer('user_id').references(() => authUsers.id).notNull(),
-  role: varchar('role', { length: 50 }).default('MEMBER'),
+  roleInGroup: varchar('role_in_group', { length: 50 }).default('MEMBER'),
+  lastReadMessageId: integer('last_read_message_id'),
   joinedAt: timestamp('joined_at').defaultNow(),
 });
 
 export const chatMessages = pgTable('chat_messages', {
   id: serial('id').primaryKey(),
   chatGroupId: integer('chat_group_id').references(() => chatGroups.id).notNull(),
-  senderId: integer('sender_id').references(() => authUsers.id).notNull(),
+  senderId: integer('sender_id').references(() => authUsers.id),
+  messageType: varchar('message_type', { length: 50 }).default('TEXT'),
   message: text('message').notNull(),
-  isRead: boolean('is_read').default(false),
+  attachmentUrl: text('attachment_url'),
+  replyToMessageId: integer('reply_to_message_id'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

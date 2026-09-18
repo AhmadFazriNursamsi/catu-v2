@@ -1,5 +1,5 @@
 {
-  "id": "df2cd264-7058-46b4-9626-2b36ad91ac9f",
+  "id": "44aa723b-aa3b-4843-9c14-9eff7f9805ec",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -187,12 +187,18 @@
           "primaryKey": false,
           "notNull": true
         },
-        "role": {
-          "name": "role",
+        "role_in_group": {
+          "name": "role_in_group",
           "type": "varchar(50)",
           "primaryKey": false,
           "notNull": false,
           "default": "'MEMBER'"
+        },
+        "last_read_message_id": {
+          "name": "last_read_message_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "joined_at": {
           "name": "joined_at",
@@ -309,7 +315,14 @@
           "name": "sender_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "message_type": {
+          "name": "message_type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'TEXT'"
         },
         "message": {
           "name": "message",
@@ -317,12 +330,17 @@
           "primaryKey": false,
           "notNull": true
         },
-        "is_read": {
-          "name": "is_read",
-          "type": "boolean",
+        "attachment_url": {
+          "name": "attachment_url",
+          "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "default": false
+          "notNull": false
+        },
+        "reply_to_message_id": {
+          "name": "reply_to_message_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -703,32 +721,50 @@
           "primaryKey": false,
           "notNull": true
         },
-        "requested_by_user_id": {
-          "name": "requested_by_user_id",
+        "item_id": {
+          "name": "item_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
-        "old_date": {
-          "name": "old_date",
+        "proposed_by": {
+          "name": "proposed_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "previous_date": {
+          "name": "previous_date",
           "type": "varchar(50)",
           "primaryKey": false,
           "notNull": false
         },
-        "old_time": {
-          "name": "old_time",
+        "previous_time_start": {
+          "name": "previous_time_start",
           "type": "varchar(50)",
           "primaryKey": false,
           "notNull": false
         },
-        "new_date": {
-          "name": "new_date",
+        "previous_time_end": {
+          "name": "previous_time_end",
           "type": "varchar(50)",
           "primaryKey": false,
           "notNull": false
         },
-        "new_time": {
-          "name": "new_time",
+        "proposed_date": {
+          "name": "proposed_date",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "proposed_time_start": {
+          "name": "proposed_time_start",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "proposed_time_end": {
+          "name": "proposed_time_end",
           "type": "varchar(50)",
           "primaryKey": false,
           "notNull": false
@@ -737,14 +773,26 @@
           "name": "reason",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "status": {
           "name": "status",
           "type": "varchar(50)",
           "primaryKey": false,
           "notNull": false,
-          "default": "'PENDING'"
+          "default": "'PENDING_UMAT'"
+        },
+        "responded_by": {
+          "name": "responded_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "responded_at": {
+          "name": "responded_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -769,12 +817,25 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "order_reschedules_requested_by_user_id_auth_users_id_fk": {
-          "name": "order_reschedules_requested_by_user_id_auth_users_id_fk",
+        "order_reschedules_proposed_by_auth_users_id_fk": {
+          "name": "order_reschedules_proposed_by_auth_users_id_fk",
           "tableFrom": "order_reschedules",
           "tableTo": "auth_users",
           "columnsFrom": [
-            "requested_by_user_id"
+            "proposed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "order_reschedules_responded_by_auth_users_id_fk": {
+          "name": "order_reschedules_responded_by_auth_users_id_fk",
+          "tableFrom": "order_reschedules",
+          "tableTo": "auth_users",
+          "columnsFrom": [
+            "responded_by"
           ],
           "columnsTo": [
             "id"
@@ -805,30 +866,42 @@
           "primaryKey": false,
           "notNull": true
         },
-        "from_romo_id": {
-          "name": "from_romo_id",
+        "item_id": {
+          "name": "item_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
-        "to_romo_id": {
-          "name": "to_romo_id",
+        "previous_romo_id": {
+          "name": "previous_romo_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "new_romo_id": {
+          "name": "new_romo_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
+        },
+        "handover_type": {
+          "name": "handover_type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
         },
         "reason": {
           "name": "reason",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "status": {
           "name": "status",
           "type": "varchar(50)",
           "primaryKey": false,
           "notNull": false,
-          "default": "'PENDING'"
+          "default": "'COMPLETED'"
         },
         "created_at": {
           "name": "created_at",
@@ -836,6 +909,12 @@
           "primaryKey": false,
           "notNull": false,
           "default": "now()"
+        },
+        "responded_at": {
+          "name": "responded_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -853,12 +932,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "order_romo_handovers_from_romo_id_auth_users_id_fk": {
-          "name": "order_romo_handovers_from_romo_id_auth_users_id_fk",
+        "order_romo_handovers_previous_romo_id_auth_users_id_fk": {
+          "name": "order_romo_handovers_previous_romo_id_auth_users_id_fk",
           "tableFrom": "order_romo_handovers",
           "tableTo": "auth_users",
           "columnsFrom": [
-            "from_romo_id"
+            "previous_romo_id"
           ],
           "columnsTo": [
             "id"
@@ -866,12 +945,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "order_romo_handovers_to_romo_id_auth_users_id_fk": {
-          "name": "order_romo_handovers_to_romo_id_auth_users_id_fk",
+        "order_romo_handovers_new_romo_id_auth_users_id_fk": {
+          "name": "order_romo_handovers_new_romo_id_auth_users_id_fk",
           "tableFrom": "order_romo_handovers",
           "tableTo": "auth_users",
           "columnsFrom": [
-            "to_romo_id"
+            "new_romo_id"
           ],
           "columnsTo": [
             "id"

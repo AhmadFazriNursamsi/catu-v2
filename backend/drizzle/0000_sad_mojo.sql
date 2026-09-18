@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS "chat_group_members" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"chat_group_id" integer NOT NULL,
 	"user_id" integer NOT NULL,
-	"role" varchar(50) DEFAULT 'MEMBER',
+	"role_in_group" varchar(50) DEFAULT 'MEMBER',
+	"last_read_message_id" integer,
 	"joined_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
@@ -41,9 +42,11 @@ CREATE TABLE IF NOT EXISTS "chat_groups" (
 CREATE TABLE IF NOT EXISTS "chat_messages" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"chat_group_id" integer NOT NULL,
-	"sender_id" integer NOT NULL,
+	"sender_id" integer,
+	"message_type" varchar(50) DEFAULT 'TEXT',
 	"message" text NOT NULL,
-	"is_read" boolean DEFAULT false,
+	"attachment_url" text,
+	"reply_to_message_id" integer,
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
@@ -100,24 +103,32 @@ CREATE TABLE IF NOT EXISTS "order_items" (
 CREATE TABLE IF NOT EXISTS "order_reschedules" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"order_id" integer NOT NULL,
-	"requested_by_user_id" integer,
-	"old_date" varchar(50),
-	"old_time" varchar(50),
-	"new_date" varchar(50),
-	"new_time" varchar(50),
-	"reason" text,
-	"status" varchar(50) DEFAULT 'PENDING',
+	"item_id" integer,
+	"proposed_by" integer NOT NULL,
+	"previous_date" varchar(50),
+	"previous_time_start" varchar(50),
+	"previous_time_end" varchar(50),
+	"proposed_date" varchar(50) NOT NULL,
+	"proposed_time_start" varchar(50) NOT NULL,
+	"proposed_time_end" varchar(50),
+	"reason" text NOT NULL,
+	"status" varchar(50) DEFAULT 'PENDING_UMAT',
+	"responded_by" integer,
+	"responded_at" timestamp,
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "order_romo_handovers" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"order_id" integer NOT NULL,
-	"from_romo_id" integer,
-	"to_romo_id" integer,
-	"reason" text,
-	"status" varchar(50) DEFAULT 'PENDING',
-	"created_at" timestamp DEFAULT now()
+	"item_id" integer,
+	"previous_romo_id" integer NOT NULL,
+	"new_romo_id" integer,
+	"handover_type" varchar(50) NOT NULL,
+	"reason" text NOT NULL,
+	"status" varchar(50) DEFAULT 'COMPLETED',
+	"created_at" timestamp DEFAULT now(),
+	"responded_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "orders" (
@@ -214,95 +225,100 @@ CREATE TABLE IF NOT EXISTS "wilayah" (
 DO $$ BEGIN
  ALTER TABLE "auth_users" ADD CONSTRAINT "auth_users_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "chat_group_members" ADD CONSTRAINT "chat_group_members_chat_group_id_chat_groups_id_fk" FOREIGN KEY ("chat_group_id") REFERENCES "public"."chat_groups"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "chat_group_members" ADD CONSTRAINT "chat_group_members_user_id_auth_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_users"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "chat_groups" ADD CONSTRAINT "chat_groups_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "chat_messages" ADD CONSTRAINT "chat_messages_chat_group_id_chat_groups_id_fk" FOREIGN KEY ("chat_group_id") REFERENCES "public"."chat_groups"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "chat_messages" ADD CONSTRAINT "chat_messages_sender_id_auth_users_id_fk" FOREIGN KEY ("sender_id") REFERENCES "public"."auth_users"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "lingkungan" ADD CONSTRAINT "lingkungan_wilayah_id_wilayah_id_fk" FOREIGN KEY ("wilayah_id") REFERENCES "public"."wilayah"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "notifications" ADD CONSTRAINT "notifications_user_id_auth_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_users"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "order_items" ADD CONSTRAINT "order_items_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "order_reschedules" ADD CONSTRAINT "order_reschedules_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "order_reschedules" ADD CONSTRAINT "order_reschedules_requested_by_user_id_auth_users_id_fk" FOREIGN KEY ("requested_by_user_id") REFERENCES "public"."auth_users"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "order_reschedules" ADD CONSTRAINT "order_reschedules_proposed_by_auth_users_id_fk" FOREIGN KEY ("proposed_by") REFERENCES "public"."auth_users"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "order_reschedules" ADD CONSTRAINT "order_reschedules_responded_by_auth_users_id_fk" FOREIGN KEY ("responded_by") REFERENCES "public"."auth_users"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "order_romo_handovers" ADD CONSTRAINT "order_romo_handovers_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "order_romo_handovers" ADD CONSTRAINT "order_romo_handovers_from_romo_id_auth_users_id_fk" FOREIGN KEY ("from_romo_id") REFERENCES "public"."auth_users"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "order_romo_handovers" ADD CONSTRAINT "order_romo_handovers_previous_romo_id_auth_users_id_fk" FOREIGN KEY ("previous_romo_id") REFERENCES "public"."auth_users"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "order_romo_handovers" ADD CONSTRAINT "order_romo_handovers_to_romo_id_auth_users_id_fk" FOREIGN KEY ("to_romo_id") REFERENCES "public"."auth_users"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "order_romo_handovers" ADD CONSTRAINT "order_romo_handovers_new_romo_id_auth_users_id_fk" FOREIGN KEY ("new_romo_id") REFERENCES "public"."auth_users"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "orders" ADD CONSTRAINT "orders_user_id_auth_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_users"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "orders" ADD CONSTRAINT "orders_category_id_service_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."service_categories"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "paroki" ADD CONSTRAINT "paroki_keuskupan_id_keuskupan_id_fk" FOREIGN KEY ("keuskupan_id") REFERENCES "public"."keuskupan"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "user_profiles" ADD CONSTRAINT "user_profiles_user_id_auth_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_users"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "wilayah" ADD CONSTRAINT "wilayah_paroki_id_paroki_id_fk" FOREIGN KEY ("paroki_id") REFERENCES "public"."paroki"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
- WHEN duplicate_object THEN null;
+ WHEN OTHERS THEN null;
 END $$;
