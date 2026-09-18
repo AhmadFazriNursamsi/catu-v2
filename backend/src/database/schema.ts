@@ -219,3 +219,18 @@ export const apks = pgTable('apks', {
   isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+export const activityLogs = pgTable('activity_logs', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => authUsers.id),
+  userName: varchar('user_name', { length: 255 }),
+  userRole: varchar('user_role', { length: 50 }),
+  action: varchar('action', { length: 100 }).notNull(),
+  targetEntity: varchar('target_entity', { length: 50 }),
+  targetId: varchar('target_id', { length: 100 }),
+  description: text('description').notNull(),
+  ipAddress: varchar('ip_address', { length: 50 }),
+  userAgent: text('user_agent'),
+  metadata: text('metadata'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
