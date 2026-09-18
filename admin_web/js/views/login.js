@@ -57,13 +57,9 @@
     function renderLoginCard(state) {
       return `
         <div class="login-card">
-          <div class="login-brand">
-            <img src="assets/logo-catu.png" alt="CATU" />
+          <div class="login-brand flex justify-center mb-6">
+            <img src="assets/logo-catu.png" alt="CATU" class="mx-auto" />
           </div>
-          <h2 class="login-title">Masuk Portal Admin</h2>
-          <p class="login-subtitle">
-            Masukkan kredensial administrator untuk mengakses dashboard.
-          </p>
 
           ${state.loginError ? `
             <div class="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start space-x-2.5">

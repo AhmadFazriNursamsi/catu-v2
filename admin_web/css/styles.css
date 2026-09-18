@@ -265,10 +265,18 @@ body {
   box-sizing: border-box;
 }
 
+.login-brand {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
 .login-brand img {
   width: 150px;
   height: auto;
   object-fit: contain;
+  margin: 0 auto;
 }
 
 .login-title {
