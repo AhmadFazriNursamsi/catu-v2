@@ -270,7 +270,22 @@
     function attachDashboardListeners() {
       const logoutBtn = document.getElementById('logoutBtn');
       if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
+        logoutBtn.addEventListener('click', async () => {
+          try {
+            if (state.token) {
+              await fetch(`${API_BASE}/auth/admin/logout`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${state.token}`,
+                },
+                body: JSON.stringify({
+                  userId: state.currentUser?.id,
+                  fullName: state.currentUser?.fullName || state.currentUser?.full_name,
+                }),
+              });
+            }
+          } catch (_) {}
           localStorage.removeItem('catu_admin_user');
           localStorage.removeItem('catu_admin_token');
           state.currentUser = null;

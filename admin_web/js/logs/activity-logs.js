@@ -52,10 +52,11 @@ function getActionBadge(action) {
   const a = (action || '').toUpperCase();
   let color = 'bg-slate-100 text-slate-700 border-slate-200';
   if (a.includes('LOGIN')) color = 'bg-sky-100 text-sky-800 border-sky-200';
+  else if (a.includes('LOGOUT')) color = 'bg-indigo-50 text-indigo-700 border-indigo-200';
   else if (a.includes('CREATED') || a.includes('BOOT')) color = 'bg-emerald-100 text-emerald-800 border-emerald-200';
   else if (a.includes('APPROVED') || a.includes('CONFIRMED')) color = 'bg-teal-100 text-teal-800 border-teal-200';
-  else if (a.includes('REJECTED') || a.includes('FAIL') || a.includes('DELETE')) color = 'bg-rose-100 text-rose-800 border-rose-200';
-  else if (a.includes('UPDATE') || a.includes('RESCHEDULE')) color = 'bg-amber-100 text-amber-800 border-amber-200';
+  else if (a.includes('REJECTED') || a.includes('FAIL') || a.includes('DELETE') || a.includes('DEACTIVATED')) color = 'bg-rose-100 text-rose-800 border-rose-200';
+  else if (a.includes('UPDATE') || a.includes('CHANGED') || a.includes('RESCHEDULE')) color = 'bg-amber-100 text-amber-800 border-amber-200';
 
   return `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold border font-mono ${color}">${action}</span>`;
 }
@@ -97,9 +98,13 @@ function renderActivityLogsFilter() {
           <select onchange="state.activityLogsFilterEntity = this.value; loadActivityLogs(1);"
             class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500 transition">
             <option value="" ${!state.activityLogsFilterEntity ? 'selected' : ''}>Semua Objek</option>
-            <option value="AUTH" ${state.activityLogsFilterEntity === 'AUTH' ? 'selected' : ''}>Autentikasi</option>
-            <option value="ORDERS" ${state.activityLogsFilterEntity === 'ORDERS' ? 'selected' : ''}>Pesanan (Orders)</option>
+            <option value="AUTH" ${state.activityLogsFilterEntity === 'AUTH' ? 'selected' : ''}>Autentikasi & Sesi</option>
             <option value="AUTH_USERS" ${state.activityLogsFilterEntity === 'AUTH_USERS' ? 'selected' : ''}>Pengguna (Users)</option>
+            <option value="ORDERS" ${state.activityLogsFilterEntity === 'ORDERS' ? 'selected' : ''}>Pesanan (Orders)</option>
+            <option value="PAROKI" ${state.activityLogsFilterEntity === 'PAROKI' ? 'selected' : ''}>Master Paroki</option>
+            <option value="WILAYAH" ${state.activityLogsFilterEntity === 'WILAYAH' ? 'selected' : ''}>Master Wilayah</option>
+            <option value="LINGKUNGAN" ${state.activityLogsFilterEntity === 'LINGKUNGAN' ? 'selected' : ''}>Master Lingkungan</option>
+            <option value="SERVICE_CATEGORIES" ${state.activityLogsFilterEntity === 'SERVICE_CATEGORIES' ? 'selected' : ''}>Master Sakramen</option>
             <option value="SYSTEM" ${state.activityLogsFilterEntity === 'SYSTEM' ? 'selected' : ''}>Sistem Server</option>
           </select>
         </div>
