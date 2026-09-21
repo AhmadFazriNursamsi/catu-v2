@@ -49,16 +49,7 @@ function getActivityRoleBadge(role) {
 }
 
 function getActionBadge(action) {
-  const a = (action || '').toUpperCase();
-  let color = 'bg-slate-100 text-slate-700 border-slate-200';
-  if (a.includes('LOGIN')) color = 'bg-sky-100 text-sky-800 border-sky-200';
-  else if (a.includes('LOGOUT')) color = 'bg-indigo-50 text-indigo-700 border-indigo-200';
-  else if (a.includes('CREATED') || a.includes('BOOT')) color = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-  else if (a.includes('APPROVED') || a.includes('CONFIRMED')) color = 'bg-teal-100 text-teal-800 border-teal-200';
-  else if (a.includes('REJECTED') || a.includes('FAIL') || a.includes('DELETE') || a.includes('DEACTIVATED')) color = 'bg-rose-100 text-rose-800 border-rose-200';
-  else if (a.includes('UPDATE') || a.includes('CHANGED') || a.includes('RESCHEDULE')) color = 'bg-amber-100 text-amber-800 border-amber-200';
-
-  return `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold border font-mono ${color}">${action}</span>`;
+  return `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-200 bg-slate-100 text-slate-700 font-mono">${action || '-'}</span>`;
 }
 
 function formatLogTimestamp(dateStr) {
@@ -164,24 +155,18 @@ function renderActivityLogsTable() {
             ${logs.map((log) => `
               <tr class="hover:bg-slate-50/80 transition">
                 <td class="p-3.5 whitespace-nowrap text-slate-600">${formatLogTimestamp(log.createdAt || log.created_at)}</td>
-                <td class="p-3.5 whitespace-nowrap">
-                  <div class="font-bold text-slate-800">${log.userName || log.user_name || 'System'}</div>
-                  ${getActivityRoleBadge(log.userRole || log.user_role)}
-                </td>
+                <td class="p-3.5 whitespace-nowrap text-slate-800 font-semibold">${log.userName || log.user_name || 'System'}</td>
                 <td class="p-3.5 whitespace-nowrap">${getActionBadge(log.action)}</td>
                 <td class="p-3.5 whitespace-nowrap">
-                  ${log.targetEntity || log.target_entity ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 font-mono">${log.targetEntity || log.target_entity}</span>` : '-'}
-                  ${log.targetId || log.target_id ? `<span class="text-[10px] text-blue-700 font-bold ml-1 font-mono">#${log.targetId || log.target_id}</span>` : ''}
+                  ${log.targetEntity || log.target_entity ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 font-mono">${log.targetEntity || log.target_entity}</span>` : '<span class="text-slate-400">-</span>'}
                 </td>
                 <td class="p-3.5 text-slate-700 font-medium">${log.description || '-'}</td>
                 <td class="p-3.5 whitespace-nowrap text-slate-600 font-mono text-[10px]">${log.ipAddress || log.ip_address || '-'}</td>
                 <td class="p-3.5 text-center whitespace-nowrap">
-                  ${(log.metadata && log.metadata !== '{}') ? `
-                    <button onclick="openActivityLogDetailModal(${log.id})"
-                      class="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition" title="Lihat Payload Metadata">
-                      <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                    </button>
-                  ` : `<span class="text-slate-500 text-[10px]">-</span>`}
+                  <button onclick="openActivityLogDetailModal('${log.id}')"
+                    class="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition" title="Lihat Detail Log & Metadata">
+                    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  </button>
                 </td>
               </tr>
             `).join('')}
@@ -219,7 +204,7 @@ function renderActivityLogsPagination() {
 }
 
 function openActivityLogDetailModal(logId) {
-  const log = (state.activityLogs || []).find((l) => l.id === logId);
+  const log = (state.activityLogs || []).find((l) => String(l.id) === String(logId));
   if (!log) return;
   state.activeLogDetailModal = log;
   renderApp();
@@ -243,7 +228,7 @@ function renderActivityLogDetailModal() {
   }
 
   return `
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+    <div onclick="if (event.target === this) closeActivityLogDetailModal()" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-fade-in">
       <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
         <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div class="flex items-center space-x-2">

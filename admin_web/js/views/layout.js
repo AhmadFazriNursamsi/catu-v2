@@ -201,6 +201,7 @@
         ${state.activeMasterModal ? renderMasterModal() : ''}
         ${state.deleteConfirmModal ? renderDeleteConfirmModal() : ''}
         ${state.actionConfirmModal ? renderActionConfirmModal() : ''}
+        ${state.activeLogDetailModal && typeof renderActivityLogDetailModal === 'function' ? renderActivityLogDetailModal() : ''}
         ${AGENTATION_ENABLED && state.agentation.pendingPin ? renderAgentationPendingDialog() : ''}
         ${renderToastsContainer()}
       `;
