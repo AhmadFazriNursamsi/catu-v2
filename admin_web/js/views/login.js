@@ -57,62 +57,83 @@
     function renderLoginCard(state) {
       return `
         <div class="login-card">
-          <div class="login-brand flex justify-center mb-6">
-            <img src="assets/logo-catu.png" alt="CATU" class="mx-auto" />
+          <div class="login-brand mb-4 text-center">
+            <img src="assets/logo-catu.png" alt="CATU" class="mx-auto h-9 w-auto object-contain" />
+          </div>
+
+          <div class="text-center mb-6">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-blue-50 text-[#165AA7] border border-blue-100/80 mb-2.5 shadow-2xs">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#165AA7] animate-pulse"></span>
+              <span>Portal Administrator</span>
+            </div>
+            <h2 class="text-2xl font-extrabold text-[#102D54] tracking-tight">Selamat Datang</h2>
+            <p class="text-xs text-slate-500 mt-1">Silakan masuk dengan akun pengurus atau administrator</p>
           </div>
 
           ${state.loginError ? `
-            <div class="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start space-x-2.5">
+            <div class="mb-5 p-3.5 rounded-xl bg-red-50/90 border border-red-200 text-red-700 text-xs font-semibold flex items-start gap-2.5 animate-fade-in shadow-2xs">
               <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-red-600 mt-0.5"></i>
-              <span>${state.loginError}</span>
+              <span class="flex-1 leading-relaxed">${state.loginError}</span>
             </div>
           ` : ''}
 
           <form class="form" id="loginForm">
             <div class="field">
-              <label for="username">Nomor WhatsApp / Akun</label>
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="username">Nomor WhatsApp / Akun</label>
+                <span class="text-[11px] text-slate-400 font-medium">Contoh: 0812...</span>
+              </div>
               <div class="field-control">
-                <span class="field-icon"><i data-lucide="phone" class="w-5 h-5"></i></span>
+                <span class="field-icon"><i data-lucide="phone" class="w-4.5 h-4.5"></i></span>
                 <input id="username" name="username" type="text" autocomplete="username" placeholder="Masukkan nomor WhatsApp akun Anda" required />
               </div>
             </div>
 
             <div class="field">
-              <label for="password">Kata sandi</label>
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="password">Kata Sandi</label>
+                <a href="https://wa.me/6285213499965?text=Halo%20Admin%20CATU,%20saya%20butuh%20bantuan%20reset%20kata%20sandi" target="_blank" rel="noopener noreferrer" class="text-[11px] font-semibold text-[#165AA7] hover:underline">Lupa sandi?</a>
+              </div>
               <div class="field-control">
-                <span class="field-icon"><i data-lucide="lock" class="w-5 h-5"></i></span>
+                <span class="field-icon"><i data-lucide="lock" class="w-4.5 h-4.5"></i></span>
                 <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Masukkan kata sandi Anda" required />
-                <button type="button" class="password-toggle" id="togglePassword" aria-label="Tampilkan kata sandi">
-                  <i data-lucide="eye" class="w-5 h-5"></i>
+                <button type="button" class="password-toggle" id="togglePassword" aria-label="Tampilkan kata sandi" title="Tampilkan kata sandi">
+                  <i data-lucide="eye" class="w-4.5 h-4.5"></i>
                 </button>
               </div>
             </div>
 
             <button type="submit" class="submit-btn" id="submitBtn" ${state.loginLoading ? 'disabled' : ''}>
               ${state.loginLoading ? `
-                <span class="flex items-center space-x-2">
+                <span class="flex items-center justify-center space-x-2">
                   <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  <span>Memverifikasi...</span>
+                  <span>Memverifikasi Kredensial...</span>
                 </span>
-                <span></span>
               ` : `
-                <span>Masuk</span>
-                <span class="arrow"><i data-lucide="arrow-right" class="w-5 h-5"></i></span>
+                <span class="flex items-center justify-center space-x-2">
+                  <span>Masuk ke Portal</span>
+                  <i data-lucide="arrow-right" class="w-4.5 h-4.5"></i>
+                </span>
               `}
             </button>
 
-            <a href="https://wa.me/6285213499965?text=Halo%20Admin%20CATU,%20saya%20butuh%20bantuan%20akses%20akun" target="_blank" rel="noopener noreferrer" class="support">
+            <a href="https://wa.me/6285213499965?text=Halo%20Admin%20CATU,%20saya%20butuh%20bantuan%20akses%20akun" target="_blank" rel="noopener noreferrer" class="support group">
               <div class="support-content">
                 <div class="support-icon">
-                  <i data-lucide="headphones" class="w-5 h-5"></i>
+                  <i data-lucide="headphones" class="w-4.5 h-4.5"></i>
                 </div>
                 <div class="support-text">
-                  <h4>Butuh bantuan?</h4>
-                  <p>Hubungi tim operasional atau administrator CATU untuk bantuan akses akun. <span class="font-semibold text-[#165AA7] block sm:inline mt-0.5 sm:mt-0">+62 852-1349-9965</span></p>
+                  <h4>Butuh bantuan akses?</h4>
+                  <p>Hubungi admin CATU via WhatsApp <span class="font-semibold text-[#165AA7] block sm:inline mt-0.5 sm:mt-0">+62 852-1349-9965</span></p>
                 </div>
               </div>
-              <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400"></i>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 group-hover:text-[#165AA7] group-hover:translate-x-0.5 transition-all"></i>
             </a>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-medium">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Sistem Terenkripsi & Terlindungi</span>
+            </div>
           </form>
         </div>
       `;
@@ -143,7 +164,16 @@
       const pass = document.getElementById('password') || document.getElementById('passwordInput');
       if (toggleBtn && pass) {
         toggleBtn.addEventListener('click', () => {
-          pass.type = pass.type === 'password' ? 'text' : 'password';
+          const isPass = pass.type === 'password';
+          pass.type = isPass ? 'text' : 'password';
+          toggleBtn.innerHTML = isPass
+            ? '<i data-lucide="eye-off" class="w-4.5 h-4.5"></i>'
+            : '<i data-lucide="eye" class="w-4.5 h-4.5"></i>';
+          toggleBtn.setAttribute('aria-label', isPass ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+          toggleBtn.setAttribute('title', isPass ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+          if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons({ root: toggleBtn });
+          }
         });
       }
 
