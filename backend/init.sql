@@ -3020,7 +3020,8 @@ COPY public.roles (id, code, name) FROM stdin;
 3	ROMO_ORDO	Romo Ordo
 4	PENGURUS_LINGKUNGAN	Pengurus Lingkungan
 5	KOORDINATOR_KEUSKUPAN	Koordinator Keuskupan
-6	ADMIN	Administrator Sistem
+6	ADMIN	Administrator
+7	SUPERADMIN	Super Admin
 \.
 
 

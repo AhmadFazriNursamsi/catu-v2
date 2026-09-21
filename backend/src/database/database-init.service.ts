@@ -20,12 +20,9 @@ export class DatabaseInitService implements OnModuleInit {
         ADD COLUMN IF NOT EXISTS birth_date VARCHAR(20),
         ADD COLUMN IF NOT EXISTS address TEXT,
         ADD COLUMN IF NOT EXISTS avatar_url TEXT;
-
         ALTER TABLE user_profiles ALTER COLUMN pengurus_position TYPE VARCHAR(100) USING pengurus_position::text;
         ALTER TABLE user_profiles ALTER COLUMN romo_position TYPE VARCHAR(100) USING romo_position::text;
-
         ALTER TABLE orders ADD COLUMN IF NOT EXISTS attachment_url TEXT, ADD COLUMN IF NOT EXISTS accepted_romo_id INT;
-
         -- Auto-sync PostgreSQL sequences to prevent duplicate key errors on insert
         SELECT setval('keuskupan_id_seq', (SELECT COALESCE(MAX(id), 1) FROM keuskupan));
         SELECT setval('paroki_id_seq', (SELECT COALESCE(MAX(id), 1) FROM paroki));
@@ -52,13 +49,11 @@ export class DatabaseInitService implements OnModuleInit {
           await this.dataSource.query(`ALTER TYPE order_status_enum ADD VALUE IF NOT EXISTS '${val}'`);
         } catch (_) {}
       }
-
       await this.dataSource.query(`
         UPDATE orders SET status = 'CONFIRMED' WHERE status::text = 'ACCEPTED';
         UPDATE orders SET status = 'DONE' WHERE status::text = 'SELESAI' OR status::text = 'COMPLETED';
         UPDATE orders SET status = 'FAIL' WHERE status::text = 'REJECTED';
         UPDATE orders SET status = 'FAIL' WHERE status::text = 'PENDING' AND (scheduled_date < CURRENT_DATE);
-
         -- Cleanup existing non-Romo profiles so romo_position is NULL
         UPDATE user_profiles
         SET romo_position = NULL
@@ -111,6 +106,11 @@ export class DatabaseInitService implements OnModuleInit {
           category = EXCLUDED.category,
           name = EXCLUDED.name,
           is_lead = EXCLUDED.is_lead;
+
+        -- Seed roles & default superadmin
+        INSERT INTO roles (code, name) VALUES ('SUPERADMIN', 'Super Admin'), ('ADMIN', 'Administrator') ON CONFLICT (code) DO NOTHING;
+        UPDATE roles SET name = 'Administrator' WHERE code = 'ADMIN';
+        UPDATE auth_users SET role_id = (SELECT id FROM roles WHERE code = 'SUPERADMIN') WHERE phone_number = '6289999999999';
 
         -- Seed user keuskupan data
         INSERT INTO keuskupan (id, name) VALUES
@@ -482,5 +482,4 @@ export class DatabaseInitService implements OnModuleInit {
       console.log('Auto-migration user_profiles notice:', e);
     }
   }
-
 }

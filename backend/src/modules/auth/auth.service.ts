@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
   HttpCode,
 } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
@@ -724,8 +725,8 @@ async getRoles() {
 
     const user = users[0];
 
-    // Admin tidak boleh login di aplikasi mobile
-    if (user.role_code === 'ADMIN') {
+    // Admin & Superadmin tidak boleh login di aplikasi mobile
+    if (user.role_code === 'ADMIN' || user.role_code === 'SUPERADMIN') {
       return {
         statusCode: 403,
         message: 'Akun Administrator tidak dapat login melalui aplikasi mobile. Silakan gunakan Web Portal Admin di browser komputer.',
@@ -807,8 +808,8 @@ async getRoles() {
 
     const user = users[0];
 
-    // Check Role: MUST BE ADMIN
-    if (user.role_code !== 'ADMIN') {
+    // Check Role: MUST BE ADMIN or SUPERADMIN
+    if (user.role_code !== 'ADMIN' && user.role_code !== 'SUPERADMIN') {
       return {
         statusCode: 403,
         message: `Akses Ditolak: Portal Web ini khusus untuk Administrator Sistem. Pengguna peran "${user.role_code}" silakan masuk melalui Aplikasi Mobile CATU.`,
@@ -1367,7 +1368,7 @@ async getRoles() {
         COUNT(*) FILTER (WHERE r.code = 'ROMO_PAROKI') as total_romo_paroki,
         COUNT(*) FILTER (WHERE r.code = 'ROMO_ORDO') as total_romo_ordo,
         COUNT(*) FILTER (WHERE r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) as total_pengurus,
-        COUNT(*) FILTER (WHERE r.code = 'ADMIN') as total_admin
+        COUNT(*) FILTER (WHERE r.code IN ('ADMIN', 'SUPERADMIN')) as total_admin
       FROM auth_users u
       JOIN roles r ON u.role_id = r.id
       LEFT JOIN user_profiles p ON p.user_id = u.id
@@ -1483,35 +1484,29 @@ async getRoles() {
         [uid],
       );
     } else if (body.status === 'REJECTED') {
-      await this.dataSource.query(
-        `UPDATE user_profiles SET is_jabatan_active = false WHERE user_id = $1 AND (pengurus_position IS NOT NULL OR romo_position = 'KETUA_ROMO')`,
-        [uid],
-      );
+      await this.dataSource.query(`UPDATE user_profiles SET is_jabatan_active = false WHERE user_id = $1 AND (pengurus_position IS NOT NULL OR romo_position = 'KETUA_ROMO')`, [uid]);
     }
     return { statusCode: 200, message: `Status akun user ID ${uid} berhasil diubah menjadi ${body.status}` };
   }
-  async updateAdminUserRole(
-    userId: string,
-    body: { roleCode: string },
-  ) {
+
+  async updateAdminUserRole(userId: string, body: { roleCode: string }, actorRole?: string) {
     const uid = parseInt(userId);
+    if (body.roleCode === 'SUPERADMIN' && actorRole !== 'SUPERADMIN') {
+      throw new ForbiddenException('Hanya Super Admin yang dapat memberikan peran Super Admin');
+    }
+    const current = await this.dataSource.query('SELECT r.code FROM auth_users u JOIN roles r ON u.role_id = r.id WHERE u.id = $1', [uid]);
+    if (current.length && current[0].code === 'SUPERADMIN' && actorRole !== 'SUPERADMIN') {
+      throw new ForbiddenException('Hanya Super Admin yang dapat mengubah role akun Super Admin');
+    }
     const roleRes = await this.dataSource.query(`SELECT id FROM roles WHERE code = $1`, [body.roleCode]);
     if (!roleRes.length) throw new BadRequestException('Role tidak valid');
-    await this.dataSource.query(
-      `UPDATE auth_users SET role_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
-      [roleRes[0].id, uid],
-    );
+    await this.dataSource.query('UPDATE auth_users SET role_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [roleRes[0].id, uid]);
     return { statusCode: 200, message: `Role user ID ${uid} berhasil diubah menjadi ${body.roleCode}` };
   }
-  async updateAdminOrderStatus(
-    orderId: string,
-    body: { status: string },
-  ) {
+
+  async updateAdminOrderStatus(orderId: string, body: { status: string }) {
     const oid = parseInt(orderId);
-    await this.dataSource.query(
-      `UPDATE orders SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
-      [body.status, oid],
-    );
+    await this.dataSource.query(`UPDATE orders SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [body.status, oid]);
     return { statusCode: 200, message: `Status order #${oid} berhasil diubah menjadi ${body.status}` };
   }
 }

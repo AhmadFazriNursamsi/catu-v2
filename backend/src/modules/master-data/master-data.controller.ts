@@ -7,11 +7,16 @@ import {
   Get,
   Param,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import {
   CreateKeuskupanDto,
   UpdateKeuskupanDto,
@@ -170,19 +175,28 @@ export class MasterDataController {
   }
 
   @Post('service-categories')
-  @ApiOperation({ summary: 'Tambah Kategori Pelayanan Baru ke Database' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Tambah Kategori Pelayanan Baru (Superadmin Only)' })
   async createServiceCategory(@Body() dto: CreateServiceCategoryDto) {
     return await this.masterDataService.createServiceCategory(dto);
   }
 
   @Put('service-categories/:id')
-  @ApiOperation({ summary: 'Update Kategori Pelayanan di Database' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update Kategori Pelayanan (Superadmin Only)' })
   async updateServiceCategory(@Param('id') id: number, @Body() dto: UpdateServiceCategoryDto) {
     return await this.masterDataService.updateServiceCategory(id, dto);
   }
 
   @Delete('service-categories/:id')
-  @ApiOperation({ summary: 'Hapus Kategori Pelayanan dari Database' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Hapus Kategori Pelayanan (Superadmin Only)' })
   async deleteServiceCategory(@Param('id') id: number) {
     return await this.masterDataService.deleteServiceCategory(id);
   }
@@ -195,19 +209,28 @@ export class MasterDataController {
   }
 
   @Post('roles')
-  @ApiOperation({ summary: 'Tambah Jenis Role / Pengguna Baru ke Database' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Tambah Jenis Role Baru (Superadmin Only)' })
   async createRole(@Body() dto: CreateRoleDto) {
     return await this.masterDataService.createRole(dto);
   }
 
   @Put('roles/:id')
-  @ApiOperation({ summary: 'Update Data Jenis Role / Pengguna di Database' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update Data Jenis Role (Superadmin Only)' })
   async updateRole(@Param('id') id: number, @Body() dto: UpdateRoleDto) {
     return await this.masterDataService.updateRole(id, dto);
   }
 
   @Delete('roles/:id')
-  @ApiOperation({ summary: 'Hapus Jenis Role / Pengguna dari Database' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Hapus Jenis Role (Superadmin Only)' })
   async deleteRole(@Param('id') id: number) {
     return await this.masterDataService.deleteRole(id);
   }
@@ -220,19 +243,28 @@ export class MasterDataController {
   }
 
   @Post('positions')
-  @ApiOperation({ summary: 'Tambah Jabatan / Posisi Baru ke Database' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Tambah Jabatan / Posisi Baru (Superadmin Only)' })
   async createPosition(@Body() dto: CreatePositionDto) {
     return await this.masterDataService.createPosition(dto);
   }
 
   @Put('positions/:id')
-  @ApiOperation({ summary: 'Update Data Jabatan / Posisi di Database' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update Data Jabatan / Posisi (Superadmin Only)' })
   async updatePosition(@Param('id') id: number, @Body() dto: UpdatePositionDto) {
     return await this.masterDataService.updatePosition(id, dto);
   }
 
   @Delete('positions/:id')
-  @ApiOperation({ summary: 'Hapus Jabatan / Posisi dari Database' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Hapus Jabatan / Posisi (Superadmin Only)' })
   async deletePosition(@Param('id') id: number) {
     return await this.masterDataService.deletePosition(id);
   }
