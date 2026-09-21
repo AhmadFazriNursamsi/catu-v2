@@ -139,14 +139,6 @@
 
           <section class="login-side">
             ${renderLoginCard(state)}
-
-            <div class="side-footer">
-              <i data-lucide="shield" class="w-5 h-5 text-[#165AA7]"></i>
-              <div>
-                <div class="font-medium text-slate-600">Sistem Administrasi Pastoral</div>
-                <div class="text-slate-400 text-[10.5px]">Keuskupan Agung Jakarta</div>
-              </div>
-            </div>
           </section>
         </main>
       `;
