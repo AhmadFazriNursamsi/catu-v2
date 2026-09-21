@@ -93,17 +93,24 @@
                 <span class="text-slate-300">·</span>
               ` : ''}
 
-              <button onclick='openEditMasterModal("${sub}", ${escapedItem})'
-                class="inline-flex items-center space-x-1 text-xs font-semibold text-slate-600 hover:text-slate-900 transition py-1 px-1.5 rounded hover:bg-slate-100" title="Edit Data">
-                <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-500"></i>
-                <span>Edit</span>
-              </button>
-              <span class="text-slate-300">·</span>
-              <button onclick='confirmDeleteMaster("${sub}", ${item.id}, "${(item.name || '').replace(/"/g, '')}")'
-                class="inline-flex items-center space-x-1 text-xs font-semibold text-rose-600 hover:text-rose-800 transition py-1 px-1.5 rounded hover:bg-rose-50" title="Hapus Data">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
-                <span>Hapus</span>
-              </button>
+              ${(['services', 'roles', 'positions'].includes(sub) && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser())) ? `
+                <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10.5px] font-semibold text-slate-500 bg-slate-100 border border-slate-200">
+                  <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i>
+                  <span>Read-only</span>
+                </span>
+              ` : `
+                <button onclick='openEditMasterModal("${sub}", ${escapedItem})'
+                  class="inline-flex items-center space-x-1 text-xs font-semibold text-slate-600 hover:text-slate-900 transition py-1 px-1.5 rounded hover:bg-slate-100" title="Edit Data">
+                  <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-500"></i>
+                  <span>Edit</span>
+                </button>
+                <span class="text-slate-300">·</span>
+                <button onclick='confirmDeleteMaster("${sub}", ${item.id}, "${(item.name || '').replace(/"/g, '')}")'
+                  class="inline-flex items-center space-x-1 text-xs font-semibold text-rose-600 hover:text-rose-800 transition py-1 px-1.5 rounded hover:bg-rose-50" title="Hapus Data">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
+                  <span>Hapus</span>
+                </button>
+              `}
             </div>
           </td>
         </tr>

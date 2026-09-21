@@ -219,6 +219,6 @@
 
     // Init
     renderApp();
-    if (state.currentUser && (state.currentUser.roleCode === 'ADMIN' || state.currentUser.role_code === 'ADMIN')) {
+    if (state.currentUser && (['ADMIN', 'SUPERADMIN'].includes((state.currentUser.roleCode || state.currentUser.role_code || '').toUpperCase()))) {
       loadDashboardData();
     }

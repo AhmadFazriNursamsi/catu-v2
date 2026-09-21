@@ -41,6 +41,7 @@ async function loadActivityLogs(page = 1) {
 
 function getActivityRoleBadge(role) {
   const r = (role || 'SYSTEM').toUpperCase();
+  if (r === 'SUPERADMIN') return '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-700 border border-indigo-200">SUPERADMIN</span>';
   if (r === 'ADMIN') return '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-700 border border-purple-200">ADMIN</span>';
   if (r.startsWith('ROMO')) return '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-700 border border-blue-200">ROMO</span>';
   if (r.includes('PENGURUS')) return '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-700 border border-amber-200">PENGURUS</span>';
@@ -77,7 +78,8 @@ function renderActivityLogsFilter() {
           <select onchange="state.activityLogsFilterRole = this.value; loadActivityLogs(1);"
             class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500 transition">
             <option value="" ${!state.activityLogsFilterRole ? 'selected' : ''}>Semua Peran</option>
-            <option value="ADMIN" ${state.activityLogsFilterRole === 'ADMIN' ? 'selected' : ''}>Admin</option>
+            <option value="SUPERADMIN" ${state.activityLogsFilterRole === 'SUPERADMIN' ? 'selected' : ''}>Super Admin</option>
+            <option value="ADMIN" ${state.activityLogsFilterRole === 'ADMIN' ? 'selected' : ''}>Administrator</option>
             <option value="ROMO" ${state.activityLogsFilterRole === 'ROMO' ? 'selected' : ''}>Romo</option>
             <option value="PENGURUS" ${state.activityLogsFilterRole === 'PENGURUS' ? 'selected' : ''}>Pengurus</option>
             <option value="UMAT" ${state.activityLogsFilterRole === 'UMAT' ? 'selected' : ''}>Umat</option>

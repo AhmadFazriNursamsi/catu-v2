@@ -52,7 +52,7 @@
           <td class="py-4 px-6 font-mono font-bold text-slate-800 text-xs">${item.code || '-'}</td>
           <td class="py-4 px-6 font-bold text-slate-900 text-xs">${item.name || '-'}</td>
           <td class="py-4 px-6 font-semibold text-slate-800 text-xs">${item.total_users || 0} Pengguna</td>
-          <td class="py-4 px-6 text-slate-700 font-medium text-xs">${item.code === 'ADMIN' ? 'Portal Administrator Web' : 'Aplikasi Mobile CATU'}</td>
+          <td class="py-4 px-6 text-slate-700 font-medium text-xs">${['ADMIN', 'SUPERADMIN'].includes(item.code) ? 'Portal Administrator Web' : 'Aplikasi Mobile CATU'}</td>
         `;
       }
       if (sub === 'positions') {

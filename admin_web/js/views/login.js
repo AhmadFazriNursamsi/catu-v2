@@ -177,7 +177,7 @@
             const data = await res.json();
 
             const isSuccess = (res.ok || res.status === 200 || data.statusCode === 200) &&
-                              data.user && (data.user.roleCode === 'ADMIN' || data.user.role_code === 'ADMIN');
+                              data.user && (['ADMIN', 'SUPERADMIN'].includes((data.user.roleCode || data.user.role_code || '').toUpperCase()));
 
             if (isSuccess) {
               state.currentUser = data.user;

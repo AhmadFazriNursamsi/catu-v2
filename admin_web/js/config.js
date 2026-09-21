@@ -20,8 +20,18 @@
       } catch(e) { rawStoredAnnotations = []; }
     }
 
+    function isSuperAdminUser() {
+      const role = (state?.currentUser?.roleCode || state?.currentUser?.role_code || '').toUpperCase();
+      return role === 'SUPERADMIN';
+    }
+
+    function isAnyAdminUser(u) {
+      const role = (u?.roleCode || u?.role_code || '').toUpperCase();
+      return role === 'ADMIN' || role === 'SUPERADMIN';
+    }
+
     const state = {
-      currentUser: (rawStoredUser && (rawStoredUser.roleCode === 'ADMIN' || rawStoredUser.role_code === 'ADMIN')) ? rawStoredUser : null,
+      currentUser: (rawStoredUser && isAnyAdminUser(rawStoredUser)) ? rawStoredUser : null,
       token: localStorage.getItem('catu_admin_token') || '',
       currentTab: 'overview',
       isSidebarOpen: localStorage.getItem('catu_sidebar_open') !== 'false',

@@ -118,6 +118,10 @@
     // ── Master Modal Cascading Filter Handlers ──
 
     function confirmDeleteMaster(type, id, name) {
+      if (['services', 'roles', 'positions'].includes(type) && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser())) {
+        if (typeof showToast === 'function') showToast('warning', 'Akses terbatas: Master data ini hanya dapat dikelola oleh Super Admin.');
+        return;
+      }
       state.deleteConfirmModal = {
         type: type,
         id: id,
@@ -142,7 +146,12 @@
       else if (del.type === 'positions') endpoint = `${API_BASE}/master/positions/${del.id}`;
 
       try {
-        const res = await fetch(endpoint, { method: 'DELETE' });
+        const res = await fetch(endpoint, {
+          method: 'DELETE',
+          headers: {
+            ...(state.token ? { Authorization: `Bearer ${state.token}` } : {})
+          }
+        });
         const result = await res.json();
         if (!res.ok) {
           throw new Error(result.message || 'Gagal menghapus data.');

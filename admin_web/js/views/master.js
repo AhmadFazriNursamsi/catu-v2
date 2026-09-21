@@ -2,6 +2,7 @@
     function renderMasterTab() {
       const sub = state.masterSubTab || 'paroki';
       const search = (state.masterSearch || '').toLowerCase().trim();
+      const isReadOnlyForCurrentAdmin = ['services', 'roles', 'positions'].includes(sub) && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser());
       let list = state.masterDataList || [];
 
       // Sort newest records first so newly added data is immediately visible at top of grid
@@ -123,11 +124,18 @@
                   ${filtered.length} Data
                 </span>
 
-                <button onclick="openCreateMasterModal('${sub}')"
-                  class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-blue-950 hover:bg-blue-900 text-white text-xs font-bold shadow-xs transition">
-                  <i data-lucide="plus" class="w-4 h-4"></i>
-                  <span>Tambah ${getEntityLabel(sub)}</span>
-                </button>
+                ${isReadOnlyForCurrentAdmin ? `
+                  <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-xs font-semibold border border-slate-200">
+                    <i data-lucide="lock" class="w-3.5 h-3.5 text-slate-400"></i>
+                    <span>Read-Only</span>
+                  </span>
+                ` : `
+                  <button onclick="openCreateMasterModal('${sub}')"
+                    class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-blue-950 hover:bg-blue-900 text-white text-xs font-bold shadow-xs transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Tambah ${getEntityLabel(sub)}</span>
+                  </button>
+                `}
               </div>
             </div>
 
@@ -146,11 +154,13 @@
                   <p class="text-sm font-bold text-slate-800">Tidak ada data ${getEntityLabel(sub)} yang cocok</p>
                   <p class="text-xs text-slate-500 mt-1">Gunakan kata kunci pencarian lain atau tambahkan data baru.</p>
                 </div>
-                <button onclick="openCreateMasterModal('${sub}')" 
-                  class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-blue-950 hover:bg-blue-900 text-white text-xs font-bold shadow-xs transition">
-                  <i data-lucide="plus" class="w-4 h-4"></i>
-                  <span>Tambah ${getEntityLabel(sub)} Baru</span>
-                </button>
+                ${isReadOnlyForCurrentAdmin ? '' : `
+                  <button onclick="openCreateMasterModal('${sub}')" 
+                    class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-blue-950 hover:bg-blue-900 text-white text-xs font-bold shadow-xs transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Tambah ${getEntityLabel(sub)} Baru</span>
+                  </button>
+                `}
               </div>
             ` : `
               <div class="overflow-x-auto">

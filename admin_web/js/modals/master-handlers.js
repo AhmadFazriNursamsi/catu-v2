@@ -44,6 +44,10 @@
       state.masterModalError = '';
       state.comboboxFilters = {};
       const activeType = type || state.masterSubTab || 'paroki';
+      if (['services', 'roles', 'positions'].includes(activeType) && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser())) {
+        if (typeof showToast === 'function') showToast('warning', 'Akses terbatas: Master data ini hanya dapat dikelola oleh Super Admin.');
+        return;
+      }
       const initialData = { ...prefillData };
 
       // Pre-fill active table filter if available
@@ -96,6 +100,10 @@
       state.masterModalError = '';
       state.comboboxFilters = {};
       const activeType = type || state.masterSubTab || 'paroki';
+      if (['services', 'roles', 'positions'].includes(activeType) && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser())) {
+        if (typeof showToast === 'function') showToast('warning', 'Akses terbatas: Master data ini hanya dapat dikelola oleh Super Admin.');
+        return;
+      }
       const initialData = { ...item };
 
       let filterKId = initialData.keuskupan_id || '';
@@ -249,7 +257,10 @@
         // 3. Send request to backend
         const res = await fetch(endpoint, {
           method: method,
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(state.token ? { Authorization: `Bearer ${state.token}` } : {})
+          },
           body: JSON.stringify(payload)
         });
 

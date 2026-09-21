@@ -102,6 +102,17 @@ function renderEditUserHeader(u, uName, status, roleCode) {
       const rawPhone = document.getElementById('editPhone').value.trim().replace(/\D/g, '');
       const roleCode = document.getElementById('editRoleCode').value;
       const accountStatus = document.getElementById('editAccountStatus').value;
+      if (roleCode === 'SUPERADMIN' && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser())) {
+        state.editFormError = 'Hanya Super Admin yang dapat menetapkan peran Super Admin.';
+        renderApp();
+        return;
+      }
+      const origRole = (u.role_code || u.roleCode || '').toUpperCase();
+      if (origRole === 'SUPERADMIN' && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser())) {
+        state.editFormError = 'Hanya Super Admin yang dapat mengubah data akun Super Admin.';
+        renderApp();
+        return;
+      }
       const birthDateInput = document.getElementById('editBirthDate') ? document.getElementById('editBirthDate').value : '';
       const address = document.getElementById('editAddress') ? document.getElementById('editAddress').value.trim() : '';
 

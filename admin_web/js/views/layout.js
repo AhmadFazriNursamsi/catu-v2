@@ -42,17 +42,20 @@
     }
 
     function renderSidebarBottom(isOpen, adminName, activeAnnotationsCount) {
+      const isSuper = typeof isSuperAdminUser === 'function' && isSuperAdminUser();
+      const roleLabel = isSuper ? 'Super Administrator' : 'Administrator';
+      const initials = (adminName || 'Admin').substring(0, 2).toUpperCase();
       if (isOpen) {
         return `
           <div class="p-3 border-t border-slate-800 space-y-2">
             <!-- User Profile Info -->
             <div class="flex items-center space-x-3 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
               <div class="w-9 h-9 rounded-full bg-blue-950 text-white flex items-center justify-center font-bold text-xs shadow-xs flex-shrink-0 border border-blue-500/40">
-                SA
+                ${initials}
               </div>
               <div class="min-w-0 flex-1">
                 <p class="text-xs font-bold text-slate-200 truncate">${adminName}</p>
-                <p class="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Super Administrator</p>
+                <p class="text-[9px] font-bold text-blue-400 uppercase tracking-wider">${roleLabel}</p>
               </div>
             </div>
 
@@ -85,8 +88,8 @@
 
       return `
         <div class="p-2.5 border-t border-slate-800 space-y-2 flex flex-col items-center">
-          <div class="w-9 h-9 rounded-full bg-blue-950 text-white flex items-center justify-center font-bold text-xs shadow-xs border border-blue-500/40" title="${adminName} (Super Administrator)">
-            SA
+          <div class="w-9 h-9 rounded-full bg-blue-950 text-white flex items-center justify-center font-bold text-xs shadow-xs border border-blue-500/40" title="${adminName} (${roleLabel})">
+            ${initials}
           </div>
 
           ${AGENTATION_ENABLED ? `
@@ -160,8 +163,8 @@
                   <div class="space-y-1">
                     ${(pendingApprovalsCount > 0 || state.currentTab === 'approvals') ? renderNavItem('approvals', 'shield-check', 'Persetujuan Pendaftaran', pendingApprovalsCount, 'bg-blue-600') : ''}
                     ${renderNavItem('master', 'database', 'Master Data')}
-                    ${renderNavItem('activity_logs', 'scroll-text', 'Log Aktivitas')}
-                    ${renderNavItem('settings', 'settings', 'Pengaturan Portal')}
+                    ${typeof isSuperAdminUser === 'function' && isSuperAdminUser() ? renderNavItem('activity_logs', 'scroll-text', 'Log Aktivitas') : ''}
+                    ${typeof isSuperAdminUser === 'function' && isSuperAdminUser() ? renderNavItem('settings', 'settings', 'Pengaturan Portal') : ''}
                   </div>
                 </div>
               </nav>
@@ -257,6 +260,13 @@
     }
 
     function setTab(tab) {
+      if ((tab === 'activity_logs' || tab === 'settings') && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser())) {
+        if (typeof showToast === 'function') showToast('warning', 'Akses terbatas: Menu ini hanya dapat diakses oleh Super Admin.');
+        state.currentTab = 'overview';
+        state.isMobileMenuOpen = false;
+        renderApp();
+        return;
+      }
       state.currentTab = tab;
       state.isMobileMenuOpen = false;
       if (tab === 'master') {
