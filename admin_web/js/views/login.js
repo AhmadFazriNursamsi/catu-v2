@@ -57,15 +57,11 @@
     function renderLoginCard(state) {
       return `
         <div class="login-card">
-          <div class="login-brand mb-4 text-center">
-            <img src="assets/logo-catu.png" alt="CATU" class="mx-auto h-9 w-auto object-contain" />
+          <div class="login-brand mb-5 text-center">
+            <img src="assets/logo-catu.png" alt="CATU" class="mx-auto h-[52px] w-auto object-contain" />
           </div>
 
           <div class="text-center mb-6">
-            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-blue-50 text-[#165AA7] border border-blue-100/80 mb-2.5 shadow-2xs">
-              <span class="w-1.5 h-1.5 rounded-full bg-[#165AA7] animate-pulse"></span>
-              <span>Portal Administrator</span>
-            </div>
             <h2 class="text-2xl font-extrabold text-[#102D54] tracking-tight">Selamat Datang</h2>
             <p class="text-xs text-slate-500 mt-1">Silakan masuk dengan akun pengurus atau administrator</p>
           </div>
@@ -79,10 +75,7 @@
 
           <form class="form" id="loginForm">
             <div class="field">
-              <div class="flex items-center justify-between mb-1.5">
-                <label for="username">Nomor WhatsApp / Akun</label>
-                <span class="text-[11px] text-slate-400 font-medium">Contoh: 0812...</span>
-              </div>
+              <label for="username" class="block mb-1.5">Nomor WhatsApp / Akun</label>
               <div class="field-control">
                 <span class="field-icon"><i data-lucide="phone" class="w-4.5 h-4.5"></i></span>
                 <input id="username" name="username" type="text" autocomplete="username" placeholder="Masukkan nomor WhatsApp akun Anda" required />

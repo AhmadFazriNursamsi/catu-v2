@@ -270,12 +270,12 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .login-brand img {
   width: auto;
-  height: 38px;
+  height: 52px;
   object-fit: contain;
   margin: 0 auto;
 }
@@ -604,7 +604,7 @@ body {
     border-radius: 18px;
   }
   .login-brand img {
-    height: 32px;
+    height: 44px;
   }
   .field input {
     height: 46px;
