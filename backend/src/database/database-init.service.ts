@@ -71,13 +71,11 @@ export class DatabaseInitService implements OnModuleInit {
           JOIN roles r ON u.role_id = r.id
           WHERE r.code = 'ROMO_ORDO'
         );
-
         -- Cleanup active flag for non-leadership positions (ordinary Umat & ordinary Romo)
         UPDATE user_profiles
         SET is_jabatan_active = NULL
         WHERE pengurus_position IS NULL
           AND (romo_position IS NULL OR romo_position NOT IN ('Kepala Romo Paroki', 'Ketua Romo Ordo', 'KETUA_ROMO'));
-
         -- Create master tables if not exist
         CREATE TABLE IF NOT EXISTS keuskupan (id INT PRIMARY KEY, name VARCHAR(255) NOT NULL);
         CREATE TABLE IF NOT EXISTS paroki (id INT PRIMARY KEY, name VARCHAR(255) NOT NULL, keuskupan_id INT);
@@ -107,10 +105,12 @@ export class DatabaseInitService implements OnModuleInit {
           name = EXCLUDED.name,
           is_lead = EXCLUDED.is_lead;
 
-        -- Seed roles & default superadmin
+        -- Seed roles & default superadmin / admin accounts
         INSERT INTO roles (code, name) VALUES ('SUPERADMIN', 'Super Admin'), ('ADMIN', 'Administrator') ON CONFLICT (code) DO NOTHING;
         UPDATE roles SET name = 'Administrator' WHERE code = 'ADMIN';
-        UPDATE auth_users SET role_id = (SELECT id FROM roles WHERE code = 'SUPERADMIN') WHERE phone_number = '6289999999999';
+        UPDATE auth_users SET role_id = (SELECT id FROM roles WHERE code = 'SUPERADMIN'), password_hash = '$2b$10$Fxb9Ibda.nhQNoW3utfy.OdQRyGV5Ldl4G7JYQ4wqOFsTG/i8DkC.' WHERE phone_number = '6289999999999';
+        INSERT INTO auth_users (phone_number, password_hash, role_id, account_status) SELECT '6288888888888', '$2b$10$Fxb9Ibda.nhQNoW3utfy.OdQRyGV5Ldl4G7JYQ4wqOFsTG/i8DkC.', (SELECT id FROM roles WHERE code = 'ADMIN'), 'APPROVED' WHERE NOT EXISTS (SELECT 1 FROM auth_users WHERE phone_number = '6288888888888');
+        INSERT INTO user_profiles (user_id, full_name, email) SELECT u.id, 'Administrator Sistem', 'admin@catu.id' FROM auth_users u WHERE u.phone_number = '6288888888888' AND NOT EXISTS (SELECT 1 FROM user_profiles WHERE user_id = u.id);
 
         -- Seed user keuskupan data
         INSERT INTO keuskupan (id, name) VALUES
