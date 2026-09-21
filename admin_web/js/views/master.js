@@ -66,14 +66,14 @@
           <!-- Sub-Tab Navigation Bar -->
           <div class="bg-white/95 backdrop-blur-md rounded-2xl p-2 shadow-xs border border-slate-200/90 flex overflow-x-auto custom-scrollbar gap-1.5 sm:gap-2">
             ${[
-              { id: 'keuskupan', icon: 'landmark', label: 'Keuskupan', count: state.keuskupan?.length },
-              { id: 'paroki', icon: 'church', label: 'Paroki', count: state.paroki?.length },
+              { id: 'keuskupan', icon: 'landmark', label: 'Keuskupan' },
+              { id: 'paroki', icon: 'church', label: 'Paroki' },
               { id: 'wilayah', icon: 'map-pin', label: 'Wilayah' },
               { id: 'lingkungan', icon: 'home', label: 'Lingkungan' },
-              { id: 'ordo', icon: 'cross', label: 'Ordo / Kongregasi', count: state.ordo?.length },
-              { id: 'services', icon: 'clipboard-list', label: 'Kategori Pelayanan', count: state.serviceCategories?.length },
-              { id: 'roles', icon: 'shield-check', label: 'Jenis User / Role', count: state.roles?.length },
-              { id: 'positions', icon: 'award', label: 'Jabatan & Struktur', count: state.positions?.length }
+              { id: 'ordo', icon: 'cross', label: 'Ordo / Kongregasi' },
+              { id: 'services', icon: 'clipboard-list', label: 'Kategori Pelayanan' },
+              { id: 'roles', icon: 'shield-check', label: 'Jenis User / Role' },
+              { id: 'positions', icon: 'award', label: 'Jabatan & Struktur' }
             ].map(tab => {
               const active = sub === tab.id;
               return `
@@ -85,15 +85,6 @@
                   }">
                   <i data-lucide="${tab.icon}" class="w-4 h-4 ${active ? 'text-blue-400' : 'text-slate-400'}"></i>
                   <span class="tracking-wide">${tab.label}</span>
-                  ${tab.count !== undefined && tab.count > 0 ? `
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      active 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-slate-100 text-slate-700 border border-slate-200'
-                    }">
-                      ${tab.count}
-                    </span>
-                  ` : ''}
                 </button>
               `;
             }).join('')}
