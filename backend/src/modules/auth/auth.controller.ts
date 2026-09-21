@@ -262,4 +262,11 @@ export class AuthController {
   ) {
     return await this.authService.updateAdminOrderStatus(orderIdParam, body);
   }
+
+  @Post('admin/logout')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Logout Admin dari Web Portal' })
+  async adminLogout(@Body() _body: { userId?: number; fullName?: string }) {
+    return { statusCode: 200, message: 'Admin berhasil logout' };
+  }
 }
