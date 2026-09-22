@@ -157,7 +157,7 @@
                   ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Data Keumatan</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
                     ${renderNavItem('umat', 'users', 'Umat Katolik', activeUmatCount, 'bg-blue-600')}
-                    ${renderNavItem('pengurus', 'briefcase', 'Pengurus & Koordinator', activePengurusCount, 'bg-blue-600')}
+                    ${renderNavItem('pengurus', 'briefcase', 'Pengurus & Koordinator Keuskupan', activePengurusCount, 'bg-blue-600')}
                     ${renderNavItem('romo_paroki', 'church', 'Romo Paroki', activeRomoParokiCount, 'bg-blue-600')}
                     ${renderNavItem('romo_ordo', 'cross', 'Romo Ordo', activeRomoOrdoCount, 'bg-blue-600')}
                   </div>
@@ -253,7 +253,7 @@
       if (tab === 'overview') return 'Ringkasan Pastoral';
       if (tab === 'orders') return 'Permohonan Pelayanan Sakramen';
       if (tab === 'umat') return 'Data Umat Katolik';
-      if (tab === 'pengurus') return 'Data Pengurus Lingkungan';
+      if (tab === 'pengurus') return 'Data Pengurus & Koordinator Keuskupan';
       if (tab === 'romo_paroki') return 'Data Romo Paroki';
       if (tab === 'romo_ordo') return 'Data Romo Ordo';
       if (tab === 'approvals') return 'Persetujuan Pendaftaran Akun';

@@ -7,7 +7,7 @@ function renderPengurusTable(filteredPengurus) {
                     <th class="px-6 py-4">NAMA PENGURUS</th>
                     <th class="px-6 py-4">JABATAN</th>
                     <th class="px-6 py-4">KOTA / DOMISILI</th>
-                    <th class="px-6 py-4">LINGKUNGAN & PAROKI</th>
+                    <th class="px-6 py-4">LINGKUNGAN</th>
                     <th class="px-6 py-4 text-center">STATUS JABATAN</th>
                     <th class="px-6 py-4">NO. WHATSAPP</th>
                     <th class="px-6 py-4 text-right">AKSI</th>
@@ -176,7 +176,7 @@ function renderPengurusTable(filteredPengurus) {
                 ` : ''}
 
                 <span class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold whitespace-nowrap">
-                  ${list.length} Pengurus & Koordinator Aktif
+                  ${list.length} Pengurus & Koordinator Keuskupan Aktif
                 </span>
               </div>
             </div>
