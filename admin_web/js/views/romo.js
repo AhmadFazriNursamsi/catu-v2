@@ -16,6 +16,15 @@ function getRomoOrdoPositionLabel(pos) {
   return 'Romo Ordo';
 }
 
+function renderRomoStatusBadge(u, isLeader) {
+  const currentYear = new Date().getFullYear();
+  const endY = u.jabatan_end_year || (u.jabatan_end_date ? new Date(u.jabatan_end_date).getFullYear() : null);
+  const isExpired = isLeader && ((endY && endY < currentYear) || u.is_jabatan_active === false);
+  return isExpired
+    ? `<span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold text-[10.5px]"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span><span>TIDAK AKTIF</span></span>`
+    : `<span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10.5px]"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span>AKTIF</span></span>`;
+}
+
 function renderRomoParokiTable(filtered) {
       return `<div class="overflow-x-auto">
               <table class="w-full min-w-[760px] text-left text-xs">
@@ -25,6 +34,7 @@ function renderRomoParokiTable(filtered) {
                     <th class="px-6 py-4">KOTA / DOMISILI</th>
                     <th class="px-6 py-4">PAROKI</th>
                     <th class="px-6 py-4">JABATAN PASTORAL</th>
+                    <th class="px-6 py-4 text-center">STATUS JABATAN</th>
                     <th class="px-6 py-4">NO. WHATSAPP</th>
                     <th class="px-6 py-4 text-right">AKSI</th>
                   </tr>
@@ -32,7 +42,7 @@ function renderRomoParokiTable(filtered) {
                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                   ${filtered.length === 0 ? `
                     <tr>
-                      <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
+                      <td colspan="7" class="text-center py-16 text-slate-400 space-y-3">
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
                           <i data-lucide="church" class="w-7 h-7"></i>
                         </div>
@@ -52,8 +62,10 @@ function renderRomoParokiTable(filtered) {
                         <span class="truncate block max-w-[180px]">${u.paroki_name || '-'}</span>
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
-                        <div>${getRomoParokiPositionLabel(u.romo_position)}</div>
-                        ${((u.romo_position || '').toLowerCase().includes('kepala') || (u.romo_position || '').toUpperCase() === 'KETUA_ROMO') && u.jabatan_start_year && u.jabatan_end_year ? `<span class="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] bg-blue-50 text-blue-900 border border-blue-200 font-bold">${u.jabatan_start_year} - ${u.jabatan_end_year}</span>` : ''}
+                        <span>${getRomoParokiPositionLabel(u.romo_position)}</span>
+                      </td>
+                      <td class="px-6 py-4 text-center">
+                        ${renderRomoStatusBadge(u, (u.romo_position || '').toLowerCase().includes('kepala') || (u.romo_position || '').toUpperCase() === 'KETUA_ROMO')}
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-700">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
@@ -260,6 +272,7 @@ function renderRomoParokiTable(filtered) {
                     <th class="px-6 py-4">KOTA / DOMISILI</th>
                     <th class="px-6 py-4">ORDO RELIGIUS</th>
                     <th class="px-6 py-4">JABATAN STRUKTUR</th>
+                    <th class="px-6 py-4 text-center">STATUS JABATAN</th>
                     <th class="px-6 py-4">NO. WHATSAPP</th>
                     <th class="px-6 py-4 text-right">AKSI</th>
                   </tr>
@@ -267,7 +280,7 @@ function renderRomoParokiTable(filtered) {
                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                   ${list.length === 0 ? `
                     <tr>
-                      <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
+                      <td colspan="7" class="text-center py-16 text-slate-400 space-y-3">
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
                           <i data-lucide="cross" class="w-7 h-7"></i>
                         </div>
@@ -287,8 +300,10 @@ function renderRomoParokiTable(filtered) {
                         <span class="truncate block max-w-[180px]">${u.ordo_name || 'Ordo Religius'}</span>
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
-                        <div>${getRomoOrdoPositionLabel(u.romo_position)}</div>
-                        ${((u.romo_position || '').toLowerCase().includes('ketua') || (u.romo_position || '').toUpperCase() === 'KETUA_ROMO') && u.jabatan_start_year && u.jabatan_end_year ? `<span class="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] bg-blue-50 text-blue-900 border border-blue-200 font-bold">${u.jabatan_start_year} - ${u.jabatan_end_year}</span>` : ''}
+                        <span>${getRomoOrdoPositionLabel(u.romo_position)}</span>
+                      </td>
+                      <td class="px-6 py-4 text-center">
+                        ${renderRomoStatusBadge(u, (u.romo_position || '').toLowerCase().includes('ketua') || (u.romo_position || '').toUpperCase() === 'KETUA_ROMO')}
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-700">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
