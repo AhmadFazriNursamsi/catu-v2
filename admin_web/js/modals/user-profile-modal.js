@@ -158,31 +158,55 @@
                 </div>
               ` : ''}
 
-              ${uRoleCode === 'ROMO_PAROKI' ? `
+              ${uRoleCode === 'ROMO_PAROKI' ? (() => {
+                const isK = (u.romo_position || '').toLowerCase().includes('kepala') || (u.romo_position || '').toUpperCase() === 'KETUA_ROMO';
+                return `
                 <div class="bg-blue-50/40 rounded-2xl p-4 border border-blue-100/80 space-y-2.5">
                   <p class="font-extrabold text-blue-950 text-xs flex items-center">
                     <i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-blue-700"></i>
                     Detail Jabatan Pastoral Paroki
                   </p>
-                  <div class="bg-white p-3 rounded-xl border border-blue-100/80">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Posisi Pastoral</p>
-                    ${getUserPositionBadge(u.romo_position || 'Romo Paroki', 'ROMO_PAROKI')}
+                  <div class="grid grid-cols-1 ${isK ? 'md:grid-cols-2' : ''} gap-2.5 pt-1">
+                    <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
+                      <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Posisi Pastoral</p>
+                      ${getUserPositionBadge(u.romo_position || 'Romo Paroki', 'ROMO_PAROKI')}
+                    </div>
+                    ${isK ? `
+                    <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
+                      <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Masa Jabatan</p>
+                      <p class="font-extrabold text-blue-950 text-xs flex items-center">
+                        <i data-lucide="calendar" class="w-3 h-3 mr-1 text-blue-600"></i>
+                        ${periode}
+                      </p>
+                    </div>` : ''}
                   </div>
-                </div>
-              ` : ''}
+                </div>`;
+              })() : ''}
 
-              ${uRoleCode === 'ROMO_ORDO' ? `
+              ${uRoleCode === 'ROMO_ORDO' ? (() => {
+                const isKetua = (u.romo_position || '').toLowerCase().includes('ketua') || (u.romo_position || '').toUpperCase() === 'KETUA_ROMO';
+                return `
                 <div class="bg-blue-50/40 rounded-2xl p-4 border border-blue-100/80 space-y-2.5">
                   <p class="font-extrabold text-blue-950 text-xs flex items-center">
-                    <i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-blue-700"></i>
+                    <i data-lucide="cross" class="w-3.5 h-3.5 mr-1.5 text-blue-700"></i>
                     Detail Jabatan di Ordo Religius
                   </p>
-                  <div class="bg-white p-3 rounded-xl border border-blue-100/80">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Posisi di Ordo</p>
-                    ${getUserPositionBadge(u.romo_position || 'Romo Ordo', 'ROMO_ORDO')}
+                  <div class="grid grid-cols-1 ${isKetua ? 'md:grid-cols-2' : ''} gap-2.5 pt-1">
+                    <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
+                      <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Posisi di Ordo</p>
+                      ${getUserPositionBadge(u.romo_position || 'Romo Ordo', 'ROMO_ORDO')}
+                    </div>
+                    ${isKetua ? `
+                    <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
+                      <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Masa Jabatan</p>
+                      <p class="font-extrabold text-blue-950 text-xs flex items-center">
+                        <i data-lucide="calendar" class="w-3 h-3 mr-1 text-blue-600"></i>
+                        ${periode}
+                      </p>
+                    </div>` : ''}
                   </div>
-                </div>
-              ` : ''}
+                </div>`;
+              })() : ''}
 
             </div>
 

@@ -52,7 +52,8 @@ function renderRomoParokiTable(filtered) {
                         <span class="truncate block max-w-[180px]">${u.paroki_name || '-'}</span>
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
-                        <span>${getRomoParokiPositionLabel(u.romo_position)}</span>
+                        <div>${getRomoParokiPositionLabel(u.romo_position)}</div>
+                        ${((u.romo_position || '').toLowerCase().includes('kepala') || (u.romo_position || '').toUpperCase() === 'KETUA_ROMO') && u.jabatan_start_year && u.jabatan_end_year ? `<span class="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] bg-blue-50 text-blue-900 border border-blue-200 font-bold">${u.jabatan_start_year} - ${u.jabatan_end_year}</span>` : ''}
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-700">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
@@ -286,7 +287,8 @@ function renderRomoParokiTable(filtered) {
                         <span class="truncate block max-w-[180px]">${u.ordo_name || 'Ordo Religius'}</span>
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
-                        <span>${getRomoOrdoPositionLabel(u.romo_position)}</span>
+                        <div>${getRomoOrdoPositionLabel(u.romo_position)}</div>
+                        ${((u.romo_position || '').toLowerCase().includes('ketua') || (u.romo_position || '').toUpperCase() === 'KETUA_ROMO') && u.jabatan_start_year && u.jabatan_end_year ? `<span class="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] bg-blue-50 text-blue-900 border border-blue-200 font-bold">${u.jabatan_start_year} - ${u.jabatan_end_year}</span>` : ''}
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-700">
                         <span class="inline-flex items-center space-x-1.5 text-xs">

@@ -220,8 +220,19 @@ function renderEditUserHeader(u, uName, status, roleCode) {
       if (roleCode === 'ROMO_PAROKI') {
         const rpos = document.getElementById('editRomoPosition');
         if (rpos) payload.romoPosition = rpos.value;
-        const checkParokiId = payload.parokiId || u.paroki_id;
         const isKepala = (payload.romoPosition || '').toLowerCase().includes('kepala') || (payload.romoPosition || '').toUpperCase() === 'KETUA_ROMO';
+        if (isKepala) {
+          const sy = document.getElementById('editJabatanStartYear');
+          if (sy && sy.value) payload.jabatanStartYear = parseInt(sy.value);
+          const ey = document.getElementById('editJabatanEndYear');
+          if (ey && ey.value) payload.jabatanEndYear = parseInt(ey.value);
+          payload.isJabatanActive = true;
+        } else {
+          payload.jabatanStartYear = null;
+          payload.jabatanEndYear = null;
+          payload.isJabatanActive = false;
+        }
+        const checkParokiId = payload.parokiId || u.paroki_id;
         if (checkParokiId && isKepala) {
           const duplicateKepala = state.users.find(other => {
             if (String(other.id) === String(u.id)) return false;
@@ -245,6 +256,18 @@ function renderEditUserHeader(u, uName, status, roleCode) {
       if (roleCode === 'ROMO_ORDO') {
         const ropos = document.getElementById('editRomoOrdoPosition') || document.getElementById('editRomoPosition');
         if (ropos) payload.romoPosition = ropos.value;
+        const isKetuaOrdo = (payload.romoPosition || '').toLowerCase().includes('ketua') || (payload.romoPosition || '').toUpperCase() === 'KETUA_ROMO';
+        if (isKetuaOrdo) {
+          const sy = document.getElementById('editJabatanStartYear');
+          if (sy && sy.value) payload.jabatanStartYear = parseInt(sy.value);
+          const ey = document.getElementById('editJabatanEndYear');
+          if (ey && ey.value) payload.jabatanEndYear = parseInt(ey.value);
+          payload.isJabatanActive = true;
+        } else {
+          payload.jabatanStartYear = null;
+          payload.jabatanEndYear = null;
+          payload.isJabatanActive = false;
+        }
       }
 
       state.isSavingProfile = true;
