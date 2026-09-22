@@ -117,6 +117,7 @@
     function renderDashboardLayout() {
       const adminName = state.currentUser?.fullName || state.currentUser?.full_name || 'Super Admin CATU';
       const pendingApprovalsCount = state.users.filter(u => (u.account_status || u.accountStatus) === 'PENDING_APPROVAL').length;
+      const activeUmatCount = state.users.filter(u => (u.role_code || u.roleCode) === 'UMAT' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const isPengurusOrKoordinator = u => {
         const r = (u.role_code || u.roleCode || '').toUpperCase();
         const pos = (u.pengurus_position || '').toLowerCase();

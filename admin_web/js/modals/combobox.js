@@ -186,3 +186,11 @@
       renderApp();
     }
 
+    // Global Click Listener to close combobox dropdowns on outside click
+    window.addEventListener('click', (e) => {
+      if (state.openCombobox && !e.target.closest('.custom-combobox-container')) {
+        state.openCombobox = null;
+        if (typeof renderApp === 'function') renderApp();
+      }
+    });
+

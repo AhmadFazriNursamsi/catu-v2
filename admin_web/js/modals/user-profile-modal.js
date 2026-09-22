@@ -209,16 +209,3 @@
       renderApp();
     }
 
-    // Global Click Listener to close combobox dropdowns on outside click
-    window.addEventListener('click', (e) => {
-      if (state.openCombobox && !e.target.closest('.custom-combobox-container')) {
-        state.openCombobox = null;
-        renderApp();
-      }
-    });
-
-    // Init
-    renderApp();
-    if (state.currentUser && (['ADMIN', 'SUPERADMIN'].includes((state.currentUser.roleCode || state.currentUser.role_code || '').toUpperCase()))) {
-      loadDashboardData();
-    }
