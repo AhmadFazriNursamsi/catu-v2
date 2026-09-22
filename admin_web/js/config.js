@@ -4,7 +4,13 @@
 
     // Config & State
     const configuredApiBase = window.CATU_RUNTIME_CONFIG?.apiBaseUrl?.trim();
-    const API_BASE = (configuredApiBase || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? `http://${window.location.hostname}:3005` : window.location.origin)).replace(/\/+$/, '');
+    const isLocalHost = window.location.hostname === 'localhost' ||
+                        window.location.hostname === '127.0.0.1' ||
+                        window.location.hostname.startsWith('10.') ||
+                        window.location.hostname.startsWith('192.168.') ||
+                        window.location.hostname.endsWith('.local');
+    const defaultApiBase = isLocalHost ? `http://${window.location.hostname}:3005` : window.location.origin;
+    const API_BASE = (configuredApiBase || defaultApiBase).replace(/\/+$/, '');
     const configuredApkDownloadUrl = window.CATU_RUNTIME_CONFIG?.apkDownloadUrl?.trim();
     const APK_DOWNLOAD_URL = (configuredApkDownloadUrl || '').replace(/\/+$/, '');
     let rawStoredUser = null;
