@@ -7,6 +7,7 @@ function renderPengurusTable(filteredPengurus) {
                     <th class="px-6 py-4">NAMA PENGURUS</th>
                     <th class="px-6 py-4">JABATAN</th>
                     <th class="px-6 py-4">KOTA / DOMISILI</th>
+                    <th class="px-6 py-4">KEUSKUPAN</th>
                     <th class="px-6 py-4">LINGKUNGAN</th>
                     <th class="px-6 py-4 text-center">STATUS JABATAN</th>
                     <th class="px-6 py-4">NO. WHATSAPP</th>
@@ -16,11 +17,11 @@ function renderPengurusTable(filteredPengurus) {
                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                   ${filteredPengurus.length === 0 ? `
                     <tr>
-                      <td colspan="7" class="text-center py-16 text-slate-400 space-y-3">
+                      <td colspan="8" class="text-center py-16 text-slate-400 space-y-3">
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
                           <i data-lucide="award" class="w-7 h-7"></i>
                         </div>
-                        <p class="font-bold text-slate-700 text-sm">Tidak ada data pengurus atau koordinator yang sesuai filter</p>
+                        <p class="font-bold text-slate-700 text-sm">Tidak ada data pengurus lingkungan yang sesuai filter</p>
                       </td>
                     </tr>
                   ` : filteredPengurus.map(u => {
@@ -38,6 +39,9 @@ function renderPengurusTable(filteredPengurus) {
                         </td>
                         <td class="px-6 py-4 text-slate-700 font-medium text-xs">
                           <span class="truncate block max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                        </td>
+                        <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                          <span class="truncate block max-w-[180px]">${u.keuskupan_name || u.keuskupanName || '-'}</span>
                         </td>
                         <td class="px-6 py-4 text-slate-700 font-medium text-xs">
                           <p class="font-semibold text-slate-800 truncate max-w-[180px]">${u.lingkungan_name || '-'}</p>
@@ -176,7 +180,7 @@ function renderPengurusTable(filteredPengurus) {
                 ` : ''}
 
                 <span class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold whitespace-nowrap">
-                  ${list.length} Pengurus & Koordinator Keuskupan Aktif
+                  ${list.length} Pengurus Lingkungan Aktif
                 </span>
               </div>
             </div>
