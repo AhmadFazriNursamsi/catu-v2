@@ -1268,13 +1268,7 @@ async getRoles() {
         // Check if Koordinator in that Keuskupan already exists
         if (isKoordinator && targetProf[0].keuskupan_id) {
           const existingKoordinator = await this.dataSource.query(
-            `SELECT u.id, p.full_name, p.pengurus_position
-             FROM user_profiles p
-             JOIN auth_users u ON p.user_id = u.id
-             WHERE p.keuskupan_id = $1
-               AND u.id != $2
-               AND u.account_status = 'APPROVED'
-               AND LOWER(p.pengurus_position) LIKE '%koordinator%'`,
+            `SELECT u.id, p.full_name, p.pengurus_position FROM user_profiles p JOIN auth_users u ON p.user_id = u.id WHERE p.keuskupan_id = $1 AND u.id != $2 AND u.account_status = 'APPROVED' AND LOWER(p.pengurus_position) LIKE '%koordinator%' AND (p.is_jabatan_active IS NOT FALSE) AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
             [targetProf[0].keuskupan_id, dto.targetUserId],
           );
           if (existingKoordinator.length > 0) {
@@ -1282,24 +1276,16 @@ async getRoles() {
               `Gagal menyetujui akun: Jabatan Koordinator untuk keuskupan ini sudah aktif oleh ${existingKoordinator[0].full_name}.`,
             );
           }
+          await this.dataSource.query(
+            `UPDATE user_profiles SET is_jabatan_active = FALSE WHERE keuskupan_id = $1 AND user_id != $2 AND LOWER(pengurus_position) LIKE '%koordinator%' AND (jabatan_end_year IS NOT NULL AND jabatan_end_year < EXTRACT(YEAR FROM CURRENT_DATE))`,
+            [targetProf[0].keuskupan_id, dto.targetUserId],
+          );
         }
 
         // Pengurus Lingkungan duplicate position check
         if (roleCode === 'PENGURUS_LINGKUNGAN' && targetProf[0].lingkungan_id && targetProf[0].pengurus_position) {
           const existingApproved = await this.dataSource.query(
-            `SELECT u.id, p.full_name, p.pengurus_position
-             FROM user_profiles p
-             JOIN auth_users u ON p.user_id = u.id
-             WHERE p.lingkungan_id = $1
-               AND u.id != $2
-               AND u.account_status = 'APPROVED'
-               AND (
-                 LOWER(p.pengurus_position) = LOWER($3)
-                 OR (LOWER($3) LIKE '%ketua%' AND LOWER($3) NOT LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%ketua%' AND LOWER(p.pengurus_position) NOT LIKE '%wakil%')
-                 OR (LOWER($3) LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%wakil%')
-                 OR (LOWER($3) LIKE '%sekretaris%' AND LOWER(p.pengurus_position) LIKE '%sekretaris%')
-                 OR (LOWER($3) LIKE '%bendahara%' AND LOWER(p.pengurus_position) LIKE '%bendahara%')
-               )`,
+            `SELECT u.id, p.full_name, p.pengurus_position FROM user_profiles p JOIN auth_users u ON p.user_id = u.id WHERE p.lingkungan_id = $1 AND u.id != $2 AND u.account_status = 'APPROVED' AND (LOWER(p.pengurus_position) = LOWER($3) OR (LOWER($3) LIKE '%ketua%' AND LOWER($3) NOT LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%ketua%' AND LOWER(p.pengurus_position) NOT LIKE '%wakil%') OR (LOWER($3) LIKE '%wakil%' AND LOWER(p.pengurus_position) LIKE '%wakil%') OR (LOWER($3) LIKE '%sekretaris%' AND LOWER(p.pengurus_position) LIKE '%sekretaris%') OR (LOWER($3) LIKE '%bendahara%' AND LOWER(p.pengurus_position) LIKE '%bendahara%')) AND (p.is_jabatan_active IS NOT FALSE) AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
             [targetProf[0].lingkungan_id, dto.targetUserId, targetProf[0].pengurus_position],
           );
           if (existingApproved.length > 0) {

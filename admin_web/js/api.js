@@ -191,20 +191,47 @@
         return;
       }
 
+      const curYear = new Date().getFullYear();
+
+      if (isApprove && isKoordinator) {
+        const tKeuskupan = targetUser?.keuskupan_id || targetUser?.keuskupanId;
+        if (tKeuskupan) {
+          const existKoordinator = state.users.find(o => {
+            if (String(o.id) === String(targetUser.id)) return false;
+            if ((o.account_status || o.accountStatus || '').toUpperCase() !== 'APPROVED') return false;
+            if (String(o.keuskupan_id || o.keuskupanId) !== String(tKeuskupan)) return false;
+            const oPos = (o.pengurus_position || o.pengurusPosition || '').toString().toLowerCase();
+            const oRole = (o.role_code || o.roleCode || '').toUpperCase();
+            if (!oPos.includes('koordinator') && oRole !== 'KOORDINATOR') return false;
+            const endY = o.jabatan_end_year || o.jabatanEndYear;
+            const isExp = endY ? parseInt(endY) < curYear : false;
+            return (o.is_jabatan_active !== false && o.isJabatanActive !== false) && !isExp;
+          });
+          if (existKoordinator) {
+            showToast(`Gagal menyetujui: Keuskupan ini sudah memiliki Koordinator aktif (${existKoordinator.full_name || existKoordinator.fullName}). Hanya boleh ada 1 Koordinator aktif per keuskupan.`, 'error', 'Koordinator Aktif Ganda');
+            return;
+          }
+        }
+      }
+
       if (isApprove && r === 'ROMO_PAROKI') {
         const romoPos = (targetUser?.romo_position || targetUser?.romoPosition || '').toString().toLowerCase();
         const isKepala = romoPos.includes('kepala') || romoPos === 'ketua_romo';
         if (isKepala) {
           const tParoki = targetUser?.paroki_id || targetUser?.parokiId;
-          const existKepala = state.users.find(o =>
-            String(o.id) !== String(targetUser.id) &&
-            (o.role_code || o.roleCode || '').toUpperCase() === 'ROMO_PAROKI' &&
-            (o.account_status || o.accountStatus || '').toUpperCase() === 'APPROVED' &&
-            String(o.paroki_id || o.parokiId) === String(tParoki) &&
-            ((o.romo_position || o.romoPosition || '').toLowerCase().includes('kepala') || (o.romo_position || o.romoPosition || '').toUpperCase() === 'KETUA_ROMO')
-          );
+          const existKepala = state.users.find(o => {
+            if (String(o.id) === String(targetUser.id)) return false;
+            if ((o.role_code || o.roleCode || '').toUpperCase() !== 'ROMO_PAROKI') return false;
+            if ((o.account_status || o.accountStatus || '').toUpperCase() !== 'APPROVED') return false;
+            if (String(o.paroki_id || o.parokiId) !== String(tParoki)) return false;
+            const oPos = (o.romo_position || o.romoPosition || '').toLowerCase();
+            if (!oPos.includes('kepala') && oPos !== 'ketua_romo') return false;
+            const endY = o.jabatan_end_year || o.jabatanEndYear;
+            const isExp = endY ? parseInt(endY) < curYear : false;
+            return (o.is_jabatan_active !== false && o.isJabatanActive !== false) && !isExp;
+          });
           if (existKepala) {
-            showToast(`Gagal menyetujui: Paroki ini sudah memiliki Kepala Romo Paroki (${existKepala.full_name || existKepala.fullName}). Hanya boleh ada 1 Kepala per paroki.`, 'error', 'Kepala Romo Ganda');
+            showToast(`Gagal menyetujui: Paroki ini sudah memiliki Kepala Romo Paroki aktif (${existKepala.full_name || existKepala.fullName}). Hanya boleh ada 1 Kepala per paroki.`, 'error', 'Kepala Romo Ganda');
             return;
           }
         }
@@ -215,15 +242,19 @@
         const isKetua = romoPos.includes('ketua') || romoPos === 'ketua_romo';
         if (isKetua) {
           const tOrdo = targetUser?.ordo_id || targetUser?.ordoId;
-          const existKetua = state.users.find(o =>
-            String(o.id) !== String(targetUser.id) &&
-            (o.role_code || o.roleCode || '').toUpperCase() === 'ROMO_ORDO' &&
-            (o.account_status || o.accountStatus || '').toUpperCase() === 'APPROVED' &&
-            String(o.ordo_id || o.ordoId) === String(tOrdo) &&
-            ((o.romo_position || o.romoPosition || '').toLowerCase().includes('ketua') || (o.romo_position || o.romoPosition || '').toUpperCase() === 'KETUA_ROMO')
-          );
+          const existKetua = state.users.find(o => {
+            if (String(o.id) === String(targetUser.id)) return false;
+            if ((o.role_code || o.roleCode || '').toUpperCase() !== 'ROMO_ORDO') return false;
+            if ((o.account_status || o.accountStatus || '').toUpperCase() !== 'APPROVED') return false;
+            if (String(o.ordo_id || o.ordoId) !== String(tOrdo)) return false;
+            const oPos = (o.romo_position || o.romoPosition || '').toLowerCase();
+            if (!oPos.includes('ketua') && oPos !== 'ketua_romo') return false;
+            const endY = o.jabatan_end_year || o.jabatanEndYear;
+            const isExp = endY ? parseInt(endY) < curYear : false;
+            return (o.is_jabatan_active !== false && o.isJabatanActive !== false) && !isExp;
+          });
           if (existKetua) {
-            showToast(`Gagal menyetujui: Ordo ini sudah memiliki Ketua Romo Ordo (${existKetua.full_name || existKetua.fullName}). Hanya boleh ada 1 Ketua per ordo.`, 'error', 'Ketua Romo Ordo Ganda');
+            showToast(`Gagal menyetujui: Ordo ini sudah memiliki Ketua Romo Ordo aktif (${existKetua.full_name || existKetua.fullName}). Hanya boleh ada 1 Ketua per ordo.`, 'error', 'Ketua Romo Ordo Ganda');
             return;
           }
         }

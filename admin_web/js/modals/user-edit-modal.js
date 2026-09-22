@@ -264,7 +264,7 @@
 
                 ${roleCode === 'ROMO_PAROKI' ? (() => {
                   const pId = u.paroki_id || u.parokiId;
-                  const existK = pId ? state.users.find(o => String(o.id) !== String(u.id) && (o.role_code || o.roleCode || '').toUpperCase() === 'ROMO_PAROKI' && (o.account_status || o.accountStatus || '').toUpperCase() === 'APPROVED' && String(o.paroki_id || o.parokiId) === String(pId) && ((o.romo_position || o.romoPosition || '').toLowerCase().includes('kepala') || (o.romo_position || o.romoPosition || '').toUpperCase() === 'KETUA_ROMO')) : null;
+                  const existK = pId ? state.users.find(o => String(o.id) !== String(u.id) && (o.role_code || o.roleCode || '').toUpperCase() === 'ROMO_PAROKI' && (o.account_status || o.accountStatus || '').toUpperCase() === 'APPROVED' && String(o.paroki_id || o.parokiId) === String(pId) && ((o.romo_position || o.romoPosition || '').toLowerCase().includes('kepala') || (o.romo_position || o.romoPosition || '').toUpperCase() === 'KETUA_ROMO') && (o.is_jabatan_active !== false && o.isJabatanActive !== false) && (!o.jabatan_end_year || parseInt(o.jabatan_end_year) >= new Date().getFullYear())) : null;
                   const isK = (u.romo_position || '').toLowerCase().includes('kepala') || (u.romo_position || '').toUpperCase() === 'KETUA_ROMO';
                   return `
                   <div class="bg-blue-50/40 p-5 rounded-2xl border border-blue-100/80 space-y-4 shadow-xs">
@@ -296,7 +296,7 @@
 
                 ${roleCode === 'ROMO_ORDO' ? (() => {
                   const oId = u.ordo_id || u.ordoId;
-                  const existK = oId ? state.users.find(o => String(o.id) !== String(u.id) && (o.role_code || o.roleCode || '').toUpperCase() === 'ROMO_ORDO' && (o.account_status || o.accountStatus || '').toUpperCase() === 'APPROVED' && String(o.ordo_id || o.ordoId) === String(oId) && ((o.romo_position || o.romoPosition || '').toLowerCase().includes('ketua') || (o.romo_position || o.romoPosition || '').toUpperCase() === 'KETUA_ROMO')) : null;
+                  const existK = oId ? state.users.find(o => String(o.id) !== String(u.id) && (o.role_code || o.roleCode || '').toUpperCase() === 'ROMO_ORDO' && (o.account_status || o.accountStatus || '').toUpperCase() === 'APPROVED' && String(o.ordo_id || o.ordoId) === String(oId) && ((o.romo_position || o.romoPosition || '').toLowerCase().includes('ketua') || (o.romo_position || o.romoPosition || '').toUpperCase() === 'KETUA_ROMO') && (o.is_jabatan_active !== false && o.isJabatanActive !== false) && (!o.jabatan_end_year || parseInt(o.jabatan_end_year) >= new Date().getFullYear())) : null;
                   const rPos = (u.romo_position || u.romoPosition || '').trim();
                   const isKetuaOrdo = rPos.toLowerCase().includes('ketua') || rPos.toUpperCase() === 'KETUA_ROMO';
                   return `

@@ -182,6 +182,9 @@ function renderEditUserHeader(u, uName, status, roleCode) {
         payload.ordoId = (oElem && oElem.value) ? parseInt(oElem.value) : null;
       }
 
+      const curY = new Date().getFullYear();
+      const isActOther = o => (o.is_jabatan_active !== false && o.isJabatanActive !== false) && (!(o.jabatan_end_year || o.jabatanEndYear) || parseInt(o.jabatan_end_year || o.jabatanEndYear) >= curY);
+
       if (roleCode === 'PENGURUS_LINGKUNGAN' || (u.pengurus_position && u.pengurus_position.toLowerCase().includes('koordinator'))) {
         const pos = document.getElementById('editPengurusPosition');
         if (pos) payload.pengurusPosition = pos.value;
@@ -189,28 +192,43 @@ function renderEditUserHeader(u, uName, status, roleCode) {
         if (sy && sy.value) payload.jabatanStartYear = parseInt(sy.value);
         const ey = document.getElementById('editJabatanEndYear');
         if (ey && ey.value) payload.jabatanEndYear = parseInt(ey.value);
-        payload.isJabatanActive = true;
+        payload.isJabatanActive = payload.jabatanEndYear ? payload.jabatanEndYear >= curY : true;
 
-        // Check if another active/pending user already holds this position in the same lingkungan
+        // Check duplicate pengurus in lingkungan
         const checkLingkunganId = payload.lingkunganId || u.lingkungan_id;
         if (checkLingkunganId && payload.pengurusPosition) {
           const duplicatePengurus = state.users.find(other => {
-            if (String(other.id) === String(u.id)) return false;
-            const oStatus = (other.account_status || other.accountStatus || '').toUpperCase();
-            if (oStatus !== 'APPROVED' && oStatus !== 'PENDING_APPROVAL') return false;
-            const oLing = other.lingkungan_id || other.lingkunganId;
-            if (String(oLing) !== String(checkLingkunganId)) return false;
+            if (String(other.id) === String(u.id) || !['APPROVED', 'PENDING_APPROVAL'].includes((other.account_status || other.accountStatus || '').toUpperCase())) return false;
+            if (String(other.lingkungan_id || other.lingkunganId) !== String(checkLingkunganId)) return false;
             const oPos = (other.pengurus_position || other.pengurusPosition || '').toLowerCase();
             const myPos = payload.pengurusPosition.toLowerCase();
-            if (oPos === myPos) return true;
-            if (myPos.includes('ketua') && !myPos.includes('wakil') && oPos.includes('ketua') && !oPos.includes('wakil')) return true;
-            if (myPos.includes('wakil') && oPos.includes('wakil')) return true;
-            if (myPos.includes('sekretaris') && oPos.includes('sekretaris')) return true;
-            if (myPos.includes('bendahara') && oPos.includes('bendahara')) return true;
-            return false;
+            const match = (oPos === myPos) ||
+              (myPos.includes('ketua') && !myPos.includes('wakil') && oPos.includes('ketua') && !oPos.includes('wakil')) ||
+              (myPos.includes('wakil') && oPos.includes('wakil')) ||
+              (myPos.includes('sekretaris') && oPos.includes('sekretaris')) ||
+              (myPos.includes('bendahara') && oPos.includes('bendahara'));
+            return match && isActOther(other);
           });
           if (duplicatePengurus) {
             state.editFormError = `Jabatan ${payload.pengurusPosition} pada lingkungan ini sudah diisi oleh ${duplicatePengurus.full_name || duplicatePengurus.fullName}. Pengurus dengan jabatan yang sama tidak boleh ganda dalam satu lingkungan.`;
+            renderApp();
+            return;
+          }
+        }
+
+        // Check duplicate koordinator in keuskupan
+        const checkKeuskupanId = payload.keuskupanId || u.keuskupan_id || u.keuskupanId;
+        const isKoor = (payload.pengurusPosition || '').toLowerCase().includes('koordinator') || roleCode === 'KOORDINATOR';
+        if (isKoor && checkKeuskupanId) {
+          const duplicateKoordinator = state.users.find(other => {
+            if (String(other.id) === String(u.id) || !['APPROVED', 'PENDING_APPROVAL'].includes((other.account_status || other.accountStatus || '').toUpperCase())) return false;
+            if (String(other.keuskupan_id || other.keuskupanId) !== String(checkKeuskupanId)) return false;
+            const oPos = (other.pengurus_position || other.pengurusPosition || '').toLowerCase();
+            const isOKoor = oPos.includes('koordinator') || (other.role_code || other.roleCode || '').toUpperCase() === 'KOORDINATOR';
+            return isOKoor && isActOther(other);
+          });
+          if (duplicateKoordinator) {
+            state.editFormError = `Keuskupan ini sudah memiliki Koordinator aktif (${duplicateKoordinator.full_name || duplicateKoordinator.fullName}). Hanya boleh ada 1 Koordinator aktif per keuskupan.`;
             renderApp();
             return;
           }
@@ -226,7 +244,7 @@ function renderEditUserHeader(u, uName, status, roleCode) {
           if (sy && sy.value) payload.jabatanStartYear = parseInt(sy.value);
           const ey = document.getElementById('editJabatanEndYear');
           if (ey && ey.value) payload.jabatanEndYear = parseInt(ey.value);
-          payload.isJabatanActive = true;
+          payload.isJabatanActive = payload.jabatanEndYear ? payload.jabatanEndYear >= curY : true;
         } else {
           payload.jabatanStartYear = null;
           payload.jabatanEndYear = null;
@@ -235,15 +253,11 @@ function renderEditUserHeader(u, uName, status, roleCode) {
         const checkParokiId = payload.parokiId || u.paroki_id;
         if (checkParokiId && isKepala) {
           const duplicateKepala = state.users.find(other => {
-            if (String(other.id) === String(u.id)) return false;
-            const oRole = (other.role_code || other.roleCode || '').toUpperCase();
-            if (oRole !== 'ROMO_PAROKI') return false;
-            const oStatus = (other.account_status || other.accountStatus || '').toUpperCase();
-            if (oStatus !== 'APPROVED' && oStatus !== 'PENDING_APPROVAL') return false;
-            const oPar = other.paroki_id || other.parokiId;
-            if (String(oPar) !== String(checkParokiId)) return false;
+            if (String(other.id) === String(u.id) || (other.role_code || other.roleCode || '').toUpperCase() !== 'ROMO_PAROKI') return false;
+            if (!['APPROVED', 'PENDING_APPROVAL'].includes((other.account_status || other.accountStatus || '').toUpperCase())) return false;
+            if (String(other.paroki_id || other.parokiId) !== String(checkParokiId)) return false;
             const oPos = (other.romo_position || other.romoPosition || '').toLowerCase();
-            return oPos.includes('kepala') || oPos === 'ketua_romo';
+            return (oPos.includes('kepala') || oPos === 'ketua_romo') && isActOther(other);
           });
           if (duplicateKepala) {
             state.editFormError = `Paroki ini sudah memiliki Kepala Romo Paroki (${duplicateKepala.full_name || duplicateKepala.fullName}). Setiap paroki hanya boleh memiliki 1 Kepala Romo Paroki (tidak boleh dobel).`;
@@ -262,7 +276,7 @@ function renderEditUserHeader(u, uName, status, roleCode) {
           if (sy && sy.value) payload.jabatanStartYear = parseInt(sy.value);
           const ey = document.getElementById('editJabatanEndYear');
           if (ey && ey.value) payload.jabatanEndYear = parseInt(ey.value);
-          payload.isJabatanActive = true;
+          payload.isJabatanActive = payload.jabatanEndYear ? payload.jabatanEndYear >= curY : true;
         } else {
           payload.jabatanStartYear = null;
           payload.jabatanEndYear = null;
@@ -271,15 +285,11 @@ function renderEditUserHeader(u, uName, status, roleCode) {
         const checkOrdoId = payload.ordoId || u.ordo_id || u.ordoId;
         if (checkOrdoId && isKetuaOrdo) {
           const duplicateKetua = state.users.find(other => {
-            if (String(other.id) === String(u.id)) return false;
-            const oRole = (other.role_code || other.roleCode || '').toUpperCase();
-            if (oRole !== 'ROMO_ORDO') return false;
-            const oStatus = (other.account_status || other.accountStatus || '').toUpperCase();
-            if (oStatus !== 'APPROVED' && oStatus !== 'PENDING_APPROVAL') return false;
-            const oOrd = other.ordo_id || other.ordoId;
-            if (String(oOrd) !== String(checkOrdoId)) return false;
+            if (String(other.id) === String(u.id) || (other.role_code || other.roleCode || '').toUpperCase() !== 'ROMO_ORDO') return false;
+            if (!['APPROVED', 'PENDING_APPROVAL'].includes((other.account_status || other.accountStatus || '').toUpperCase())) return false;
+            if (String(other.ordo_id || other.ordoId) !== String(checkOrdoId)) return false;
             const oPos = (other.romo_position || other.romoPosition || '').toLowerCase();
-            return oPos.includes('ketua') || oPos === 'ketua_romo';
+            return (oPos.includes('ketua') || oPos === 'ketua_romo') && isActOther(other);
           });
           if (duplicateKetua) {
             state.editFormError = `Ordo ini sudah memiliki Ketua Romo Ordo (${duplicateKetua.full_name || duplicateKetua.fullName}). Setiap ordo hanya boleh memiliki 1 Ketua Romo Ordo (tidak boleh dobel).`;
