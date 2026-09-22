@@ -117,8 +117,12 @@
     function renderDashboardLayout() {
       const adminName = state.currentUser?.fullName || state.currentUser?.full_name || 'Super Admin CATU';
       const pendingApprovalsCount = state.users.filter(u => (u.account_status || u.accountStatus) === 'PENDING_APPROVAL').length;
-      const activeUmatCount = state.users.filter(u => (u.role_code || u.roleCode) === 'UMAT' && (u.account_status || u.accountStatus) === 'APPROVED').length;
-      const activePengurusCount = state.users.filter(u => (u.role_code || u.roleCode) === 'PENGURUS_LINGKUNGAN' && (u.account_status || u.accountStatus) === 'APPROVED').length;
+      const isPengurusOrKoordinator = u => {
+        const r = (u.role_code || u.roleCode || '').toUpperCase();
+        const pos = (u.pengurus_position || '').toLowerCase();
+        return (r === 'PENGURUS_LINGKUNGAN' || pos.includes('koordinator') || r.includes('KOORDINATOR')) && (u.account_status || u.accountStatus) === 'APPROVED';
+      };
+      const activePengurusCount = state.users.filter(isPengurusOrKoordinator).length;
       const activeRomoParokiCount = state.users.filter(u => (u.role_code || u.roleCode) === 'ROMO_PAROKI' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const activeRomoOrdoCount = state.users.filter(u => (u.role_code || u.roleCode) === 'ROMO_ORDO' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const activeAnnotationsCount = AGENTATION_ENABLED ? state.agentation.annotations.filter(a => !a.resolved).length : 0;
@@ -152,7 +156,7 @@
                   ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Data Keumatan</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
                     ${renderNavItem('umat', 'users', 'Umat Katolik', activeUmatCount, 'bg-blue-600')}
-                    ${renderNavItem('pengurus', 'briefcase', 'Pengurus Lingkungan', activePengurusCount, 'bg-blue-600')}
+                    ${renderNavItem('pengurus', 'briefcase', 'Pengurus & Koordinator', activePengurusCount, 'bg-blue-600')}
                     ${renderNavItem('romo_paroki', 'church', 'Romo Paroki', activeRomoParokiCount, 'bg-blue-600')}
                     ${renderNavItem('romo_ordo', 'cross', 'Romo Ordo', activeRomoOrdoCount, 'bg-blue-600')}
                   </div>

@@ -236,7 +236,7 @@
       e.preventDefault();
       e.stopPropagation();
 
-      const modalParent = target.closest('.fixed:not([data-agentation-dialog])');
+      const modalParent = target.closest('.fixed:not([data-agentation-dialog]):not(aside)');
       let modalPrefix = '';
       if (modalParent) {
         const modalTitle = modalParent.querySelector('h3, h4')?.innerText?.trim() || 'Popup Modal';

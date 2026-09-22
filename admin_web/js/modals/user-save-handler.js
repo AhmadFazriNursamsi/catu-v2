@@ -182,7 +182,7 @@ function renderEditUserHeader(u, uName, status, roleCode) {
         payload.ordoId = (oElem && oElem.value) ? parseInt(oElem.value) : null;
       }
 
-      if (roleCode === 'PENGURUS_LINGKUNGAN') {
+      if (roleCode === 'PENGURUS_LINGKUNGAN' || (u.pengurus_position && u.pengurus_position.toLowerCase().includes('koordinator'))) {
         const pos = document.getElementById('editPengurusPosition');
         if (pos) payload.pengurusPosition = pos.value;
         const sy = document.getElementById('editJabatanStartYear');

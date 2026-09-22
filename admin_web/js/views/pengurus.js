@@ -20,7 +20,7 @@ function renderPengurusTable(filteredPengurus) {
                         <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
                           <i data-lucide="award" class="w-7 h-7"></i>
                         </div>
-                        <p class="font-bold text-slate-700 text-sm">Tidak ada data pengurus lingkungan yang sesuai filter</p>
+                        <p class="font-bold text-slate-700 text-sm">Tidak ada data pengurus atau koordinator yang sesuai filter</p>
                       </td>
                     </tr>
                   ` : filteredPengurus.map(u => {
@@ -34,7 +34,7 @@ function renderPengurusTable(filteredPengurus) {
                           <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
                         </td>
                         <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
-                          ${u.pengurus_position || 'Ketua Lingkungan'}
+                          ${u.pengurus_position || ((u.role_code || '').includes('KOORDINATOR') ? 'Koordinator' : 'Ketua Lingkungan')}
                         </td>
                         <td class="px-6 py-4 text-slate-700 font-medium text-xs">
                           <span class="truncate block max-w-[170px]">${u.kota_name || u.address || '-'}</span>
@@ -91,17 +91,29 @@ function renderPengurusTable(filteredPengurus) {
       const q = (state.pengurusSearch || '').toLowerCase().trim();
       const hasFilter = state.pengurusSearch || state.pengurusFilterPosition || state.pengurusFilterParoki;
 
-      const allPengurusUsers = state.users.filter(u => (u.role_code || u.roleCode || '').toUpperCase() === 'PENGURUS_LINGKUNGAN');
+      const isPengurusOrKoordinator = (u) => {
+        const role = (u.role_code || u.roleCode || '').toUpperCase();
+        const pos = (u.pengurus_position || '').toLowerCase();
+        return role === 'PENGURUS_LINGKUNGAN' || pos.includes('koordinator') || role.includes('KOORDINATOR');
+      };
+
+      const allPengurusUsers = state.users.filter(u => isPengurusOrKoordinator(u));
       const parokiList = state.paroki?.length > 0 ? state.paroki : Array.from(new Set(allPengurusUsers.map(u => u.paroki_name).filter(Boolean))).map(name => ({ id: name, name }));
-      const positionList = ['Ketua Lingkungan', 'Wakil Ketua', 'Sekretaris'];
+      const positionList = ['Ketua Lingkungan', 'Wakil Ketua', 'Sekretaris', 'Koordinator'];
 
       const list = state.users.filter(u => {
-        const role = (u.role_code || u.roleCode || '').toUpperCase();
         const status = (u.account_status || u.accountStatus || '').toUpperCase();
-        if (role !== 'PENGURUS_LINGKUNGAN' || status !== 'APPROVED') return false;
+        if (!isPengurusOrKoordinator(u) || status !== 'APPROVED') return false;
 
         if (state.pengurusFilterPosition) {
-          if ((u.pengurus_position || '') !== state.pengurusFilterPosition) return false;
+          const userPos = (u.pengurus_position || '').toLowerCase();
+          const targetPos = state.pengurusFilterPosition.toLowerCase();
+          if (targetPos.includes('koordinator')) {
+            const role = (u.role_code || u.roleCode || '').toUpperCase();
+            if (!userPos.includes('koordinator') && !role.includes('KOORDINATOR')) return false;
+          } else if (userPos !== targetPos) {
+            return false;
+          }
         }
 
         if (state.pengurusFilterParoki) {
@@ -129,7 +141,7 @@ function renderPengurusTable(filteredPengurus) {
             <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="pengurusSearchInput" placeholder="Cari nama pengurus, kota, email, jabatan..." value="${state.pengurusSearch}"
+                <input type="text" id="pengurusSearchInput" placeholder="Cari nama pengurus, koordinator, kota, email, jabatan..." value="${state.pengurusSearch}"
                   oninput="state.pengurusSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
               </div>
@@ -164,7 +176,7 @@ function renderPengurusTable(filteredPengurus) {
                 ` : ''}
 
                 <span class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold whitespace-nowrap">
-                  ${list.length} Pengurus Aktif
+                  ${list.length} Pengurus & Koordinator Aktif
                 </span>
               </div>
             </div>

@@ -243,19 +243,20 @@
                 </div>
 
                 <!-- Section 4: Data Kepengurusan (Kondisional) -->
-                ${roleCode === 'PENGURUS_LINGKUNGAN' ? `
+                ${(roleCode === 'PENGURUS_LINGKUNGAN' || (u.pengurus_position || '').toLowerCase().includes('koordinator')) ? `
                   <div class="bg-blue-50/40 p-5 rounded-2xl border border-blue-100/80 space-y-4 shadow-xs">
                     <h4 class="font-extrabold text-blue-950 flex items-center text-xs pb-1 border-b border-blue-100/80">
                       <i data-lucide="briefcase" class="w-4 h-4 mr-1.5 text-blue-700"></i>
-                      4. Data Kepengurusan Lingkungan
+                      4. Data Kepengurusan / Koordinator
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pengurus *</label>
+                        <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pengurus / Koordinator *</label>
                         <select id="editPengurusPosition" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
                           <option value="Ketua Lingkungan" ${u.pengurus_position === 'Ketua Lingkungan' ? 'selected' : ''}>Ketua Lingkungan (Pimpinan)</option>
                           <option value="Wakil Ketua" ${u.pengurus_position === 'Wakil Ketua' ? 'selected' : ''}>Wakil Ketua</option>
                           <option value="Sekretaris" ${u.pengurus_position === 'Sekretaris' ? 'selected' : ''}>Sekretaris</option>
+                          <option value="Koordinator" ${u.pengurus_position === 'Koordinator' ? 'selected' : ''}>Koordinator (Keuskupan)</option>
                         </select>
                       </div>
                       <div>

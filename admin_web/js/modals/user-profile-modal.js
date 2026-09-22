@@ -136,16 +136,16 @@
               `}
 
               <!-- Section 3: Jabatan Kepengurusan / Pastoral (Khusus Pengurus & Romo) -->
-              ${uRoleCode === 'PENGURUS_LINGKUNGAN' ? `
+              ${(uRoleCode === 'PENGURUS_LINGKUNGAN' || (u.pengurus_position || '').toLowerCase().includes('koordinator')) ? `
                 <div class="bg-blue-50/40 rounded-2xl p-4 border border-blue-100/80 space-y-2.5">
                   <p class="font-extrabold text-blue-950 text-xs flex items-center">
                     <i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-blue-700"></i>
-                    Detail Jabatan Pengurus Lingkungan
+                    Detail Jabatan Pengurus / Koordinator
                   </p>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
                     <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
                       <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Posisi Kepengurusan</p>
-                      ${getUserPositionBadge(u.pengurus_position || 'Ketua Lingkungan', 'PENGURUS_LINGKUNGAN')}
+                      ${getUserPositionBadge(u.pengurus_position || 'Koordinator', 'PENGURUS_LINGKUNGAN')}
                     </div>
                     <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
                       <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Masa Jabatan</p>
