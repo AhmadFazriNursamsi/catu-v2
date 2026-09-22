@@ -1,17 +1,11 @@
 // ── Romo Paroki & Romo Ordo Management Views ──
-function renderRomoPositionBadge(pos) {
+function getRomoParokiPositionLabel(pos) {
   const p = (pos || '').trim();
-  const isK = p.toLowerCase().includes('kepala') || p.toUpperCase() === 'KETUA_ROMO';
-  if (isK) {
-    return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-300 font-extrabold text-xs shadow-2xs">
-      <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-600"></i>
-      <span>Kepala Romo Paroki</span>
-    </span>`;
+  if (p.toLowerCase().includes('kepala') || p.toUpperCase() === 'KETUA_ROMO') {
+    return 'Kepala Romo Paroki';
   }
-  return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-900 border border-blue-200 font-bold text-xs">
-    <i data-lucide="church" class="w-3.5 h-3.5 text-blue-600"></i>
-    <span>${p || 'Romo Paroki'}</span>
-  </span>`;
+  if (p === 'ROMO_BIASA') return 'Romo Paroki';
+  return p || 'Romo Paroki';
 }
 
 function renderRomoParokiTable(filtered) {
@@ -50,7 +44,7 @@ function renderRomoParokiTable(filtered) {
                         <span class="truncate block max-w-[180px]">${u.paroki_name || '-'}</span>
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
-                        ${renderRomoPositionBadge(u.romo_position)}
+                        <span>${getRomoParokiPositionLabel(u.romo_position)}</span>
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-700">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
@@ -161,11 +155,6 @@ function renderRomoParokiTable(filtered) {
                   ${list.length} Romo Paroki
                 </span>
               </div>
-            </div>
-
-            <div class="px-4 py-2.5 bg-amber-50/60 border-b border-amber-100/80 flex items-center gap-2 text-xs text-amber-900 font-medium">
-              <i data-lucide="shield-check" class="w-4 h-4 text-amber-600 flex-shrink-0"></i>
-              <span>Aturan Pastoral: Setiap paroki memiliki tepat <strong>1 Kepala Romo Paroki</strong> sebagai pimpinan pastoral (tidak boleh ganda).</span>
             </div>
 
             ${renderRomoParokiTable(list)}
