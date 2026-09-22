@@ -247,8 +247,16 @@
     }
 
     function getUserPositionBadge(pos, roleCode) {
-      const p = (pos || '').trim();
+      let p = (pos || '').trim();
       const r = (roleCode || '').toUpperCase();
+
+      if (r === 'ROMO_ORDO') {
+        if (p.toLowerCase().includes('ketua') || p.toUpperCase() === 'KETUA_ROMO') p = 'Ketua Romo Ordo';
+        else if (p.toUpperCase() === 'ROMO_BIASA' || !p) p = 'Romo Ordo';
+      } else if (r === 'ROMO_PAROKI') {
+        if (p.toLowerCase().includes('kepala') || p.toUpperCase() === 'KETUA_ROMO') p = 'Kepala Romo Paroki';
+        else if (p.toUpperCase() === 'ROMO_BIASA' || !p) p = 'Romo Paroki';
+      }
 
       if (!p) {
         if (r === 'PENGURUS_LINGKUNGAN') return '<span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-blue-900 border border-blue-200 font-bold text-xs"><span>Pengurus Lingkungan</span></span>';

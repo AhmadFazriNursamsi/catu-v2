@@ -292,7 +292,10 @@
                   </div>`;
                 })() : ''}
 
-                ${roleCode === 'ROMO_ORDO' ? `
+                ${roleCode === 'ROMO_ORDO' ? (() => {
+                  const rPos = (u.romo_position || u.romoPosition || '').trim();
+                  const isKetuaOrdo = rPos.toLowerCase().includes('ketua') || rPos.toUpperCase() === 'KETUA_ROMO';
+                  return `
                   <div class="bg-blue-50/40 p-5 rounded-2xl border border-blue-100/80 space-y-4 shadow-xs">
                     <h4 class="font-extrabold text-blue-950 flex items-center text-xs pb-1 border-b border-blue-100/80">
                       <i data-lucide="cross" class="w-4 h-4 mr-1.5 text-blue-700"></i>
@@ -301,12 +304,12 @@
                     <div>
                       <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan di Ordo / Kongregasi *</label>
                       <select id="editRomoOrdoPosition" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
-                        <option value="Ketua Romo Ordo" ${u.romo_position === 'Ketua Romo Ordo' ? 'selected' : ''}>Ketua Romo Ordo (Pimpinan / Provinsial)</option>
-                        <option value="Romo Ordo" ${u.romo_position === 'Romo Ordo' || !u.romo_position ? 'selected' : ''}>Romo Ordo (Imam Anggota)</option>
+                        <option value="Ketua Romo Ordo" ${isKetuaOrdo ? 'selected' : ''}>Ketua Romo Ordo (Pimpinan / Provinsial)</option>
+                        <option value="Romo Ordo" ${!isKetuaOrdo ? 'selected' : ''}>Romo Ordo (Imam Anggota)</option>
                       </select>
                     </div>
-                  </div>
-                ` : ''}
+                  </div>`;
+                })() : ''}
 
                 <div class="pt-5 border-t border-slate-200 flex items-center justify-end space-x-3">
                   <button type="button" onclick="state.activeEditUser = null; renderApp();"

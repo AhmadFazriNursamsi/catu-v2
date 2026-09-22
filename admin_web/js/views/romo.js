@@ -8,6 +8,14 @@ function getRomoParokiPositionLabel(pos) {
   return p || 'Romo Paroki';
 }
 
+function getRomoOrdoPositionLabel(pos) {
+  const p = (pos || '').trim();
+  if (p.toLowerCase().includes('ketua') || p.toUpperCase() === 'KETUA_ROMO') {
+    return 'Ketua Romo Ordo';
+  }
+  return 'Romo Ordo';
+}
+
 function renderRomoParokiTable(filtered) {
       return `<div class="overflow-x-auto">
               <table class="w-full min-w-[760px] text-left text-xs">
@@ -181,14 +189,14 @@ function renderRomoParokiTable(filtered) {
         }
 
         if (state.romoOrdoFilterPosition) {
-          if ((u.romo_position || '') !== state.romoOrdoFilterPosition) return false;
+          if (getRomoOrdoPositionLabel(u.romo_position) !== state.romoOrdoFilterPosition) return false;
         }
 
         if (q) {
           const name = (u.full_name || u.fullName || '').toLowerCase();
           const email = (u.email || '').toLowerCase();
           const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
-          const pos = (u.romo_position || '').toLowerCase();
+          const pos = getRomoOrdoPositionLabel(u.romo_position).toLowerCase();
           const ordo = (u.ordo_name || '').toLowerCase();
           const kota = (u.kota_name || u.address || '').toLowerCase();
           const prov = (u.provinsi_name || '').toLowerCase();
@@ -278,7 +286,7 @@ function renderRomoParokiTable(filtered) {
                         <span class="truncate block max-w-[180px]">${u.ordo_name || 'Ordo Religius'}</span>
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
-                        ${u.romo_position || 'Romo Ordo'}
+                        <span>${getRomoOrdoPositionLabel(u.romo_position)}</span>
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-700">
                         <span class="inline-flex items-center space-x-1.5 text-xs">

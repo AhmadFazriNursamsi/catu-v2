@@ -242,6 +242,11 @@ function renderEditUserHeader(u, uName, status, roleCode) {
         }
       }
 
+      if (roleCode === 'ROMO_ORDO') {
+        const ropos = document.getElementById('editRomoOrdoPosition') || document.getElementById('editRomoPosition');
+        if (ropos) payload.romoPosition = ropos.value;
+      }
+
       state.isSavingProfile = true;
       state.editFormError = '';
       renderApp();
