@@ -268,6 +268,25 @@ function renderEditUserHeader(u, uName, status, roleCode) {
           payload.jabatanEndYear = null;
           payload.isJabatanActive = false;
         }
+        const checkOrdoId = payload.ordoId || u.ordo_id || u.ordoId;
+        if (checkOrdoId && isKetuaOrdo) {
+          const duplicateKetua = state.users.find(other => {
+            if (String(other.id) === String(u.id)) return false;
+            const oRole = (other.role_code || other.roleCode || '').toUpperCase();
+            if (oRole !== 'ROMO_ORDO') return false;
+            const oStatus = (other.account_status || other.accountStatus || '').toUpperCase();
+            if (oStatus !== 'APPROVED' && oStatus !== 'PENDING_APPROVAL') return false;
+            const oOrd = other.ordo_id || other.ordoId;
+            if (String(oOrd) !== String(checkOrdoId)) return false;
+            const oPos = (other.romo_position || other.romoPosition || '').toLowerCase();
+            return oPos.includes('ketua') || oPos === 'ketua_romo';
+          });
+          if (duplicateKetua) {
+            state.editFormError = `Ordo ini sudah memiliki Ketua Romo Ordo (${duplicateKetua.full_name || duplicateKetua.fullName}). Setiap ordo hanya boleh memiliki 1 Ketua Romo Ordo (tidak boleh dobel).`;
+            renderApp();
+            return;
+          }
+        }
       }
 
       state.isSavingProfile = true;

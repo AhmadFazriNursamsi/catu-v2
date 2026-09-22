@@ -210,6 +210,25 @@
         }
       }
 
+      if (isApprove && r === 'ROMO_ORDO') {
+        const romoPos = (targetUser?.romo_position || targetUser?.romoPosition || '').toString().toLowerCase();
+        const isKetua = romoPos.includes('ketua') || romoPos === 'ketua_romo';
+        if (isKetua) {
+          const tOrdo = targetUser?.ordo_id || targetUser?.ordoId;
+          const existKetua = state.users.find(o =>
+            String(o.id) !== String(targetUser.id) &&
+            (o.role_code || o.roleCode || '').toUpperCase() === 'ROMO_ORDO' &&
+            (o.account_status || o.accountStatus || '').toUpperCase() === 'APPROVED' &&
+            String(o.ordo_id || o.ordoId) === String(tOrdo) &&
+            ((o.romo_position || o.romoPosition || '').toLowerCase().includes('ketua') || (o.romo_position || o.romoPosition || '').toUpperCase() === 'KETUA_ROMO')
+          );
+          if (existKetua) {
+            showToast(`Gagal menyetujui: Ordo ini sudah memiliki Ketua Romo Ordo (${existKetua.full_name || existKetua.fullName}). Hanya boleh ada 1 Ketua per ordo.`, 'error', 'Ketua Romo Ordo Ganda');
+            return;
+          }
+        }
+      }
+
       state.actionConfirmModal = {
         title: isApprove ? 'Konfirmasi Persetujuan Akun' : 'Konfirmasi Penolakan Pendaftaran',
         subtitle: isApprove
