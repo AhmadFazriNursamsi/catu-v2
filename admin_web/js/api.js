@@ -191,6 +191,25 @@
         return;
       }
 
+      if (isApprove && r === 'ROMO_PAROKI') {
+        const romoPos = (targetUser?.romo_position || targetUser?.romoPosition || '').toString().toLowerCase();
+        const isKepala = romoPos.includes('kepala') || romoPos === 'ketua_romo';
+        if (isKepala) {
+          const tParoki = targetUser?.paroki_id || targetUser?.parokiId;
+          const existKepala = state.users.find(o =>
+            String(o.id) !== String(targetUser.id) &&
+            (o.role_code || o.roleCode || '').toUpperCase() === 'ROMO_PAROKI' &&
+            (o.account_status || o.accountStatus || '').toUpperCase() === 'APPROVED' &&
+            String(o.paroki_id || o.parokiId) === String(tParoki) &&
+            ((o.romo_position || o.romoPosition || '').toLowerCase().includes('kepala') || (o.romo_position || o.romoPosition || '').toUpperCase() === 'KETUA_ROMO')
+          );
+          if (existKepala) {
+            showToast(`Gagal menyetujui: Paroki ini sudah memiliki Kepala Romo Paroki (${existKepala.full_name || existKepala.fullName}). Hanya boleh ada 1 Kepala per paroki.`, 'error', 'Kepala Romo Ganda');
+            return;
+          }
+        }
+      }
+
       state.actionConfirmModal = {
         title: isApprove ? 'Konfirmasi Persetujuan Akun' : 'Konfirmasi Penolakan Pendaftaran',
         subtitle: isApprove

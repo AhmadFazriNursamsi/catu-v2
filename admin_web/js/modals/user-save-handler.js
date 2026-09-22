@@ -220,6 +220,26 @@ function renderEditUserHeader(u, uName, status, roleCode) {
       if (roleCode === 'ROMO_PAROKI') {
         const rpos = document.getElementById('editRomoPosition');
         if (rpos) payload.romoPosition = rpos.value;
+        const checkParokiId = payload.parokiId || u.paroki_id;
+        const isKepala = (payload.romoPosition || '').toLowerCase().includes('kepala') || (payload.romoPosition || '').toUpperCase() === 'KETUA_ROMO';
+        if (checkParokiId && isKepala) {
+          const duplicateKepala = state.users.find(other => {
+            if (String(other.id) === String(u.id)) return false;
+            const oRole = (other.role_code || other.roleCode || '').toUpperCase();
+            if (oRole !== 'ROMO_PAROKI') return false;
+            const oStatus = (other.account_status || other.accountStatus || '').toUpperCase();
+            if (oStatus !== 'APPROVED' && oStatus !== 'PENDING_APPROVAL') return false;
+            const oPar = other.paroki_id || other.parokiId;
+            if (String(oPar) !== String(checkParokiId)) return false;
+            const oPos = (other.romo_position || other.romoPosition || '').toLowerCase();
+            return oPos.includes('kepala') || oPos === 'ketua_romo';
+          });
+          if (duplicateKepala) {
+            state.editFormError = `Paroki ini sudah memiliki Kepala Romo Paroki (${duplicateKepala.full_name || duplicateKepala.fullName}). Setiap paroki hanya boleh memiliki 1 Kepala Romo Paroki (tidak boleh dobel).`;
+            renderApp();
+            return;
+          }
+        }
       }
 
       state.isSavingProfile = true;

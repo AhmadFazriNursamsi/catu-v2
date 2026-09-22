@@ -271,7 +271,11 @@
                   </div>
                 ` : ''}
 
-                ${roleCode === 'ROMO_PAROKI' ? `
+                ${roleCode === 'ROMO_PAROKI' ? (() => {
+                  const pId = u.paroki_id || u.parokiId;
+                  const existK = pId ? state.users.find(o => String(o.id) !== String(u.id) && (o.role_code || o.roleCode || '').toUpperCase() === 'ROMO_PAROKI' && (o.account_status || o.accountStatus || '').toUpperCase() === 'APPROVED' && String(o.paroki_id || o.parokiId) === String(pId) && ((o.romo_position || o.romoPosition || '').toLowerCase().includes('kepala') || (o.romo_position || o.romoPosition || '').toUpperCase() === 'KETUA_ROMO')) : null;
+                  const isK = (u.romo_position || '').toLowerCase().includes('kepala') || (u.romo_position || '').toUpperCase() === 'KETUA_ROMO';
+                  return `
                   <div class="bg-blue-50/40 p-5 rounded-2xl border border-blue-100/80 space-y-4 shadow-xs">
                     <h4 class="font-extrabold text-blue-950 flex items-center text-xs pb-1 border-b border-blue-100/80">
                       <i data-lucide="church" class="w-4 h-4 mr-1.5 text-blue-700"></i>
@@ -280,12 +284,13 @@
                     <div>
                       <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pastoral *</label>
                       <select id="editRomoPosition" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
-                        <option value="Kepala Romo Paroki" ${u.romo_position === 'Kepala Romo Paroki' ? 'selected' : ''}>Kepala Romo Paroki (Pimpinan Paroki)</option>
-                        <option value="Romo Paroki" ${u.romo_position === 'Romo Paroki' || !u.romo_position ? 'selected' : ''}>Romo Paroki (Pastor Rekan)</option>
+                        <option value="Kepala Romo Paroki" ${isK ? 'selected' : (existK ? 'disabled class="text-slate-400 bg-slate-100"' : '')}>Kepala Romo Paroki (Pimpinan Paroki)${existK && !isK ? ` — Sudah ada: ${existK.full_name || existK.fullName}` : ''}</option>
+                        <option value="Romo Paroki" ${!isK ? 'selected' : ''}>Romo Paroki (Pastor Rekan)</option>
                       </select>
+                      ${existK && !isK ? `<p class="text-[11px] text-amber-700 font-semibold mt-1.5 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Paroki ini sudah memiliki Kepala Romo Paroki (${existK.full_name || existK.fullName}). Hanya boleh 1 Kepala per paroki.</p>` : `<p class="text-[10.5px] text-slate-500 mt-1">Maksimal 1 Kepala Romo Paroki per paroki.</p>`}
                     </div>
-                  </div>
-                ` : ''}
+                  </div>`;
+                })() : ''}
 
                 ${roleCode === 'ROMO_ORDO' ? `
                   <div class="bg-blue-50/40 p-5 rounded-2xl border border-blue-100/80 space-y-4 shadow-xs">
