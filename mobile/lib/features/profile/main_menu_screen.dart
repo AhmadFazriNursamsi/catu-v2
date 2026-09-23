@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
+import 'about_catu_screen.dart';
 import 'edit_profile_screen.dart';
 import 'help_center_screen.dart';
 import '../admin/pengurus_approval_screen.dart';
@@ -642,7 +643,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
             icon: Icons.info_outline_rounded,
             title: LanguageService.tr('about_app'),
             subtitle: LanguageService.tr('about_app_sub'),
-            onTap: _showAboutModal,
+            onTap: _openAboutCatu,
           ),
 
           const Divider(height: 1, color: Color(0xFFF1F5F9)),
@@ -895,71 +896,10 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     );
   }
 
-  void _showAboutModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-              24, 16, 24, MediaQuery.of(ctx).padding.bottom + 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Icon(Icons.church_rounded, size: 48, color: Color(0xFF1D4ED8)),
-              const SizedBox(height: 10),
-              const Text(
-                'CATU Mobile',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Sistem Pelayanan Sakramen Gereja Katolik',
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-              ),
-              const SizedBox(height: 16),
-              _buildDetailRow('Versi Aplikasi', AppConstants.appVersion),
-              _buildDetailRow('Pengembang', 'Tim Antigravity / CATU Tech'),
-              _buildDetailRow('Hak Cipta', '© 2026 CATU. All Rights Reserved.'),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1D4ED8),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Tutup',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  void _openAboutCatu() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AboutCatuScreen()),
     );
   }
 
