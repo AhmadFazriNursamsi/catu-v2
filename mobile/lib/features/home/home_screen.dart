@@ -11,6 +11,7 @@ import '../../core/services/auth_service.dart';
 import '../news/public_news_screen.dart';
 import 'romo_dashboard_view.dart';
 import 'umat_dashboard_view.dart';
+import 'umat_pendatang_dashboard_view.dart';
 import '../admin/admin_dashboard_view.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -196,6 +197,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     if (roleCode.startsWith('ROMO')) {
       return RomoDashboardView(
+        user: _currentUserMap,
+        orders: _orders,
+        onRefresh: _loadOrders,
+        onLogout: _executeLogout,
+      );
+    }
+
+    if (roleCode == 'UMAT_PENDATANG') {
+      return UmatPendatangDashboardView(
         user: _currentUserMap,
         orders: _orders,
         onRefresh: _loadOrders,

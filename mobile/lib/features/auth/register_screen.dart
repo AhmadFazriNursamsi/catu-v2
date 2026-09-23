@@ -93,6 +93,8 @@ class _RegisterScreenState extends State<RegisterScreen>
     return false;
   }
 
+  bool get _isPendatang => _selectedRole == 'UMAT_PENDATANG';
+
   void _onPhoneChanged() {
     String text = _phoneController.text;
     if (text.startsWith('0')) {
@@ -348,6 +350,28 @@ class _RegisterScreenState extends State<RegisterScreen>
         }
       }
 
+      if (registeredUser['accountStatus'] == 'APPROVED' ||
+          registeredUser['account_status'] == 'APPROVED') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(children: [
+              const Icon(Icons.check_circle_outline_rounded, color: Colors.white),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(responseMsg.isNotEmpty
+                    ? responseMsg
+                    : 'Registrasi berhasil! Akun Anda aktif. Silakan masuk.'),
+              ),
+            ]),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        Navigator.pushReplacement(context, FadeSlideRoute(page: const LoginScreen()));
+        return;
+      }
+
       Navigator.pushReplacement(
         context,
         FadeSlideRoute(page: PendingApprovalScreen(user: registeredUser)),
@@ -440,7 +464,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           const SizedBox(height: 12),
           // 1. Keuskupan
           SearchableSelectField<int>(
-            label: 'Keuskupan',
+            label: _isPendatang ? 'Asal Keuskupan' : 'Keuskupan',
             icon: Icons.account_balance_outlined,
             value: _selectedKeuskupanId,
             items: _keuskupanList
@@ -457,7 +481,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
           // 2. Paroki
           SearchableSelectField<int>(
-            label: 'Paroki',
+            label: _isPendatang ? 'Asal Paroki' : 'Paroki',
             icon: Icons.church_outlined,
             value: _selectedParokiId,
             items: _parokiList
@@ -475,7 +499,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           // 3. Wilayah (Hanya untuk Umat & Pengurus Lingkungan)
           if (_selectedRole != 'ROMO_PAROKI') ...[
             SearchableSelectField<int>(
-              label: 'Wilayah',
+              label: _isPendatang ? 'Asal Wilayah' : 'Wilayah',
               icon: Icons.map_outlined,
               value: _selectedWilayahId,
               items: _wilayahList
@@ -492,7 +516,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
             // 4. Lingkungan
             SearchableSelectField<int>(
-              label: 'Lingkungan',
+              label: _isPendatang ? 'Asal Lingkungan' : 'Lingkungan',
               icon: Icons.groups_outlined,
               value: _selectedLingkunganId,
               items: _lingkunganList
@@ -1064,38 +1088,17 @@ class _RegisterScreenState extends State<RegisterScreen>
                                               onTap: () =>
                                                   _onRoleChanged(role['code']!),
                                               child: AnimatedContainer(
-                                                duration: const Duration(
-                                                    milliseconds: 200),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 16,
-                                                        vertical: 10),
+                                                duration: const Duration(milliseconds: 200),
+                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                                 decoration: BoxDecoration(
-                                                  color: isSelected
-                                                      ? AppConstants.primaryBlue
-                                                      : const Color(0xFFF7F9FC),
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
+                                                  color: isSelected ? AppConstants.primaryBlue : const Color(0xFFF7F9FC),
+                                                  borderRadius: BorderRadius.circular(12),
                                                   border: Border.all(
-                                                    color: isSelected
-                                                        ? AppConstants
-                                                            .primaryBlue
-                                                        : Colors.grey.shade200,
+                                                    color: isSelected ? AppConstants.primaryBlue : Colors.grey.shade200,
                                                     width: isSelected ? 2 : 1,
                                                   ),
                                                   boxShadow: isSelected
-                                                      ? [
-                                                          BoxShadow(
-                                                              color: AppConstants
-                                                                  .primaryBlue
-                                                                  .withValues(
-                                                                      alpha:
-                                                                          0.25),
-                                                              blurRadius: 8,
-                                                              offset:
-                                                                  const Offset(
-                                                                      0, 3))
-                                                        ]
+                                                      ? [BoxShadow(color: AppConstants.primaryBlue.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 3))]
                                                       : [],
                                                 ),
                                                 child: Text(
@@ -1197,7 +1200,9 @@ class _RegisterScreenState extends State<RegisterScreen>
 
                                   // ── 3. DATA KEUMATAN & GEREJA ──
                                   _buildSectionLabel(
-                                      'DATA KEUMATAN & GEREJA',
+                                      _isPendatang
+                                          ? 'DATA ASAL KEUMATAN & GEREJA'
+                                          : 'DATA KEUMATAN & GEREJA',
                                       Icons.church_rounded),
 
                                   _buildHierarchyDropdowns(),
@@ -1207,7 +1212,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   const SizedBox(height: 24),
 
                                   // ── 4. ALAMAT TEMPAT TINGGAL ──
-                                  _buildSectionLabel('ALAMAT TEMPAT TINGGAL',
+                                  _buildSectionLabel(
+                                      _isPendatang
+                                          ? 'ASAL ALAMAT TEMPAT TINGGAL'
+                                          : 'ALAMAT TEMPAT TINGGAL',
                                       Icons.home_rounded),
 
                                   TextFormField(
@@ -1217,7 +1225,9 @@ class _RegisterScreenState extends State<RegisterScreen>
                                         fontSize: 14,
                                         color: AppConstants.textDark),
                                     decoration: _fieldDeco(
-                                      label: 'Alamat Jalan / Rumah',
+                                      label: _isPendatang
+                                          ? 'Asal Alamat Tempat Tinggal'
+                                          : 'Alamat Jalan / Rumah',
                                       icon: Icons.place_rounded,
                                       hint: 'Jl. Sutera Utama No. 18',
                                     ),
@@ -1296,20 +1306,12 @@ class _RegisterScreenState extends State<RegisterScreen>
                                                   color: Colors.white,
                                                   strokeWidth: 2.5))
                                           : const Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
+                                              mainAxisAlignment: MainAxisAlignment.center,
                                               children: [
-                                                Icon(Icons.how_to_reg_rounded,
-                                                    color: Colors.white,
-                                                    size: 20),
+                                                Icon(Icons.how_to_reg_rounded, color: Colors.white, size: 20),
                                                 SizedBox(width: 8),
                                                 Text('DAFTAR AKUN',
-                                                    style: TextStyle(
-                                                        fontSize: 15,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Colors.white,
-                                                        letterSpacing: 0.8)),
+                                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.8)),
                                               ],
                                             ),
                                     ),
@@ -1320,32 +1322,18 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Text('Sudah punya akun?',
-                                          style: TextStyle(
-                                              fontSize: 13,
-                                              color: Colors.grey.shade500)),
+                                      Text('Sudah punya akun?', style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
                                       TextButton(
                                         onPressed: () {
                                           if (Navigator.canPop(context)) {
                                             Navigator.pop(context);
                                           } else {
-                                            Navigator.pushReplacement(
-                                              context,
-                                              FadeSlideRoute(
-                                                  page: const LoginScreen()),
-                                            );
+                                            Navigator.pushReplacement(context, FadeSlideRoute(page: const LoginScreen()));
                                           }
                                         },
-                                        style: TextButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 6)),
-                                        child: const Text(
-                                          'Masuk di sini',
-                                          style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                              color: AppConstants.primaryBlue),
-                                        ),
+                                        style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6)),
+                                        child: const Text('Masuk di sini',
+                                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppConstants.primaryBlue)),
                                       ),
                                     ],
                                   ),

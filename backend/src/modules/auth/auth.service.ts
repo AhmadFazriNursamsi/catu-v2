@@ -480,11 +480,12 @@ export class AuthService {
         if (parts.length === 3) endYear = parseInt(parts[2], 10);
       }
 
-      // 1. Insert ke auth_users
+      const isAutoActive = dto.roleCode === 'UMAT_PENDATANG';
+      const initialStatus = isAutoActive ? 'APPROVED' : 'PENDING_APPROVAL';
       const authResult = await queryRunner.query(
         `INSERT INTO auth_users (phone_number, password_hash, role_id, account_status, approval_assigned_to_user_id)
-         VALUES ($1, $2, $3, 'PENDING_APPROVAL', $4) RETURNING id, uuid, phone_number, account_status`,
-        [dto.phoneNumber, hashedPassword, roleId, assignedApproverId],
+         VALUES ($1, $2, $3, $4, $5) RETURNING id, uuid, phone_number, account_status`,
+        [dto.phoneNumber, hashedPassword, roleId, initialStatus, isAutoActive ? null : assignedApproverId],
       );
       const authUser = authResult[0];
 
@@ -626,19 +627,16 @@ export class AuthService {
       }
 
       let approvalTargetMsg = 'Admin Aplikasi CATU';
-      if (dto.roleCode === 'UMAT') {
-        approvalTargetMsg = 'Pengurus Lingkungan';
-      } else if (dto.roleCode === 'ROMO_PAROKI') {
-        approvalTargetMsg = romoPositionVal === 'KETUA_ROMO' ? 'Admin Aplikasi CATU' : 'Kepala Romo Paroki / Admin Aplikasi CATU';
-      } else if (dto.roleCode === 'ROMO_ORDO') {
-        approvalTargetMsg = romoPositionVal === 'KETUA_ROMO' ? 'Admin Aplikasi CATU' : 'Ketua Romo Ordo / Admin Aplikasi CATU';
-      } else if (dto.roleCode === 'PENGURUS_LINGKUNGAN') {
-        approvalTargetMsg = 'Admin Aplikasi CATU';
-      }
+      if (dto.roleCode === 'UMAT') approvalTargetMsg = 'Pengurus Lingkungan';
+      else if (dto.roleCode === 'ROMO_PAROKI') approvalTargetMsg = romoPositionVal === 'KETUA_ROMO' ? 'Admin Aplikasi CATU' : 'Kepala Romo Paroki / Admin Aplikasi CATU';
+      else if (dto.roleCode === 'ROMO_ORDO') approvalTargetMsg = romoPositionVal === 'KETUA_ROMO' ? 'Admin Aplikasi CATU' : 'Ketua Romo Ordo / Admin Aplikasi CATU';
+      else if (dto.roleCode === 'PENGURUS_LINGKUNGAN') approvalTargetMsg = 'Admin Aplikasi CATU';
 
       return {
         statusCode: 201,
-        message: `Registrasi berhasil! Akun Anda sedang menunggu persetujuan dari ${approvalTargetMsg}.`,
+        message: dto.roleCode === 'UMAT_PENDATANG'
+          ? 'Registrasi berhasil! Akun Umat Pendatang Anda langsung aktif. Silakan masuk.'
+          : `Registrasi berhasil! Akun Anda sedang menunggu persetujuan dari ${approvalTargetMsg}.`,
         user: {
           id: authUser.id,
           uuid: authUser.uuid,
