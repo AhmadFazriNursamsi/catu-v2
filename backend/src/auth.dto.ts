@@ -284,3 +284,25 @@ export class ResetPasswordDto {
   @IsNotEmpty()
   newPassword: string;
 }
+
+export class ChangePasswordDto {
+  @ApiPropertyOptional({ example: 1, description: 'ID user di auth_users' })
+  @IsOptional()
+  userId?: any;
+
+  @ApiPropertyOptional({ example: '6281234567890', description: 'Nomor WhatsApp terdaftar' })
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
+
+  @ApiProperty({ example: 'oldPassword123', description: 'Kata Sandi Saat Ini / Lama' })
+  @IsString()
+  @IsNotEmpty()
+  currentPassword: string;
+
+  @ApiProperty({ example: 'newPassword123', description: 'Kata Sandi Baru (min 6 karakter)' })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(6)
+  newPassword: string;
+}

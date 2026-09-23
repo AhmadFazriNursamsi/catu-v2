@@ -47,12 +47,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       _showSnackbar('Kata sandi minimal 6 karakter', isError: true);
       return;
     }
+    if (newPass == currentPass) {
+      _showSnackbar('Kata sandi baru tidak boleh sama dengan kata sandi lama', isError: true);
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      final userId = widget.user['id'] ?? widget.user['userId'];
-      final phone = widget.user['phone_number'] ?? widget.user['phoneNumber'] ?? '';
+      final userId = widget.user['id'] ?? widget.user['user_id'] ?? widget.user['userId'];
+      final phone = widget.user['phoneNumber'] ?? widget.user['phone_number'] ?? '';
 
       final url = Uri.parse('${ApiService.baseUrl}/auth/change-password');
       final response = await http
@@ -66,21 +70,33 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               'newPassword': newPass,
             }),
           )
-          .timeout(const Duration(seconds: 8));
+          .timeout(const Duration(seconds: 10));
 
-      final data = jsonDecode(response.body);
+      Map<String, dynamic> data = {};
+      try {
+        data = jsonDecode(response.body);
+      } catch (_) {}
+
       if (response.statusCode == 200 || response.statusCode == 201) {
-        if (mounted) _showSuccessDialog();
-      } else {
-        final msg = data['message'] ?? 'Gagal mengubah kata sandi.';
-        if (response.statusCode == 404) {
-          if (mounted) _showSuccessDialog();
-        } else {
-          _showSnackbar(msg.toString(), isError: true);
+        if (mounted) {
+          _currentPasswordController.clear();
+          _newPasswordController.clear();
+          _confirmPasswordController.clear();
+          _showSuccessDialog();
         }
+      } else {
+        String msg = 'Gagal mengubah kata sandi.';
+        if (data['message'] != null) {
+          if (data['message'] is List) {
+            msg = (data['message'] as List).join(', ');
+          } else {
+            msg = data['message'].toString();
+          }
+        }
+        _showSnackbar(msg, isError: true);
       }
     } catch (_) {
-      if (mounted) _showSuccessDialog();
+      _showSnackbar('Gagal terhubung ke server backend. Periksa koneksi internet.', isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

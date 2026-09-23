@@ -24,14 +24,19 @@ import {
   RequestResetOtpDto,
   VerifyResetOtpDto,
   ResetPasswordDto,
+  ChangePasswordDto,
 } from '../../auth.dto';
 import { UpdateUserProfileDto } from '../../orders.dto';
 import { AuthService } from './auth.service';
+import { PasswordService } from './password.service';
 
 @ApiTags('Auth & Registration')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly passwordService: PasswordService,
+  ) {}
 
   @Get('roles')
   @ApiOperation({
@@ -185,6 +190,16 @@ export class AuthController {
   })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return await this.authService.resetPassword(dto);
+  }
+
+  @Post('change-password')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Ubah Kata Sandi Pengguna yang Sudah Login',
+    description: 'Memverifikasi kata sandi lama/saat ini, lalu memperbarui ke kata sandi baru (min 6 karakter).',
+  })
+  async changePassword(@Body() dto: ChangePasswordDto) {
+    return await this.passwordService.changePassword(dto);
   }
 
   @Get('profile/:userId')

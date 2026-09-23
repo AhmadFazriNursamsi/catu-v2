@@ -6,6 +6,7 @@ import {
   ChatController,
 } from './app.controller';
 import { AuthService } from './modules/auth/auth.service';
+import { PasswordService } from './modules/auth/password.service';
 import { OrdersService } from './modules/orders/orders.service';
 import { AssignmentsService } from './modules/assignments/assignments.service';
 import { ChatService } from './modules/chat/chat.service';
@@ -57,6 +58,7 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
       ],
       providers: [
         AuthService,
+        PasswordService,
         OrdersService,
         AssignmentsService,
         ChatService,
