@@ -18,6 +18,7 @@ import '../chat/chat_list_screen.dart';
 import '../notifications/notification_screen.dart';
 import '../admin/pengurus_approval_screen.dart';
 import '../../core/services/api_service.dart';
+import '../../core/constants/app_constants.dart';
 
 List<LiquidNavItem> _buildNavItems() => [
       LiquidNavItem(
@@ -796,8 +797,6 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     );
   }
 
-
-
   void _showServiceSelectionModal() {
     showModalBottomSheet(
       context: context,
@@ -866,7 +865,8 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                   },
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              const Center(child: Text('Versi Aplikasi: ${AppConstants.appVersion}', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500))),
             ],
           ),
         ),

@@ -1,7 +1,7 @@
 name: catu_mobile
 description: "Aplikasi Mobile CATU v2 - On-Demand Pelayanan Romo & Misa Kedukaan Multi-Item"
 publish_to: 'none'
-version: 2.8.0+109
+version: 2.8.1+110
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
