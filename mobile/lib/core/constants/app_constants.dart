@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 class AppConstants {
   static const String appName = 'CATU Pelayanan';
-  static const String appVersion = 'v2.5.0-build.20260918.134228';
+  static const String appVersion = 'v2.5.0-build.20260923.100803';
   static const String apiBaseUrl = String.fromEnvironment(
     'CATU_API_URL',
-    defaultValue: String.fromEnvironment('API_BASE_URL', defaultValue: 'https://catu.devoutsys.com/api'),
+    defaultValue: String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.10.92:3005'),
   );
   
   // Custom HSL Colors
