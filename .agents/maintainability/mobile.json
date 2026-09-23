@@ -22,7 +22,7 @@
     "mobile/lib/features/admin/admin_dashboard_view.dart": 1786,
     "mobile/lib/features/admin/pengurus_approval_screen.dart": 649,
     "mobile/lib/features/profile/edit_profile_screen.dart": 1241,
-    "mobile/lib/features/profile/main_menu_screen.dart": 1157,
+    "mobile/lib/features/profile/main_menu_screen.dart": 1094,
     "mobile/lib/features/news/news_detail_screen.dart": 526,
     "mobile/lib/features/news/public_news_screen.dart": 655,
     "mobile/lib/features/orders/schedule_screen.dart": 1828,

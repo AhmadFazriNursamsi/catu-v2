@@ -8,6 +8,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import 'edit_profile_screen.dart';
+import 'help_center_screen.dart';
 import '../admin/pengurus_approval_screen.dart';
 import '../admin/romo_approval_screen.dart';
 
@@ -631,7 +632,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
             icon: Icons.headset_mic_rounded,
             title: LanguageService.tr('help_center'),
             subtitle: LanguageService.tr('help_center_sub'),
-            onTap: _showHelpModal,
+            onTap: _openHelpCenter,
           ),
 
           const Divider(height: 1, color: Color(0xFFF1F5F9)),
@@ -887,74 +888,10 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     );
   }
 
-  void _showHelpModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-              24, 16, 24, MediaQuery.of(ctx).padding.bottom + 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Pusat Bantuan',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.phone_rounded, color: Color(0xFF1D4ED8)),
-                title: const Text('Sekretariat Paroki'),
-                subtitle: const Text('Hubungi via Telepon / WhatsApp'),
-                onTap: () => _showToast('Menghubungi Sekretariat Paroki...'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.help_center_rounded, color: Color(0xFF1D4ED8)),
-                title: const Text('Panduan Pengajuan Pelayanan'),
-                subtitle: const Text('Langkah pengajuan Perminyakan & Kedukaan'),
-                onTap: () => _showToast('Membuka Panduan CATU...'),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1D4ED8),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Tutup',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  void _openHelpCenter() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const HelpCenterScreen()),
     );
   }
 
