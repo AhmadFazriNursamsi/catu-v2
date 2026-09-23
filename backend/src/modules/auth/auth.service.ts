@@ -33,19 +33,16 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly fcmService: FcmService,
   ) {}
-async getRoles() {
+  async getRoles() {
     const roles = await this.dataSource.query(
-      `SELECT id, code, name FROM roles WHERE code IN ('UMAT', 'ROMO_PAROKI', 'ROMO_ORDO') ORDER BY id ASC`,
+      `SELECT id, code, name FROM roles WHERE code NOT IN ('ADMIN', 'SUPERADMIN', 'PENGURUS_LINGKUNGAN', 'KOORDINATOR_KEUSKUPAN') ORDER BY id ASC`,
     );
     return roles.map((r) => {
-      let displayName = r.name;
-      if (r.code === 'UMAT') {
-        displayName = 'Umat';
-      } else if (r.code === 'ROMO_PAROKI') {
-        displayName = 'Romo Paroki';
-      } else if (r.code === 'ROMO_ORDO') {
-        displayName = 'Romo Ordo';
-      }
+      let displayName = r.name || r.code;
+      if (r.code === 'UMAT') displayName = 'Umat';
+      else if (r.code === 'ROMO_PAROKI') displayName = 'Romo Paroki';
+      else if (r.code === 'ROMO_ORDO') displayName = 'Romo Ordo';
+      else displayName = displayName.split(' ').map((w: string) => w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '').join(' ');
       return { id: r.id, code: r.code, name: displayName, label: displayName };
     });
   }

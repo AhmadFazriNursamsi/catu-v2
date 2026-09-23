@@ -433,10 +433,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 
   Widget _buildHierarchyDropdowns() {
-    if (_selectedRole == 'UMAT' ||
-        _selectedRole == 'PENGURUS_LINGKUNGAN' ||
-        _selectedRole == 'KOORDINATOR_KEUSKUPAN' ||
-        _selectedRole == 'ROMO_PAROKI') {
+    if (_selectedRole != 'ROMO_ORDO') {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

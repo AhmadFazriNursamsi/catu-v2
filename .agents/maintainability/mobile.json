@@ -15,7 +15,7 @@
     "mobile/lib/features/chat/chat_screen.dart": 1218,
     "mobile/lib/features/chat/chat_list_screen.dart": 923,
     "mobile/lib/features/auth/pending_approval_screen.dart": 615,
-    "mobile/lib/features/auth/register_screen.dart": 1371,
+    "mobile/lib/features/auth/register_screen.dart": 1368,
     "mobile/lib/features/auth/login_screen.dart": 1281,
     "mobile/lib/features/auth/forgot_password_screen.dart": 917,
     "mobile/lib/features/admin/romo_approval_screen.dart": 690,

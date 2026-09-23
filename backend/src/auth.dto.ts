@@ -51,9 +51,10 @@ export class RegisterUserDto {
   @MinLength(6)
   password: string;
 
-  @ApiProperty({ enum: RoleCodeEnum, example: RoleCodeEnum.UMAT, description: 'Role akun' })
-  @IsEnum(RoleCodeEnum)
-  roleCode: RoleCodeEnum;
+  @ApiProperty({ example: 'UMAT', description: 'Kode role akun dari master data roles' })
+  @IsString()
+  @IsNotEmpty()
+  roleCode: string;
 
   @ApiPropertyOptional({ example: 1, description: 'ID Keuskupan (Wajib untuk Umat, Romo, Pengurus, Koordinator)' })
   @IsOptional()

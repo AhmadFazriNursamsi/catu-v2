@@ -11,7 +11,7 @@
     "backend/src/database/database-init.service.ts": 485,
     "backend/src/modules/assignments/assignments.service.ts": 376,
     "backend/src/modules/chat/chat.service.ts": 585,
-    "backend/src/modules/auth/auth.service.ts": 1498,
+    "backend/src/modules/auth/auth.service.ts": 1495,
     "backend/src/modules/master-data/master-data.service.ts": 414,
     "backend/src/modules/orders/orders.service.ts": 1597
   },
