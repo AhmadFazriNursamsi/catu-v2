@@ -8,6 +8,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import 'about_catu_screen.dart';
+import 'change_password_screen.dart';
 import 'edit_profile_screen.dart';
 import 'help_center_screen.dart';
 import '../admin/pengurus_approval_screen.dart';
@@ -181,14 +182,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     return 'Umat (Anggota Lingkungan)';
   }
 
-  String get _periodeText {
-    final start = _userData['jabatanStartDate'] ?? _userData['jabatan_start_date'];
-    final end = _userData['jabatanEndDate'] ?? _userData['jabatan_end_date'];
-    if (start != null && end != null && start.toString().isNotEmpty) {
-      return '$start - $end';
-    }
-    return '2024 - 2027';
-  }
+
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
@@ -609,19 +603,9 @@ class _MainMenuScreenState extends State<MainMenuScreen>
               onTap: _navigateToEditProfile,
             ),
             _buildSubMenuItem(
-              title: LanguageService.tr('verification'),
-              subtitle: LanguageService.tr('verification_sub'),
-              onTap: _showVerificationModal,
-            ),
-            _buildSubMenuItem(
-              title: LanguageService.tr('privacy_security'),
-              subtitle: LanguageService.tr('privacy_security_sub'),
-              onTap: () => _showToast('Fitur Pengaturan Keamanan Aktif'),
-            ),
-            _buildSubMenuItem(
-              title: LanguageService.tr('linked_accounts'),
-              subtitle: LanguageService.tr('linked_accounts_sub'),
-              onTap: () => _showToast('Nomor WhatsApp aktif dan terhubung'),
+              title: LanguageService.tr('change_password'),
+              subtitle: LanguageService.tr('change_password_sub'),
+              onTap: _navigateToChangePassword,
             ),
             const SizedBox(height: 6),
           ],
@@ -826,66 +810,12 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
   // ── Modals & Dialogs ──────────────────────────────────────────────────────
 
-  void _showVerificationModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+  void _navigateToChangePassword() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangePasswordScreen(user: _userData),
       ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-              24, 16, 24, MediaQuery.of(ctx).padding.bottom + 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Verifikasi Data & Jabatan',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildDetailRow('Status Akun', _isApproved ? 'Disetujui' : 'Menunggu Verifikasi'),
-              _buildDetailRow('Jabatan Pengurus', _positionTitle),
-              _buildDetailRow('Masa Jabatan', _periodeText),
-              _buildDetailRow('Verifikator', 'Sekretariat Paroki / Dewan Paroki'),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1D4ED8),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Tutup',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -948,52 +878,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     );
   }
 
-  // ── Sub-widgets ────────────────────────────────────────────────────────────
 
-  Widget _buildDetailRow(String label, String value, {VoidCallback? onTap}) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF475569),
-                ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1D4ED8),
-                    ),
-                    textAlign: TextAlign.end,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (onTap != null) ...[
-                    const SizedBox(width: 6),
-                    const Icon(Icons.chevron_right_rounded,
-                        size: 18, color: Color(0xFF94A3B8)),
-                  ],
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildFooterInfo() {
     return Padding(
@@ -1018,16 +903,6 @@ class _MainMenuScreenState extends State<MainMenuScreen>
           ),
           const SizedBox(height: 40),
         ],
-      ),
-    );
-  }
-
-  void _showToast(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
