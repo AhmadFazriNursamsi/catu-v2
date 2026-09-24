@@ -18,16 +18,15 @@ class ApiService {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString('catu_custom_api_base_url');
       if (saved != null && saved.isNotEmpty) {
-        _customBaseUrl = _normalizeBaseUrl(saved);
-        _activeBaseUrl = _customBaseUrl!;
-        return;
+        final clean = _normalizeBaseUrl(saved);
+        final ping = await http.get(Uri.parse('$clean/health')).timeout(const Duration(milliseconds: 1200)).catchError((_) => http.Response('', 500));
+        if (ping.statusCode == 200) { _customBaseUrl = clean; _activeBaseUrl = clean; return; }
+        await prefs.remove('catu_custom_api_base_url');
       }
     } catch (_) {}
     for (final host in _candidateBaseUrls) {
-      try {
-        final res = await http.get(Uri.parse('$host/health')).timeout(const Duration(milliseconds: 1000));
-        if (res.statusCode == 200) { _activeBaseUrl = host; break; }
-      } catch (_) {}
+      final res = await http.get(Uri.parse('$host/health')).timeout(const Duration(milliseconds: 1000)).catchError((_) => http.Response('', 500));
+      if (res.statusCode == 200) { _activeBaseUrl = host; break; }
     }
   }
 
