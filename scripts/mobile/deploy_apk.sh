@@ -33,11 +33,11 @@ echo "=========================================================="
 
 # 1. Login to obtain JWT token
 echo "🔑 Logging in as admin to get deployment token..."
-LOGIN_RESP=$(curl -s -X POST "$SERVER_API/auth/login" \
+LOGIN_RESP=$(curl -s -X POST "$SERVER_API/auth/admin/login" \
   -H "Content-Type: application/json" \
   -d "{\"phoneNumber\":\"$ADMIN_PHONE\",\"password\":\"$ADMIN_PASS\"}")
 
-TOKEN=$(echo "$LOGIN_RESP" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4 || echo "")
+TOKEN=$(echo "$LOGIN_RESP" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4 || echo "")
 
 if [ -z "$TOKEN" ]; then
   echo "❌ Login failed! Server response:"
