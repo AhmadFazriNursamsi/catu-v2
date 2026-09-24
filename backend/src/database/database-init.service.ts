@@ -108,8 +108,8 @@ export class DatabaseInitService implements OnModuleInit {
         -- Seed roles & default superadmin / admin accounts
         INSERT INTO roles (code, name) VALUES ('SUPERADMIN', 'Super Admin'), ('ADMIN', 'Administrator') ON CONFLICT (code) DO NOTHING;
         UPDATE roles SET name = 'Administrator' WHERE code = 'ADMIN';
-        UPDATE auth_users SET role_id = (SELECT id FROM roles WHERE code = 'SUPERADMIN'), password_hash = '$2b$10$Fxb9Ibda.nhQNoW3utfy.OdQRyGV5Ldl4G7JYQ4wqOFsTG/i8DkC.' WHERE phone_number = '6289999999999';
-        INSERT INTO auth_users (phone_number, password_hash, role_id, account_status) SELECT '6288888888888', '$2b$10$Fxb9Ibda.nhQNoW3utfy.OdQRyGV5Ldl4G7JYQ4wqOFsTG/i8DkC.', (SELECT id FROM roles WHERE code = 'ADMIN'), 'APPROVED' WHERE NOT EXISTS (SELECT 1 FROM auth_users WHERE phone_number = '6288888888888');
+        UPDATE auth_users SET role_id = (SELECT id FROM roles WHERE code = 'SUPERADMIN'), password_hash = '$2b$10$x0H6poxRP4Tkze07bgwd5OCFegOxjzYlHOuuqCJLK8xdm3osY09M6' WHERE phone_number = '6289999999999';
+        INSERT INTO auth_users (phone_number, password_hash, role_id, account_status) SELECT '6288888888888', '$2b$10$x0H6poxRP4Tkze07bgwd5OCFegOxjzYlHOuuqCJLK8xdm3osY09M6', (SELECT id FROM roles WHERE code = 'ADMIN'), 'APPROVED' WHERE NOT EXISTS (SELECT 1 FROM auth_users WHERE phone_number = '6288888888888');
         INSERT INTO user_profiles (user_id, full_name, email) SELECT u.id, 'Administrator Sistem', 'admin@catu.id' FROM auth_users u WHERE u.phone_number = '6288888888888' AND NOT EXISTS (SELECT 1 FROM user_profiles WHERE user_id = u.id);
 
         -- Seed user keuskupan data
@@ -467,16 +467,16 @@ export class DatabaseInitService implements OnModuleInit {
           (171, 9570, 'Lingkungan St. Uriel (Rawasari)')
         ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, wilayah_id = EXCLUDED.wilayah_id;
 
-        INSERT INTO ordo (id, code, name) VALUES
-          (1, 'SJ', 'SJ - Serikat Yesus (Jesuit)'),
-          (2, 'OFM', 'OFM - Fransiskan'),
-          (3, 'OFM Cap', 'OFM Cap - Fransiskan Kapusin'),
-          (4, 'MSF', 'MSF - Misionaris Keluarga Kudus'),
-          (5, 'SVD', 'SVD - Serikat Sabda Allah'),
-          (6, 'CSsR', 'CSsR - Kongregasi Sang Penebus'),
-          (7, 'O.Carm', 'O.Carm - Ordo Karmel'),
-          (8, 'SCJ', 'SCJ - Hati Kudus Yesus')
-        ON CONFLICT (id) DO UPDATE SET code = EXCLUDED.code, name = EXCLUDED.name;
+        INSERT INTO ordo (code, name) VALUES
+          ('SJ', 'SJ - Serikat Yesus (Jesuit)'),
+          ('OFM', 'OFM - Fransiskan'),
+          ('OFM Cap', 'OFM Cap - Fransiskan Kapusin'),
+          ('MSF', 'MSF - Misionaris Keluarga Kudus'),
+          ('SVD', 'SVD - Serikat Sabda Allah'),
+          ('CSsR', 'CSsR - Kongregasi Sang Penebus'),
+          ('O.Carm', 'O.Carm - Ordo Karmel'),
+          ('SCJ', 'SCJ - Hati Kudus Yesus')
+        ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name;
       `);
     } catch (e) {
       console.log('Auto-migration user_profiles notice:', e);
