@@ -49,6 +49,7 @@
       if (state.currentTab === 'overview') return renderOverviewTab();
       if (state.currentTab === 'orders') return renderOrdersTab();
       if (state.currentTab === 'umat') return renderUmatTab();
+      if (state.currentTab === 'umat_pendatang') return renderUmatPendatangTab();
       if (state.currentTab === 'pengurus') return renderPengurusTab();
       if (state.currentTab === 'romo_paroki') return renderRomoParokiTab();
       if (state.currentTab === 'romo_ordo') return renderRomoOrdoTab();

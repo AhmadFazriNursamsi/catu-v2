@@ -118,6 +118,7 @@
       const adminName = state.currentUser?.fullName || state.currentUser?.full_name || 'Super Admin CATU';
       const pendingApprovalsCount = state.users.filter(u => (u.account_status || u.accountStatus) === 'PENDING_APPROVAL').length;
       const activeUmatCount = state.users.filter(u => (u.role_code || u.roleCode) === 'UMAT' && (u.account_status || u.accountStatus) === 'APPROVED').length;
+      const activeUmatPendatangCount = state.users.filter(u => (u.role_code || u.roleCode) === 'UMAT_PENDATANG' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const isPengurusOrKoordinator = u => {
         const r = (u.role_code || u.roleCode || '').toUpperCase();
         const pos = (u.pengurus_position || '').toLowerCase();
@@ -157,6 +158,7 @@
                   ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Data Keumatan</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
                     ${renderNavItem('umat', 'users', 'Umat Katolik', activeUmatCount, 'bg-blue-600')}
+                    ${renderNavItem('umat_pendatang', 'map-pin', 'Umat Pendatang', activeUmatPendatangCount, 'bg-blue-600')}
                     ${renderNavItem('pengurus', 'briefcase', 'Pengurus Lingkungan', activePengurusCount, 'bg-blue-600')}
                     ${renderNavItem('romo_paroki', 'church', 'Romo Paroki', activeRomoParokiCount, 'bg-blue-600')}
                     ${renderNavItem('romo_ordo', 'cross', 'Romo Ordo', activeRomoOrdoCount, 'bg-blue-600')}
@@ -253,6 +255,7 @@
       if (tab === 'overview') return 'Ringkasan Pastoral';
       if (tab === 'orders') return 'Permohonan Pelayanan Sakramen';
       if (tab === 'umat') return 'Data Umat Katolik';
+      if (tab === 'umat_pendatang') return 'Data Umat Pendatang';
       if (tab === 'pengurus') return 'Data Pengurus Lingkungan';
       if (tab === 'romo_paroki') return 'Data Romo Paroki';
       if (tab === 'romo_ordo') return 'Data Romo Ordo';

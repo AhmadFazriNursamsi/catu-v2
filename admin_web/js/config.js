@@ -78,6 +78,10 @@
       umatFilterParoki: '',
       umatFilterLingkungan: '',
 
+      umatPendatangSearch: '',
+      umatPendatangFilterKeuskupan: '',
+      umatPendatangFilterParoki: '',
+
       pengurusSearch: '',
       pengurusFilterPosition: '',
       pengurusFilterParoki: '',

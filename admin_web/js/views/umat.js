@@ -166,4 +166,163 @@ function renderUmatTable(filteredUmat) {
       `;
     }
 
-    // ── Tab: Pengurus Lingkungan ──
+    // ── Tab: Umat Pendatang ──
+    function renderUmatPendatangTable(filteredList) {
+      return `<div class="overflow-x-auto">
+        <table class="w-full min-w-[760px] text-left text-xs">
+          <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
+            <tr>
+              <th class="px-6 py-4">NAMA LENGKAP PENDATANG</th>
+              <th class="px-6 py-4">NO. WHATSAPP</th>
+              <th class="px-6 py-4">ASAL KEUSKUPAN</th>
+              <th class="px-6 py-4">ASAL PAROKI</th>
+              <th class="px-6 py-4">ASAL LINGKUNGAN & WILAYAH</th>
+              <th class="px-6 py-4">ASAL ALAMAT / KOTA</th>
+              <th class="px-6 py-4 text-center">STATUS</th>
+              <th class="px-6 py-4 text-right">AKSI</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+            ${filteredList.length === 0 ? `
+              <tr>
+                <td colspan="8" class="text-center py-16 text-slate-400 space-y-3">
+                  <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+                    <i data-lucide="map-pin" class="w-7 h-7"></i>
+                  </div>
+                  <p class="font-bold text-slate-700 text-sm">Tidak ada data umat pendatang yang sesuai filter</p>
+                </td>
+              </tr>
+            ` : filteredList.map(u => `
+              <tr onclick="viewUserProfileModal('${u.id}')" class="hover:bg-slate-50/80 transition duration-150 cursor-pointer group">
+                <td class="px-6 py-4">
+                  <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${u.full_name || 'Umat Pendatang'}</p>
+                  <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                </td>
+                <td class="px-6 py-4 font-semibold text-slate-700">
+                  <span class="inline-flex items-center space-x-1.5 text-xs">
+                    <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
+                    <span>${u.phone_number || '-'}</span>
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                  <span class="truncate block max-w-[170px]">${u.keuskupan_name || '-'}</span>
+                </td>
+                <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                  <span class="truncate block max-w-[170px]">${u.paroki_name || '-'}</span>
+                </td>
+                <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                  <span class="truncate block max-w-[180px]">${u.lingkungan_name || u.wilayah_name ? `${u.lingkungan_name || '-'}${u.wilayah_name ? ` (${u.wilayah_name})` : ''}` : '-'}</span>
+                </td>
+                <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                  <span class="truncate block max-w-[180px]">${u.address || u.kota_name || '-'}</span>
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full ${u.account_status === 'APPROVED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'} font-bold text-[10.5px]">
+                    <span class="w-1.5 h-1.5 rounded-full ${u.account_status === 'APPROVED' ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
+                    <span>${u.account_status === 'APPROVED' ? 'AKTIF' : (u.account_status || 'PENDING')}</span>
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <div class="inline-flex items-center justify-end space-x-2">
+                    <button onclick="event.stopPropagation(); openEditUserModal('${u.id}')"
+                      class="inline-flex items-center space-x-1 text-xs font-semibold text-slate-600 hover:text-slate-900 transition py-1 px-1.5 rounded hover:bg-slate-100">
+                      <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-500"></i>
+                      <span>Edit</span>
+                    </button>
+                    <span class="text-slate-300">·</span>
+                    <button onclick="event.stopPropagation(); viewUserProfileModal('${u.id}')"
+                      class="inline-flex items-center space-x-1 text-xs font-semibold text-blue-700 hover:text-blue-900 transition py-1 px-1.5 rounded hover:bg-blue-50">
+                      <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-600"></i>
+                      <span>Detail</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+    }
+
+    function renderUmatPendatangTab() {
+      const q = (state.umatPendatangSearch || '').toLowerCase().trim();
+      const hasFilter = state.umatPendatangSearch || state.umatPendatangFilterKeuskupan || state.umatPendatangFilterParoki;
+
+      const allPendatang = state.users.filter(u => (u.role_code || u.roleCode || '').toUpperCase() === 'UMAT_PENDATANG');
+      const keuskupanList = Array.from(new Set(allPendatang.map(u => u.keuskupan_name).filter(Boolean))).sort();
+      const parokiList = Array.from(new Set(
+        allPendatang
+          .filter(u => !state.umatPendatangFilterKeuskupan || u.keuskupan_name === state.umatPendatangFilterKeuskupan)
+          .map(u => u.paroki_name)
+          .filter(Boolean)
+      )).sort();
+
+      const pendatangs = allPendatang.filter(u => {
+        if (state.umatPendatangFilterKeuskupan && u.keuskupan_name !== state.umatPendatangFilterKeuskupan) return false;
+        if (state.umatPendatangFilterParoki && u.paroki_name !== state.umatPendatangFilterParoki) return false;
+
+        if (q) {
+          const name = (u.full_name || u.fullName || '').toLowerCase();
+          const email = (u.email || '').toLowerCase();
+          const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
+          const keus = (u.keuskupan_name || '').toLowerCase();
+          const par = (u.paroki_name || u.parokiName || '').toLowerCase();
+          const ling = (u.lingkungan_name || '').toLowerCase();
+          const wil = (u.wilayah_name || '').toLowerCase();
+          const kota = (u.kota_name || u.address || '').toLowerCase();
+          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !keus.includes(q) && !par.includes(q) && !ling.includes(q) && !wil.includes(q) && !kota.includes(q)) return false;
+        }
+        return true;
+      });
+
+      return `
+        <div class="space-y-6 animate-fade-in">
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+            <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+              <div class="relative w-full max-w-md">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="umatPendatangSearchInput" placeholder="Cari nama pendatang, paroki asal, keuskupan asal..." value="${state.umatPendatangSearch}"
+                  oninput="state.umatPendatangSearch = this.value; renderApp();"
+                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
+                <div class="relative w-full sm:w-auto">
+                  <select onchange="state.umatPendatangFilterKeuskupan = this.value; state.umatPendatangFilterParoki = ''; renderApp();"
+                    class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-none sm:max-w-[210px] truncate">
+                    <option value="">Semua Keuskupan Asal</option>
+                    ${keuskupanList.map(k => `
+                      <option value="${k}" ${state.umatPendatangFilterKeuskupan === k ? 'selected' : ''}>${k}</option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                <div class="relative w-full sm:w-auto">
+                  <select onchange="state.umatPendatangFilterParoki = this.value; renderApp();"
+                    class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-none sm:max-w-[200px] truncate">
+                    <option value="">Semua Paroki Asal</option>
+                    ${parokiList.map(p => `
+                      <option value="${p}" ${state.umatPendatangFilterParoki === p ? 'selected' : ''}>${p}</option>
+                    `).join('')}
+                  </select>
+                </div>
+
+                ${hasFilter ? `
+                  <button onclick="state.umatPendatangSearch = ''; state.umatPendatangFilterKeuskupan = ''; state.umatPendatangFilterParoki = ''; renderApp();"
+                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span>Reset</span>
+                  </button>
+                ` : ''}
+
+                <span class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold whitespace-nowrap">
+                  ${pendatangs.length} Umat Pendatang
+                </span>
+              </div>
+            </div>
+
+            ${renderUmatPendatangTable(pendatangs)}
+      `;
+    }

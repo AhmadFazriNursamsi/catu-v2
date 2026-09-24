@@ -90,7 +90,7 @@
                 </div>
                 ${uAddr !== '-' ? `
                   <div class="bg-white p-2.5 rounded-xl border border-slate-200/60 mt-2">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase">Alamat Lengkap</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">${uRoleCode === 'UMAT_PENDATANG' ? 'Asal Alamat Tempat Tinggal' : 'Alamat Lengkap'}</p>
                     <p class="font-medium text-slate-700 mt-0.5 text-xs">${uAddr}</p>
                   </div>
                 ` : ''}
@@ -101,23 +101,23 @@
                 <div class="bg-blue-50/50 rounded-2xl p-4 border border-blue-100 space-y-2.5">
                   <p class="font-extrabold text-blue-950 text-xs flex items-center">
                     <i data-lucide="church" class="w-3.5 h-3.5 mr-1.5 text-blue-700"></i>
-                    Wilayah & Lingkungan Gereja
+                    ${uRoleCode === 'UMAT_PENDATANG' ? 'Asal Gereja & Wilayah' : 'Wilayah & Lingkungan Gereja'}
                   </p>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
                     <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
-                      <p class="text-[10px] font-bold text-slate-400 uppercase">Paroki</p>
+                      <p class="text-[10px] font-bold text-slate-400 uppercase">${uRoleCode === 'UMAT_PENDATANG' ? 'Asal Paroki' : 'Paroki'}</p>
                       <p class="font-extrabold text-blue-950 mt-0.5 text-xs">${uPar}</p>
                     </div>
                     <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
-                      <p class="text-[10px] font-bold text-slate-400 uppercase">Keuskupan</p>
-                      <p class="font-bold text-slate-800 mt-0.5 text-xs">${u.keuskupan_name || u.keuskupanName || 'Keuskupan Agung Jakarta'}</p>
+                      <p class="text-[10px] font-bold text-slate-400 uppercase">${uRoleCode === 'UMAT_PENDATANG' ? 'Asal Keuskupan' : 'Keuskupan'}</p>
+                      <p class="font-bold text-slate-800 mt-0.5 text-xs">${u.keuskupan_name || u.keuskupanName || (uRoleCode === 'UMAT_PENDATANG' ? '-' : 'Keuskupan Agung Jakarta')}</p>
                     </div>
                     <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
-                      <p class="text-[10px] font-bold text-slate-400 uppercase">Wilayah</p>
+                      <p class="text-[10px] font-bold text-slate-400 uppercase">${uRoleCode === 'UMAT_PENDATANG' ? 'Asal Wilayah' : 'Wilayah'}</p>
                       <p class="font-bold text-slate-800 mt-0.5 text-xs">${uWil}</p>
                     </div>
                     <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
-                      <p class="text-[10px] font-bold text-slate-400 uppercase">Lingkungan</p>
+                      <p class="text-[10px] font-bold text-slate-400 uppercase">${uRoleCode === 'UMAT_PENDATANG' ? 'Asal Lingkungan' : 'Lingkungan'}</p>
                       <p class="font-bold text-slate-800 mt-0.5 text-xs">${uLing}</p>
                     </div>
                   </div>
