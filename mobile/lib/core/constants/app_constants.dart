@@ -5,7 +5,7 @@ class AppConstants {
   static const String appVersion = 'v2.8.1-build.20260923.102500';
   static const String apiBaseUrl = String.fromEnvironment(
     'CATU_API_URL',
-    defaultValue: String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.10.92:3005'),
+    defaultValue: String.fromEnvironment('API_BASE_URL', defaultValue: 'https://catu.devoutsys.com/api'),
   );
   
   // Custom HSL Colors
