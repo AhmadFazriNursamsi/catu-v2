@@ -91,6 +91,11 @@
           url = `${API_BASE}/master/roles?_t=${t}`;
         } else if (tab === 'positions') {
           url = `${API_BASE}/master/positions?_t=${t}`;
+        } else if (tab === 'provinsi') {
+          url = `${API_BASE}/master/provinsi?_t=${t}`;
+        } else if (tab === 'kabupaten_kota') {
+          const provFilter = state.masterFilterProvinsiId ? `&provinsiId=${state.masterFilterProvinsiId}` : '';
+          url = `${API_BASE}/master/kabupaten-kota?_t=${t}${provFilter}`;
         }
 
         const res = await fetch(url, {
@@ -107,6 +112,8 @@
         if (tab === 'services') state.serviceCategories = state.masterDataList;
         if (tab === 'roles') state.roles = state.masterDataList;
         if (tab === 'positions') state.positions = state.masterDataList;
+        if (tab === 'provinsi') state.provinsi = state.masterDataList;
+        if (tab === 'kabupaten_kota') state.kabupatenKota = state.masterDataList;
       } catch (err) {
         console.error('Error loading master data:', err);
       } finally {
@@ -144,6 +151,8 @@
       else if (del.type === 'services') endpoint = `${API_BASE}/master/service-categories/${del.id}`;
       else if (del.type === 'roles') endpoint = `${API_BASE}/master/roles/${del.id}`;
       else if (del.type === 'positions') endpoint = `${API_BASE}/master/positions/${del.id}`;
+      else if (del.type === 'provinsi') endpoint = `${API_BASE}/master/provinsi/${del.id}`;
+      else if (del.type === 'kabupaten_kota') endpoint = `${API_BASE}/master/kabupaten-kota/${del.id}`;
 
       try {
         const res = await fetch(endpoint, {

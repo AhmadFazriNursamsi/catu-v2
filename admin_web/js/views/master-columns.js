@@ -65,6 +65,21 @@
           <td class="py-4 px-6 font-semibold text-slate-800 text-xs">${item.total_pejabat || 0} Pejabat</td>
         `;
       }
+      if (sub === 'provinsi') {
+        return `
+          <td class="py-4 px-6 font-bold text-slate-900 text-xs">${item.name}</td>
+          <td class="py-4 px-6 font-semibold text-slate-800 text-xs">${item.total_kabupaten_kota || 0} Kab/Kota</td>
+          <td class="py-4 px-6 font-medium text-xs"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Aktif</span></td>
+        `;
+      }
+      if (sub === 'kabupaten_kota') {
+        return `
+          <td class="py-4 px-6 font-bold text-slate-900 text-xs">${item.name}</td>
+          <td class="py-4 px-6 text-xs"><span class="inline-flex items-center px-2 py-0.5 rounded text-[10.5px] font-bold ${item.type === 'KOTA' ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">${item.type || 'KOTA'}</span></td>
+          <td class="py-4 px-6 text-slate-700 font-medium text-xs max-w-[180px] truncate">${item.provinsi_name || '-'}</td>
+          <td class="py-4 px-6 font-semibold text-slate-800 text-xs">${item.total_umat || 0} Pengguna</td>
+        `;
+      }
       return '';
     }
 

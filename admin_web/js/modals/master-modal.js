@@ -12,6 +12,8 @@
         if (type === 'wilayah') return `${prefix} Wilayah`;
         if (type === 'lingkungan') return `${prefix} Lingkungan`;
         if (type === 'ordo') return `${prefix} Ordo / Kongregasi`;
+        if (type === 'provinsi') return `${prefix} Provinsi`;
+        if (type === 'kabupaten_kota') return `${prefix} Kabupaten / Kota`;
         if (type === 'services') return `${prefix} Kategori Pelayanan`;
         return `${prefix} Master`;
       };
@@ -290,50 +292,46 @@
             </label>
           </div>
         `;
+      } else if (type === 'provinsi') {
+        return `
+          <div>
+            <label class="block font-extrabold text-slate-700 mb-1.5">Nama Provinsi *</label>
+            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: JAWA BARAT"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs uppercase" />
+            <p class="text-[10.5px] text-slate-400 mt-1">Gunakan huruf kapital (misal: DKI JAKARTA, JAWA TENGAH, BALI)</p>
+          </div>
+        `;
+      } else if (type === 'kabupaten_kota') {
+        const selectedProvinsiId = data.provinsi_id || data.provinsiId;
+        const currentType = data.type || 'KOTA';
+        return `
+          <div>
+            <label class="block font-bold text-slate-700 mb-1.5">Provinsi Induk *</label>
+            <select id="masterProvinsiIdInput" required
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
+              <option value="">-- Pilih Provinsi Induk --</option>
+              ${(state.provinsi || []).map(p => `
+                <option value="${p.id}" ${String(selectedProvinsiId) === String(p.id) ? 'selected' : ''}>${p.name}</option>
+              `).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1.5">Jenis / Tipe *</label>
+            <select id="masterTypeInput" required
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
+              <option value="KOTA" ${currentType === 'KOTA' ? 'selected' : ''}>KOTA</option>
+              <option value="KABUPATEN" ${currentType === 'KABUPATEN' ? 'selected' : ''}>KABUPATEN</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1.5">Nama Kabupaten / Kota *</label>
+            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: KOTA BANDUNG atau KABUPATEN BOGOR"
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs uppercase" />
+          </div>
+        `;
       }
       return '';
     }
 
-    // ── Delete Confirmation Modal ──
-    function renderDeleteConfirmModal() {
-      const del = state.deleteConfirmModal;
-      if (!del) return '';
-
-      return `
-        <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
-            <div class="flex items-start space-x-3.5">
-              <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0">
-                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
-              </div>
-              <div class="flex-1">
-                <h3 class="text-base font-black text-slate-900">Konfirmasi Hapus Data</h3>
-                <p class="text-xs text-slate-500 mt-1">
-                  Apakah Anda yakin ingin menghapus <span class="font-bold text-slate-800">${del.name}</span> (#${del.id})? Tindakan ini tidak dapat dibatalkan.
-                </p>
-              </div>
-            </div>
-
-            ${del.errorMessage ? `
-              <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start space-x-2">
-                <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-rose-600 mt-0.5"></i>
-                <span>${del.errorMessage}</span>
-              </div>
-            ` : ''}
-
-            <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2.5">
-              <button onclick="state.deleteConfirmModal = null; renderApp();"
-                class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs transition">
-                Batal
-              </button>
-              <button onclick="executeDeleteMaster()"
-                class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md shadow-rose-600/20 transition">
-                Ya, Hapus Permanen
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-    }
 
     // ── Toast Notifications System ──

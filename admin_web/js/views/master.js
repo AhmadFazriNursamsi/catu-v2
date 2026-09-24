@@ -17,8 +17,10 @@
           const matchKeuskupan = item.keuskupan_name && item.keuskupan_name.toLowerCase().includes(search);
           const matchParoki = item.paroki_name && item.paroki_name.toLowerCase().includes(search);
           const matchWilayah = item.wilayah_name && item.wilayah_name.toLowerCase().includes(search);
+          const matchProvinsi = item.provinsi_name && item.provinsi_name.toLowerCase().includes(search);
+          const matchType = item.type && item.type.toLowerCase().includes(search);
           const matchDesc = item.description && item.description.toLowerCase().includes(search);
-          if (!matchName && !matchCode && !matchAddress && !matchKeuskupan && !matchParoki && !matchWilayah && !matchDesc) {
+          if (!matchName && !matchCode && !matchAddress && !matchKeuskupan && !matchParoki && !matchWilayah && !matchProvinsi && !matchType && !matchDesc) {
             return false;
           }
         }
@@ -31,6 +33,8 @@
         if (s === 'wilayah') return 'Wilayah';
         if (s === 'lingkungan') return 'Lingkungan';
         if (s === 'ordo') return 'Ordo / Kongregasi';
+        if (s === 'provinsi') return 'Provinsi';
+        if (s === 'kabupaten_kota') return 'Kabupaten / Kota';
         if (s === 'services') return 'Kategori Pelayanan';
         if (s === 'roles') return 'Jenis User / Peran Pengguna';
         if (s === 'positions') return 'Jabatan & Struktur Pengurus / Romo';
@@ -43,6 +47,8 @@
         if (s === 'wilayah') return 'Struktur Wilayah Rohani / Teritorial gereja di bawah naungan Paroki';
         if (s === 'lingkungan') return 'Komunitas basis Umat Katolik di tingkat RT/RW Lingkungan';
         if (s === 'ordo') return 'Daftar Ordo & Kongregasi Religius (Imam & Biarawan On-Demand)';
+        if (s === 'provinsi') return 'Daftar Provinsi Republik Indonesia untuk domisili Umat dan Paroki';
+        if (s === 'kabupaten_kota') return 'Daftar Kabupaten dan Kota Administrasi terhubung dengan Provinsi';
         if (s === 'services') return 'Katalog Sakramen, Misa, dan Layanan Pastoral Gereja';
         if (s === 'roles') return 'Hak akses dan peran akun pengguna mobile & web portal';
         if (s === 'positions') return 'Struktur hierarki jabatan resmi (Ketua Lingkungan, Kepala Romo, Sekretaris)';
@@ -55,6 +61,8 @@
         if (s === 'wilayah') return 'map-pin';
         if (s === 'lingkungan') return 'home';
         if (s === 'ordo') return 'cross';
+        if (s === 'provinsi') return 'map';
+        if (s === 'kabupaten_kota') return 'building-2';
         if (s === 'services') return 'clipboard-list';
         if (s === 'roles') return 'shield-check';
         if (s === 'positions') return 'award';
@@ -71,6 +79,8 @@
               { id: 'wilayah', icon: 'map-pin', label: 'Wilayah' },
               { id: 'lingkungan', icon: 'home', label: 'Lingkungan' },
               { id: 'ordo', icon: 'cross', label: 'Ordo / Kongregasi' },
+              { id: 'provinsi', icon: 'map', label: 'Provinsi' },
+              { id: 'kabupaten_kota', icon: 'building-2', label: 'Kabupaten / Kota' },
               { id: 'services', icon: 'clipboard-list', label: 'Kategori Pelayanan' },
               { id: 'roles', icon: 'shield-check', label: 'Jenis User / Role' },
               { id: 'positions', icon: 'award', label: 'Jabatan & Struktur' }
@@ -110,6 +120,18 @@
 
               <!-- Filters & Action Controls -->
               <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
+                ${sub === 'kabupaten_kota' ? `
+                  <div class="flex items-center space-x-1.5">
+                    <label class="text-[11px] font-bold text-slate-500 whitespace-nowrap">Provinsi:</label>
+                    <select onchange="state.masterFilterProvinsiId = this.value; loadMasterData('kabupaten_kota');"
+                      class="py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400">
+                      <option value="">Semua Provinsi</option>
+                      ${(state.provinsi || []).map(p => `
+                        <option value="${p.id}" ${String(state.masterFilterProvinsiId) === String(p.id) ? 'selected' : ''}>${p.name}</option>
+                      `).join('')}
+                    </select>
+                  </div>
+                ` : ''}
 
                 <span class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold whitespace-nowrap">
                   ${filtered.length} Data

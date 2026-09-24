@@ -56,6 +56,19 @@
           <th class="py-4 px-6">STATUS PIMPINAN</th>
           <th class="py-4 px-6">TOTAL PEJABAT AKTIF</th>
         `;
+      } else if (sub === 'provinsi') {
+        return `
+          <th class="py-4 px-6">NAMA PROVINSI</th>
+          <th class="py-4 px-6">TOTAL KABUPATEN / KOTA</th>
+          <th class="py-4 px-6">STATUS</th>
+        `;
+      } else if (sub === 'kabupaten_kota') {
+        return `
+          <th class="py-4 px-6">NAMA KABUPATEN / KOTA</th>
+          <th class="py-4 px-6">JENIS / TIPE</th>
+          <th class="py-4 px-6">PROVINSI INDUK</th>
+          <th class="py-4 px-6">TOTAL PENGGUNA TERHUBUNG</th>
+        `;
       }
       return '';
     }
@@ -89,6 +102,14 @@
                   class="inline-flex items-center space-x-1 text-xs font-semibold text-blue-700 hover:text-blue-900 transition py-1 px-1.5 rounded hover:bg-blue-50" title="Tambah Lingkungan Baru di Wilayah Ini">
                   <i data-lucide="plus" class="w-3.5 h-3.5 text-blue-600"></i>
                   <span>Lingkungan</span>
+                </button>
+                <span class="text-slate-300">·</span>
+              ` : ''}
+              ${sub === 'provinsi' ? `
+                <button onclick='openCreateMasterModal("kabupaten_kota", { provinsi_id: ${item.id} })'
+                  class="inline-flex items-center space-x-1 text-xs font-semibold text-blue-700 hover:text-blue-900 transition py-1 px-1.5 rounded hover:bg-blue-50" title="Tambah Kab/Kota di Provinsi Ini">
+                  <i data-lucide="plus" class="w-3.5 h-3.5 text-blue-600"></i>
+                  <span>Kab/Kota</span>
                 </button>
                 <span class="text-slate-300">·</span>
               ` : ''}

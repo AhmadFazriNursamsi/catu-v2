@@ -57,6 +57,9 @@
       if (activeType === 'wilayah' && state.masterFilterParokiId && !initialData.paroki_id) {
         initialData.paroki_id = parseInt(state.masterFilterParokiId);
       }
+      if (activeType === 'kabupaten_kota' && state.masterFilterProvinsiId && !initialData.provinsi_id) {
+        initialData.provinsi_id = parseInt(state.masterFilterProvinsiId);
+      }
 
       let filterKId = initialData.keuskupan_id || '';
       let filterPId = initialData.paroki_id || '';
@@ -81,6 +84,9 @@
           state.keuskupan = await kRes.json();
           state.modalParokiList = await pRes.json();
           state.modalWilayahList = await wRes.json();
+        } else if (activeType === 'kabupaten_kota') {
+          const res = await fetch(`${API_BASE}/master/provinsi`);
+          state.provinsi = await res.json();
         }
       } catch (err) {
         console.error('Error preloading lookup data for modal:', err);
@@ -129,6 +135,9 @@
           state.keuskupan = await kRes.json();
           state.modalParokiList = await pRes.json();
           state.modalWilayahList = await wRes.json();
+        } else if (activeType === 'kabupaten_kota') {
+          const res = await fetch(`${API_BASE}/master/provinsi`);
+          state.provinsi = await res.json();
         }
       } catch (err) {
         console.error('Error preloading lookup data for modal:', err);
@@ -247,6 +256,23 @@
           modal.data.code = codeVal;
           modal.data.name = nameVal;
           modal.data.is_lead = isLeadVal;
+        } else if (type === 'provinsi') {
+          endpoint = mode === 'CREATE' ? `${API_BASE}/master/provinsi` : `${API_BASE}/master/provinsi/${data.id}`;
+          const nameVal = document.getElementById('masterNameInput')?.value?.trim().toUpperCase();
+          if (!nameVal) throw new Error('Nama Provinsi wajib diisi');
+          payload = { name: nameVal };
+          modal.data.name = nameVal;
+        } else if (type === 'kabupaten_kota') {
+          endpoint = mode === 'CREATE' ? `${API_BASE}/master/kabupaten-kota` : `${API_BASE}/master/kabupaten-kota/${data.id}`;
+          const provinsiIdVal = parseInt(document.getElementById('masterProvinsiIdInput')?.value);
+          const typeVal = document.getElementById('masterTypeInput')?.value;
+          const nameVal = document.getElementById('masterNameInput')?.value?.trim().toUpperCase();
+          if (!provinsiIdVal || isNaN(provinsiIdVal)) throw new Error('Silakan pilih Provinsi terlebih dahulu');
+          if (!nameVal) throw new Error('Nama Kabupaten / Kota wajib diisi');
+          payload = { provinsiId: provinsiIdVal, name: nameVal, type: typeVal || 'KOTA' };
+          modal.data.provinsi_id = provinsiIdVal;
+          modal.data.name = nameVal;
+          modal.data.type = typeVal;
         }
 
         // 2. Now set loading state and render spinner
