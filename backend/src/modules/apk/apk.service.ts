@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 interface SensioEnvPayload {
@@ -40,6 +40,25 @@ export class ApkService {
       const message = error instanceof Error ? error.message : 'unknown error';
       this.logger.error(`Unable to create APK download URL: ${message}`);
       throw new ServiceUnavailableException('APK download is temporarily unavailable');
+    }
+  }
+
+  async createUploadUrl(): Promise<string> {
+    try {
+      const config = await this.getStorageConfig();
+      const command = new PutObjectCommand({
+        Bucket: config.bucket,
+        Key: config.objectKey,
+        ContentType: 'application/vnd.android.package-archive',
+      });
+
+      return await getSignedUrl(config.client, command, {
+        expiresIn: 3600,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      this.logger.error(`Unable to create APK upload URL: ${message}`);
+      throw new ServiceUnavailableException('APK upload URL generation failed');
     }
   }
 

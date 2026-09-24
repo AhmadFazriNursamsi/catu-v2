@@ -24,7 +24,7 @@ if [ -f "$ROOT_ENV_FILE" ]; then
   [ -z "$IOS_DEVELOPMENT_TEAM" ] && IOS_DEVELOPMENT_TEAM=$(sed -n 's/^IOS_DEVELOPMENT_TEAM=//p' "$ROOT_ENV_FILE" | head -1)
 fi
 
-TARGET_API_URL="${CATU_API_URL:-${PUBLIC_API_URL:-https://api-catu.farismunir.my.id}}"
+TARGET_API_URL="${CATU_API_URL:-${PUBLIC_API_URL:-https://catu.devoutsys.com/api}}"
 BUILD_TARGET="${1:-apk}"
 
 echo "=========================================================="
