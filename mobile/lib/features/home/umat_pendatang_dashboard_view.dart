@@ -1,12 +1,16 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/models/models.dart';
+import '../../core/services/api_service.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/services/language_service.dart';
 import '../../core/widgets/liquid_bottom_nav_bar.dart';
 import '../orders/histori_screen.dart';
 import '../orders/schedule_screen.dart';
 import '../profile/main_menu_screen.dart';
+import 'kunjungan_detail_screen.dart';
 import 'kunjungan_dialog.dart';
 
 List<LiquidNavItem> _buildNavItems() => [
@@ -55,6 +59,7 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
   String _activeProvinsi = 'DI YOGYAKARTA';
   String _activeKota = 'KOTA YOGYAKARTA';
   List<Map<String, String>> _history = [];
+  Map<String, dynamic> _userData = {};
 
   String get _storageKey {
     final uid = widget.user['id'] ?? widget.user['userId'] ?? 'pendatang';
@@ -64,10 +69,26 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
   @override
   void initState() {
     super.initState();
+    _userData = Map<String, dynamic>.from(widget.user);
     _loadSavedData();
   }
 
   Future<void> _loadSavedData() async {
+    final rawId = widget.user['id'] ?? widget.user['userId'];
+    if (rawId != null) {
+      try {
+        final res = await http.get(Uri.parse('${ApiService.baseUrl}/auth/profile/$rawId')).timeout(const Duration(seconds: 4));
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          if (data is Map<String, dynamic> && data['user'] is Map) {
+            final u = Map<String, dynamic>.from(data['user'] as Map);
+            if (mounted) setState(() => _userData = u);
+            AuthService.saveSession(u);
+          }
+        }
+      } catch (_) {}
+    }
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_storageKey);
@@ -78,9 +99,7 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
             _activeProvinsi = decoded['provinsi'] ?? _activeProvinsi;
             _activeKota = decoded['kota'] ?? _activeKota;
             if (decoded['history'] is List) {
-              _history = (decoded['history'] as List)
-                  .map((e) => Map<String, String>.from(e as Map))
-                  .toList();
+              _history = (decoded['history'] as List).map((e) => Map<String, String>.from(e as Map)).toList();
             }
           });
           return;
@@ -90,12 +109,7 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
     if (_history.isEmpty) {
       setState(() {
         _history = [
-          {
-            'tanggal': '23 September 2026',
-            'provinsi': 'DKI JAKARTA',
-            'kota': 'KOTA JAKARTA UTARA',
-            'alamat': 'Kelapa Gading',
-          }
+          {'tanggal': '23 September 2026', 'provinsi': 'DKI JAKARTA', 'kota': 'KOTA JAKARTA UTARA', 'alamat': 'Kelapa Gading'}
         ];
       });
     }
@@ -104,11 +118,7 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
   Future<void> _persistData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final data = {
-        'provinsi': _activeProvinsi,
-        'kota': _activeKota,
-        'history': _history,
-      };
+      final data = {'provinsi': _activeProvinsi, 'kota': _activeKota, 'history': _history};
       await prefs.setString(_storageKey, jsonEncode(data));
     } catch (_) {}
   }
@@ -118,18 +128,29 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
       context: context,
       builder: (ctx) => KunjunganDialog(
         onSaved: (tanggal, provinsi, kota, alamat) {
+          final item = {'tanggal': tanggal, 'provinsi': provinsi, 'kota': kota, 'alamat': alamat};
           setState(() {
             _activeProvinsi = provinsi;
             _activeKota = kota;
-            _history.insert(0, {
-              'tanggal': tanggal,
-              'provinsi': provinsi,
-              'kota': kota,
-              'alamat': alamat,
-            });
+            _history.insert(0, item);
           });
           _persistData();
+          _openKunjunganDetail(item);
         },
+      ),
+    );
+  }
+
+  void _openKunjunganDetail(Map<String, dynamic> item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => KunjunganDetailScreen(
+          kunjungan: item,
+          user: _userData.isNotEmpty ? _userData : widget.user,
+          orders: widget.orders,
+          onRefresh: widget.onRefresh,
+        ),
       ),
     );
   }
@@ -163,10 +184,24 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
   }
 
   Widget _buildHomeBody() {
-    final name = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Testing';
-    final keuskupan = widget.user['keuskupanName'] ?? widget.user['keuskupan_name'] ?? 'Keuskupan Agung Jakarta';
-    final paroki = widget.user['parokiName'] ?? widget.user['paroki_name'] ?? 'Paroki Alam Sutera - St. Laurensius';
-    final alamatAsal = widget.user['address'] ?? widget.user['alamat'] ?? 'Tes';
+    final name = _userData['fullName'] ?? _userData['full_name'] ?? widget.user['fullName'] ?? widget.user['full_name'] ?? 'Testing';
+    final keuskupan = _userData['keuskupanName'] ?? _userData['keuskupan_name'] ?? widget.user['keuskupanName'] ?? widget.user['keuskupan_name'] ?? '-';
+    final paroki = _userData['parokiName'] ?? _userData['paroki_name'] ?? widget.user['parokiName'] ?? widget.user['paroki_name'] ?? '-';
+    final kotaAsal = _userData['kabupatenKotaName'] ?? _userData['kota_name'] ?? widget.user['kabupatenKotaName'] ?? widget.user['kota_name'] ?? '-';
+    String provAsal = _userData['provinsiName'] ?? _userData['provinsi_name'] ?? widget.user['provinsiName'] ?? widget.user['provinsi_name'] ?? '';
+    if (provAsal.isEmpty || provAsal == '-') {
+      final ku = kotaAsal.toUpperCase();
+      provAsal = ku.contains('JAKARTA')
+          ? 'DKI JAKARTA'
+          : ku.contains('TANGERANG')
+              ? 'BANTEN'
+              : (ku.contains('BANDUNG') || ku.contains('BOGOR') || ku.contains('BEKASI'))
+                  ? 'JAWA BARAT'
+                  : ku.contains('YOGYA')
+                      ? 'DI YOGYAKARTA'
+                      : '-';
+    }
+    final alamatAsal = _userData['address'] ?? _userData['alamat'] ?? widget.user['address'] ?? widget.user['alamat'] ?? '-';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
@@ -181,8 +216,8 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
           _buildBox('Nama', name),
           _buildBox('Keuskupan Asal', keuskupan),
           _buildBox('Paroki Asal', paroki),
-          _buildBox('Provinsi', _activeProvinsi),
-          _buildBox('Kota', _activeKota),
+          _buildBox('Provinsi', provAsal),
+          _buildBox('Kota', kotaAsal),
           _buildBox('Alamat Asal', alamatAsal),
           const SizedBox(height: 10),
           _buildActionButton('PELAYANAN YANG SEDANG DIMINTA DAN HISTORY', () {
@@ -239,16 +274,20 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
         ),
         const SizedBox(height: 12),
         ..._history.map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(flex: 3, child: Text(item['tanggal'] ?? '', style: const TextStyle(fontSize: 12.5))),
-                Expanded(flex: 3, child: Text(item['provinsi'] ?? '', style: const TextStyle(fontSize: 12.5))),
-                Expanded(flex: 3, child: Text(item['kota'] ?? '', style: const TextStyle(fontSize: 12.5))),
-                Expanded(flex: 3, child: Text(item['alamat'] ?? '', style: const TextStyle(fontSize: 12.5))),
-              ],
+          (item) => InkWell(
+            onTap: () => _openKunjunganDetail(item),
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: Text(item['tanggal'] ?? '', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF1B4B82)))),
+                  Expanded(flex: 3, child: Text(item['provinsi'] ?? '', style: const TextStyle(fontSize: 12.5))),
+                  Expanded(flex: 3, child: Text(item['kota'] ?? '', style: const TextStyle(fontSize: 12.5))),
+                  Expanded(flex: 3, child: Text(item['alamat'] ?? '', style: const TextStyle(fontSize: 12.5))),
+                ],
+              ),
             ),
           ),
         ),

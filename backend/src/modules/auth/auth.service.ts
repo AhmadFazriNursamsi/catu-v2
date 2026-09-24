@@ -518,12 +518,11 @@ export class AuthService {
       await queryRunner.commitTransaction();
 
       // Detailed location names for response DTO
-      let keuskupanName = '';
-      let parokiName = '';
-      let wilayahName = '';
-      let lingkunganName = '';
-      let ordoName = '';
-      let kabupatenKotaName = 'JAKARTA TIMUR';
+      let keuskupanName = '', parokiName = '', wilayahName = '', lingkunganName = '', ordoName = '';
+      let kabupatenKotaName = 'JAKARTA TIMUR', provinsiName = 'DKI JAKARTA';
+      const targetKotaId = dto.kabupatenKotaId || 3175;
+      const kkRes = await this.dataSource.query('SELECT kk.name as kota_name, prov.name as provinsi_name FROM kabupaten_kota kk LEFT JOIN provinsi prov ON kk.provinsi_id = prov.id WHERE kk.id = $1', [targetKotaId]);
+      if (kkRes.length > 0) { kabupatenKotaName = kkRes[0].kota_name || 'JAKARTA TIMUR'; provinsiName = kkRes[0].provinsi_name || 'DKI JAKARTA'; }
 
       if (dto.keuskupanId) {
         const kRes = await this.dataSource.query('SELECT name FROM keuskupan WHERE id = $1', [dto.keuskupanId]);
@@ -655,7 +654,8 @@ export class AuthService {
           wilayahName: wilayahName || null,
           lingkunganName: lingkunganName || null,
           ordoName: ordoName || null,
-          kabupatenKotaName: 'JAKARTA TIMUR',
+          kabupatenKotaName,
+          provinsiName,
           pengurusPosition: dto.pengurusPosition,
           romoPosition: romoPositionVal,
           jabatanStartYear: startYear,
@@ -692,7 +692,7 @@ export class AuthService {
     const users = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.password_hash, u.account_status, r.code as role_code,
               p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.ordo_id, p.kabupaten_kota_id, kk.provinsi_id,
-              k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, ord.name as ordo_name, kk.name as kota_name,
+              k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, ord.name as ordo_name, kk.name as kota_name, prov.name as provinsi_name,
               p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
        FROM auth_users u
        JOIN roles r ON u.role_id = r.id
@@ -701,8 +701,7 @@ export class AuthService {
        LEFT JOIN paroki par ON p.paroki_id = par.id
        LEFT JOIN wilayah w ON p.wilayah_id = w.id
        LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
-       LEFT JOIN ordo ord ON p.ordo_id = ord.id
-       LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id
+       LEFT JOIN ordo ord ON p.ordo_id = ord.id LEFT JOIN kabupaten_kota kk ON p.kabupaten_kota_id = kk.id LEFT JOIN provinsi prov ON kk.provinsi_id = prov.id
        WHERE u.phone_number = $1 OR u.phone_number = $2`,
       [fullPhone, localPhone],
     );
@@ -763,7 +762,7 @@ export class AuthService {
         wilayahName: user.wilayah_name,
         lingkunganName: user.lingkungan_name,
         ordoName: user.ordo_name,
-        kabupatenKotaName: user.kota_name,
+        kabupatenKotaName: user.kota_name, provinsiName: user.provinsi_name || '',
         pengurusPosition: user.pengurus_position,
         romoPosition: user.romo_position,
         jabatanStartYear: user.jabatan_start_year,
