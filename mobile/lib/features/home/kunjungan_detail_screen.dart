@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
+import '../../core/services/api_service.dart';
+import '../orders/create_kedukaan_screen.dart';
 import '../orders/create_order_screen.dart';
+import '../orders/create_perminyakan_screen.dart';
+import '../orders/order_detail_screen.dart';
 
 class KunjunganDetailScreen extends StatefulWidget {
   final Map<String, dynamic> kunjungan;
@@ -21,6 +26,26 @@ class KunjunganDetailScreen extends StatefulWidget {
 }
 
 class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
+  List<Order> _orders = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _orders = List.from(widget.orders);
+    _loadOrders();
+  }
+
+  Future<void> _loadOrders() async {
+    final rawId = widget.user['id'] ?? widget.user['userId'] ?? widget.user['user_id'];
+    final userId = rawId != null ? int.tryParse(rawId.toString()) : null;
+    if (userId != null) {
+      final fetched = await ApiService.getOrders(userId: userId);
+      if (mounted) {
+        setState(() => _orders = fetched);
+      }
+    }
+  }
+
   Widget _buildBox(String label, String value) {
     return Container(
       width: double.infinity,
@@ -38,11 +63,7 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
           const SizedBox(height: 2),
           Text(
             value.isNotEmpty ? value : '-',
-            style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -68,7 +89,7 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
         const SizedBox(width: 14),
         Expanded(
           child: ElevatedButton(
-            onPressed: _openCreatePelayanan,
+            onPressed: _showServiceSelectionModal,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1B4B82),
               foregroundColor: Colors.white,
@@ -83,23 +104,93 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
     );
   }
 
-  Future<void> _openCreatePelayanan() async {
+  void _showServiceSelectionModal() {
+    final rawId = widget.user['id'] ?? widget.user['userId'] ?? widget.user['user_id'];
+    final userId = rawId != null ? int.tryParse(rawId.toString()) : null;
     final visitUser = Map<String, dynamic>.from(widget.user);
     final alamatKunjungan = widget.kunjungan['alamat'] ?? '';
     final kotaKunjungan = widget.kunjungan['kota'] ?? '';
     final provKunjungan = widget.kunjungan['provinsi'] ?? '';
     if (alamatKunjungan.toString().isNotEmpty) {
       visitUser['address'] = '$alamatKunjungan, $kotaKunjungan, $provKunjungan'.replaceAll(RegExp(r'(, )+'), ', ').trim();
+      visitUser['alamat'] = visitUser['address'];
     }
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CreateOrderScreen(user: visitUser),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      backgroundColor: Colors.white,
+      builder: (ctx) => ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 16),
+              const Text('Pilih Jenis Pelayanan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              const SizedBox(height: 4),
+              const Text('Silakan pilih jenis sakramen / misa pelayanan yang Anda butuhkan', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
+              const SizedBox(height: 16),
+              Flexible(
+                child: FutureBuilder<List<Map<String, dynamic>>>(
+                  future: ApiService.getServiceCategories(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: Padding(padding: EdgeInsets.all(24.0), child: CircularProgressIndicator()));
+                    }
+                    final categories = (snapshot.data ?? []).where((c) => c['is_active'] != false).toList();
+                    if (categories.isEmpty) {
+                      return const Center(child: Padding(padding: EdgeInsets.all(16.0), child: Text('Tidak ada kategori pelayanan aktif')));
+                    }
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: categories.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (_, index) {
+                        final cat = categories[index];
+                        final catId = (cat['id'] as num?)?.toInt() ?? 0;
+                        final name = cat['name']?.toString() ?? 'Pelayanan';
+                        final desc = cat['description']?.toString() ?? '';
+                        final isPerm = catId == 1 || name.toLowerCase().contains('perminyakan');
+                        final isKedu = catId == 2 || name.toLowerCase().contains('kedukaan');
+                        final icon = isPerm ? Icons.sanitizer_rounded : (isKedu ? Icons.personal_injury_rounded : Icons.home_repair_service_rounded);
+                        final color = isPerm ? const Color(0xFF1E5399) : (isKedu ? const Color(0xFF0D9488) : const Color(0xFFD97706));
+
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Colors.grey.shade200)),
+                          leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(icon, color: color)),
+                          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          subtitle: desc.isNotEmpty ? Text(desc, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))) : null,
+                          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            final screen = isPerm
+                                ? CreatePerminyakanScreen(userId: userId, user: visitUser)
+                                : isKedu
+                                    ? CreateKedukaanScreen(userId: userId, user: visitUser)
+                                    : CreateOrderScreen(initialCategoryId: catId, categoryName: name, user: visitUser);
+                            await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+                            await _loadOrders();
+                            widget.onRefresh();
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Center(child: Text('Versi Aplikasi: ${AppConstants.appVersion}', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500))),
+            ],
+          ),
+        ),
       ),
     );
-    widget.onRefresh();
-    if (mounted) setState(() {});
   }
 
   Widget _buildStatusBadge(String status) {
@@ -107,15 +198,15 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
     Color fg;
     String label;
     final s = status.toUpperCase();
-    if (s == 'COMPLETED') {
+    if (s == 'COMPLETED' || s == 'DONE') {
       bg = Colors.green.shade50;
       fg = Colors.green.shade700;
       label = 'SELESAI';
-    } else if (s == 'APPROVED' || s == 'ASSIGNED') {
+    } else if (s == 'APPROVED' || s == 'ASSIGNED' || s == 'ACCEPTED' || s == 'CONFIRMED') {
       bg = Colors.blue.shade50;
       fg = Colors.blue.shade700;
       label = 'DITERIMA';
-    } else if (s == 'REJECTED' || s == 'CANCELLED') {
+    } else if (s == 'REJECTED' || s == 'CANCELLED' || s == 'DECLINED' || s == 'FAIL') {
       bg = Colors.red.shade50;
       fg = Colors.red.shade700;
       label = 'DITOLAK';
@@ -132,14 +223,27 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: fg.withValues(alpha: 0.3)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(color: fg, fontSize: 10.5, fontWeight: FontWeight.bold),
-      ),
+      child: Text(label, style: TextStyle(color: fg, fontSize: 10.5, fontWeight: FontWeight.bold)),
     );
   }
 
+  String _formatDate(String raw) {
+    if (raw.isEmpty) return '-';
+    try {
+      final clean = raw.contains('T') ? raw.split('T').first : raw;
+      final parts = clean.split('-');
+      if (parts.length == 3) {
+        return '${parts[2]}/${parts[1]}/${parts[0]}';
+      }
+    } catch (_) {}
+    return raw;
+  }
+
   Widget _buildOrdersTable() {
+    final rawId = widget.user['id'] ?? widget.user['userId'] ?? widget.user['user_id'];
+    final userId = rawId != null ? int.tryParse(rawId.toString()) : null;
+    final userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Umat';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -154,29 +258,41 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        if (widget.orders.isEmpty)
+        if (_orders.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Center(
-              child: Text(
-                'Belum ada pelayanan yang diajukan',
-                style: TextStyle(color: Colors.grey, fontSize: 12.5),
-              ),
+              child: Text('Belum ada pelayanan yang diajukan', style: TextStyle(color: Colors.grey, fontSize: 12.5)),
             ),
           )
         else
-          ...widget.orders.map((o) {
-            return Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 0.8)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(flex: 3, child: Text(o.scheduledDate, style: const TextStyle(fontSize: 12.5, color: Colors.black87))),
-                  Expanded(flex: 4, child: Text(o.categoryName, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Colors.black87))),
-                  Expanded(flex: 3, child: Align(alignment: Alignment.centerRight, child: _buildStatusBadge(o.status))),
-                ],
+          ..._orders.map((o) {
+            return InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OrderDetailScreen(
+                      order: o,
+                      userName: userName,
+                      userId: userId,
+                      selectedItemTitle: o.categoryName,
+                    ),
+                  ),
+                ).then((_) => _loadOrders());
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 0.8)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(flex: 3, child: Text(_formatDate(o.scheduledDate), style: const TextStyle(fontSize: 12.5, color: Colors.black87))),
+                    Expanded(flex: 4, child: Text(o.categoryName, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Colors.black87))),
+                    Expanded(flex: 3, child: Align(alignment: Alignment.centerRight, child: _buildStatusBadge(o.status))),
+                  ],
+                ),
               ),
             );
           }),

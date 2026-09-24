@@ -152,7 +152,7 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
           onRefresh: widget.onRefresh,
         ),
       ),
-    );
+    ).then((_) => widget.onRefresh());
   }
 
   Widget _buildBox(String label, String value) {
