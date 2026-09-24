@@ -403,11 +403,7 @@ class ApiService {
     } catch (e) {
       debugPrint('Error getRoles: $e');
     }
-    return [
-      {'code': 'UMAT', 'label': 'Umat', 'category': 'Umat'},
-      {'code': 'ROMO_PAROKI', 'label': 'Romo Paroki', 'category': 'Romo'},
-      {'code': 'ROMO_ORDO', 'label': 'Romo Ordo', 'category': 'Romo'},
-    ];
+    return [];
   }
 
   // 1d. Dynamic DB Master Data methods
@@ -429,10 +425,7 @@ class ApiService {
     } catch (e) {
       debugPrint('Error getProvinsiList: $e');
     }
-    return [
-      {'id': 31, 'name': 'DKI JAKARTA'},
-      {'id': 36, 'name': 'BANTEN'},
-    ];
+    return [];
   }
 
   static Future<List<Map<String, dynamic>>> getKabupatenKotaList({int? provinsiId}) async {
@@ -446,10 +439,7 @@ class ApiService {
     } catch (e) {
       debugPrint('Error getKabupatenKotaList: $e');
     }
-    return [
-      {'id': 3175, 'provinsi_id': 31, 'name': 'JAKARTA TIMUR', 'type': 'KOTA'},
-      {'id': 3173, 'provinsi_id': 31, 'name': 'JAKARTA PUSAT', 'type': 'KOTA'},
-    ];
+    return [];
   }
 
   static Future<List<Map<String, dynamic>>> getKeuskupanList() async {
@@ -462,7 +452,7 @@ class ApiService {
     } catch (e) {
       debugPrint('Error getKeuskupanList: $e');
     }
-    return [{'id': 1, 'name': 'Keuskupan Agung Jakarta'}, {'id': 2, 'name': 'Keuskupan Agung Semarang'}, {'id': 3, 'name': 'Keuskupan Bandung'}];
+    return [];
   }
 
   static Future<List<Map<String, dynamic>>> getServiceCategories() async {
@@ -475,11 +465,7 @@ class ApiService {
     } catch (e) {
       debugPrint('Error getServiceCategories: $e');
     }
-    return [
-      {'id': 1, 'name': 'Perminyakan Orang Sakit', 'is_urgent_by_default': true, 'is_active': true},
-      {'id': 2, 'name': 'Misa Kedukaan', 'is_urgent_by_default': false, 'is_active': true},
-      {'id': 3, 'name': 'Pemberkatan Rumah', 'is_urgent_by_default': false, 'is_active': true},
-    ];
+    return [];
   }
 
   static Future<List<Map<String, dynamic>>> getParokiList({int? keuskupanId}) async {
@@ -493,7 +479,7 @@ class ApiService {
     } catch (e) {
       debugPrint('Error getParokiList: $e');
     }
-    return [{'id': 10, 'keuskupan_id': 1, 'name': 'Paroki Santo Antonius Padua - Otista'}, {'id': 11, 'keuskupan_id': 1, 'name': 'Paroki Katedral Jakarta'}];
+    return [];
   }
 
   static Future<List<Map<String, dynamic>>> getWilayahList({int? parokiId}) async {
@@ -507,7 +493,7 @@ class ApiService {
     } catch (e) {
       debugPrint('Error getWilayahList: $e');
     }
-    return [{'id': 101, 'paroki_id': 10, 'name': 'Wilayah St. Agustinus'}, {'id': 102, 'paroki_id': 10, 'name': 'Wilayah St. Ignatius Loyola'}];
+    return [];
   }
 
   static Future<List<Map<String, dynamic>>> getLingkunganList({int? wilayahId}) async {
@@ -521,7 +507,7 @@ class ApiService {
     } catch (e) {
       debugPrint('Error getLingkunganList: $e');
     }
-    return [{'id': 1001, 'wilayah_id': 101, 'name': 'Lingkungan St. Agnes 1'}, {'id': 1002, 'wilayah_id': 101, 'name': 'Lingkungan St. Agnes 2'}];
+    return [];
   }
 
   static Future<List<Map<String, dynamic>>> getOrdoList() async {
@@ -534,14 +520,7 @@ class ApiService {
     } catch (e) {
       debugPrint('Error getOrdoList: $e');
     }
-    return [
-      {'id': 1, 'code': 'SJ', 'name': 'SJ - Serikat Yesus (Jesuit)'},
-      {'id': 2, 'code': 'OFM', 'name': 'OFM - Fransiskan'},
-      {'id': 3, 'code': 'OFM Cap', 'name': 'OFM Cap - Fransiskan Kapusin'},
-      {'id': 4, 'code': 'MSF', 'name': 'MSF - Misionaris Keluarga Kudus'},
-      {'id': 5, 'code': 'SVD', 'name': 'SVD - Serikat Sabda Allah'},
-      {'id': 6, 'code': 'CSsR', 'name': 'CSsR - Kongregasi Sang Penebus'},
-    ];
+    return [];
   }
 
   // 2. Fetch Orders - filtered by userId for Umat, parokiId/romoId/kabupatenKotaId for Romo, keuskupanId for Koordinator

@@ -215,66 +215,66 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _showServerConfigDialog() {
-    final controller = TextEditingController(
-      text: ApiService.baseUrl,
-    );
+    final controller = TextEditingController(text: ApiService.baseUrl);
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Row(
-          children: [
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Row(children: [
             Icon(Icons.settings_ethernet_rounded, color: AppConstants.primaryBlue, size: 24),
             SizedBox(width: 10),
-            Text('Konfigurasi URL Server', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Masukkan URL lengkap laptop/server backend:',
-              style: TextStyle(fontSize: 12.5, color: AppConstants.textMuted),
-            ),
+            Text('Environment Server', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ]),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('Hanya Publish (Server) atau Local:', style: TextStyle(fontSize: 12.5, color: AppConstants.textMuted)),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: controller.text == AppConstants.publishApiUrl ? const Color(0x1F1E3A8A) : null,
+                    side: BorderSide(color: controller.text == AppConstants.publishApiUrl ? AppConstants.primaryBlue : Colors.grey.shade300),
+                  ),
+                  onPressed: () => setDlg(() => controller.text = AppConstants.publishApiUrl),
+                  child: const Text('☁️ Publish', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: controller.text == AppConstants.localApiUrl ? const Color(0x1F1E3A8A) : null,
+                    side: BorderSide(color: controller.text == AppConstants.localApiUrl ? AppConstants.primaryBlue : Colors.grey.shade300),
+                  ),
+                  onPressed: () => setDlg(() => controller.text = AppConstants.localApiUrl),
+                  child: const Text('💻 Local', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ]),
             const SizedBox(height: 12),
             TextField(
               controller: controller,
               keyboardType: TextInputType.url,
-              decoration: InputDecoration(
-                hintText: 'URL backend sesuai environment',
-                labelText: 'URL Server Backend',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+              decoration: InputDecoration(hintText: 'URL backend', labelText: 'URL Server Backend', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+            ),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppConstants.primaryBlue, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+              onPressed: () async {
+                final newUrl = controller.text.trim();
+                if (newUrl.isNotEmpty) {
+                  await ApiService.setCustomBaseUrl(newUrl);
+                  if (mounted) setState(() => _backendError = null);
+                }
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+              child: const Text('Simpan'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.primaryBlue,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () async {
-              final newUrl = controller.text.trim();
-              if (newUrl.isNotEmpty) {
-                await ApiService.setCustomBaseUrl(newUrl);
-                if (mounted) {
-                  setState(() {
-                    _backendError = null;
-                  });
-                }
-              }
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
       ),
     );
   }
