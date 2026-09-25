@@ -842,16 +842,6 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
 
-          // ── Server IP Config Button ──
-          Positioned(
-            top: 44,
-            right: 16,
-            child: IconButton(
-              icon: const Icon(Icons.settings_ethernet_rounded, color: Colors.white70, size: 24),
-              tooltip: 'Konfigurasi Server IP',
-              onPressed: _showServerConfigDialog,
-            ),
-          ),
 
           // ── Content ──
           SafeArea(
@@ -1232,38 +1222,41 @@ class _LoginScreenState extends State<LoginScreen>
                       const SizedBox(height: 20),
                       // ── App Version Badge ──
                       Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.35),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+                        child: GestureDetector(
+                          onLongPress: _showServerConfigDialog,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                width: 1,
                               ),
-                            ],
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.build_circle_outlined, size: 14, color: Colors.white),
-                              SizedBox(width: 6),
-                              Text(
-                                AppConstants.appVersion,
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  letterSpacing: 0.4,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.build_circle_outlined, size: 14, color: Colors.white),
+                                SizedBox(width: 6),
+                                Text(
+                                  AppConstants.appVersion,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
