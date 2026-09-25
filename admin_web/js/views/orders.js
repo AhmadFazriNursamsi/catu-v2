@@ -31,23 +31,13 @@
 
     function getOrderStatusBadge(statusOrOrder) {
       const s = (statusOrOrder && typeof statusOrOrder === 'object') ? getEffectiveOrderStatus(statusOrOrder) : (statusOrOrder || '').toUpperCase();
-      const map = {
-        PENDING: { label: 'Menunggu Konfirmasi', icon: 'clock', cls: 'bg-amber-50 text-amber-900 border-amber-200', iconCls: 'text-amber-600' },
-        CONFIRMED: { label: 'Telah Dikonfirmasi', icon: 'check-circle-2', cls: 'bg-emerald-50 text-emerald-900 border-emerald-200', iconCls: 'text-emerald-600' },
-        ACCEPTED: { label: 'Telah Dikonfirmasi', icon: 'check-circle-2', cls: 'bg-emerald-50 text-emerald-900 border-emerald-200', iconCls: 'text-emerald-600' },
-        IN_PROGRESS: { label: 'Sedang Berlangsung', icon: 'activity', cls: 'bg-blue-50 text-blue-900 border-blue-200', iconCls: 'text-blue-600' },
-        PROCESS: { label: 'Sedang Berlangsung', icon: 'activity', cls: 'bg-blue-50 text-blue-900 border-blue-200', iconCls: 'text-blue-600' },
-        ASSIGNED: { label: 'Sedang Berlangsung', icon: 'activity', cls: 'bg-blue-50 text-blue-900 border-blue-200', iconCls: 'text-blue-600' },
-        ROMO_ASSIGNED: { label: 'Sedang Berlangsung', icon: 'activity', cls: 'bg-blue-50 text-blue-900 border-blue-200', iconCls: 'text-blue-600' },
-        DONE: { label: 'Telah Selesai', icon: 'check-check', cls: 'bg-emerald-50 text-emerald-900 border-emerald-200', iconCls: 'text-emerald-600' },
-        COMPLETED: { label: 'Telah Selesai', icon: 'check-check', cls: 'bg-emerald-50 text-emerald-900 border-emerald-200', iconCls: 'text-emerald-600' },
-        CLOSE: { label: 'Closed (Ditutup Sistem)', icon: 'archive', cls: 'bg-teal-50 text-teal-900 border-teal-200', iconCls: 'text-teal-600' },
-        CLOSED: { label: 'Closed (Ditutup Sistem)', icon: 'archive', cls: 'bg-teal-50 text-teal-900 border-teal-200', iconCls: 'text-teal-600' },
-        FAIL: { label: 'Gagal / Kadaluarsa', icon: 'x-circle', cls: 'bg-rose-50 text-rose-900 border-rose-200', iconCls: 'text-rose-600' },
-        CANCELLED: { label: 'Gagal / Kadaluarsa', icon: 'x-circle', cls: 'bg-rose-50 text-rose-900 border-rose-200', iconCls: 'text-rose-600' },
-        DECLINED: { label: 'Ditolak', icon: 'x-circle', cls: 'bg-rose-50 text-rose-900 border-rose-200', iconCls: 'text-rose-600' },
-        REJECTED: { label: 'Ditolak', icon: 'x-circle', cls: 'bg-rose-50 text-rose-900 border-rose-200', iconCls: 'text-rose-600' }
-      };
+      const conf = { label: 'Telah Dikonfirmasi', icon: 'check-circle-2', cls: 'bg-emerald-50 text-emerald-900 border-emerald-200', iconCls: 'text-emerald-600' };
+      const prog = { label: 'Sedang Berlangsung', icon: 'activity', cls: 'bg-blue-50 text-blue-900 border-blue-200', iconCls: 'text-blue-600' };
+      const done = { label: 'Telah Selesai', icon: 'check-check', cls: 'bg-emerald-50 text-emerald-900 border-emerald-200', iconCls: 'text-emerald-600' };
+      const clsd = { label: 'Closed (Ditutup Sistem)', icon: 'archive', cls: 'bg-teal-50 text-teal-900 border-teal-200', iconCls: 'text-teal-600' };
+      const fail = { label: 'Gagal / Kadaluarsa', icon: 'x-circle', cls: 'bg-rose-50 text-rose-900 border-rose-200', iconCls: 'text-rose-600' };
+      const decl = { label: 'Ditolak', icon: 'x-circle', cls: 'bg-rose-50 text-rose-900 border-rose-200', iconCls: 'text-rose-600' };
+      const map = { PENDING: { label: 'Menunggu Konfirmasi', icon: 'clock', cls: 'bg-amber-50 text-amber-900 border-amber-200', iconCls: 'text-amber-600' }, CONFIRMED: conf, ACCEPTED: conf, IN_PROGRESS: prog, PROCESS: prog, ASSIGNED: prog, ROMO_ASSIGNED: prog, DONE: done, COMPLETED: done, CLOSE: clsd, CLOSED: clsd, FAIL: fail, CANCELLED: fail, DECLINED: decl, REJECTED: decl };
       const cfg = map[s] || { label: s || '-', icon: 'info', cls: 'bg-slate-100 text-slate-700 border-slate-200', iconCls: 'text-slate-500' };
       return `<span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border shadow-2xs ${cfg.cls}"><i data-lucide="${cfg.icon}" class="w-3.5 h-3.5 ${cfg.iconCls}"></i><span>${cfg.label}</span></span>`;
     }
@@ -116,7 +106,7 @@
                 ` : filtered.map(o => `
                   <tr class="hover:bg-slate-50/80 transition">
                     <td class="px-6 py-4 font-bold text-blue-950">${o.order_number || o.orderNumber}</td>
-                    <td class="px-6 py-4 font-bold text-slate-900">${o.category_name || o.categoryName}</td>
+                    <td class="px-6 py-4 font-bold text-slate-900">${o.category_name || o.categoryName} ${(o.items && o.items.length > 1) ? `<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">${o.items.length} Misa</span>` : ''}</td>
                     <td class="px-6 py-4">${o.pemohon_name || o.pemohonName}</td>
                     <td class="px-6 py-4">${o.paroki_name || o.location_name || '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${getOrderStatusBadge(o)}</td>
@@ -160,12 +150,7 @@
               if (colonIdx > 0) {
                 const key = p.substring(0, colonIdx).trim();
                 const val = p.substring(colonIdx + 1).trim();
-                return `
-                  <div class="bg-slate-50/70 p-2.5 rounded-lg border border-slate-100">
-                    <span class="text-[10px] uppercase font-bold text-slate-400 block">${key}</span>
-                    <span class="text-xs font-bold text-slate-800">${val || '-'}</span>
-                  </div>
-                `;
+                return `<div class="bg-slate-50/70 p-2.5 rounded-lg border border-slate-100"><span class="text-[10px] uppercase font-bold text-slate-400 block">${key}</span><span class="text-xs font-bold text-slate-800">${val || '-'}</span></div>`;
               }
               return `<div class="bg-slate-50/70 p-2.5 rounded-lg border border-slate-100 text-xs font-semibold text-slate-700">${p}</div>`;
             }).join('')}
@@ -309,6 +294,27 @@
               </div>
 
               ${renderRomoAssignmentCard(o)}
+
+              ${(o.items && o.items.length > 0) ? `
+                <div class="space-y-1.5">
+                  <span class="font-bold text-slate-400 text-[10px] tracking-wider uppercase flex items-center space-x-1.5">
+                    <i data-lucide="layers" class="w-3.5 h-3.5 text-blue-600"></i>
+                    <span>Daftar Misa / Jadwal Pelayanan (${o.items.length})</span>
+                  </span>
+                  <div class="space-y-1.5">
+                    ${o.items.map(it => `
+                      <div class="p-2.5 bg-slate-50/80 rounded-xl border border-slate-200/70 flex items-center justify-between">
+                        <div class="min-w-0 pr-2">
+                          <div class="font-bold text-xs text-slate-800">${it.itemName || it.item_name}</div>
+                          <div class="text-[11px] text-slate-500">${formatOrderDate(it.scheduledDate || it.scheduled_date)} • ${(it.scheduledTimeStart || it.scheduled_time_start || '').substring(0, 5)} - ${(it.scheduledTimeEnd || it.scheduled_time_end || '').substring(0, 5)} WIB</div>
+                          <div class="text-[10px] text-slate-400 truncate"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1 text-rose-500"></i>${it.locationName || it.location_name || '-'}</div>
+                        </div>
+                        <div class="flex-shrink-0">${getOrderStatusBadge(it.status || 'PENDING')}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
 
               <div class="space-y-1.5">
                 <span class="font-bold text-slate-400 text-[10px] tracking-wider uppercase flex items-center space-x-1.5">
