@@ -434,18 +434,17 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     setState(() => _isLoading = true);
 
     final parts = _tanggalController.text.split('/');
-    final dateFormatted = parts.length == 3
-        ? '${parts[2]}-${parts[1]}-${parts[0]}'
-        : _tanggalController.text;
-
+    final dateFormatted = parts.length == 3 ? '${parts[2]}-${parts[1]}-${parts[0]}' : _tanggalController.text;
+    final kunjMap = widget.user?['kunjungan'] is Map ? (widget.user!['kunjungan'] as Map) : null;
+    final kunjId = kunjMap?['id']?.toString() ?? '';
     final notes = [
       'Nama Penerima: ${_namaController.text}',
       'Gender: ${_selectedGender ?? '-'}',
       'Usia: ${_usiaController.text} tahun',
       'Jam Mulai: $_jamMulai',
       'Jam Selesai: $_jamSelesai',
-      if (_catatanController.text.isNotEmpty)
-        'Catatan: ${_catatanController.text}',
+      if (_catatanController.text.isNotEmpty) 'Catatan: ${_catatanController.text}',
+      if (kunjId.isNotEmpty) '[KunjunganId: $kunjId]',
     ].join(' | ');
 
     final res = await ApiService.createOrder(
@@ -503,7 +502,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     );
 
     if (isSuccess) {
-      Navigator.pop(context);
+      Navigator.pop(context, rawOrderId);
     }
   }
 

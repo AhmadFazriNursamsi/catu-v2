@@ -103,6 +103,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     final formattedDate = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
     final formattedTime = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
 
+    final kunjMap = widget.user?['kunjungan'] is Map ? (widget.user!['kunjungan'] as Map) : null;
+    final kunjId = kunjMap?['id']?.toString() ?? '';
+    final notesText = _notesController.text.trim();
+    final combinedNotes = [
+      if (notesText.isNotEmpty) notesText,
+      if (kunjId.isNotEmpty) '[KunjunganId: $kunjId]',
+    ].join(' | ');
+
     final res = await ApiService.createOrder(
       serviceCategoryId: _selectedCategory!,
       urgencyLevelId: _selectedUrgency,
@@ -110,7 +118,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       scheduledTime: formattedTime,
       locationName: _locationController.text.trim(),
       addressDetail: _addressController.text.trim(),
-      notes: _notesController.text.trim(),
+      notes: combinedNotes,
     );
 
     setState(() => _isLoading = false);
@@ -120,8 +128,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       SnackBar(content: Text(res['message'] ?? 'Order pelayanan berhasil dibuat')),
     );
 
-    if (res['statusCode'] == 200 || res['success'] == true || res['id'] != null) {
-      Navigator.pop(context);
+    final dynamic rawOrderId = res['order'] != null ? res['order']['id'] : (res['id'] ?? res['orderId']);
+    if (res['statusCode'] == 200 || res['success'] == true || res['id'] != null || rawOrderId != null) {
+      Navigator.pop(context, rawOrderId);
     }
   }
 

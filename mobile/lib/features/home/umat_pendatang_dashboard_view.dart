@@ -30,7 +30,7 @@ class UmatPendatangDashboardView extends StatefulWidget {
 class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView> {
   String _activeProvinsi = 'DI YOGYAKARTA';
   String _activeKota = 'KOTA YOGYAKARTA';
-  List<Map<String, String>> _history = [];
+  List<Map<String, dynamic>> _history = [];
   Map<String, dynamic> _userData = {};
 
   String get _storageKey => 'kunjungan_pendatang_${widget.user['id'] ?? widget.user['userId'] ?? 'pendatang'}';
@@ -64,9 +64,11 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
       if (raw != null) {
         final decoded = jsonDecode(raw);
         if (decoded is Map<String, dynamic>) {
-          List<Map<String, String>> rawList = (decoded['history'] as List? ?? []).map((e) => Map<String, String>.from(e as Map)).toList();
-          final List<Map<String, String>> deduped = [];
+          final rawList = (decoded['history'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          final List<Map<String, dynamic>> deduped = [];
           for (final h in rawList) {
+            h['id'] ??= 'kunj_${(h['tanggal'] ?? '').hashCode.abs()}_${(h['alamat'] ?? '').hashCode.abs()}';
+            h['orderIds'] = (h['orderIds'] as List? ?? []).map((id) => int.tryParse(id.toString()) ?? 0).where((id) => id > 0).toList();
             if (deduped.isEmpty || deduped.last['tanggal'] != h['tanggal'] || deduped.last['alamat'] != h['alamat'] || deduped.last['kota'] != h['kota']) {
               deduped.add(h);
             }
@@ -82,7 +84,7 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
       }
     } catch (_) {}
     if (_history.isEmpty) {
-      setState(() => _history = [{'tanggal': '23 September 2026', 'provinsi': 'DKI JAKARTA', 'kota': 'KOTA JAKARTA UTARA', 'alamat': 'Kelapa Gading'}]);
+      setState(() => _history = [{'id': 'kunj_init', 'tanggal': '23 September 2026', 'provinsi': 'DKI JAKARTA', 'kota': 'KOTA JAKARTA UTARA', 'alamat': 'Kelapa Gading', 'orderIds': <int>[]}]);
     }
   }
 
@@ -93,25 +95,37 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
     } catch (_) {}
   }
 
+  int _countOrdersForKunjungan(Map<String, dynamic> item) {
+    final kunjId = item['id']?.toString() ?? '';
+    final orderIds = (item['orderIds'] as List?)?.map((e) => e.toString()).toSet() ?? {};
+    final kunjAlamat = (item['alamat'] ?? '').toString().trim().toLowerCase();
+    int count = 0;
+    for (final o in widget.orders) {
+      final rawNotes = o.notes;
+      if (kunjId.isNotEmpty && rawNotes.contains('[KunjunganId: $kunjId]')) {
+        count++;
+      } else if (orderIds.contains(o.id.toString())) {
+        count++;
+      } else if (kunjAlamat.isNotEmpty && o.locationName.trim().toLowerCase() == kunjAlamat && !rawNotes.contains('[KunjunganId:')) {
+        count++;
+      }
+    }
+    return count;
+  }
+
   void _openKunjunganDialog() {
     showDialog(
       context: context,
       builder: (ctx) => KunjunganDialog(
         onSaved: (tanggal, provinsi, kota, alamat) {
-          final item = {'tanggal': tanggal, 'provinsi': provinsi, 'kota': kota, 'alamat': alamat};
+          final item = {'id': 'kunj_${DateTime.now().millisecondsSinceEpoch}', 'tanggal': tanggal, 'provinsi': provinsi, 'kota': kota, 'alamat': alamat, 'orderIds': <int>[]};
           if (_history.isNotEmpty && _history.first['tanggal'] == tanggal && _history.first['alamat'] == alamat && _history.first['kota'] == kota) return;
-          setState(() {
-            _activeProvinsi = provinsi;
-            _activeKota = kota;
-            _history.insert(0, item);
-          });
+          setState(() { _activeProvinsi = provinsi; _activeKota = kota; _history.insert(0, item); });
           _persistData();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(children: [Icon(Icons.check_circle_rounded, color: Colors.white, size: 20), SizedBox(width: 10), Expanded(child: Text('Lokasi kunjungan berhasil disimpan!', style: TextStyle(fontWeight: FontWeight.bold)))]),
-              backgroundColor: const Color(0xFF0D9488), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), duration: const Duration(seconds: 2),
-            ),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: const Row(children: [Icon(Icons.check_circle_rounded, color: Colors.white, size: 20), SizedBox(width: 10), Expanded(child: Text('Lokasi kunjungan berhasil disimpan!', style: TextStyle(fontWeight: FontWeight.bold)))]),
+            backgroundColor: const Color(0xFF0D9488), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), duration: const Duration(seconds: 2),
+          ));
           _openKunjunganDetail(item);
         },
       ),
@@ -119,15 +133,20 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
   }
 
   void _openKunjunganDetail(Map<String, dynamic> item) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => KunjunganDetailScreen(kunjungan: item, user: _userData.isNotEmpty ? _userData : widget.user, orders: widget.orders, onRefresh: widget.onRefresh))).then((_) => widget.onRefresh());
+    Navigator.push(context, MaterialPageRoute(builder: (_) => KunjunganDetailScreen(
+      kunjungan: item, user: _userData.isNotEmpty ? _userData : widget.user, orders: widget.orders, onRefresh: widget.onRefresh,
+      onUpdateKunjungan: (up) {
+        final idx = _history.indexWhere((h) => h['id'] == up['id'] || (h['tanggal'] == up['tanggal'] && h['alamat'] == up['alamat']));
+        if (idx != -1) setState(() => _history[idx] = up);
+        _persistData();
+      },
+    ))).then((_) => widget.onRefresh());
   }
 
   void _deleteHistory(int idx) {
     setState(() => _history.removeAt(idx));
     _persistData();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: const Text('Riwayat kunjungan dihapus'), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 1), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Riwayat kunjungan dihapus'), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 1), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))));
   }
 
   void _confirmLogout() {
@@ -214,18 +233,13 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
           width: double.infinity, height: 48,
           child: OutlinedButton.icon(
             onPressed: () {
-              final targetUser = Map<String, dynamic>.from(_userData.isNotEmpty ? _userData : widget.user);
+              final tu = Map<String, dynamic>.from(_userData.isNotEmpty ? _userData : widget.user);
               if (_history.isNotEmpty) {
-                targetUser['kunjungan'] = _history.first;
-                targetUser['provinsi'] = _history.first['provinsi'];
-                targetUser['kota'] = _history.first['kota'];
-                targetUser['alamat'] = _history.first['alamat'];
-                targetUser['alamat_kunjungan'] = _history.first['alamat'];
+                tu['kunjungan'] = _history.first;
+                tu['provinsi'] = tu['kota'] = tu['alamat'] = tu['alamat_kunjungan'] = _history.first['alamat'];
+                tu['provinsi'] = _history.first['provinsi']; tu['kota'] = _history.first['kota'];
               }
-              Navigator.push(context, MaterialPageRoute(builder: (_) => UmatDashboardView(user: targetUser, orders: widget.orders, onRefresh: widget.onRefresh, onLogout: widget.onLogout))).then((_) {
-                widget.onRefresh();
-                _loadSavedData();
-              });
+              Navigator.push(context, MaterialPageRoute(builder: (_) => UmatDashboardView(user: tu, orders: widget.orders, onRefresh: widget.onRefresh, onLogout: widget.onLogout))).then((_) { widget.onRefresh(); _loadSavedData(); });
             },
             icon: const Icon(Icons.assignment_turned_in_rounded, size: 20, color: Color(0xFF1E5399)),
             label: const Text('PELAYANAN & RIWAYAT PERMINTAAN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Color(0xFF1E5399))),
@@ -256,7 +270,7 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
           )
         else
           ..._history.asMap().entries.map((entry) {
-            final idx = entry.key, item = entry.value;
+            final idx = entry.key, item = entry.value, count = _countOrdersForKunjungan(item);
             return Card(
               margin: const EdgeInsets.only(bottom: 10), elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Color(0xFFE2E8F0))),
@@ -273,9 +287,15 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(4)), child: Text(item['tanggal'] ?? '', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E5399)))),
+                            Row(
+                              children: [
+                                Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(4)), child: Text(item['tanggal']?.toString() ?? '', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E5399)))),
+                                const SizedBox(width: 6),
+                                Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: count > 0 ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(4)), child: Text('$count Pelayanan', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: count > 0 ? const Color(0xFF059669) : const Color(0xFF64748B)))),
+                              ],
+                            ),
                             const SizedBox(height: 4),
-                            Text(item['alamat'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A))),
+                            Text(item['alamat']?.toString() ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A))),
                             Text('${item['kota'] ?? ''}, ${item['provinsi'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
                           ],
                         ),
@@ -294,16 +314,15 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
 
   @override
   Widget build(BuildContext context) {
-    final name = _userData['fullName'] ?? _userData['full_name'] ?? widget.user['fullName'] ?? widget.user['full_name'] ?? 'Umat Pendatang';
-    final keuskupan = _userData['keuskupanName'] ?? _userData['keuskupan_name'] ?? widget.user['keuskupanName'] ?? widget.user['keuskupan_name'] ?? '-';
-    final paroki = _userData['parokiName'] ?? _userData['paroki_name'] ?? widget.user['parokiName'] ?? widget.user['paroki_name'] ?? '-';
-    final kotaAsal = _userData['kabupatenKotaName'] ?? _userData['kota_name'] ?? widget.user['kabupatenKotaName'] ?? widget.user['kota_name'] ?? '-';
-    String provAsal = _userData['provinsiName'] ?? _userData['provinsi_name'] ?? widget.user['provinsiName'] ?? widget.user['provinsi_name'] ?? '';
-    if (provAsal.isEmpty || provAsal == '-') {
-      final ku = kotaAsal.toUpperCase();
-      provAsal = ku.contains('JAKARTA') ? 'DKI JAKARTA' : ku.contains('TANGERANG') ? 'BANTEN' : (ku.contains('BANDUNG') || ku.contains('BOGOR') || ku.contains('BEKASI')) ? 'JAWA BARAT' : ku.contains('YOGYA') ? 'DI YOGYAKARTA' : '-';
-    }
-    final alamatAsal = _userData['address'] ?? _userData['alamat'] ?? widget.user['address'] ?? widget.user['alamat'] ?? '-';
+    final u = _userData.isNotEmpty ? _userData : widget.user;
+    final name = u['fullName'] ?? u['full_name'] ?? 'Umat Pendatang';
+    final keuskupan = u['keuskupanName'] ?? u['keuskupan_name'] ?? '-';
+    final paroki = u['parokiName'] ?? u['paroki_name'] ?? '-';
+    final kotaAsal = u['kabupatenKotaName'] ?? u['kota_name'] ?? '-';
+    final rawProv = u['provinsiName'] ?? u['provinsi_name'] ?? '';
+    final ku = kotaAsal.toUpperCase();
+    final provAsal = (rawProv.isNotEmpty && rawProv != '-') ? rawProv : (ku.contains('JAKARTA') ? 'DKI JAKARTA' : ku.contains('TANGERANG') ? 'BANTEN' : (ku.contains('BANDUNG') || ku.contains('BOGOR') || ku.contains('BEKASI')) ? 'JAWA BARAT' : ku.contains('YOGYA') ? 'DI YOGYAKARTA' : '-');
+    final alamatAsal = u['address'] ?? u['alamat'] ?? '-';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),

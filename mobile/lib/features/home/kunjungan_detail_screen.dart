@@ -13,7 +13,16 @@ class KunjunganDetailScreen extends StatefulWidget {
   final List<Order> orders;
   final VoidCallback onRefresh;
 
-  const KunjunganDetailScreen({super.key, required this.kunjungan, required this.user, required this.orders, required this.onRefresh});
+  final void Function(Map<String, dynamic> updated)? onUpdateKunjungan;
+
+  const KunjunganDetailScreen({
+    super.key,
+    required this.kunjungan,
+    required this.user,
+    required this.orders,
+    required this.onRefresh,
+    this.onUpdateKunjungan,
+  });
 
   @override
   State<KunjunganDetailScreen> createState() => _KunjunganDetailScreenState();
@@ -25,16 +34,44 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _orders = List.from(widget.orders);
+    _orders = widget.orders.where(_orderBelongsToThisKunjungan).toList();
     _loadOrders();
+  }
+
+  bool _orderBelongsToThisKunjungan(Order o) {
+    final rawIds = widget.kunjungan['orderIds'];
+    if (rawIds is List && rawIds.isNotEmpty) {
+      final ids = rawIds.map((e) => int.tryParse(e.toString())).whereType<int>().toSet();
+      if (ids.contains(o.id)) return true;
+    }
+    final kunjId = widget.kunjungan['id']?.toString() ?? '';
+    if (kunjId.isNotEmpty && o.notes.contains('[KunjunganId: $kunjId]')) return true;
+    if (!o.notes.contains('[KunjunganId:')) {
+      final alamat = (widget.kunjungan['alamat'] ?? '').toString().trim().toLowerCase();
+      if (alamat.isNotEmpty) {
+        final loc = o.locationName.trim().toLowerCase(), addr = o.addressDetail.trim().toLowerCase();
+        if (loc == alamat || addr == alamat) return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _loadOrders() async {
     final rawId = widget.user['id'] ?? widget.user['userId'] ?? widget.user['user_id'];
     final userId = rawId != null ? int.tryParse(rawId.toString()) : null;
-    if (userId != null) {
-      final fetched = await ApiService.getOrders(userId: userId);
-      if (mounted) setState(() => _orders = fetched);
+    if (userId == null) return;
+    final fetched = await ApiService.getOrders(userId: userId);
+    if (!mounted) return;
+    final filtered = fetched.where(_orderBelongsToThisKunjungan).toList();
+    setState(() => _orders = filtered);
+    final List curIds = List.from(widget.kunjungan['orderIds'] ?? []);
+    bool changed = false;
+    for (final o in filtered) {
+      if (!curIds.contains(o.id)) { curIds.add(o.id); changed = true; }
+    }
+    if (changed) {
+      widget.kunjungan['orderIds'] = curIds;
+      widget.onUpdateKunjungan?.call(widget.kunjungan);
     }
   }
 
@@ -54,17 +91,14 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
     visitUser['alamat_kunjungan'] = alamatKunjungan;
 
     showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
+      context: context, isScrollControlled: true, backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      backgroundColor: Colors.white,
       builder: (ctx) => ConstrainedBox(
         constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
         child: Padding(
           padding: const EdgeInsets.all(22.0),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
               const SizedBox(height: 16),
@@ -80,8 +114,7 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
                     final categories = (snapshot.data ?? []).where((c) => c['is_active'] != false).toList();
                     if (categories.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(16.0), child: Text('Tidak ada kategori pelayanan aktif')));
                     return ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: categories.length,
+                      shrinkWrap: true, itemCount: categories.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (_, index) {
                         final cat = categories[index];
@@ -102,7 +135,18 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
                           onTap: () async {
                             Navigator.pop(ctx);
                             final screen = isPerm ? CreatePerminyakanScreen(userId: userId, user: visitUser) : isKedu ? CreateKedukaanScreen(userId: userId, user: visitUser) : CreateOrderScreen(initialCategoryId: catId, categoryName: name, user: visitUser);
-                            await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+                            final res = await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+                            if (res != null) {
+                              final createdId = int.tryParse(res.toString());
+                              if (createdId != null) {
+                                final List curIds = List.from(widget.kunjungan['orderIds'] ?? []);
+                                if (!curIds.contains(createdId)) {
+                                  curIds.add(createdId);
+                                  widget.kunjungan['orderIds'] = curIds;
+                                  widget.onUpdateKunjungan?.call(widget.kunjungan);
+                                }
+                              }
+                            }
                             await _loadOrders();
                             widget.onRefresh();
                           },
@@ -125,13 +169,9 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
     Color bg = Colors.amber.shade50, fg = Colors.amber.shade800;
     String label = 'MENUNGGU';
     final s = status.toUpperCase();
-    if (s == 'COMPLETED' || s == 'DONE') {
-      bg = Colors.green.shade50; fg = Colors.green.shade700; label = 'SELESAI';
-    } else if (s == 'APPROVED' || s == 'ASSIGNED' || s == 'ACCEPTED' || s == 'CONFIRMED') {
-      bg = Colors.blue.shade50; fg = Colors.blue.shade700; label = 'DITERIMA';
-    } else if (s == 'REJECTED' || s == 'CANCELLED' || s == 'DECLINED' || s == 'FAIL') {
-      bg = Colors.red.shade50; fg = Colors.red.shade700; label = 'DITOLAK';
-    }
+    if (s == 'COMPLETED' || s == 'DONE') { bg = Colors.green.shade50; fg = Colors.green.shade700; label = 'SELESAI'; }
+    else if (s == 'APPROVED' || s == 'ASSIGNED' || s == 'ACCEPTED' || s == 'CONFIRMED') { bg = Colors.blue.shade50; fg = Colors.blue.shade700; label = 'DITERIMA'; }
+    else if (s == 'REJECTED' || s == 'CANCELLED' || s == 'DECLINED' || s == 'FAIL') { bg = Colors.red.shade50; fg = Colors.red.shade700; label = 'DITOLAK'; }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8), border: Border.all(color: fg.withValues(alpha: 0.3))),
@@ -142,8 +182,7 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
   String _formatDate(String raw) {
     if (raw.isEmpty) return '-';
     try {
-      final clean = raw.contains('T') ? raw.split('T').first : raw;
-      final parts = clean.split('-');
+      final parts = (raw.contains('T') ? raw.split('T').first : raw).split('-');
       if (parts.length == 3) return '${parts[2]}/${parts[1]}/${parts[0]}';
     } catch (_) {}
     return raw;
@@ -169,7 +208,11 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
             children: [
               const Icon(Icons.location_on_rounded, size: 20, color: Color(0xFF1E5399)),
               const SizedBox(width: 8),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(alamat.isNotEmpty ? alamat : '-', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))), const SizedBox(height: 2), Text('$kota, $prov', style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)))])),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(alamat.isNotEmpty ? alamat : '-', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A))),
+                const SizedBox(height: 2),
+                Text('$kota, $prov', style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
+              ])),
             ],
           ),
         ],
@@ -206,16 +249,14 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
     final userId = rawId != null ? int.tryParse(rawId.toString()) : null;
     final userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Umat';
 
-    final List<Map<String, dynamic>> rows = [];
-    for (final o in _orders) {
-      if (o.items.isNotEmpty) {
-        for (final item in o.items) {
-          rows.add({'order': o, 'date': item.scheduledDate.isNotEmpty ? item.scheduledDate : o.scheduledDate, 'title': item.itemName, 'status': item.status});
-        }
-      } else {
-        rows.add({'order': o, 'date': o.scheduledDate, 'title': o.categoryName, 'status': o.status});
-      }
-    }
+    final rows = [
+      for (final o in _orders)
+        if (o.items.isNotEmpty)
+          for (final item in o.items)
+            {'order': o, 'date': item.scheduledDate.isNotEmpty ? item.scheduledDate : o.scheduledDate, 'title': item.itemName, 'status': item.status}
+        else
+          {'order': o, 'date': o.scheduledDate, 'title': o.categoryName, 'status': o.status},
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

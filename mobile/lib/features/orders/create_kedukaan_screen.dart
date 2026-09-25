@@ -586,6 +586,8 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
     setState(() => _isLoading = true);
 
+    final km = widget.user?['kunjungan'] is Map ? (widget.user!['kunjungan'] as Map) : null;
+    final kunjId = km?['id']?.toString() ?? '';
     final firstMisa = _misaList.first;
     final notes = [
       'Misa: ${firstMisa.itemName}',
@@ -593,8 +595,8 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
       'Hubungan: $_selectedHubungan',
       'Tgl Meninggal: ${_tanggalMeninggalController.text}',
       'Waktu Meninggal: $_waktuMeninggal',
-      if (_catatanController.text.isNotEmpty)
-        'Catatan: ${_catatanController.text}',
+      if (_catatanController.text.isNotEmpty) 'Catatan: ${_catatanController.text}',
+      if (kunjId.isNotEmpty) '[KunjunganId: $kunjId]',
     ].join(' | ');
 
     final res = await ApiService.createOrder(
@@ -631,19 +633,9 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
       SnackBar(
         content: Row(
           children: [
-            Icon(
-              isSuccess
-                  ? Icons.check_circle_outline_rounded
-                  : Icons.error_outline_rounded,
-              color: Colors.white,
-            ),
+            Icon(isSuccess ? Icons.check_circle_outline_rounded : Icons.error_outline_rounded, color: Colors.white),
             const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                isSuccess ? 'Permintaan Misa Kedukaan berhasil dikirim' : (res['message'] ?? 'Gagal membuat pesanan misa'),
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ),
+            Expanded(child: Text(isSuccess ? 'Permintaan Misa Kedukaan berhasil dikirim' : (res['message'] ?? 'Gagal membuat pesanan misa'), style: const TextStyle(fontWeight: FontWeight.w600))),
           ],
         ),
         backgroundColor: isSuccess ? Colors.green.shade700 : Colors.red.shade700,
@@ -654,7 +646,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     );
 
     if (isSuccess) {
-      Navigator.pop(context);
+      Navigator.pop(context, rawOrderId);
     }
   }
 
