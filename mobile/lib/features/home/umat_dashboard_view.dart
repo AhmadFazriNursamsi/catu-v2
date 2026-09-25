@@ -214,23 +214,16 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
 
   @override
   Widget build(BuildContext context) {
-    final String userName =
-        widget.user['fullName'] ?? widget.user['full_name'] ?? 'Umat';
-    final String pengurusPos =
-        widget.user['pengurusPosition'] ?? widget.user['pengurus_position'] ?? '';
-    final String? startDate =
-        widget.user['jabatanStartDate'] ?? widget.user['jabatan_start_date'];
-    final String? endDate =
-        widget.user['jabatanEndDate'] ?? widget.user['jabatan_end_date'];
-    final int? startYear =
-        widget.user['jabatanStartYear'] ?? widget.user['jabatan_start_year'];
-    final int? endYear =
-        widget.user['jabatanEndYear'] ?? widget.user['jabatan_end_year'];
-    final String accountStatus =
-        widget.user['accountStatus'] ?? widget.user['account_status'] ?? 'PENDING';
+    final String userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Umat';
+    final String pengurusPos = widget.user['pengurusPosition'] ?? widget.user['pengurus_position'] ?? '';
+    final String? startDate = widget.user['jabatanStartDate'] ?? widget.user['jabatan_start_date'];
+    final String? endDate = widget.user['jabatanEndDate'] ?? widget.user['jabatan_end_date'];
+    final int? startYear = widget.user['jabatanStartYear'] ?? widget.user['jabatan_start_year'];
+    final int? endYear = widget.user['jabatanEndYear'] ?? widget.user['jabatan_end_year'];
+    final String accountStatus = widget.user['accountStatus'] ?? widget.user['account_status'] ?? 'PENDING';
     final bool isApproved = accountStatus == 'APPROVED';
-
-    String positionTitle = 'Umat (Anggota)';
+    final role = (widget.user['role'] ?? widget.user['role_code'] ?? '').toString().toUpperCase();
+    String positionTitle = role == 'UMAT_PENDATANG' ? 'Umat Pendatang' : 'Umat (Anggota)';
     if (_isKoordinator) {
       positionTitle = 'Koordinator Keuskupan';
     } else if (pengurusPos == 'KETUA') {
@@ -240,11 +233,9 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     } else if (pengurusPos == 'SEKRETARIS') {
       positionTitle = 'Umat — Sekretaris';
     }
-
-    final String periodeText =
-        (startDate != null && endDate != null && startDate.isNotEmpty && endDate.isNotEmpty)
-            ? '$startDate - $endDate'
-            : (startYear != null && endYear != null ? '$startYear - $endYear' : '');
+    final String periodeText = (startDate != null && endDate != null && startDate.isNotEmpty && endDate.isNotEmpty)
+        ? '$startDate - $endDate'
+        : (startYear != null && endYear != null ? '$startYear - $endYear' : '');
 
     // ── Histori Tab ──
     if (_currentNavIndex == 1) {
@@ -316,6 +307,15 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  if (Navigator.canPop(context)) ...[
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF0F172A), size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

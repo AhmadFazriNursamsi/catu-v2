@@ -5,36 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
-import '../../core/services/language_service.dart';
-import '../../core/widgets/liquid_bottom_nav_bar.dart';
-import '../orders/histori_screen.dart';
-import '../orders/schedule_screen.dart';
-import '../profile/main_menu_screen.dart';
 import 'kunjungan_detail_screen.dart';
 import 'kunjungan_dialog.dart';
-
-List<LiquidNavItem> _buildNavItems() => [
-      LiquidNavItem(
-        icon: Icons.home_outlined,
-        activeIcon: Icons.home_rounded,
-        label: LanguageService.tr('nav_home'),
-      ),
-      LiquidNavItem(
-        icon: Icons.history_outlined,
-        activeIcon: Icons.history_rounded,
-        label: LanguageService.tr('nav_history'),
-      ),
-      LiquidNavItem(
-        icon: Icons.calendar_today_outlined,
-        activeIcon: Icons.calendar_today_rounded,
-        label: LanguageService.tr('nav_schedule'),
-      ),
-      LiquidNavItem(
-        icon: Icons.menu_outlined,
-        activeIcon: Icons.menu_rounded,
-        label: LanguageService.tr('nav_profile'),
-      ),
-    ];
+import 'umat_dashboard_view.dart';
 
 class UmatPendatangDashboardView extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -55,7 +28,6 @@ class UmatPendatangDashboardView extends StatefulWidget {
 }
 
 class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView> {
-  int _currentNavIndex = 0;
   String _activeProvinsi = 'DI YOGYAKARTA';
   String _activeKota = 'KOTA YOGYAKARTA';
   List<Map<String, String>> _history = [];
@@ -208,9 +180,12 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Profile',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Profile', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
+              IconButton(icon: const Icon(Icons.logout, color: Colors.redAccent), tooltip: 'Logout', onPressed: widget.onLogout),
+            ],
           ),
           const SizedBox(height: 14),
           _buildBox('Nama', name),
@@ -221,7 +196,20 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
           _buildBox('Alamat Asal', alamatAsal),
           const SizedBox(height: 10),
           _buildActionButton('PELAYANAN YANG SEDANG DIMINTA DAN HISTORY', () {
-            setState(() => _currentNavIndex = 1);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => UmatDashboardView(
+                  user: _userData.isNotEmpty ? _userData : widget.user,
+                  orders: widget.orders,
+                  onRefresh: widget.onRefresh,
+                  onLogout: widget.onLogout,
+                ),
+              ),
+            ).then((_) {
+              widget.onRefresh();
+              _loadSavedData();
+            });
           }),
           const SizedBox(height: 12),
           _buildActionButton('LOKASI YANG SEDANG DIKUNJUNGI', _openKunjunganDialog),
@@ -297,51 +285,9 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
 
   @override
   Widget build(BuildContext context) {
-    final userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Umat';
-    final rawId = widget.user['id'] ?? widget.user['userId'];
-    final userId = rawId != null ? int.tryParse(rawId.toString()) : null;
-
-    if (_currentNavIndex == 1) {
-      return Scaffold(
-        body: HistoriScreen(orders: widget.orders, userName: userName, userId: userId, onRefresh: widget.onRefresh),
-        bottomNavigationBar: LiquidBottomNavBar(
-          selectedIndex: _currentNavIndex,
-          onTabSelected: (i) => setState(() => _currentNavIndex = i),
-          items: _buildNavItems(),
-        ),
-      );
-    }
-
-    if (_currentNavIndex == 2) {
-      return Scaffold(
-        body: ScheduleScreen(orders: widget.orders, userName: userName, userId: userId, onRefresh: widget.onRefresh),
-        bottomNavigationBar: LiquidBottomNavBar(
-          selectedIndex: _currentNavIndex,
-          onTabSelected: (i) => setState(() => _currentNavIndex = i),
-          items: _buildNavItems(),
-        ),
-      );
-    }
-
-    if (_currentNavIndex == 3) {
-      return Scaffold(
-        body: MainMenuScreen(user: widget.user, onRefresh: widget.onRefresh, onLogout: widget.onLogout),
-        bottomNavigationBar: LiquidBottomNavBar(
-          selectedIndex: _currentNavIndex,
-          onTabSelected: (i) => setState(() => _currentNavIndex = i),
-          items: _buildNavItems(),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(child: _buildHomeBody()),
-      bottomNavigationBar: LiquidBottomNavBar(
-        selectedIndex: _currentNavIndex,
-        onTabSelected: (i) => setState(() => _currentNavIndex = i),
-        items: _buildNavItems(),
-      ),
     );
   }
 }
