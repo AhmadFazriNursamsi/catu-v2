@@ -222,8 +222,9 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     final int? endYear = widget.user['jabatanEndYear'] ?? widget.user['jabatan_end_year'];
     final String accountStatus = widget.user['accountStatus'] ?? widget.user['account_status'] ?? 'PENDING';
     final bool isApproved = accountStatus == 'APPROVED';
-    final role = (widget.user['role'] ?? widget.user['role_code'] ?? '').toString().toUpperCase();
-    String positionTitle = role == 'UMAT_PENDATANG' ? 'Umat Pendatang' : 'Umat (Anggota)';
+    final role = (widget.user['role'] ?? widget.user['role_code'] ?? widget.user['roleCode'] ?? '').toString().toUpperCase();
+    final bool isPendatang = role == 'UMAT_PENDATANG' || widget.user['kunjungan'] != null;
+    String positionTitle = isPendatang ? 'Umat Pendatang' : 'Umat (Anggota)';
     if (_isKoordinator) {
       positionTitle = 'Koordinator Keuskupan';
     } else if (pengurusPos == 'KETUA') {
@@ -307,13 +308,8 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (Navigator.canPop(context)) ...[
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF0F172A), size: 20),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => Navigator.pop(context),
-                    ),
+                  if (isPendatang && Navigator.canPop(context)) ...[
+                    IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF0F172A), size: 20), padding: EdgeInsets.zero, constraints: const BoxConstraints(), onPressed: () => Navigator.pop(context)),
                     const SizedBox(width: 10),
                   ],
                   Expanded(
