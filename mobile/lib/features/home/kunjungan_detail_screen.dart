@@ -101,13 +101,16 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
     final rawId = widget.user['id'] ?? widget.user['userId'] ?? widget.user['user_id'];
     final userId = rawId != null ? int.tryParse(rawId.toString()) : null;
     final visitUser = Map<String, dynamic>.from(widget.user);
-    final alamatKunjungan = widget.kunjungan['alamat'] ?? '';
-    final kotaKunjungan = widget.kunjungan['kota'] ?? '';
-    final provKunjungan = widget.kunjungan['provinsi'] ?? '';
+    final alamatKunjungan = widget.kunjungan['alamat'] ?? '', kotaKunjungan = widget.kunjungan['kota'] ?? '', provKunjungan = widget.kunjungan['provinsi'] ?? '';
     if (alamatKunjungan.toString().isNotEmpty) {
       visitUser['address'] = '$alamatKunjungan, $kotaKunjungan, $provKunjungan'.replaceAll(RegExp(r'(, )+'), ', ').trim();
       visitUser['alamat'] = visitUser['address'];
     }
+    visitUser['kunjungan'] = widget.kunjungan;
+    visitUser['provinsi'] = provKunjungan;
+    visitUser['kota'] = kotaKunjungan;
+    visitUser['kabupatenKota'] = kotaKunjungan;
+    visitUser['alamat_kunjungan'] = alamatKunjungan;
 
     showModalBottomSheet(
       context: context,

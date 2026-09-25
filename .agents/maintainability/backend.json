@@ -13,7 +13,7 @@
     "backend/src/modules/chat/chat.service.ts": 585,
     "backend/src/modules/auth/auth.service.ts": 1492,
     "backend/src/modules/master-data/master-data.service.ts": 414,
-    "backend/src/modules/orders/orders.service.ts": 1597
+    "backend/src/modules/orders/orders.service.ts": 1582
   },
   "functions": {
     "backend/src/news.service.ts": [

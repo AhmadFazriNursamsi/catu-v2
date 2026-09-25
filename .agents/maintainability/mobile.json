@@ -26,9 +26,9 @@
     "mobile/lib/features/news/news_detail_screen.dart": 526,
     "mobile/lib/features/news/public_news_screen.dart": 655,
     "mobile/lib/features/orders/schedule_screen.dart": 1828,
-    "mobile/lib/features/orders/create_perminyakan_screen.dart": 1271,
+    "mobile/lib/features/orders/create_perminyakan_screen.dart": 1257,
     "mobile/lib/features/orders/histori_screen.dart": 1215,
-    "mobile/lib/features/orders/create_kedukaan_screen.dart": 1649,
+    "mobile/lib/features/orders/create_kedukaan_screen.dart": 1636,
     "mobile/lib/features/orders/order_detail_screen.dart": 3774,
     "mobile/lib/features/notifications/notification_screen.dart": 977
   },

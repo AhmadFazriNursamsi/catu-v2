@@ -71,40 +71,24 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
   async createOrder(dto: CreateOrderDto) {
     const orderNum = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
     let userId = dto.userId && dto.userId > 0 ? dto.userId : null;
-    if (userId) {
-      const uCheck = await this.dataSource.query('SELECT id FROM auth_users WHERE id = $1', [userId]);
-      if (uCheck.length === 0) userId = null;
-    }
-    if (!userId) {
-      const uFirst = await this.dataSource.query('SELECT id FROM auth_users ORDER BY id ASC LIMIT 1');
-      userId = uFirst.length > 0 ? uFirst[0].id : null;
-    }
+    if (userId && (await this.dataSource.query('SELECT id FROM auth_users WHERE id = $1', [userId])).length === 0) userId = null;
+    if (!userId) userId = (await this.dataSource.query('SELECT id FROM auth_users ORDER BY id ASC LIMIT 1'))[0]?.id || null;
 
-    // Fetch user profile default hierarchy if DTO doesn't specify custom location hierarchy
-    let kId = dto.keuskupanId;
-    let pId = dto.parokiId;
-    let wId = dto.wilayahId;
-    let lId = dto.lingkunganId;
-    let kabId = dto.kabupatenKotaId;
+    // Check if user is UMAT_PENDATANG
+    const uRole = await this.dataSource.query(`SELECT r.code FROM auth_users u JOIN roles r ON u.role_id = r.id WHERE u.id = $1`, [userId]);
+    const isPendatang = uRole[0]?.code === 'UMAT_PENDATANG';
+    let kId: number | null | undefined = dto.keuskupanId, pId: number | null | undefined = dto.parokiId, wId: number | null | undefined = dto.wilayahId, lId: number | null | undefined = dto.lingkunganId, kabId: number | null | undefined = dto.kabupatenKotaId;
 
-    if (!kId || !pId || !kabId) {
-      const prof = await this.dataSource.query(
-        `SELECT keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id FROM user_profiles WHERE user_id = $1`,
-        [userId],
-      );
-      if (prof.length > 0) {
-        kId = kId || prof[0].keuskupan_id || 1;
-        pId = pId || prof[0].paroki_id || 10;
-        wId = wId || prof[0].wilayah_id || 101;
-        lId = lId || prof[0].lingkungan_id || 1001;
-        kabId = kabId || prof[0].kabupaten_kota_id || 3175;
-      } else {
-        kId = kId || 1;
-        pId = pId || 10;
-        wId = wId || 101;
-        lId = lId || 1001;
-        kabId = kabId || 3175;
-      }
+    if (isPendatang) {
+      kId = null; pId = null; wId = null; lId = null;
+      if (!kabId) kabId = (await this.dataSource.query(`SELECT kabupaten_kota_id FROM user_profiles WHERE user_id = $1`, [userId]))[0]?.kabupaten_kota_id || null;
+    } else if (!kId || !pId || !kabId) {
+      const prof = (await this.dataSource.query(`SELECT keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id FROM user_profiles WHERE user_id = $1`, [userId]))[0];
+      kId = kId || prof?.keuskupan_id || 1;
+      pId = pId || prof?.paroki_id || 10;
+      wId = wId || prof?.wilayah_id || 101;
+      lId = lId || prof?.lingkungan_id || 1001;
+      kabId = kabId || prof?.kabupaten_kota_id || 3175;
     }
 
     const orderResult = await this.dataSource.query(
@@ -539,8 +523,9 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
           whereClauses.push(`(COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++} OR ${assignedOrHandoverClause})`);
           queryParams.push(romo.kabupaten_kota_id);
         } else if (romo.paroki_id) {
-          whereClauses.push(`(COALESCE(o.paroki_id, p.paroki_id) = $${paramIdx++} OR ${assignedOrHandoverClause})`);
+          whereClauses.push(`((o.paroki_id = $${paramIdx} OR (o.paroki_id IS NULL AND o.kabupaten_kota_id IS NULL AND p.paroki_id = $${paramIdx})) OR ${assignedOrHandoverClause})`);
           queryParams.push(romo.paroki_id);
+          paramIdx++;
         } else if (romo.kabupaten_kota_id) {
           whereClauses.push(`(COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++} OR ${assignedOrHandoverClause})`);
           queryParams.push(romo.kabupaten_kota_id);

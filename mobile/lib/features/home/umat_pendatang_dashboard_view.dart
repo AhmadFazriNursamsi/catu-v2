@@ -196,11 +196,19 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
           _buildBox('Alamat Asal', alamatAsal),
           const SizedBox(height: 10),
           _buildActionButton('PELAYANAN YANG SEDANG DIMINTA DAN HISTORY', () {
+            final targetUser = Map<String, dynamic>.from(_userData.isNotEmpty ? _userData : widget.user);
+            if (_history.isNotEmpty) {
+              targetUser['kunjungan'] = _history.first;
+              targetUser['provinsi'] = _history.first['provinsi'];
+              targetUser['kota'] = _history.first['kota'];
+              targetUser['alamat'] = _history.first['alamat'];
+              targetUser['alamat_kunjungan'] = _history.first['alamat'];
+            }
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => UmatDashboardView(
-                  user: _userData.isNotEmpty ? _userData : widget.user,
+                  user: targetUser,
                   orders: widget.orders,
                   onRefresh: widget.onRefresh,
                   onLogout: widget.onLogout,
