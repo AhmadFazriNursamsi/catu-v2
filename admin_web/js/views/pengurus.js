@@ -355,7 +355,5 @@ function renderPengurusTable(filteredPengurus) {
         </div>
       `;
     }
-      `;
-    }
 
     // ── Tab: Romo Paroki ──
