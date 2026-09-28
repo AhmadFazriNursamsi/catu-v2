@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/widgets/liquid_bottom_nav_bar.dart';
@@ -792,6 +793,13 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
               // Horizontal Cards for "Daftar Permintaan Pelayanan" (All parish orders)
               _buildParishRequestsWidget(),
+              const SizedBox(height: 18),
+              const Center(
+                child: Text(
+                  'Versi Aplikasi: ${AppConstants.appVersion}',
+                  style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
+                ),
+              ),
             ],
           ),
         ),
