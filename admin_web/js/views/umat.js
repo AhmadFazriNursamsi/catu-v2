@@ -177,7 +177,7 @@ function renderUmatTable(filteredUmat) {
               <th class="px-6 py-4">ASAL KEUSKUPAN</th>
               <th class="px-6 py-4">ASAL PAROKI</th>
               <th class="px-6 py-4">ASAL LINGKUNGAN & WILAYAH</th>
-              <th class="px-6 py-4">ASAL ALAMAT / KOTA</th>
+              <th class="px-6 py-4">ASAL KOTA</th>
               <th class="px-6 py-4 text-center">STATUS</th>
               <th class="px-6 py-4 text-right">AKSI</th>
             </tr>
@@ -214,7 +214,7 @@ function renderUmatTable(filteredUmat) {
                   <span class="truncate block max-w-[180px]">${u.lingkungan_name || u.wilayah_name ? `${u.lingkungan_name || '-'}${u.wilayah_name ? ` (${u.wilayah_name})` : ''}` : '-'}</span>
                 </td>
                 <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                  <span class="truncate block max-w-[180px]">${u.address || u.kota_name || '-'}</span>
+                  <span class="truncate block max-w-[180px]">${u.kota_name || u.address || '-'}</span>
                 </td>
                 <td class="px-6 py-4 text-center">
                   <span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full ${u.account_status === 'APPROVED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'} font-bold text-[10.5px]">

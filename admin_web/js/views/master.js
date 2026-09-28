@@ -1,5 +1,121 @@
 // ── Master Data Main View ──
+    const MASTER_SUB_TABS = [
+      { id: 'keuskupan', icon: 'landmark', label: 'Keuskupan' },
+      { id: 'paroki', icon: 'church', label: 'Paroki' },
+      { id: 'wilayah', icon: 'map-pin', label: 'Wilayah' },
+      { id: 'lingkungan', icon: 'home', label: 'Lingkungan' },
+      { id: 'ordo', icon: 'cross', label: 'Ordo / Kongregasi' },
+      { id: 'provinsi', icon: 'map', label: 'Provinsi' },
+      { id: 'kabupaten_kota', icon: 'building-2', label: 'Kabupaten / Kota' },
+      { id: 'services', icon: 'clipboard-list', label: 'Kategori Pelayanan' },
+      { id: 'roles', icon: 'shield-check', label: 'Jenis User / Role' },
+      { id: 'positions', icon: 'award', label: 'Jabatan & Struktur' }
+    ];
+
+    function scrollMasterTabs(amount) {
+      const container = document.getElementById('master-subtabs-bar');
+      if (container) {
+        container.scrollBy({ left: amount, behavior: 'smooth' });
+      }
+    }
+
+    function navigateMasterSubTab(direction) {
+      const currentSub = state.masterSubTab || 'paroki';
+      const currentIndex = MASTER_SUB_TABS.findIndex(t => t.id === currentSub);
+      if (currentIndex === -1) return;
+
+      let newIndex = currentIndex + direction;
+      if (newIndex < 0) newIndex = MASTER_SUB_TABS.length - 1;
+      else if (newIndex >= MASTER_SUB_TABS.length) newIndex = 0;
+
+      const nextTab = MASTER_SUB_TABS[newIndex];
+      if (nextTab) {
+        setMasterSubTab(nextTab.id);
+      }
+    }
+
+    function autoScrollActiveMasterSubTab() {
+      setTimeout(() => {
+        const activeBtn = document.querySelector('#master-subtabs-bar button[data-active="true"]');
+        if (activeBtn) {
+          activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+      }, 50);
+    }
+
+    // Keyboard listener: panah kiri / kanan untuk beralih sub-tab Master Data
+    if (!window._masterKeyNavAttached) {
+      window._masterKeyNavAttached = true;
+      window.addEventListener('keydown', (e) => {
+        if (state.currentTab !== 'master') return;
+
+        const target = e.target;
+        if (
+          target &&
+          (target.tagName === 'INPUT' ||
+            target.tagName === 'TEXTAREA' ||
+            target.tagName === 'SELECT' ||
+            target.isContentEditable ||
+            target.closest('[data-modal]') ||
+            target.closest('.fixed:not([data-agentation-dialog]):not(aside)'))
+        ) {
+          return;
+        }
+
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          navigateMasterSubTab(1);
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          navigateMasterSubTab(-1);
+        }
+      });
+    }
+
+    const getEntityLabel = (s) => {
+      if (s === 'keuskupan') return 'Keuskupan';
+      if (s === 'paroki') return 'Paroki';
+      if (s === 'wilayah') return 'Wilayah';
+      if (s === 'lingkungan') return 'Lingkungan';
+      if (s === 'ordo') return 'Ordo / Kongregasi';
+      if (s === 'provinsi') return 'Provinsi';
+      if (s === 'kabupaten_kota') return 'Kabupaten / Kota';
+      if (s === 'services') return 'Kategori Pelayanan';
+      if (s === 'roles') return 'Jenis User / Peran Pengguna';
+      if (s === 'positions') return 'Jabatan & Struktur Pengurus / Romo';
+      return s;
+    };
+
+    const getEntityDescription = (s) => {
+      if (s === 'keuskupan') return 'Hierarki Keuskupan Agung & Keuskupan Sufragan se-Indonesia';
+      if (s === 'paroki') return 'Daftar Gereja Paroki Katolik terhubung dengan Keuskupan induk';
+      if (s === 'wilayah') return 'Struktur Wilayah Rohani / Teritorial gereja di bawah naungan Paroki';
+      if (s === 'lingkungan') return 'Komunitas basis Umat Katolik di tingkat RT/RW Lingkungan';
+      if (s === 'ordo') return 'Daftar Ordo & Kongregasi Religius (Imam & Biarawan On-Demand)';
+      if (s === 'provinsi') return 'Daftar Provinsi Republik Indonesia untuk domisili Umat dan Paroki';
+      if (s === 'kabupaten_kota') return 'Daftar Kabupaten dan Kota Administrasi terhubung dengan Provinsi';
+      if (s === 'services') return 'Katalog Sakramen, Misa, dan Layanan Pastoral Gereja';
+      if (s === 'roles') return 'Hak akses dan peran akun pengguna mobile & web portal';
+      if (s === 'positions') return 'Struktur hierarki jabatan resmi (Ketua Lingkungan, Kepala Romo, Sekretaris)';
+      return 'Pengelolaan data master gereja terintegrasi PostgreSQL';
+    };
+
+    const getEntityIcon = (s) => {
+      if (s === 'keuskupan') return 'landmark';
+      if (s === 'paroki') return 'church';
+      if (s === 'wilayah') return 'map-pin';
+      if (s === 'lingkungan') return 'home';
+      if (s === 'ordo') return 'cross';
+      if (s === 'provinsi') return 'map';
+      if (s === 'kabupaten_kota') return 'building-2';
+      if (s === 'services') return 'clipboard-list';
+      if (s === 'roles') return 'shield-check';
+      if (s === 'positions') return 'award';
+      return 'database';
+    };
+
     function renderMasterTab() {
+      autoScrollActiveMasterSubTab();
       const sub = state.masterSubTab || 'paroki';
       const search = (state.masterSearch || '').toLowerCase().trim();
       const isReadOnlyForCurrentAdmin = ['services', 'roles', 'positions'].includes(sub) && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser());
@@ -27,77 +143,34 @@
         return true;
       });
 
-      const getEntityLabel = (s) => {
-        if (s === 'keuskupan') return 'Keuskupan';
-        if (s === 'paroki') return 'Paroki';
-        if (s === 'wilayah') return 'Wilayah';
-        if (s === 'lingkungan') return 'Lingkungan';
-        if (s === 'ordo') return 'Ordo / Kongregasi';
-        if (s === 'provinsi') return 'Provinsi';
-        if (s === 'kabupaten_kota') return 'Kabupaten / Kota';
-        if (s === 'services') return 'Kategori Pelayanan';
-        if (s === 'roles') return 'Jenis User / Peran Pengguna';
-        if (s === 'positions') return 'Jabatan & Struktur Pengurus / Romo';
-        return s;
-      };
-
-      const getEntityDescription = (s) => {
-        if (s === 'keuskupan') return 'Hierarki Keuskupan Agung & Keuskupan Sufragan se-Indonesia';
-        if (s === 'paroki') return 'Daftar Gereja Paroki Katolik terhubung dengan Keuskupan induk';
-        if (s === 'wilayah') return 'Struktur Wilayah Rohani / Teritorial gereja di bawah naungan Paroki';
-        if (s === 'lingkungan') return 'Komunitas basis Umat Katolik di tingkat RT/RW Lingkungan';
-        if (s === 'ordo') return 'Daftar Ordo & Kongregasi Religius (Imam & Biarawan On-Demand)';
-        if (s === 'provinsi') return 'Daftar Provinsi Republik Indonesia untuk domisili Umat dan Paroki';
-        if (s === 'kabupaten_kota') return 'Daftar Kabupaten dan Kota Administrasi terhubung dengan Provinsi';
-        if (s === 'services') return 'Katalog Sakramen, Misa, dan Layanan Pastoral Gereja';
-        if (s === 'roles') return 'Hak akses dan peran akun pengguna mobile & web portal';
-        if (s === 'positions') return 'Struktur hierarki jabatan resmi (Ketua Lingkungan, Kepala Romo, Sekretaris)';
-        return 'Pengelolaan data master gereja terintegrasi PostgreSQL';
-      };
-
-      const getEntityIcon = (s) => {
-        if (s === 'keuskupan') return 'landmark';
-        if (s === 'paroki') return 'church';
-        if (s === 'wilayah') return 'map-pin';
-        if (s === 'lingkungan') return 'home';
-        if (s === 'ordo') return 'cross';
-        if (s === 'provinsi') return 'map';
-        if (s === 'kabupaten_kota') return 'building-2';
-        if (s === 'services') return 'clipboard-list';
-        if (s === 'roles') return 'shield-check';
-        if (s === 'positions') return 'award';
-        return 'database';
-      };
-
       return `
         <div class="space-y-6 animate-fade-in">
-          <!-- Sub-Tab Navigation Bar -->
-          <div class="bg-white/95 backdrop-blur-md rounded-2xl p-2 shadow-xs border border-slate-200/90 flex overflow-x-auto custom-scrollbar gap-1.5 sm:gap-2">
-            ${[
-              { id: 'keuskupan', icon: 'landmark', label: 'Keuskupan' },
-              { id: 'paroki', icon: 'church', label: 'Paroki' },
-              { id: 'wilayah', icon: 'map-pin', label: 'Wilayah' },
-              { id: 'lingkungan', icon: 'home', label: 'Lingkungan' },
-              { id: 'ordo', icon: 'cross', label: 'Ordo / Kongregasi' },
-              { id: 'provinsi', icon: 'map', label: 'Provinsi' },
-              { id: 'kabupaten_kota', icon: 'building-2', label: 'Kabupaten / Kota' },
-              { id: 'services', icon: 'clipboard-list', label: 'Kategori Pelayanan' },
-              { id: 'roles', icon: 'shield-check', label: 'Jenis User / Role' },
-              { id: 'positions', icon: 'award', label: 'Jabatan & Struktur' }
-            ].map(tab => {
-              const active = sub === tab.id;
-              return `
-                <button onclick="setMasterSubTab('${tab.id}')"
-                  class="flex-shrink-0 whitespace-nowrap flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-all ${
-                    active 
-                      ? 'bg-blue-950 text-white shadow-xs' 
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-blue-950'
-                  }">
-                  <i data-lucide="${tab.icon}" class="w-4 h-4 ${active ? 'text-blue-400' : 'text-slate-400'}"></i>
-                  <span class="tracking-wide">${tab.label}</span>
-                </button>
-              `;
-            }).join('')}
+          <!-- Sub-Tab Navigation Bar with Keyboard & Scroll Controls -->
+          <div class="relative flex items-center gap-1.5 sm:gap-2">
+            <button type="button" onclick="scrollMasterTabs(-240)" class="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-xl bg-white border border-slate-200/90 text-slate-600 hover:text-blue-950 hover:bg-slate-50 items-center justify-center shadow-xs transition" title="Geser Kiri (Keyboard: ⬅️)">
+              <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </button>
+            <div id="master-subtabs-bar" class="flex-1 bg-white/95 backdrop-blur-md rounded-2xl p-2 shadow-xs border border-slate-200/90 flex overflow-x-auto custom-scrollbar gap-1.5 sm:gap-2 scroll-smooth">
+              ${MASTER_SUB_TABS.map(tab => {
+                const active = sub === tab.id;
+                return `
+                  <button type="button" onclick="setMasterSubTab('${tab.id}')"
+                    data-subtab="${tab.id}"
+                    data-active="${active}"
+                    class="flex-shrink-0 whitespace-nowrap flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-all ${
+                      active 
+                        ? 'bg-blue-950 text-white shadow-xs' 
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-blue-950'
+                    }">
+                    <i data-lucide="${tab.icon}" class="w-4 h-4 ${active ? 'text-blue-400' : 'text-slate-400'}"></i>
+                    <span class="tracking-wide">${tab.label}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+            <button type="button" onclick="scrollMasterTabs(240)" class="hidden sm:flex flex-shrink-0 w-8 h-8 rounded-xl bg-white border border-slate-200/90 text-slate-600 hover:text-blue-950 hover:bg-slate-50 items-center justify-center shadow-xs transition" title="Geser Kanan (Keyboard: ➡️)">
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
           </div>
 
           <!-- Main Table Card -->

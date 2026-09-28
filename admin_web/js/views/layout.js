@@ -30,7 +30,7 @@
             ${isOpen ? `
               <div>
                 <h2 class="text-sm font-extrabold text-white tracking-wide">CATU</h2>
-                <p class="text-[9px] font-bold text-blue-300 tracking-wider">PELAYANAN PASTORAL</p>
+                <p class="text-[9px] font-bold text-blue-300 tracking-wider">Cari & Bantu</p>
               </div>
             ` : ''}
           </div>
@@ -78,9 +78,9 @@
             </button>
 
             <!-- Toggle Sidebar Button (Paling Bawah) -->
-            <button onclick="toggleSidebar()" class="w-full py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-semibold flex items-center justify-center space-x-2 transition" title="Tutup Sidebar">
+            <button onclick="toggleSidebar()" class="w-full py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-semibold flex items-center justify-center space-x-2 transition" title="Tutup Menu">
               <i data-lucide="chevron-left" class="w-4 h-4"></i>
-              <span>Tutup Sidebar</span>
+              <span>Tutup Menu</span>
             </button>
           </div>
         `;
@@ -147,16 +147,18 @@
               <!-- Nav Items -->
               <nav class="${(isOpen || isMobileOpen) ? 'p-3 space-y-4' : 'p-2 space-y-3'}">
                 <div>
-                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Pelayanan Pastoral</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
+                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Dashboard</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
-                    ${renderNavItem('overview', 'layout-dashboard', 'Ringkasan Pastoral')}
-                    ${renderNavItem('orders', 'clipboard-list', 'Permohonan Sakramen', (state.orders || []).filter(o => getEffectiveOrderStatus(o) === 'PENDING').length, 'bg-blue-600')}
+                    ${renderNavItem('overview', 'layout-dashboard', 'Dashboard')}
+                    ${renderNavItem('orders', 'clipboard-list', 'Daftar Pelayanan', (state.orders || []).filter(o => getEffectiveOrderStatus(o) === 'PENDING').length, 'bg-blue-600')}
+                    ${renderNavItem('master', 'database', 'Master Data')}
                   </div>
                 </div>
 
                 <div>
-                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Data Keumatan</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
+                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Daftar Users</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
+                    ${(pendingApprovalsCount > 0 || state.currentTab === 'approvals') ? renderNavItem('approvals', 'shield-check', 'Persetujuan Pendaftaran', pendingApprovalsCount, 'bg-blue-600') : ''}
                     ${renderNavItem('umat', 'users', 'Umat Katolik', activeUmatCount, 'bg-blue-600')}
                     ${renderNavItem('umat_pendatang', 'map-pin', 'Umat Pendatang', activeUmatPendatangCount, 'bg-blue-600')}
                     ${renderNavItem('pengurus', 'briefcase', 'Pengurus Lingkungan', activePengurusCount, 'bg-blue-600')}
@@ -165,15 +167,15 @@
                   </div>
                 </div>
 
+                ${(typeof isSuperAdminUser === 'function' && isSuperAdminUser()) ? `
                 <div>
-                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Tata Kelola & Wilayah</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
+                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Sistem & Aplikasi</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
-                    ${(pendingApprovalsCount > 0 || state.currentTab === 'approvals') ? renderNavItem('approvals', 'shield-check', 'Persetujuan Pendaftaran', pendingApprovalsCount, 'bg-blue-600') : ''}
-                    ${renderNavItem('master', 'database', 'Master Data')}
-                    ${typeof isSuperAdminUser === 'function' && isSuperAdminUser() ? renderNavItem('activity_logs', 'scroll-text', 'Log Aktivitas') : ''}
-                    ${typeof isSuperAdminUser === 'function' && isSuperAdminUser() ? renderNavItem('settings', 'settings', 'Pengaturan Portal') : ''}
+                    ${renderNavItem('activity_logs', 'scroll-text', 'Log Aktivitas')}
+                    ${renderNavItem('settings', 'download', 'Download Apps')}
                   </div>
                 </div>
+                ` : ''}
               </nav>
             </div>
 
@@ -189,11 +191,6 @@
                   <i data-lucide="menu" class="w-5 h-5"></i>
                 </button>
                 <h1 class="text-base sm:text-xl font-extrabold text-slate-900 tracking-tight truncate">${getTabTitle(state.currentTab)}</h1>
-              </div>
-              <div class="flex items-center space-x-2">
-                <button id="refreshBtn" class="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" title="Muat Ulang Data">
-                  <i data-lucide="rotate-cw" class="w-4 h-4"></i>
-                </button>
               </div>
             </header>
 
@@ -252,8 +249,8 @@
     }
 
     function getTabTitle(tab) {
-      if (tab === 'overview') return 'Ringkasan Pastoral';
-      if (tab === 'orders') return 'Permohonan Pelayanan Sakramen';
+      if (tab === 'overview') return 'Dashboard';
+      if (tab === 'orders') return 'Daftar Pelayanan';
       if (tab === 'umat') return 'Data Umat Katolik';
       if (tab === 'umat_pendatang') return 'Data Umat Pendatang';
       if (tab === 'pengurus') return 'Data Pengurus Lingkungan';
@@ -263,7 +260,7 @@
       if (tab === 'master') return 'Master Data';
       if (tab === 'activity_logs') return 'Log Aktivitas & Audit Trail';
       if (tab === 'chat') return 'Monitoring Komunikasi Chat';
-      if (tab === 'settings') return 'Pengaturan Portal';
+      if (tab === 'settings') return 'Download Apps';
       return tab;
     }
 
@@ -310,13 +307,6 @@
           state.currentUser = null;
           state.token = '';
           renderApp();
-        });
-      }
-
-      const refreshBtn = document.getElementById('refreshBtn');
-      if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => {
-          loadDashboardData();
         });
       }
 

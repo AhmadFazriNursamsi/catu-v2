@@ -17,8 +17,8 @@ function renderSettingsTab() {
   return `
     <div class="max-w-5xl space-y-6">
       <div>
-        <p class="text-xs font-bold uppercase tracking-[0.18em] text-amber-600">Konfigurasi Portal</p>
-        <h2 class="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">Pengaturan Aplikasi</h2>
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-amber-600">Distribusi Aplikasi</p>
+        <h2 class="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">Download Apps</h2>
         <p class="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-500">
           Kelola distribusi aplikasi Android CATU. QR code di bawah mengarah ke URL download publik yang sudah dikonfigurasi.
         </p>

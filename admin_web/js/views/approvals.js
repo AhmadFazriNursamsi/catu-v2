@@ -1,116 +1,121 @@
-// ── Registration Approvals View & Confirmation Modal ──
+// ── Helper: Approval Role Badge ──
+function renderApprovalRoleBadge(u) {
+  const r = (u.role_code || '').toUpperCase();
+  const pos = (u.pengurus_position || u.pengurusPosition || '').toString().toLowerCase();
+  const isKoordinator = pos.includes('koordinator') || r === 'KOORDINATOR';
+
+  if (isKoordinator) {
+    return `
+      <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-900 border border-indigo-300 font-bold text-xs shadow-2xs">
+        <i data-lucide="award" class="w-3.5 h-3.5 text-indigo-600"></i>
+        <span>KOORDINATOR (KEUSKUPAN)</span>
+      </span>
+    `;
+  }
+  const bgClass = r === 'UMAT' ? 'bg-blue-50 text-blue-900 border-blue-200'
+    : r === 'PENGURUS_LINGKUNGAN' ? 'bg-indigo-50 text-indigo-900 border-indigo-200'
+    : r === 'ROMO_PAROKI' ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+    : r === 'ROMO_ORDO' ? 'bg-purple-50 text-purple-900 border-purple-200'
+    : 'bg-amber-50 text-amber-900 border-amber-200';
+  return `
+    <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl ${bgClass} border font-bold text-xs shadow-2xs">
+      <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+      <span>${u.role_name || u.role_code}</span>
+    </span>
+  `;
+}
+
+// ── Helper: Approval Actions ──
+function renderApprovalActions(u) {
+  const r = (u.role_code || u.roleCode || '').toUpperCase();
+  const pos = (u.pengurus_position || u.pengurusPosition || '').toString().toLowerCase();
+  const isKoordinator = pos.includes('koordinator') || r === 'KOORDINATOR';
+
+  if (r === 'UMAT' && !isKoordinator) {
+    return `
+      <div class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80 font-bold text-[11px] shadow-2xs" title="Persetujuan pendaftaran Umat dilakukan oleh Pengurus Lingkungan via aplikasi mobile CATU">
+        <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-600"></i>
+        <span>Verifikasi Pengurus Lingkungan</span>
+      </div>
+    `;
+  }
+  return `
+    <div class="inline-flex items-center justify-end space-x-2">
+      <button onclick="event.stopPropagation(); approveUserAction('${u.id}', 'APPROVED')" 
+        class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center space-x-1 transition shadow-md shadow-emerald-600/20 transform hover:-translate-y-0.5 cursor-pointer">
+        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+        <span>Setujui</span>
+      </button>
+      <button onclick="event.stopPropagation(); approveUserAction('${u.id}', 'REJECTED')" 
+        class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center space-x-1 transition shadow-md shadow-rose-600/20 transform hover:-translate-y-0.5 cursor-pointer">
+        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        <span>Tolak</span>
+      </button>
+    </div>
+  `;
+}
+
 function renderApprovalsTable(pendings) {
-      return `<div class="overflow-x-auto">
-              <table class="w-full min-w-[760px] text-left text-xs">
-                <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
-                  <tr>
-                    <th class="px-6 py-4">PEMOHON AKUN</th>
-                    <th class="px-6 py-4">NO. WHATSAPP</th>
-                    <th class="px-6 py-4">PERAN DIAJUKAN</th>
-                    <th class="px-6 py-4">KEUSKUPAN & DOMISILI</th>
-                    <th class="px-6 py-4">PAROKI & LINGKUNGAN</th>
-                    <th class="px-6 py-4 text-right">AKSI VERIFIKASI</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-                  ${pendings.length === 0 ? `
-                    <tr>
-                      <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
-                        <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center mx-auto">
-                          <i data-lucide="check-circle-2" class="w-7 h-7"></i>
-                        </div>
-                        <p class="font-bold text-slate-700 text-sm">Semua pendaftaran telah diverifikasi</p>
-                      </td>
-                    </tr>
-                  ` : pendings.map(u => `
-                    <tr class="hover:bg-slate-50/80 transition duration-150 group">
-                      <td class="px-6 py-4">
-                        <p class="font-bold text-slate-900 text-sm tracking-tight">${u.full_name || 'Pengguna Baru'}</p>
-                        <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
-                      </td>
-                      <td class="px-6 py-4 font-bold text-slate-800">
-                        <span class="inline-flex items-center space-x-1.5 text-xs">
-                          <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
-                          <span>${u.phone_number}</span>
-                        </span>
-                      </td>
-                      <td class="px-6 py-4">
-                        ${(() => {
-                          const r = (u.role_code || '').toUpperCase();
-                          const pos = (u.pengurus_position || u.pengurusPosition || '').toString().toLowerCase();
-                          const isKoordinator = pos.includes('koordinator') || r === 'KOORDINATOR';
+  return `<div class="overflow-x-auto">
+          <table class="w-full min-w-[760px] text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
+              <tr>
+                <th class="px-6 py-4">PEMOHON AKUN</th>
+                <th class="px-6 py-4">NO. WHATSAPP</th>
+                <th class="px-6 py-4">PERAN DIAJUKAN</th>
+                <th class="px-6 py-4">KEUSKUPAN & DOMISILI</th>
+                <th class="px-6 py-4">PAROKI & LINGKUNGAN</th>
+                <th class="px-6 py-4 text-right">AKSI VERIFIKASI</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+              ${pendings.length === 0 ? `
+                <tr>
+                  <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
+                    <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center mx-auto">
+                      <i data-lucide="check-circle-2" class="w-7 h-7"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 text-sm">Semua pendaftaran telah diverifikasi</p>
+                  </td>
+                </tr>
+              ` : pendings.map(u => `
+                <tr onclick="viewUserProfileModal('${u.id}')" class="hover:bg-slate-50/80 transition duration-150 cursor-pointer group">
+                  <td class="px-6 py-4">
+                    <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${u.full_name || 'Pengguna Baru'}</p>
+                    <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                  </td>
+                  <td class="px-6 py-4 font-bold text-slate-800">
+                    <span class="inline-flex items-center space-x-1.5 text-xs">
+                      <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
+                      <span>${u.phone_number}</span>
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    ${renderApprovalRoleBadge(u)}
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="inline-flex flex-col">
+                      ${u.keuskupan_name ? `<span class="font-bold text-slate-900 text-xs">${u.keuskupan_name}</span>` : ''}
+                      <span class="text-[11px] text-slate-500">${u.kota_name || u.address || '-'}</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="inline-flex flex-col">
+                      <span class="font-bold text-slate-800 text-xs">${u.paroki_name || '-'}</span>
+                      ${u.lingkungan_name ? `<span class="text-[11px] text-slate-400">Lkg. ${u.lingkungan_name}</span>` : ''}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    ${renderApprovalActions(u)}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>`;
+}
 
-                          if (isKoordinator) {
-                            return `
-                              <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-900 border border-indigo-300 font-bold text-xs shadow-2xs">
-                                <i data-lucide="award" class="w-3.5 h-3.5 text-indigo-600"></i>
-                                <span>KOORDINATOR (KEUSKUPAN)</span>
-                              </span>
-                            `;
-                          }
-                          const bgClass = r === 'UMAT' ? 'bg-blue-50 text-blue-900 border-blue-200'
-                            : r === 'PENGURUS_LINGKUNGAN' ? 'bg-indigo-50 text-indigo-900 border-indigo-200'
-                            : r === 'ROMO_PAROKI' ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-                            : r === 'ROMO_ORDO' ? 'bg-purple-50 text-purple-900 border-purple-200'
-                            : 'bg-amber-50 text-amber-900 border-amber-200';
-                          return `
-                            <span class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl ${bgClass} border font-bold text-xs shadow-2xs">
-                              <i data-lucide="shield" class="w-3.5 h-3.5"></i>
-                              <span>${u.role_name || u.role_code}</span>
-                            </span>
-                          `;
-                        })()}
-                      </td>
-                      <td class="px-6 py-4">
-                        <div class="inline-flex flex-col">
-                          ${u.keuskupan_name ? `<span class="font-bold text-slate-900 text-xs">${u.keuskupan_name}</span>` : ''}
-                          <span class="text-[11px] text-slate-500">${u.kota_name || u.address || '-'}</span>
-                        </div>
-                      </td>
-                      <td class="px-6 py-4">
-                        <div class="inline-flex flex-col">
-                          <span class="font-bold text-slate-800 text-xs">${u.paroki_name || '-'}</span>
-                          ${u.lingkungan_name ? `<span class="text-[11px] text-slate-400">Lkg. ${u.lingkungan_name}</span>` : ''}
-                        </div>
-                      </td>
-                      <td class="px-6 py-4 text-right">
-                        ${(() => {
-                          const r = (u.role_code || u.roleCode || '').toUpperCase();
-                          const pos = (u.pengurus_position || u.pengurusPosition || '').toString().toLowerCase();
-                          const isKoordinator = pos.includes('koordinator') || r === 'KOORDINATOR';
-
-                          if (r === 'UMAT' && !isKoordinator) {
-                            return `
-                              <div class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80 font-bold text-[11px] shadow-2xs" title="Persetujuan pendaftaran Umat dilakukan oleh Pengurus Lingkungan via aplikasi mobile CATU">
-                                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-600"></i>
-                                <span>Verifikasi Pengurus Lingkungan</span>
-                              </div>
-                            `;
-                          }
-                          return `
-                            <div class="inline-flex items-center justify-end space-x-2">
-                              <button onclick="approveUserAction('${u.id}', 'APPROVED')" 
-                                class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center space-x-1 transition shadow-md shadow-emerald-600/20 transform hover:-translate-y-0.5 cursor-pointer">
-                                <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                                <span>Setujui</span>
-                              </button>
-                              <button onclick="approveUserAction('${u.id}', 'REJECTED')" 
-                                class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center space-x-1 transition shadow-md shadow-rose-600/20 transform hover:-translate-y-0.5 cursor-pointer">
-                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                                <span>Tolak</span>
-                              </button>
-                            </div>
-                          `;
-                        })()}
-                      </td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>`;
-    }
-
-    function renderApprovalsTab() {
+function renderApprovalsTab() {
       const q = (state.approvalsSearch || '').toLowerCase().trim();
       const hasFilter = state.approvalsSearch || state.approvalsFilterRole || state.approvalsFilterParoki;
 

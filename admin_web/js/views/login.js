@@ -9,13 +9,6 @@
 
             <div class="hero-main">
               <div class="eyebrow">PORTAL ADMINISTRASI</div>
-              <h1>
-                Pelayanan Gereja
-                <span>dalam Satu Sistem</span>
-              </h1>
-              <p class="hero-description">
-                Kelola data umat, administrasi paroki, dan berbagai layanan gereja secara mudah, aman, dan terintegrasi.
-              </p>
 
               <div class="features">
                 <div class="feature">
@@ -26,10 +19,10 @@
                   </div>
                 </div>
                 <div class="feature">
-                  <div class="feature-icon"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+                  <div class="feature-icon"><i data-lucide="cross" class="w-5 h-5"></i></div>
                   <div class="feature-body">
-                    <h3>Administrasi Paroki</h3>
-                    <p>Kelola kegiatan dan layanan dengan efisien.</p>
+                    <h3>Kedukaan & Perminyakan</h3>
+                    <p>Misa Kedukaan & Sakramen Minyak Suci orang sakit.</p>
                   </div>
                 </div>
                 <div class="feature">
