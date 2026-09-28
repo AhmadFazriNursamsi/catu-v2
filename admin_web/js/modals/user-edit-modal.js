@@ -2,7 +2,10 @@
     function renderEditUserModal() {
       const u = state.activeEditUser;
       if (!u) return '';
-      const roleCode = (u.role_code || u.roleCode || 'UMAT').toUpperCase();
+      const rawRole = (u.role_code || u.roleCode || 'UMAT').toUpperCase();
+      const posLower = (u.pengurus_position || '').toLowerCase();
+      const isKoordinatorUser = posLower.includes('koordinator') || rawRole === 'KOORDINATOR' || rawRole === 'KOORDINATOR_KEUSKUPAN';
+      const roleCode = isKoordinatorUser ? 'KOORDINATOR' : rawRole;
       const status = (u.account_status || u.accountStatus || 'APPROVED').toUpperCase();
       const birthDateVal = u.birth_date ? String(u.birth_date).substring(0, 10) : '';
 
@@ -88,14 +91,13 @@
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label class="block font-extrabold text-slate-700 mb-1.5">Peran / Role Pengguna</label>
-                      <select id="editRoleCode" onchange="syncEditFormToState(); state.activeEditUser.role_code = this.value; renderApp();" ${roleCode === 'SUPERADMIN' && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser()) ? 'disabled' : ''} class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black text-blue-950 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition">
+                      <select id="editRoleCode" onchange="syncEditFormToState(); onEditRoleChanged(this.value);" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black text-blue-950 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition">
                         <option value="UMAT" ${roleCode === 'UMAT' ? 'selected' : ''}>Umat Katolik</option>
                         <option value="UMAT_PENDATANG" ${roleCode === 'UMAT_PENDATANG' ? 'selected' : ''}>Umat Pendatang</option>
                         <option value="PENGURUS_LINGKUNGAN" ${roleCode === 'PENGURUS_LINGKUNGAN' ? 'selected' : ''}>Pengurus Lingkungan</option>
+                        <option value="KOORDINATOR" ${roleCode === 'KOORDINATOR' ? 'selected' : ''}>Koordinator Keuskupan</option>
                         <option value="ROMO_PAROKI" ${roleCode === 'ROMO_PAROKI' ? 'selected' : ''}>Romo Paroki (Diosesan)</option>
                         <option value="ROMO_ORDO" ${roleCode === 'ROMO_ORDO' ? 'selected' : ''}>Romo Ordo (Religius)</option>
-                        <option value="ADMIN" ${roleCode === 'ADMIN' ? 'selected' : ''}>Administrator</option>
-                        ${(typeof isSuperAdminUser === 'function' && isSuperAdminUser()) || roleCode === 'SUPERADMIN' ? `<option value="SUPERADMIN" ${roleCode === 'SUPERADMIN' ? 'selected' : ''}>Super Admin</option>` : ''}
                       </select>
                     </div>
 
@@ -235,7 +237,7 @@
                 </div>
 
                 <!-- Section 4: Data Kepengurusan (Kondisional) -->
-                ${(roleCode === 'PENGURUS_LINGKUNGAN' || (u.pengurus_position || '').toLowerCase().includes('koordinator')) ? `
+                ${(roleCode === 'PENGURUS_LINGKUNGAN' || roleCode === 'KOORDINATOR' || (u.pengurus_position || '').toLowerCase().includes('koordinator')) ? `
                   <div class="bg-blue-50/40 p-5 rounded-2xl border border-blue-100/80 space-y-4 shadow-xs">
                     <h4 class="font-extrabold text-blue-950 flex items-center text-xs pb-1 border-b border-blue-100/80">
                       <i data-lucide="briefcase" class="w-4 h-4 mr-1.5 text-blue-700"></i>
@@ -245,10 +247,14 @@
                       <div>
                         <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pengurus / Koordinator *</label>
                         <select id="editPengurusPosition" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
-                          <option value="Ketua Lingkungan" ${u.pengurus_position === 'Ketua Lingkungan' ? 'selected' : ''}>Ketua Lingkungan (Pimpinan)</option>
-                          <option value="Wakil Ketua" ${u.pengurus_position === 'Wakil Ketua' ? 'selected' : ''}>Wakil Ketua</option>
-                          <option value="Sekretaris" ${u.pengurus_position === 'Sekretaris' ? 'selected' : ''}>Sekretaris</option>
-                          <option value="Koordinator" ${u.pengurus_position === 'Koordinator' ? 'selected' : ''}>Koordinator (Keuskupan)</option>
+                          ${roleCode === 'KOORDINATOR' ? `
+                            <option value="Koordinator" selected>Koordinator (Keuskupan)</option>
+                          ` : `
+                            <option value="Ketua Lingkungan" ${u.pengurus_position === 'Ketua Lingkungan' ? 'selected' : ''}>Ketua Lingkungan (Pimpinan)</option>
+                            <option value="Wakil Ketua" ${u.pengurus_position === 'Wakil Ketua' ? 'selected' : ''}>Wakil Ketua</option>
+                            <option value="Sekretaris" ${u.pengurus_position === 'Sekretaris' ? 'selected' : ''}>Sekretaris</option>
+                            <option value="Koordinator" ${u.pengurus_position === 'Koordinator' ? 'selected' : ''}>Koordinator (Keuskupan)</option>
+                          `}
                         </select>
                       </div>
                       <div>

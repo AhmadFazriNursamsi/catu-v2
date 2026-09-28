@@ -37,6 +37,32 @@ function renderEditUserHeader(u, uName, status, roleCode) {
       input.value = val;
     }
 
+    function onEditRoleChanged(newRole) {
+      if (!state.activeEditUser) return;
+      state.activeEditUser.role_code = newRole;
+      if (newRole === 'KOORDINATOR') {
+        state.activeEditUser.pengurus_position = 'Koordinator';
+      } else if (newRole === 'PENGURUS_LINGKUNGAN') {
+        if (!state.activeEditUser.pengurus_position || state.activeEditUser.pengurus_position === 'Koordinator') {
+          state.activeEditUser.pengurus_position = 'Ketua Lingkungan';
+        }
+      } else if (newRole === 'UMAT' || newRole === 'UMAT_PENDATANG') {
+        state.activeEditUser.pengurus_position = null;
+        state.activeEditUser.romo_position = null;
+      } else if (newRole === 'ROMO_PAROKI') {
+        if (!state.activeEditUser.romo_position) {
+          state.activeEditUser.romo_position = 'Romo Paroki';
+        }
+        state.activeEditUser.pengurus_position = null;
+      } else if (newRole === 'ROMO_ORDO') {
+        if (!state.activeEditUser.romo_position) {
+          state.activeEditUser.romo_position = 'Romo Ordo';
+        }
+        state.activeEditUser.pengurus_position = null;
+      }
+      renderApp();
+    }
+
 
     async function openEditUserModal(userId) {
       const u = state.users.find(x => String(x.id) === String(userId));
@@ -185,7 +211,37 @@ function renderEditUserHeader(u, uName, status, roleCode) {
       const curY = new Date().getFullYear();
       const isActOther = o => (o.is_jabatan_active !== false && o.isJabatanActive !== false) && (!(o.jabatan_end_year || o.jabatanEndYear) || parseInt(o.jabatan_end_year || o.jabatanEndYear) >= curY);
 
-      if (roleCode === 'PENGURUS_LINGKUNGAN' || (u.pengurus_position && u.pengurus_position.toLowerCase().includes('koordinator'))) {
+      const isKoor = roleCode === 'KOORDINATOR' || (payload.pengurusPosition || '').toLowerCase().includes('koordinator') || (u.pengurus_position && u.pengurus_position.toLowerCase().includes('koordinator'));
+
+      if (roleCode === 'KOORDINATOR' || isKoor) {
+        payload.roleCode = 'KOORDINATOR';
+        payload.pengurusPosition = 'Koordinator';
+        const sy = document.getElementById('editJabatanStartYear');
+        if (sy && sy.value) payload.jabatanStartYear = parseInt(sy.value);
+        const ey = document.getElementById('editJabatanEndYear');
+        if (ey && ey.value) payload.jabatanEndYear = parseInt(ey.value);
+        payload.isJabatanActive = payload.jabatanEndYear ? payload.jabatanEndYear >= curY : true;
+
+        const checkKeuskupanId = payload.keuskupanId || u.keuskupan_id || u.keuskupanId;
+        if (!checkKeuskupanId) {
+          state.editFormError = 'Koordinator Keuskupan wajib memilih Keuskupan.';
+          renderApp();
+          return;
+        }
+
+        const duplicateKoordinator = state.users.find(other => {
+          if (String(other.id) === String(u.id) || !['APPROVED', 'PENDING_APPROVAL'].includes((other.account_status || other.accountStatus || '').toUpperCase())) return false;
+          if (String(other.keuskupan_id || other.keuskupanId) !== String(checkKeuskupanId)) return false;
+          const oPos = (other.pengurus_position || other.pengurusPosition || '').toLowerCase();
+          const isOKoor = oPos.includes('koordinator') || (other.role_code || other.roleCode || '').toUpperCase().includes('KOORDINATOR');
+          return isOKoor && isActOther(other);
+        });
+        if (duplicateKoordinator) {
+          state.editFormError = `Keuskupan ini sudah memiliki Koordinator aktif (${duplicateKoordinator.full_name || duplicateKoordinator.fullName}). Hanya boleh ada 1 Koordinator aktif per keuskupan.`;
+          renderApp();
+          return;
+        }
+      } else if (roleCode === 'PENGURUS_LINGKUNGAN') {
         const pos = document.getElementById('editPengurusPosition');
         if (pos) payload.pengurusPosition = pos.value;
         const sy = document.getElementById('editJabatanStartYear');
@@ -196,7 +252,7 @@ function renderEditUserHeader(u, uName, status, roleCode) {
 
         // Check duplicate pengurus in lingkungan
         const checkLingkunganId = payload.lingkunganId || u.lingkungan_id;
-        if (checkLingkunganId && payload.pengurusPosition) {
+        if (checkLingkunganId && payload.pengurusPosition && payload.pengurusPosition !== 'Koordinator') {
           const duplicatePengurus = state.users.find(other => {
             if (String(other.id) === String(u.id) || !['APPROVED', 'PENDING_APPROVAL'].includes((other.account_status || other.accountStatus || '').toUpperCase())) return false;
             if (String(other.lingkungan_id || other.lingkunganId) !== String(checkLingkunganId)) return false;
@@ -215,24 +271,12 @@ function renderEditUserHeader(u, uName, status, roleCode) {
             return;
           }
         }
-
-        // Check duplicate koordinator in keuskupan
-        const checkKeuskupanId = payload.keuskupanId || u.keuskupan_id || u.keuskupanId;
-        const isKoor = (payload.pengurusPosition || '').toLowerCase().includes('koordinator') || roleCode === 'KOORDINATOR';
-        if (isKoor && checkKeuskupanId) {
-          const duplicateKoordinator = state.users.find(other => {
-            if (String(other.id) === String(u.id) || !['APPROVED', 'PENDING_APPROVAL'].includes((other.account_status || other.accountStatus || '').toUpperCase())) return false;
-            if (String(other.keuskupan_id || other.keuskupanId) !== String(checkKeuskupanId)) return false;
-            const oPos = (other.pengurus_position || other.pengurusPosition || '').toLowerCase();
-            const isOKoor = oPos.includes('koordinator') || (other.role_code || other.roleCode || '').toUpperCase() === 'KOORDINATOR';
-            return isOKoor && isActOther(other);
-          });
-          if (duplicateKoordinator) {
-            state.editFormError = `Keuskupan ini sudah memiliki Koordinator aktif (${duplicateKoordinator.full_name || duplicateKoordinator.fullName}). Hanya boleh ada 1 Koordinator aktif per keuskupan.`;
-            renderApp();
-            return;
-          }
-        }
+      } else if (roleCode === 'UMAT' || roleCode === 'UMAT_PENDATANG') {
+        payload.pengurusPosition = null;
+        payload.romoPosition = null;
+        payload.jabatanStartYear = null;
+        payload.jabatanEndYear = null;
+        payload.isJabatanActive = false;
       }
 
       if (roleCode === 'ROMO_PAROKI') {

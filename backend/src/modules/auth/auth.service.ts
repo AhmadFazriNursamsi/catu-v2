@@ -1190,7 +1190,10 @@ export class AuthService {
 
     if (dto.roleCode || (dto as any).role_code) {
       const targetRole = dto.roleCode || (dto as any).role_code;
-      const roleRes = await this.dataSource.query(`SELECT id FROM roles WHERE code = $1`, [targetRole]);
+      const roleRes = await this.dataSource.query(
+        `SELECT id FROM roles WHERE code = $1 OR (code = 'KOORDINATOR_KEUSKUPAN' AND $1 = 'KOORDINATOR') OR (code = 'KOORDINATOR' AND $1 = 'KOORDINATOR_KEUSKUPAN')`,
+        [targetRole],
+      );
       if (roleRes.length > 0) {
         await this.dataSource.query(`UPDATE auth_users SET role_id = $1 WHERE id = $2`, [roleRes[0].id, uid]);
       }
@@ -1207,7 +1210,40 @@ export class AuthService {
       : null;
     const targetPengurusPos = (dto as any).pengurusPosition ?? (dto as any).pengurus_position;
 
-    if (activeRoleCode === 'PENGURUS_LINGKUNGAN' || targetPengurusPos) {
+    const isKoordinator = activeRoleCode === 'KOORDINATOR' || activeRoleCode === 'KOORDINATOR_KEUSKUPAN' || (targetPengurusPos && String(targetPengurusPos).toLowerCase().includes('koordinator'));
+
+    if (isKoordinator) {
+      const targetKeuskupanId = (dto.keuskupanId !== undefined || (dto as any).keuskupan_id !== undefined)
+        ? (dto.keuskupanId ?? (dto as any).keuskupan_id)
+        : null;
+      let checkKeuskupanId = targetKeuskupanId;
+      if (!checkKeuskupanId) {
+        const curProf = await this.dataSource.query(`SELECT keuskupan_id FROM user_profiles WHERE user_id = $1`, [uid]);
+        checkKeuskupanId = curProf[0]?.keuskupan_id;
+      }
+      if (checkKeuskupanId) {
+        const existingKoordinator = await this.dataSource.query(
+          `SELECT u.id, p.full_name, p.pengurus_position
+           FROM user_profiles p
+           JOIN auth_users u ON p.user_id = u.id
+           JOIN roles r ON u.role_id = r.id
+           WHERE p.keuskupan_id = $1
+             AND u.id != $2
+             AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+             AND (
+               r.code LIKE '%KOORDINATOR%'
+               OR LOWER(p.pengurus_position) LIKE '%koordinator%'
+             )`,
+          [checkKeuskupanId, uid],
+        );
+        if (existingKoordinator.length > 0) {
+          const existingName = existingKoordinator[0].full_name;
+          throw new BadRequestException(
+            `Keuskupan ini sudah memiliki Koordinator aktif (${existingName}). Koordinator keuskupan hanya boleh 1 orang.`,
+          );
+        }
+      }
+    } else if (activeRoleCode === 'PENGURUS_LINGKUNGAN' || targetPengurusPos) {
       let checkLingkunganId = targetLingkunganId;
       if (!checkLingkunganId) {
         const curProf = await this.dataSource.query(`SELECT lingkungan_id FROM user_profiles WHERE user_id = $1`, [uid]);
@@ -1409,7 +1445,7 @@ export class AuthService {
       if (targetProf.length > 0) {
         const roleCode = targetProf[0].role_code;
         const pengurusPos = (targetProf[0].pengurus_position || '').toString().toLowerCase();
-        const isKoordinator = pengurusPos.includes('koordinator') || roleCode === 'KOORDINATOR';
+        const isKoordinator = pengurusPos.includes('koordinator') || roleCode === 'KOORDINATOR' || roleCode === 'KOORDINATOR_KEUSKUPAN';
 
         // Check if Koordinator in that Keuskupan already exists
         if (isKoordinator && targetProf[0].keuskupan_id) {
@@ -1540,9 +1576,9 @@ export class AuthService {
       SELECT
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE u.account_status = 'PENDING_APPROVAL') as pending_approvals,
-        COUNT(*) FILTER (WHERE u.account_status = 'PENDING_APPROVAL' AND (LOWER(p.pengurus_position) LIKE '%koordinator%' OR r.code = 'KOORDINATOR')) as pending_koordinator,
+        COUNT(*) FILTER (WHERE u.account_status = 'PENDING_APPROVAL' AND (LOWER(p.pengurus_position) LIKE '%koordinator%' OR r.code LIKE '%KOORDINATOR%')) as pending_koordinator,
         COUNT(*) FILTER (WHERE r.code = 'UMAT' AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) as total_umat,
-        COUNT(*) FILTER (WHERE LOWER(p.pengurus_position) LIKE '%koordinator%' OR r.code = 'KOORDINATOR') as total_koordinator,
+        COUNT(*) FILTER (WHERE LOWER(p.pengurus_position) LIKE '%koordinator%' OR r.code LIKE '%KOORDINATOR%') as total_koordinator,
         COUNT(*) FILTER (WHERE r.code = 'ROMO_PAROKI') as total_romo_paroki,
         COUNT(*) FILTER (WHERE r.code = 'ROMO_ORDO') as total_romo_ordo,
         COUNT(*) FILTER (WHERE r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) as total_pengurus,
@@ -1612,7 +1648,7 @@ export class AuthService {
 
     if (role && role !== 'ALL') {
       if (role === 'KOORDINATOR') {
-        whereClauses.push(`(LOWER(p.pengurus_position) LIKE '%koordinator%' OR r.code = 'KOORDINATOR')`);
+        whereClauses.push(`(LOWER(p.pengurus_position) LIKE '%koordinator%' OR r.code LIKE '%KOORDINATOR%')`);
       } else if (role === 'UMAT') {
         whereClauses.push(`(r.code = 'UMAT' AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%'))`);
       } else {
