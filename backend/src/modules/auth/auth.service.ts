@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ForbiddenException,
   HttpCode,
+  Logger,
 } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
@@ -28,6 +29,8 @@ import { FcmService } from "../../fcm.service";
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly jwtService: JwtService,
@@ -264,6 +267,63 @@ export class AuthService {
       [targetUserId, approverUserId, action, rejectionReason || null],
     );
 
+    // 🔔 Send in-app & FCM Push Notification to target Umat
+    try {
+      const approver = await this.dataSource.query(
+        `SELECT p.full_name, p.pengurus_position, l.name as lingkungan_name
+         FROM user_profiles p
+         LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+         WHERE p.user_id = $1`,
+        [approverUserId],
+      );
+      const approverName = approver[0]?.full_name || 'Pengurus Lingkungan';
+      const pos = approver[0]?.pengurus_position || 'Ketua Lingkungan';
+      const ling = approver[0]?.lingkungan_name ? ` (${approver[0].lingkungan_name})` : '';
+
+      if (action === 'APPROVE') {
+        const title = '🎉 Akun Anda Berhasil Disetujui!';
+        const message = `Selamat! Pendaftaran akun Anda telah disetujui oleh ${approverName} - ${pos}${ling}. Anda sekarang dapat masuk dan menggunakan seluruh layanan CATU.`;
+
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, title, body, type, is_read, created_at)
+           VALUES ($1, $2, $3, 'ACCOUNT_APPROVED', false, CURRENT_TIMESTAMP)`,
+          [targetUserId, title, message],
+        );
+
+        await this.fcmService.sendPushToUsers(targetUserId, {
+          title,
+          body: message,
+          data: {
+            type: 'ACCOUNT_APPROVED',
+            accountStatus: 'APPROVED',
+            targetUserId: targetUserId.toString(),
+          },
+        });
+      } else {
+        const title = '⚠️ Status Pendaftaran Akun CATU';
+        const message = `Pendaftaran akun Anda ditolak oleh ${approverName} - ${pos}${ling}.${rejectionReason ? ` Alasan: ${rejectionReason}` : ''}`;
+
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, title, body, type, is_read, created_at)
+           VALUES ($1, $2, $3, 'ACCOUNT_REJECTED', false, CURRENT_TIMESTAMP)`,
+          [targetUserId, title, message],
+        );
+
+        await this.fcmService.sendPushToUsers(targetUserId, {
+          title,
+          body: message,
+          data: {
+            type: 'ACCOUNT_REJECTED',
+            accountStatus: 'REJECTED',
+            rejectionReason: rejectionReason || '',
+            targetUserId: targetUserId.toString(),
+          },
+        });
+      }
+    } catch (notifErr: any) {
+      this.logger.error(`Error sending pengurus approval notification: ${notifErr.message}`);
+    }
+
     return {
       statusCode: 200,
       message: action === 'APPROVE' ? 'Umat berhasil disetujui!' : 'Pendaftaran umat berhasil ditolak.',
@@ -357,6 +417,68 @@ export class AuthService {
        VALUES ($1, $2, $3, $4)`,
       [targetUserId, approverUserId, action, rejectionReason || null],
     );
+
+    // 🔔 Send in-app & FCM Push Notification to target Romo
+    try {
+      const approver = await this.dataSource.query(
+        `SELECT p.full_name, p.romo_position, r.code as role_code, par.name as paroki_name, o.name as ordo_name
+         FROM user_profiles p
+         JOIN auth_users u ON p.user_id = u.id
+         JOIN roles r ON u.role_id = r.id
+         LEFT JOIN paroki par ON p.paroki_id = par.id
+         LEFT JOIN ordo o ON p.ordo_id = o.id
+         WHERE p.user_id = $1`,
+        [approverUserId],
+      );
+      const approverName = approver[0]?.full_name || 'Ketua Romo';
+      const isOrdo = approver[0]?.role_code === 'ROMO_ORDO';
+      const contextTitle = isOrdo
+        ? `Ketua Romo Ordo ${approver[0]?.ordo_name || ''}`.trim()
+        : `Kepala Romo Paroki ${approver[0]?.paroki_name || ''}`.trim();
+
+      if (action === 'APPROVE') {
+        const title = '🎉 Akun Romo Berhasil Disetujui!';
+        const message = `Selamat Romo! Akun Anda telah disetujui oleh ${approverName} (${contextTitle}). Anda kini dapat menerima dan melayani permohonan sakramen umat di aplikasi CATU.`;
+
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, title, body, type, is_read, created_at)
+           VALUES ($1, $2, $3, 'ACCOUNT_APPROVED', false, CURRENT_TIMESTAMP)`,
+          [targetUserId, title, message],
+        );
+
+        await this.fcmService.sendPushToUsers(targetUserId, {
+          title,
+          body: message,
+          data: {
+            type: 'ACCOUNT_APPROVED',
+            accountStatus: 'APPROVED',
+            targetUserId: targetUserId.toString(),
+          },
+        });
+      } else {
+        const title = '⚠️ Status Pendaftaran Akun Romo';
+        const message = `Pendaftaran akun Anda ditolak oleh ${approverName} (${contextTitle}).${rejectionReason ? ` Alasan: ${rejectionReason}` : ''}`;
+
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, title, body, type, is_read, created_at)
+           VALUES ($1, $2, $3, 'ACCOUNT_REJECTED', false, CURRENT_TIMESTAMP)`,
+          [targetUserId, title, message],
+        );
+
+        await this.fcmService.sendPushToUsers(targetUserId, {
+          title,
+          body: message,
+          data: {
+            type: 'ACCOUNT_REJECTED',
+            accountStatus: 'REJECTED',
+            rejectionReason: rejectionReason || '',
+            targetUserId: targetUserId.toString(),
+          },
+        });
+      }
+    } catch (notifErr: any) {
+      this.logger.error(`Error sending romo approval notification: ${notifErr.message}`);
+    }
 
     return {
       statusCode: 200,
@@ -1308,6 +1430,52 @@ export class AuthService {
       `INSERT INTO user_approvals (target_user_id, approver_user_id, action, rejection_reason) VALUES ($1, 7, $2, $3)`,
       [dto.targetUserId, dto.action, dto.rejectionReason || null],
     );
+
+    // 🔔 Send in-app & FCM Push Notification for general / admin approval
+    try {
+      if (dto.action === 'APPROVED') {
+        const title = '🎉 Akun Anda Berhasil Disetujui!';
+        const message = `Selamat! Pendaftaran akun Anda telah disetujui oleh Administrator / Pengurus CATU. Anda sekarang dapat masuk dan menggunakan seluruh layanan CATU.`;
+
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, title, body, type, is_read, created_at)
+           VALUES ($1, $2, $3, 'ACCOUNT_APPROVED', false, CURRENT_TIMESTAMP)`,
+          [dto.targetUserId, title, message],
+        );
+
+        await this.fcmService.sendPushToUsers(dto.targetUserId, {
+          title,
+          body: message,
+          data: {
+            type: 'ACCOUNT_APPROVED',
+            accountStatus: 'APPROVED',
+            targetUserId: dto.targetUserId.toString(),
+          },
+        });
+      } else if (dto.action === 'REJECTED') {
+        const title = '⚠️ Status Pendaftaran Akun CATU';
+        const message = `Pendaftaran akun Anda ditolak oleh Administrator CATU.${dto.rejectionReason ? ` Alasan: ${dto.rejectionReason}` : ''}`;
+
+        await this.dataSource.query(
+          `INSERT INTO notifications (user_id, title, body, type, is_read, created_at)
+           VALUES ($1, $2, $3, 'ACCOUNT_REJECTED', false, CURRENT_TIMESTAMP)`,
+          [dto.targetUserId, title, message],
+        );
+
+        await this.fcmService.sendPushToUsers(dto.targetUserId, {
+          title,
+          body: message,
+          data: {
+            type: 'ACCOUNT_REJECTED',
+            accountStatus: 'REJECTED',
+            rejectionReason: dto.rejectionReason || '',
+            targetUserId: dto.targetUserId.toString(),
+          },
+        });
+      }
+    } catch (notifErr: any) {
+      this.logger.error(`Error sending general approval notification: ${notifErr.message}`);
+    }
 
     return {
       statusCode: 200,

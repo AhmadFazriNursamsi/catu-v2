@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/utils/fade_slide_route.dart';
 import '../../widgets/searchable_select_field.dart';
 import 'login_screen.dart';
@@ -379,6 +380,12 @@ class _RegisterScreenState extends State<RegisterScreen>
         );
         Navigator.pushReplacement(context, FadeSlideRoute(page: const LoginScreen()));
         return;
+      }
+
+      final rawUid = registeredUser['id'] ?? registeredUser['userId'] ?? registeredUser['user_id'];
+      final uid = rawUid != null ? int.tryParse(rawUid.toString()) : null;
+      if (uid != null && uid > 0) {
+        NotificationService.registerUserDevice(uid);
       }
 
       Navigator.pushReplacement(

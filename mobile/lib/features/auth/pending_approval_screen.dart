@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/utils/fade_slide_route.dart';
 import '../home/home_screen.dart';
 import '../news/public_news_screen.dart';
@@ -22,6 +24,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
     with SingleTickerProviderStateMixin {
   late Map<String, dynamic> _currentUser;
   bool _isChecking = false;
+  Timer? _autoCheckTimer;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -30,6 +33,12 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
     super.initState();
     _currentUser = Map<String, dynamic>.from(widget.user);
     _resolveOrdoNameIfNeeded();
+    final rawUid = _currentUser['id'] ?? _currentUser['userId'] ?? _currentUser['user_id'];
+    final uid = rawUid != null ? int.tryParse(rawUid.toString()) : null;
+    if (uid != null && uid > 0) {
+      NotificationService.registerUserDevice(uid);
+    }
+    _startAutoCheck();
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -74,8 +83,62 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
     }
   }
 
+  void _startAutoCheck() {
+    _autoCheckTimer?.cancel();
+    _autoCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted && !_isChecking) {
+        _checkApprovalStatusSilently();
+      }
+    });
+  }
+
+  Future<void> _checkApprovalStatusSilently() async {
+    try {
+      final phone = _currentUser['phoneNumber'] ?? _currentUser['phone_number'] ?? '';
+      if (phone.toString().isEmpty) return;
+      final res = await http.get(
+        Uri.parse('${ApiService.baseUrl}/auth/check-status?phone=$phone'),
+      );
+
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final status = body['accountStatus'] ?? _currentUser['accountStatus'];
+        final updatedUser = body['user'] != null
+            ? Map<String, dynamic>.from(body['user'])
+            : _currentUser;
+
+        if (status == 'APPROVED') {
+          _autoCheckTimer?.cancel();
+          if (!mounted) return;
+          final role = updatedUser['roleCode'] ?? _currentUser['roleCode'] ?? 'UMAT';
+          final romoPos = updatedUser['romoPosition'] ?? _currentUser['romoPosition'];
+          final approverTitle = _getApproverTitle(role, romoPos);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: const Color(0xFF059669),
+              content: Text('🎉 Selamat! Akun Anda telah disetujui oleh $approverTitle!'),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          Navigator.pushReplacement(
+            context,
+            FadeSlideRoute(page: HomeScreen(user: updatedUser)),
+          );
+        } else if (status == 'REJECTED') {
+          _autoCheckTimer?.cancel();
+          if (!mounted) return;
+          setState(() {
+            _currentUser = updatedUser;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
+    _autoCheckTimer?.cancel();
     _pulseController.dispose();
     super.dispose();
   }

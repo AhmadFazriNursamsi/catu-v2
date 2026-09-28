@@ -235,9 +235,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
       case 'RESCHEDULE_ACCEPTED':
       case 'ORDER_CONFIRMED':
       case 'ORDER_DONE':
+      case 'ACCOUNT_APPROVED':
         return const Color(0xFF059669);
       case 'ROMO_DECLINED':
       case 'RESCHEDULE_REJECTED':
+      case 'ACCOUNT_REJECTED':
         return const Color(0xFFDC2626);
       case 'STATUS_UPDATE':
       case 'RESCHEDULE_PROPOSED':
@@ -254,6 +256,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   IconData _typeIcon(String type, String? category) {
     if (type == 'CHAT_MESSAGE') return Icons.chat_rounded;
+    if (type == 'ACCOUNT_APPROVED') return Icons.verified_user_rounded;
+    if (type == 'ACCOUNT_REJECTED') return Icons.gpp_bad_rounded;
     if (type == 'NEW_REQUEST' || type == 'NEW_ORDER_MONITOR' || type == 'NEW_ORDER_KOORDINATOR' || type == 'NEW_ORDER_ROMO') {
       final isKedukaan = (category ?? '').toLowerCase().contains('kedukaan');
       return isKedukaan ? Icons.church_rounded : Icons.water_drop_rounded;
