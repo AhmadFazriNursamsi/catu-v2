@@ -217,10 +217,21 @@ class NotificationService {
       final role = userMap?['roleCode'] ?? userMap?['role_code'] ?? userMap?['role'] ?? 'UMAT';
       final isRomo = role.toString().toUpperCase().contains('ROMO');
       // 🔔 0. ACCOUNT APPROVAL / REJECTION RESULT -> Tampilkan Alert Dialog di layar aktif, JANGAN redirect
-      if (type == 'ACCOUNT_APPROVED' || type == 'ACCOUNT_REJECTED') {
-        final isApproved = type == 'ACCOUNT_APPROVED';
-        final title = data['title'] ?? (isApproved ? '🎉 Akun Berhasil Disetujui!' : '⚠️ Status Pendaftaran Akun');
-        final message = data['body'] ?? data['message'] ?? (isApproved ? 'Pendaftaran akun Anda telah disetujui. Anda kini dapat menggunakan seluruh fitur aplikasi CATU.' : 'Pendaftaran akun Anda ditolak.');
+      final titleStr = (data['title'] ?? '').toString();
+      final bodyStr = (data['body'] ?? data['message'] ?? '').toString();
+      final titleLower = titleStr.toLowerCase();
+      final bodyLower = bodyStr.toLowerCase();
+
+      final isAccountResult = type == 'ACCOUNT_APPROVED' ||
+          type == 'ACCOUNT_REJECTED' ||
+          titleLower.contains('disetujui') ||
+          titleLower.contains('ditolak') ||
+          (bodyLower.contains('pendaftaran') && (bodyLower.contains('disetujui') || bodyLower.contains('ditolak')));
+
+      if (isAccountResult) {
+        final isApproved = type == 'ACCOUNT_APPROVED' || titleLower.contains('disetujui') || bodyLower.contains('disetujui');
+        final title = titleStr.isNotEmpty ? titleStr : (isApproved ? '🎉 Akun Berhasil Disetujui!' : '⚠️ Status Pendaftaran Akun');
+        final message = bodyStr.isNotEmpty ? bodyStr : (isApproved ? 'Pendaftaran akun Anda telah disetujui. Anda kini dapat menggunakan seluruh fitur aplikasi CATU.' : 'Pendaftaran akun Anda ditolak.');
 
         final ctx = navState.context;
         if (ctx.mounted) {

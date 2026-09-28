@@ -220,8 +220,8 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     final String? endDate = widget.user['jabatanEndDate'] ?? widget.user['jabatan_end_date'];
     final int? startYear = widget.user['jabatanStartYear'] ?? widget.user['jabatan_start_year'];
     final int? endYear = widget.user['jabatanEndYear'] ?? widget.user['jabatan_end_year'];
-    final String accountStatus = widget.user['accountStatus'] ?? widget.user['account_status'] ?? 'PENDING';
-    final bool isApproved = accountStatus == 'APPROVED';
+    final String accountStatus = (widget.user['accountStatus'] ?? widget.user['account_status'] ?? 'PENDING').toString().toUpperCase();
+    final bool isApproved = accountStatus == 'APPROVED' || widget.user['isApproved'] == true || widget.user['is_approved'] == true;
     final role = (widget.user['role'] ?? widget.user['role_code'] ?? widget.user['roleCode'] ?? '').toString().toUpperCase();
     final bool isPendatang = role == 'UMAT_PENDATANG' || widget.user['kunjungan'] != null;
     String positionTitle = isPendatang ? 'Umat Pendatang' : 'Umat (Anggota)';
@@ -360,8 +360,8 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                   const SizedBox(width: 3),
                                   Text(
                                     isApproved
-                                        ? 'Disetujui'
-                                        : 'Menunggu Verifikasi',
+                                        ? (_isPengurus ? 'Jabatan Aktif' : 'Akun Aktif')
+                                        : 'Menunggu Persetujuan',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 8.5,
