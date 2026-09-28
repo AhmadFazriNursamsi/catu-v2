@@ -415,12 +415,21 @@ class ApiService {
   static Future<List<Map<String, dynamic>>> getProvinsi() => getProvinsiList();
   static Future<List<Map<String, dynamic>>> getKabupatenKota({int? provinsiId}) => getKabupatenKotaList(provinsiId: provinsiId);
 
+  static List<Map<String, dynamic>> _sortByName(List<Map<String, dynamic>> list) {
+    list.sort((a, b) {
+      final nameA = (a['name'] ?? a['label'] ?? '').toString().toLowerCase();
+      final nameB = (b['name'] ?? b['label'] ?? '').toString().toLowerCase();
+      return nameA.compareTo(nameB);
+    });
+    return list;
+  }
+
   static Future<List<Map<String, dynamic>>> getProvinsiList() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/auth/provinsi'));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data);
+        return _sortByName(List<Map<String, dynamic>>.from(data));
       }
     } catch (e) {
       debugPrint('Error getProvinsiList: $e');
@@ -434,7 +443,7 @@ class ApiService {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data);
+        return _sortByName(List<Map<String, dynamic>>.from(data));
       }
     } catch (e) {
       debugPrint('Error getKabupatenKotaList: $e');
@@ -447,7 +456,7 @@ class ApiService {
       final response = await http.get(Uri.parse('$baseUrl/auth/keuskupan'));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data);
+        return _sortByName(List<Map<String, dynamic>>.from(data));
       }
     } catch (e) {
       debugPrint('Error getKeuskupanList: $e');
@@ -460,7 +469,7 @@ class ApiService {
       final response = await http.get(Uri.parse('$baseUrl/master/service-categories'));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data);
+        return _sortByName(List<Map<String, dynamic>>.from(data));
       }
     } catch (e) {
       debugPrint('Error getServiceCategories: $e');
@@ -474,7 +483,7 @@ class ApiService {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data);
+        return _sortByName(List<Map<String, dynamic>>.from(data));
       }
     } catch (e) {
       debugPrint('Error getParokiList: $e');
@@ -488,7 +497,7 @@ class ApiService {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data);
+        return _sortByName(List<Map<String, dynamic>>.from(data));
       }
     } catch (e) {
       debugPrint('Error getWilayahList: $e');
@@ -502,7 +511,7 @@ class ApiService {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data);
+        return _sortByName(List<Map<String, dynamic>>.from(data));
       }
     } catch (e) {
       debugPrint('Error getLingkunganList: $e');
@@ -515,7 +524,7 @@ class ApiService {
       final response = await http.get(Uri.parse('$baseUrl/auth/ordo'));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data);
+        return _sortByName(List<Map<String, dynamic>>.from(data));
       }
     } catch (e) {
       debugPrint('Error getOrdoList: $e');

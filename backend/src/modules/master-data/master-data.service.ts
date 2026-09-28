@@ -37,7 +37,7 @@ export class MasterDataService {
       FROM keuskupan k
       LEFT JOIN paroki p ON p.keuskupan_id = k.id
       GROUP BY k.id
-      ORDER BY k.id ASC
+      ORDER BY k.name ASC
     `);
   }
   async createKeuskupan(dto: CreateKeuskupanDto) {
@@ -85,7 +85,7 @@ export class MasterDataService {
       query += ` WHERE p.keuskupan_id = $1`;
       params.push(keuskupanId);
     }
-    query += ` GROUP BY p.id, k.name ORDER BY p.id ASC`;
+    query += ` GROUP BY p.id, k.name ORDER BY p.name ASC`;
     return await this.dataSource.query(query, params);
   }
   async createParoki(dto: CreateParokiDto) {
@@ -139,7 +139,7 @@ export class MasterDataService {
       query += ` WHERE w.paroki_id = $1`;
       params.push(parokiId);
     }
-    query += ` GROUP BY w.id, p.name, k.name ORDER BY w.id ASC`;
+    query += ` GROUP BY w.id, p.name, k.name ORDER BY w.name ASC`;
     return await this.dataSource.query(query, params);
   }
   async createWilayah(dto: CreateWilayahDto) {
@@ -188,7 +188,7 @@ export class MasterDataService {
       query += ` WHERE l.wilayah_id = $1`;
       params.push(wilayahId);
     }
-    query += ` GROUP BY l.id, w.name, p.name ORDER BY l.id ASC`;
+    query += ` GROUP BY l.id, w.name, p.name ORDER BY l.name ASC`;
     return await this.dataSource.query(query, params);
   }
   async createLingkungan(dto: CreateLingkunganDto) {
@@ -228,7 +228,7 @@ export class MasterDataService {
       FROM ordo o
       LEFT JOIN romo_profiles r ON r.ordo_id = o.id
       GROUP BY o.id
-      ORDER BY o.id ASC
+      ORDER BY o.name ASC
     `);
   }
   async createOrdo(dto: CreateOrdoDto) {
@@ -268,7 +268,7 @@ export class MasterDataService {
       FROM service_categories sc
       LEFT JOIN orders o ON o.service_category_id = sc.id
       GROUP BY sc.id
-      ORDER BY sc.id ASC
+      ORDER BY sc.name ASC
     `);
   }
   async createServiceCategory(dto: CreateServiceCategoryDto) {
@@ -310,7 +310,7 @@ export class MasterDataService {
       FROM roles r
       LEFT JOIN auth_users u ON u.role_id = r.id
       GROUP BY r.id
-      ORDER BY r.id ASC
+      ORDER BY r.name ASC
     `);
   }
   async createRole(dto: CreateRoleDto) {
@@ -363,7 +363,7 @@ export class MasterDataService {
       query += ` WHERE mp.category = $1`;
       params.push(category);
     }
-    query += ` GROUP BY mp.id ORDER BY mp.id ASC`;
+    query += ` GROUP BY mp.id ORDER BY mp.name ASC`;
     return await this.dataSource.query(query, params);
   }
   async createPosition(dto: CreatePositionDto) {

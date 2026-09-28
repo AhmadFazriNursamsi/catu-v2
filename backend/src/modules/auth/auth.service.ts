@@ -47,40 +47,40 @@ export class AuthService {
     });
   }
   async getKeuskupan() {
-    return await this.dataSource.query('SELECT id, name FROM keuskupan ORDER BY id ASC');
+    return await this.dataSource.query('SELECT id, name FROM keuskupan ORDER BY name ASC');
   }
   async getParoki(keuskupanId?: number) {
     if (keuskupanId) {
-      return await this.dataSource.query('SELECT id, keuskupan_id, name FROM paroki WHERE keuskupan_id = $1 ORDER BY id ASC', [keuskupanId]);
+      return await this.dataSource.query('SELECT id, keuskupan_id, name FROM paroki WHERE keuskupan_id = $1 ORDER BY name ASC', [keuskupanId]);
     }
-    return await this.dataSource.query('SELECT id, keuskupan_id, name FROM paroki ORDER BY id ASC');
+    return await this.dataSource.query('SELECT id, keuskupan_id, name FROM paroki ORDER BY name ASC');
   }
   async getWilayah(parokiId?: number) {
     if (parokiId) {
-      return await this.dataSource.query('SELECT id, paroki_id, name FROM wilayah WHERE paroki_id = $1 ORDER BY id ASC', [parokiId]);
+      return await this.dataSource.query('SELECT id, paroki_id, name FROM wilayah WHERE paroki_id = $1 ORDER BY name ASC', [parokiId]);
     }
-    return await this.dataSource.query('SELECT id, paroki_id, name FROM wilayah ORDER BY id ASC');
+    return await this.dataSource.query('SELECT id, paroki_id, name FROM wilayah ORDER BY name ASC');
   }
   async getLingkungan(wilayahId?: number) {
     if (wilayahId) {
-      return await this.dataSource.query('SELECT id, wilayah_id, name FROM lingkungan WHERE wilayah_id = $1 ORDER BY id ASC', [wilayahId]);
+      return await this.dataSource.query('SELECT id, wilayah_id, name FROM lingkungan WHERE wilayah_id = $1 ORDER BY name ASC', [wilayahId]);
     }
-    return await this.dataSource.query('SELECT id, wilayah_id, name FROM lingkungan ORDER BY id ASC');
+    return await this.dataSource.query('SELECT id, wilayah_id, name FROM lingkungan ORDER BY name ASC');
   }
   async getProvinsi() {
-    return await this.dataSource.query('SELECT id, name FROM provinsi ORDER BY id ASC');
+    return await this.dataSource.query('SELECT id, name FROM provinsi ORDER BY name ASC');
   }
   async getKabupatenKota(provinsiId?: number) {
     if (provinsiId) {
       return await this.dataSource.query(
-        'SELECT id, provinsi_id, name, type FROM kabupaten_kota WHERE provinsi_id = $1 ORDER BY id ASC',
+        'SELECT id, provinsi_id, name, type FROM kabupaten_kota WHERE provinsi_id = $1 ORDER BY name ASC',
         [provinsiId],
       );
     }
-    return await this.dataSource.query('SELECT id, provinsi_id, name, type FROM kabupaten_kota ORDER BY id ASC');
+    return await this.dataSource.query('SELECT id, provinsi_id, name, type FROM kabupaten_kota ORDER BY name ASC');
   }
   async getOrdo() {
-    return await this.dataSource.query('SELECT id, code, name FROM ordo ORDER BY id ASC');
+    return await this.dataSource.query('SELECT id, code, name FROM ordo ORDER BY name ASC');
   }
   async checkAccountStatus(phone: string) {
     if (!phone) return { statusCode: 400, message: 'Nomor HP wajib disertakan' };

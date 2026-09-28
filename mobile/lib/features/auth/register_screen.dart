@@ -123,6 +123,15 @@ class _RegisterScreenState extends State<RegisterScreen>
   int? _selectedLingkunganId;
   int? _selectedOrdoId;
 
+  List<Map<String, dynamic>> _sortByName(List<Map<String, dynamic>> list) {
+    list.sort((a, b) {
+      final nameA = (a['name'] ?? a['label'] ?? '').toString().toLowerCase();
+      final nameB = (b['name'] ?? b['label'] ?? '').toString().toLowerCase();
+      return nameA.compareTo(nameB);
+    });
+    return list;
+  }
+
   void _onKeuskupanChanged(int newKeuskupanId) async {
     setState(() {
       _selectedKeuskupanId = newKeuskupanId;
@@ -135,7 +144,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     });
     final parokis = await ApiService.getParoki(keuskupanId: newKeuskupanId);
     setState(() {
-      _parokiList = parokis;
+      _parokiList = _sortByName(parokis);
     });
   }
 
@@ -149,7 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     });
     final wilayahs = await ApiService.getWilayah(parokiId: newParokiId);
     setState(() {
-      _wilayahList = wilayahs;
+      _wilayahList = _sortByName(wilayahs);
     });
   }
 
@@ -162,7 +171,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     final lingkungans =
         await ApiService.getLingkungan(wilayahId: newWilayahId);
     setState(() {
-      _lingkunganList = lingkungans;
+      _lingkunganList = _sortByName(lingkungans);
     });
   }
 
@@ -175,9 +184,9 @@ class _RegisterScreenState extends State<RegisterScreen>
     final kotas = await ApiService.getKabupatenKotaList(provinsiId: newProvId);
     if (mounted) {
       setState(() {
-        _dynamicKotaList = kotas;
-        if (kotas.isNotEmpty) {
-          _selectedKabupatenKotaId = int.tryParse(kotas.first['id'].toString());
+        _dynamicKotaList = _sortByName(kotas);
+        if (_dynamicKotaList.isNotEmpty) {
+          _selectedKabupatenKotaId = int.tryParse(_dynamicKotaList.first['id'].toString());
         }
       });
     }
@@ -192,9 +201,9 @@ class _RegisterScreenState extends State<RegisterScreen>
     if (mounted) {
       setState(() {
         _roleOptions = roles;
-        _keuskupanList = keuskupans;
-        _ordoList = ordos;
-        _dynamicProvinsiList = provs;
+        _keuskupanList = _sortByName(keuskupans);
+        _ordoList = _sortByName(ordos);
+        _dynamicProvinsiList = _sortByName(provs);
         _isLoadingRoles = false;
 
         if (_keuskupanList.isNotEmpty) {
