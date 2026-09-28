@@ -80,22 +80,29 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     }
   }
 
+  bool get _isKoordinator =>
+      _userData['pengurusPosition']?.toString().toLowerCase().contains('koordinator') == true ||
+      _userData['pengurus_position']?.toString().toLowerCase().contains('koordinator') == true ||
+      _userData['roleCode'] == 'KOORDINATOR' ||
+      _userData['role_code'] == 'KOORDINATOR';
+
+  bool get _isPengurus =>
+      _isKoordinator ||
+      _userData['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
+      _userData['role_code'] == 'PENGURUS_LINGKUNGAN' ||
+      (_userData['pengurusPosition'] != null &&
+          _userData['pengurusPosition'].toString().trim().isNotEmpty) ||
+      (_userData['pengurus_position'] != null &&
+          _userData['pengurus_position'].toString().trim().isNotEmpty);
+
+  bool get _isKetuaRomo {
+    final pos = (_userData['romoPosition'] ?? _userData['romo_position'] ?? '').toString().toUpperCase();
+    return pos == 'KETUA_ROMO' || pos.contains('KETUA') || pos.contains('KEPALA');
+  }
+
   Future<void> _fetchApprovalCounts() async {
     try {
-      final isKoordinator = _userData['pengurusPosition']?.toString().toLowerCase().contains('koordinator') == true ||
-          _userData['pengurus_position']?.toString().toLowerCase().contains('koordinator') == true ||
-          _userData['roleCode'] == 'KOORDINATOR' || _userData['role_code'] == 'KOORDINATOR';
-
-      final isPengurus = isKoordinator || _userData['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
-          _userData['role_code'] == 'PENGURUS_LINGKUNGAN' ||
-          (_userData['pengurusPosition'] != null &&
-              _userData['pengurusPosition'].toString().trim().isNotEmpty) ||
-          (_userData['pengurus_position'] != null &&
-              _userData['pengurus_position'].toString().trim().isNotEmpty);
-
-      final isKetuaRomo = (_userData['romoPosition'] ?? _userData['romo_position'] ?? '').toString().toUpperCase() == 'KETUA_ROMO';
-
-      if (isPengurus) {
+      if (_isPengurus) {
         final rawLingkungan = _userData['lingkunganId'] ?? _userData['lingkungan_id'];
         final int? lingkunganId = rawLingkungan != null ? int.tryParse(rawLingkungan.toString()) : null;
         final rawKeuskupan = _userData['keuskupanId'] ?? _userData['keuskupan_id'];
@@ -104,14 +111,14 @@ class _MainMenuScreenState extends State<MainMenuScreen>
         final int? pengurusUserId = rawUserId != null ? int.tryParse(rawUserId.toString()) : null;
 
         final list = await ApiService.getPengurusPendingUmat(
-          lingkunganId: isKoordinator ? null : lingkunganId,
-          keuskupanId: isKoordinator ? keuskupanId : null,
+          lingkunganId: _isKoordinator ? null : lingkunganId,
+          keuskupanId: _isKoordinator ? keuskupanId : null,
           pengurusUserId: pengurusUserId,
         );
         if (mounted) setState(() => _pendingPengurusCount = list.length);
       }
 
-      if (isKetuaRomo) {
+      if (_isKetuaRomo) {
         final rawUserId = _userData['id'] ?? _userData['userId'] ?? _userData['user_id'];
         final int? romoUserId = rawUserId != null ? int.tryParse(rawUserId.toString()) : null;
         final rawParoki = _userData['parokiId'] ?? _userData['paroki_id'];
@@ -160,16 +167,13 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     return 'Serikat Yesus (SJ)';
   }
 
-  String get _romoPos =>
-      _userData['romoPosition'] ?? _userData['romo_position'] ?? '';
-
   String get _positionTitle {
     final code = _roleCode.toUpperCase();
     if (code == 'ROMO_ORDO') {
       return 'Romo Ordo — $_ordoName';
     }
     if (code == 'ROMO_PAROKI' || code.startsWith('ROMO')) {
-      if (_romoPos == 'KETUA_ROMO') return 'Romo Paroki — Pastor Kepala';
+      if (_isKetuaRomo) return 'Romo Paroki — Pastor Kepala';
       return 'Romo Paroki — Pastor Rekan';
     }
     if (_pengurusPos.toUpperCase().contains('KOORDINATOR') || code == 'KOORDINATOR') {
@@ -500,39 +504,33 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       ),
       child: Column(
         children: [
-          // ── Pengurus Lingkungan / Koordinator Keuskupan Approval Tile (ONLY if pending count > 0) ──
-          if ((_userData['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
-              _userData['role_code'] == 'PENGURUS_LINGKUNGAN' ||
-              _userData['roleCode'] == 'KOORDINATOR' ||
-              _userData['role_code'] == 'KOORDINATOR' ||
-              (_userData['pengurusPosition'] != null &&
-                  _userData['pengurusPosition'].toString().trim().isNotEmpty) ||
-              (_userData['pengurus_position'] != null &&
-                  _userData['pengurus_position'].toString().trim().isNotEmpty)) &&
-              _pendingPengurusCount > 0) ...[
+          // ── Pengurus Lingkungan / Koordinator Keuskupan Approval Tile ──
+          if (_isPengurus) ...[
             _buildMenuItem(
               icon: Icons.how_to_reg_rounded,
-              title: (_userData['pengurusPosition']?.toString().toLowerCase().contains('koordinator') == true ||
-                      _userData['pengurus_position']?.toString().toLowerCase().contains('koordinator') == true ||
-                      _userData['roleCode'] == 'KOORDINATOR')
+              title: _isKoordinator
                   ? 'Persetujuan Umat Keuskupan'
                   : 'Persetujuan Umat Lingkungan',
-              subtitle: '$_pendingPengurusCount umat baru menunggu verifikasi Anda',
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$_pendingPengurusCount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
+              subtitle: _pendingPengurusCount > 0
+                  ? '$_pendingPengurusCount umat baru menunggu verifikasi Anda'
+                  : 'Verifikasi pendaftaran umat baru',
+              trailing: _pendingPengurusCount > 0
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$_pendingPengurusCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    )
+                  : null,
               onTap: () async {
                 HapticFeedback.selectionClick();
                 await Navigator.push(
@@ -547,30 +545,33 @@ class _MainMenuScreenState extends State<MainMenuScreen>
             const Divider(height: 1, color: Color(0xFFF1F5F9)),
           ],
 
-          // ── Ketua Romo Approval Tile (ONLY if pending count > 0) ──
-          if (((_userData['romoPosition'] ?? _userData['romo_position'] ?? '').toString().toUpperCase() == 'KETUA_ROMO') &&
-              _pendingRomoCount > 0) ...[
+          // ── Ketua Romo Approval Tile ──
+          if (_isKetuaRomo) ...[
             _buildMenuItem(
               icon: Icons.verified_user_rounded,
               title: (_userData['roleCode'] ?? _userData['role_code'] ?? '').toString().toUpperCase().contains('ORDO')
                   ? 'Persetujuan Romo Ordo'
                   : 'Persetujuan Romo Paroki',
-              subtitle: '$_pendingRomoCount romo baru menunggu verifikasi Anda',
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$_pendingRomoCount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
+              subtitle: _pendingRomoCount > 0
+                  ? '$_pendingRomoCount romo baru menunggu verifikasi Anda'
+                  : 'Verifikasi pendaftaran romo baru untuk wilayah pelayanan Anda',
+              trailing: _pendingRomoCount > 0
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$_pendingRomoCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    )
+                  : null,
               onTap: () async {
                 HapticFeedback.selectionClick();
                 await Navigator.push(

@@ -20,7 +20,7 @@ class _RomoApprovalScreenState extends State<RomoApprovalScreen> {
   final Map<int, bool> _processingMap = {};
 
   int get _romoUserId {
-    final raw = widget.user['id'] ?? widget.user['userId'];
+    final raw = widget.user['id'] ?? widget.user['userId'] ?? widget.user['user_id'];
     return raw != null ? int.tryParse(raw.toString()) ?? 0 : 0;
   }
 

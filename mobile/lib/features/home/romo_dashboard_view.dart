@@ -89,7 +89,9 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     try {
       final romoUserId = widget.user['id'] != null
           ? int.tryParse(widget.user['id'].toString())
-          : (widget.user['userId'] != null ? int.tryParse(widget.user['userId'].toString()) : null);
+          : (widget.user['userId'] != null
+              ? int.tryParse(widget.user['userId'].toString())
+              : (widget.user['user_id'] != null ? int.tryParse(widget.user['user_id'].toString()) : null));
       final rawParoki = widget.user['parokiId'] ?? widget.user['paroki_id'];
       final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
       final rawOrdo = widget.user['ordoId'] ?? widget.user['ordo_id'];
@@ -178,7 +180,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
   bool get _isKetuaRomo {
     final pos = (widget.user['romoPosition'] ?? widget.user['romo_position'] ?? '').toString().toUpperCase();
-    return pos == 'KETUA_ROMO';
+    return pos == 'KETUA_ROMO' || pos.contains('KETUA') || pos.contains('KEPALA');
   }
 
   Future<void> _openNotifications() async {
@@ -240,13 +242,12 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
   @override
   Widget build(BuildContext context) {
     final String userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Romo Samuel';
-    final String romoPos = widget.user['romoPosition'] ?? widget.user['romo_position'] ?? '';
     final String? startDate = widget.user['jabatanStartDate'] ?? widget.user['jabatan_start_date'];
     final String? endDate = widget.user['jabatanEndDate'] ?? widget.user['jabatan_end_date'];
     final int? startYear = widget.user['jabatanStartYear'] ?? widget.user['jabatan_start_year'];
     final int? endYear = widget.user['jabatanEndYear'] ?? widget.user['jabatan_end_year'];
     final bool isJabatanActive = widget.user['isJabatanActive'] ?? widget.user['is_jabatan_active'] ?? false;
-    final String positionTitle = romoPos == 'KETUA_ROMO' ? 'Pastor Kepala' : 'Pastor Rekan';
+    final String positionTitle = _isKetuaRomo ? 'Pastor Kepala' : 'Pastor Rekan';
 
     final String periodeText = (startDate != null && endDate != null && startDate.isNotEmpty && endDate.isNotEmpty)
         ? '$startDate - $endDate'

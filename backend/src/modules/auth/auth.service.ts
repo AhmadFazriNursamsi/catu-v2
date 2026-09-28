@@ -529,7 +529,7 @@ export class AuthService {
            JOIN roles r ON u.role_id = r.id
            WHERE p.paroki_id = $1
              AND r.code = 'ROMO_PAROKI'
-             AND p.romo_position = 'KETUA_ROMO'
+             AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%')
              AND u.account_status = 'APPROVED'
            LIMIT 1`,
           [dto.parokiId],
@@ -546,7 +546,7 @@ export class AuthService {
            JOIN roles r ON u.role_id = r.id
            WHERE (p.ordo_id = $1 OR p.user_id IN (SELECT rp.user_id FROM romo_profiles rp WHERE rp.ordo_id = $1))
              AND r.code = 'ROMO_ORDO'
-             AND p.romo_position = 'KETUA_ROMO'
+             AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%')
              AND u.account_status = 'APPROVED'
            LIMIT 1`,
           [dto.ordoId],
@@ -587,7 +587,13 @@ export class AuthService {
       }
 
       // Flag Jabatan applies ONLY to leadership positions. Ordinary Umat & ordinary Romo have NO leadership position (null).
-      const isLeadershipPos = Boolean(pengurusPositionVal || (isRomo && romoPositionVal === 'KETUA_ROMO'));
+      const isLeadershipPos = Boolean(
+        pengurusPositionVal ||
+        (isRomo && (
+          romoPositionVal === 'KETUA_ROMO' ||
+          (romoPositionVal && (romoPositionVal.toUpperCase().includes('KETUA') || romoPositionVal.toUpperCase().includes('KEPALA')))
+        ))
+      );
       const initialActiveFlag = isLeadershipPos ? false : null;
 
       // Extract years from dates if missing
@@ -698,7 +704,7 @@ export class AuthService {
            JOIN roles r ON u.role_id = r.id
            WHERE p.paroki_id = $1
              AND r.code = 'ROMO_PAROKI'
-             AND p.romo_position = 'KETUA_ROMO'
+             AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%')
              AND u.account_status = 'APPROVED'`,
           [dto.parokiId],
         );
@@ -727,7 +733,7 @@ export class AuthService {
            JOIN roles r ON u.role_id = r.id
            WHERE (p.ordo_id = $1 OR p.user_id IN (SELECT rp.user_id FROM romo_profiles rp WHERE rp.ordo_id = $1))
              AND r.code = 'ROMO_ORDO'
-             AND p.romo_position = 'KETUA_ROMO'
+             AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%')
              AND u.account_status = 'APPROVED'`,
           [dto.ordoId],
         );
@@ -1628,11 +1634,11 @@ export class AuthService {
       );
     } else if (body.status === 'APPROVED') {
       await this.dataSource.query(
-        `UPDATE user_profiles SET is_jabatan_active = true WHERE user_id = $1 AND (pengurus_position IS NOT NULL OR romo_position = 'KETUA_ROMO')`,
+        `UPDATE user_profiles SET is_jabatan_active = true WHERE user_id = $1 AND (pengurus_position IS NOT NULL OR romo_position = 'KETUA_ROMO' OR UPPER(romo_position) LIKE '%KETUA%' OR UPPER(romo_position) LIKE '%KEPALA%')`,
         [uid],
       );
     } else if (body.status === 'REJECTED') {
-      await this.dataSource.query(`UPDATE user_profiles SET is_jabatan_active = false WHERE user_id = $1 AND (pengurus_position IS NOT NULL OR romo_position = 'KETUA_ROMO')`, [uid]);
+      await this.dataSource.query(`UPDATE user_profiles SET is_jabatan_active = false WHERE user_id = $1 AND (pengurus_position IS NOT NULL OR romo_position = 'KETUA_ROMO' OR UPPER(romo_position) LIKE '%KETUA%' OR UPPER(romo_position) LIKE '%KEPALA%')`, [uid]);
     }
     return { statusCode: 200, message: `Status akun user ID ${uid} berhasil diubah menjadi ${body.status}` };
   }
