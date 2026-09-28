@@ -516,17 +516,28 @@ export class AuthService {
     await queryRunner.startTransaction();
 
     try {
-      const role = await queryRunner.query('SELECT id FROM roles WHERE code = $1', [dto.roleCode]);
-      const roleId = role[0]?.id || 1;
+      const pengurusPositionVal = (dto.pengurusPosition && dto.pengurusPosition.trim() !== '') ? dto.pengurusPosition : null;
+      const isKoordinatorRegistration = (pengurusPositionVal && pengurusPositionVal.toLowerCase().includes('koordinator')) || (dto.roleCode as string) === 'KOORDINATOR' || (dto.roleCode as string) === 'KOORDINATOR_KEUSKUPAN';
+      
+      let targetRoleCode = dto.roleCode as string;
+      if (isKoordinatorRegistration) {
+        targetRoleCode = 'KOORDINATOR_KEUSKUPAN';
+      } else if (pengurusPositionVal && targetRoleCode === 'UMAT') {
+        targetRoleCode = 'PENGURUS_LINGKUNGAN';
+      }
+
+      const role = await queryRunner.query(
+        `SELECT id FROM roles WHERE code = $1 OR (code = 'KOORDINATOR_KEUSKUPAN' AND $1 = 'KOORDINATOR')`,
+        [targetRoleCode],
+      );
+      const roleId = role[0]?.id || (isKoordinatorRegistration ? 5 : (pengurusPositionVal ? 4 : 1));
 
       // Romo Position only applies to Romo roles (ROMO_PAROKI / ROMO_ORDO)
       const isRomo = dto.roleCode === RoleCodeEnum.ROMO_PAROKI || dto.roleCode === RoleCodeEnum.ROMO_ORDO || (dto.roleCode as string).startsWith('ROMO');
-      const pengurusPositionVal = (dto.pengurusPosition && dto.pengurusPosition.trim() !== '') ? dto.pengurusPosition : null;
       const romoPositionVal = isRomo ? ((dto.romoPosition && dto.romoPosition.trim() !== '') ? dto.romoPosition : 'ROMO_BIASA') : null;
 
       let approverName = 'Admin Aplikasi CATU';
       let assignedApproverId: number | null = null;
-      const isKoordinatorRegistration = (pengurusPositionVal && pengurusPositionVal.toLowerCase().includes('koordinator')) || (dto.roleCode as string) === 'KOORDINATOR';
 
       if (dto.roleCode === RoleCodeEnum.UMAT && dto.lingkunganId && !isKoordinatorRegistration) {
         const pengurus = await queryRunner.query(

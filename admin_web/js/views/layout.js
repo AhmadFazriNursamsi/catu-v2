@@ -117,14 +117,30 @@
     function renderDashboardLayout() {
       const adminName = state.currentUser?.fullName || state.currentUser?.full_name || 'Super Admin CATU';
       const pendingApprovalsCount = state.users.filter(u => (u.account_status || u.accountStatus) === 'PENDING_APPROVAL').length;
-      const activeUmatCount = state.users.filter(u => (u.role_code || u.roleCode) === 'UMAT' && (u.account_status || u.accountStatus) === 'APPROVED').length;
+      
+      const isPureUmat = u => {
+        const r = (u.role_code || u.roleCode || '').toUpperCase();
+        const pos = (u.pengurus_position || '').trim();
+        const isPengurusOrKoor = r === 'PENGURUS_LINGKUNGAN' || r.includes('KOORDINATOR') || pos.length > 0;
+        return r === 'UMAT' && !isPengurusOrKoor && (u.account_status || u.accountStatus) === 'APPROVED';
+      };
+      const activeUmatCount = state.users.filter(isPureUmat).length;
       const activeUmatPendatangCount = state.users.filter(u => (u.role_code || u.roleCode) === 'UMAT_PENDATANG' && (u.account_status || u.accountStatus) === 'APPROVED').length;
-      const isPengurusOrKoordinator = u => {
+
+      const isPurePengurus = u => {
         const r = (u.role_code || u.roleCode || '').toUpperCase();
         const pos = (u.pengurus_position || '').toLowerCase();
-        return (r === 'PENGURUS_LINGKUNGAN' || pos.includes('koordinator') || r.includes('KOORDINATOR')) && (u.account_status || u.accountStatus) === 'APPROVED';
+        return (r === 'PENGURUS_LINGKUNGAN' || (pos.length > 0 && !pos.includes('koordinator'))) && !r.includes('KOORDINATOR') && (u.account_status || u.accountStatus) === 'APPROVED';
       };
-      const activePengurusCount = state.users.filter(isPengurusOrKoordinator).length;
+      const activePengurusCount = state.users.filter(isPurePengurus).length;
+
+      const isKoordinator = u => {
+        const r = (u.role_code || u.roleCode || '').toUpperCase();
+        const pos = (u.pengurus_position || '').toLowerCase();
+        return (r.includes('KOORDINATOR') || pos.includes('koordinator')) && (u.account_status || u.accountStatus) === 'APPROVED';
+      };
+      const activeKoordinatorCount = state.users.filter(isKoordinator).length;
+
       const activeRomoParokiCount = state.users.filter(u => (u.role_code || u.roleCode) === 'ROMO_PAROKI' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const activeRomoOrdoCount = state.users.filter(u => (u.role_code || u.roleCode) === 'ROMO_ORDO' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const activeAnnotationsCount = AGENTATION_ENABLED ? state.agentation.annotations.filter(a => !a.resolved).length : 0;
@@ -146,36 +162,54 @@
 
               <!-- Nav Items -->
               <nav class="${(isOpen || isMobileOpen) ? 'p-3 space-y-4' : 'p-2 space-y-3'}">
+                <!-- Group: Dashboard & Pelayanan -->
                 <div>
-                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Dashboard</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
+                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Pelayanan</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
                     ${renderNavItem('overview', 'layout-dashboard', 'Dashboard')}
                     ${renderNavItem('orders', 'clipboard-list', 'Daftar Pelayanan', (state.orders || []).filter(o => getEffectiveOrderStatus(o) === 'PENDING').length, 'bg-blue-600')}
-                    ${renderNavItem('master', 'database', 'Master Data')}
+                    ${(pendingApprovalsCount > 0 || state.currentTab === 'approvals') ? renderNavItem('approvals', 'shield-check', 'Persetujuan Akun', pendingApprovalsCount, 'bg-amber-500') : ''}
                   </div>
                 </div>
 
+                <!-- Group: Data Keumatan -->
                 <div>
-                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Daftar Users</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
+                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Data Keumatan</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
-                    ${(pendingApprovalsCount > 0 || state.currentTab === 'approvals') ? renderNavItem('approvals', 'shield-check', 'Persetujuan Pendaftaran', pendingApprovalsCount, 'bg-blue-600') : ''}
                     ${renderNavItem('umat', 'users', 'Umat Katolik', activeUmatCount, 'bg-blue-600')}
                     ${renderNavItem('umat_pendatang', 'map-pin', 'Umat Pendatang', activeUmatPendatangCount, 'bg-blue-600')}
+                  </div>
+                </div>
+
+                <!-- Group: Data Kepengurusan -->
+                <div>
+                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Data Kepengurusan</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
+                  <div class="space-y-1">
                     ${renderNavItem('pengurus', 'briefcase', 'Pengurus Lingkungan', activePengurusCount, 'bg-blue-600')}
+                    ${renderNavItem('koordinator', 'award', 'Koordinator Keuskupan', activeKoordinatorCount, 'bg-blue-600')}
+                  </div>
+                </div>
+
+                <!-- Group: Pastoral & Rohaniwan -->
+                <div>
+                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Pastoral & Rohaniwan</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
+                  <div class="space-y-1">
                     ${renderNavItem('romo_paroki', 'church', 'Romo Paroki', activeRomoParokiCount, 'bg-blue-600')}
                     ${renderNavItem('romo_ordo', 'cross', 'Romo Ordo', activeRomoOrdoCount, 'bg-blue-600')}
                   </div>
                 </div>
 
-                ${(typeof isSuperAdminUser === 'function' && isSuperAdminUser()) ? `
+                <!-- Group: Master & Sistem -->
                 <div>
-                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Sistem & Aplikasi</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
+                  ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Master & Pengaturan</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
-                    ${renderNavItem('activity_logs', 'scroll-text', 'Log Aktivitas')}
-                    ${renderNavItem('settings', 'download', 'Download Apps')}
+                    ${renderNavItem('master', 'database', 'Master Data')}
+                    ${(typeof isSuperAdminUser === 'function' && isSuperAdminUser()) ? `
+                      ${renderNavItem('activity_logs', 'scroll-text', 'Log Aktivitas')}
+                      ${renderNavItem('settings', 'download', 'Download Apps')}
+                    ` : ''}
                   </div>
                 </div>
-                ` : ''}
               </nav>
             </div>
 
@@ -254,6 +288,7 @@
       if (tab === 'umat') return 'Data Umat Katolik';
       if (tab === 'umat_pendatang') return 'Data Umat Pendatang';
       if (tab === 'pengurus') return 'Data Pengurus Lingkungan';
+      if (tab === 'koordinator') return 'Data Koordinator Keuskupan';
       if (tab === 'romo_paroki') return 'Data Romo Paroki';
       if (tab === 'romo_ordo') return 'Data Romo Ordo';
       if (tab === 'approvals') return 'Persetujuan Pendaftaran Akun';
