@@ -23,10 +23,15 @@ API_BASE_URL="${CATU_API_URL:-${PUBLIC_API_URL:-https://api-catu.farismunir.my.i
 
 echo "🏷️ Step 0.5: Auto-updating app version & build timestamp..."
 BUILD_TS=$(date +"%Y%m%d.%H%M%S")
-VERSION_STRING="v2.5.0-build.$BUILD_TS"
+VERSION_STRING="v2.8.4-build.$BUILD_TS"
 echo "   Build Version: $VERSION_STRING"
 echo "   API Base URL : $API_BASE_URL"
 echo "   Bundle ID    : $BUNDLE_ID"
+
+LOCAL_API_URL="http://10.0.10.92:3005"
+if [[ "$API_BASE_URL" =~ ^http://10\. || "$API_BASE_URL" =~ ^http://192\.168 || "$API_BASE_URL" =~ ^http://localhost ]]; then
+  LOCAL_API_URL="$API_BASE_URL"
+fi
 
 cat <<EOF > "$PROJECT_DIR/lib/core/constants/app_constants.dart"
 import 'package:flutter/material.dart';
@@ -34,6 +39,11 @@ import 'package:flutter/material.dart';
 class AppConstants {
   static const String appName = 'CATU Pelayanan';
   static const String appVersion = '$VERSION_STRING';
+  
+  // Canonical Environments: Only Publish (Server) and Local Development
+  static const String publishApiUrl = 'https://catu.devoutsys.com/api';
+  static const String localApiUrl = '$LOCAL_API_URL';
+
   static const String apiBaseUrl = String.fromEnvironment(
     'CATU_API_URL',
     defaultValue: String.fromEnvironment('API_BASE_URL', defaultValue: '$API_BASE_URL'),

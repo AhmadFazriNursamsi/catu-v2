@@ -16,7 +16,7 @@ export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
 
 echo "🏷️ Step 0.5: Auto-updating app version & build timestamp..."
 BUILD_TS=$(date +"%Y%m%d.%H%M%S")
-VERSION_STRING="v2.5.0-build.$BUILD_TS"
+VERSION_STRING="v2.8.4-build.$BUILD_TS"
 API_BASE_URL="${CATU_API_URL:-${PUBLIC_API_URL:-}}"
 if [ -z "$API_BASE_URL" ] && [ -f "$ROOT_ENV_FILE" ]; then
   API_BASE_URL=$(sed -n 's/^CATU_API_URL=//p' "$ROOT_ENV_FILE" | head -1)
@@ -34,12 +34,22 @@ fi
 echo "   Build Version: $VERSION_STRING"
 echo "   API URL      : $API_BASE_URL"
 
+LOCAL_API_URL="http://10.0.10.92:3005"
+if [[ "$API_BASE_URL" =~ ^http://10\. || "$API_BASE_URL" =~ ^http://192\.168 || "$API_BASE_URL" =~ ^http://localhost ]]; then
+  LOCAL_API_URL="$API_BASE_URL"
+fi
+
 cat <<CONST_EOF > "$PROJECT_DIR/lib/core/constants/app_constants.dart"
 import 'package:flutter/material.dart';
 
 class AppConstants {
   static const String appName = 'CATU Pelayanan';
   static const String appVersion = '$VERSION_STRING';
+  
+  // Canonical Environments: Only Publish (Server) and Local Development
+  static const String publishApiUrl = 'https://catu.devoutsys.com/api';
+  static const String localApiUrl = '$LOCAL_API_URL';
+
   static const String apiBaseUrl = String.fromEnvironment(
     'CATU_API_URL',
     defaultValue: String.fromEnvironment('API_BASE_URL', defaultValue: '$API_BASE_URL'),
@@ -60,7 +70,14 @@ cd "$PROJECT_DIR" && flutter pub get
 
 echo ""
 echo "📱 Step 2: Checking Android Device..."
-ANDROID_DEVICE=$(adb devices | grep -w "device" | grep -v "List" | awk '{print $1}' | head -1)
+if [ -n "$ANDROID_DEVICE_ID" ]; then
+  ANDROID_DEVICE="$ANDROID_DEVICE_ID"
+else
+  ANDROID_DEVICE=$(adb devices | grep -w "device" | grep -v "List" | grep -v "_adb-tls-connect" | awk '{print $1}' | head -1)
+  if [ -z "$ANDROID_DEVICE" ]; then
+    ANDROID_DEVICE=$(adb devices | grep -w "device" | grep -v "List" | awk '{print $1}' | head -1)
+  fi
+fi
 
 if [ -z "$ANDROID_DEVICE" ]; then
   echo "❌ Tidak ada perangkat Android yang terhubung via ADB."

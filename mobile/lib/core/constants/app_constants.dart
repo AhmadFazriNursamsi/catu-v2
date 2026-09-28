@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppConstants {
   static const String appName = 'CATU Pelayanan';
-  static const String appVersion = 'v2.8.3-build.20260925';
+  static const String appVersion = 'v2.8.4-build.20260928';
   
   // Canonical Environments: Only Publish (Server) and Local Development
   static const String publishApiUrl = 'https://catu.devoutsys.com/api';
@@ -10,7 +10,7 @@ class AppConstants {
 
   static const String apiBaseUrl = String.fromEnvironment(
     'CATU_API_URL',
-    defaultValue: publishApiUrl,
+    defaultValue: String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.10.92:3005'),
   );
   
   // Custom HSL Colors
