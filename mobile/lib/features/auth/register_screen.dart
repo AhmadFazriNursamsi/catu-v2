@@ -574,7 +574,7 @@ class _RegisterScreenState extends State<RegisterScreen>
         _selectedRole == 'PENGURUS_LINGKUNGAN' ||
         _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
       return DropdownButtonFormField<String?>(
-        initialValue: _selectedUmatPosition,
+        initialValue: _selectedUmatPosition == 'KOORDINATOR' ? null : _selectedUmatPosition,
         decoration: _fieldDeco(
             label: 'Jabatan / Peran Umat', icon: Icons.badge_outlined),
         dropdownColor: Colors.white,
@@ -585,11 +585,6 @@ class _RegisterScreenState extends State<RegisterScreen>
               value: null,
               child: Text('Anggota Umat',
                   style: TextStyle(fontSize: 13),
-                  overflow: TextOverflow.ellipsis)),
-          DropdownMenuItem<String?>(
-              value: 'KOORDINATOR',
-              child: Text('Koordinator (Tingkat Keuskupan)',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8)),
                   overflow: TextOverflow.ellipsis)),
           DropdownMenuItem<String?>(
               value: 'KETUA',
