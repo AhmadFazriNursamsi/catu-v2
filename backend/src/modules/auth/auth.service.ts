@@ -261,6 +261,18 @@ export class AuthService {
       [newStatus, targetUserId],
     );
 
+    if (action === 'APPROVE') {
+      await this.dataSource.query(
+        'UPDATE user_profiles SET is_jabatan_active = true WHERE user_id = $1',
+        [targetUserId],
+      );
+    } else {
+      await this.dataSource.query(
+        'UPDATE user_profiles SET is_jabatan_active = false WHERE user_id = $1',
+        [targetUserId],
+      );
+    }
+
     await this.dataSource.query(
       `INSERT INTO user_approvals (target_user_id, approver_user_id, action, rejection_reason)
        VALUES ($1, $2, $3, $4)`,
@@ -411,6 +423,18 @@ export class AuthService {
       'UPDATE auth_users SET account_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       [newStatus, targetUserId],
     );
+
+    if (action === 'APPROVE') {
+      await this.dataSource.query(
+        'UPDATE user_profiles SET is_jabatan_active = true WHERE user_id = $1',
+        [targetUserId],
+      );
+    } else {
+      await this.dataSource.query(
+        'UPDATE user_profiles SET is_jabatan_active = false WHERE user_id = $1',
+        [targetUserId],
+      );
+    }
 
     await this.dataSource.query(
       `INSERT INTO user_approvals (target_user_id, approver_user_id, action, rejection_reason)

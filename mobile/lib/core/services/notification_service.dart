@@ -216,6 +216,68 @@ class NotificationService {
       final int? currentUserId = uId != null ? int.tryParse(uId.toString()) : null;
       final role = userMap?['roleCode'] ?? userMap?['role_code'] ?? userMap?['role'] ?? 'UMAT';
       final isRomo = role.toString().toUpperCase().contains('ROMO');
+      // 🔔 0. ACCOUNT APPROVAL / REJECTION RESULT -> Tampilkan Alert Dialog di layar aktif, JANGAN redirect
+      if (type == 'ACCOUNT_APPROVED' || type == 'ACCOUNT_REJECTED') {
+        final isApproved = type == 'ACCOUNT_APPROVED';
+        final title = data['title'] ?? (isApproved ? '🎉 Akun Berhasil Disetujui!' : '⚠️ Status Pendaftaran Akun');
+        final message = data['body'] ?? data['message'] ?? (isApproved ? 'Pendaftaran akun Anda telah disetujui. Anda kini dapat menggunakan seluruh fitur aplikasi CATU.' : 'Pendaftaran akun Anda ditolak.');
+
+        final ctx = navState.context;
+        if (ctx.mounted) {
+          showDialog(
+            context: ctx,
+            builder: (dCtx) => AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isApproved ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isApproved ? Icons.verified_user_rounded : Icons.gpp_bad_rounded,
+                      color: isApproved ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      isApproved ? 'Akun Telah Disetujui' : 'Status Pendaftaran Akun',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title.toString(),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    message.toString(),
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.4),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dCtx),
+                  child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          );
+        }
+        await syncBadgeCount(userId: currentUserId, role: role);
+        return;
+      }
 
       // 💬 1. CHAT NOTIFICATION -> Langsung masuk ke Grup Chatting
       if (type == 'CHAT_MESSAGE' || data.containsKey('groupId') || data.containsKey('chat_group_id')) {

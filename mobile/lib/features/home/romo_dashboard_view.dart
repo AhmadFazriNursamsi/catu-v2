@@ -247,7 +247,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     final String? endDate = widget.user['jabatanEndDate'] ?? widget.user['jabatan_end_date'];
     final int? startYear = widget.user['jabatanStartYear'] ?? widget.user['jabatan_start_year'];
     final int? endYear = widget.user['jabatanEndYear'] ?? widget.user['jabatan_end_year'];
-    final bool isJabatanActive = widget.user['isJabatanActive'] ?? widget.user['is_jabatan_active'] ?? false;
+    final String accountStatus = (widget.user['accountStatus'] ?? widget.user['account_status'] ?? '').toString().toUpperCase();
+    final bool isApproved = accountStatus == 'APPROVED';
     final String positionTitle = _isKetuaRomo ? 'Pastor Kepala' : 'Pastor Rekan';
 
     final String periodeText = (startDate != null && endDate != null && startDate.isNotEmpty && endDate.isNotEmpty)
@@ -357,20 +358,22 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                               decoration: BoxDecoration(
-                                color: isJabatanActive ? Colors.green.shade600 : const Color(0xFFD97706),
+                                color: isApproved ? Colors.green.shade600 : const Color(0xFFD97706),
                                 borderRadius: BorderRadius.circular(5),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    isJabatanActive ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
+                                    isApproved ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
                                     size: 9.5,
                                     color: Colors.white,
                                   ),
                                   const SizedBox(width: 3),
                                   Text(
-                                    isJabatanActive ? 'Jabatan Aktif' : 'Menunggu Verifikasi Admin',
+                                    isApproved
+                                        ? (_isKetuaRomo ? 'Jabatan Aktif' : 'Akun Aktif')
+                                        : 'Menunggu Persetujuan',
                                     style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold),
                                   ),
                                 ],

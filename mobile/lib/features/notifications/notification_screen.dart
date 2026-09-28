@@ -669,9 +669,72 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 return;
               }
 
-              // 1. Check if strictly a user registration approval notification
+              // 0. Account Approval / Rejection Result Notification -> ONLY show Alert Dialog, DO NOT redirect!
+              final isAccountResult = item.type == 'ACCOUNT_APPROVED' ||
+                  item.type == 'ACCOUNT_REJECTED' ||
+                  item.title.toLowerCase().contains('disetujui') ||
+                  item.title.toLowerCase().contains('ditolak');
+
+              if (isAccountResult) {
+                final isApproved = item.type == 'ACCOUNT_APPROVED' || item.title.toLowerCase().contains('disetujui');
+                await showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    title: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isApproved ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isApproved ? Icons.verified_user_rounded : Icons.gpp_bad_rounded,
+                            color: isApproved ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            isApproved ? 'Akun Telah Disetujui' : 'Status Pendaftaran Akun',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          item.body,
+                          style: const TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.4),
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                );
+                return;
+              }
+
+              // 1. Incoming Registration waiting for approver review (Ketua Romo / Pengurus)
               final isApprovalNotification = item.type == 'USER_APPROVAL' ||
-                  (item.orderId == null && item.title.toLowerCase().contains('pendaftaran'));
+                  (item.orderId == null &&
+                      item.title.toLowerCase().contains('pendaftaran') &&
+                      item.title.toLowerCase().contains('baru'));
 
               if (isApprovalNotification) {
                 final isRomoApproval = item.title.toLowerCase().contains('romo') ||
