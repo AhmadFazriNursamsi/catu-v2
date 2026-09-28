@@ -143,6 +143,13 @@
         return true;
       });
 
+      // Pagination calculation
+      const pageSize = Math.max(10, Number(state.masterPageSize || 25));
+      const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+      const page = Math.min(Math.max(1, Number(state.masterPage || 1)), totalPages);
+      state.masterPage = page;
+      const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
+
       return `
         <div class="space-y-6 animate-fade-in">
           <!-- Sub-Tab Navigation Bar with Keyboard & Scroll Controls -->
@@ -174,18 +181,18 @@
           </div>
 
           <!-- Main Table Card -->
-          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden" id="master-table-card">
             
             <!-- Header Toolbar -->
             <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
               <!-- Search Input -->
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="masterSearchInput" value="${state.masterSearch || ''}" oninput="state.masterSearch = this.value; renderApp();"
+                <input type="text" id="masterSearchInput" value="${state.masterSearch || ''}" oninput="state.masterSearch = this.value; state.masterPage = 1; renderApp();"
                   placeholder="Cari ${getEntityLabel(sub)}..."
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
                 ${state.masterSearch ? `
-                  <button onclick="state.masterSearch = ''; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 transition" title="Hapus Pencarian">
+                  <button onclick="state.masterSearch = ''; state.masterPage = 1; renderApp();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 transition" title="Hapus Pencarian">
                     <i data-lucide="x" class="w-3.5 h-3.5"></i>
                   </button>
                 ` : ''}
@@ -196,7 +203,7 @@
                 ${sub === 'kabupaten_kota' ? `
                   <div class="flex items-center space-x-1.5">
                     <label class="text-[11px] font-bold text-slate-500 whitespace-nowrap">Provinsi:</label>
-                    <select onchange="state.masterFilterProvinsiId = this.value; loadMasterData('kabupaten_kota');"
+                    <select onchange="state.masterFilterProvinsiId = this.value; state.masterPage = 1; loadMasterData('kabupaten_kota');"
                       class="py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400">
                       <option value="">Semua Provinsi</option>
                       ${(state.provinsi || []).map(p => `
@@ -258,10 +265,11 @@
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-                    ${filtered.map((item, idx) => renderMasterTableRow(sub, item, idx)).join('')}
+                    ${pageItems.map((item, idx) => renderMasterTableRow(sub, item, idx)).join('')}
                   </tbody>
                 </table>
               </div>
+              ${renderMasterPagination(filtered.length, page, pageSize, totalPages)}
             `}
           </div>
         </div>

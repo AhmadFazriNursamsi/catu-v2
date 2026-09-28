@@ -56,6 +56,8 @@
       positions: [],
       masterSubTab: 'paroki',
       masterSearch: '',
+      masterPage: 1,
+      masterPageSize: 25,
       masterFilterKeuskupanId: '',
       masterFilterParokiId: '',
       masterFilterWilayahId: '',

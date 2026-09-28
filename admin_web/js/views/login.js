@@ -56,7 +56,7 @@
 
           <div class="text-center mb-6">
             <h2 class="text-2xl font-extrabold text-[#102D54] tracking-tight">Selamat Datang</h2>
-            <p class="text-xs text-slate-500 mt-1">Silakan masuk dengan akun pengurus atau administrator</p>
+            <p class="text-xs text-slate-500 mt-1">Silakan masuk dengan akun administrator</p>
           </div>
 
           ${state.loginError ? `

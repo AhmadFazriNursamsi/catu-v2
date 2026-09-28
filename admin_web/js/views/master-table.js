@@ -137,3 +137,72 @@
         </tr>
       `;
     }
+
+    function setMasterPage(newPage) {
+      state.masterPage = newPage;
+      renderApp();
+      const table = document.getElementById('master-table-card');
+      if (table) table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function changeMasterPageSize(newSize) {
+      state.masterPageSize = newSize;
+      state.masterPage = 1;
+      renderApp();
+    }
+
+    function renderMasterPagination(total, page, pageSize, totalPages) {
+      if (total <= 0) return '';
+      const start = (page - 1) * pageSize + 1;
+      const end = Math.min(total, page * pageSize);
+
+      return `
+        <div class="p-3.5 sm:p-5 border-t border-slate-200/90 bg-slate-50/70 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-slate-600 font-medium">
+          <!-- Info & Page Size -->
+          <div class="flex flex-wrap items-center gap-2 sm:gap-4 w-full md:w-auto justify-between md:justify-start">
+            <div>
+              Menampilkan <strong class="text-slate-900 font-bold">${start}</strong> - <strong class="text-slate-900 font-bold">${end}</strong> dari <strong class="text-slate-900 font-bold">${total}</strong> data
+            </div>
+            <div class="flex items-center space-x-1.5 text-slate-500">
+              <span>Baris:</span>
+              <select onchange="changeMasterPageSize(Number(this.value))"
+                class="py-1 px-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400 cursor-pointer shadow-2xs">
+                <option value="15" ${pageSize === 15 ? 'selected' : ''}>15</option>
+                <option value="25" ${pageSize === 25 ? 'selected' : ''}>25</option>
+                <option value="50" ${pageSize === 50 ? 'selected' : ''}>50</option>
+                <option value="100" ${pageSize === 100 ? 'selected' : ''}>100</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Pagination Buttons -->
+          <div class="flex items-center space-x-1 sm:space-x-1.5 w-full md:w-auto justify-center md:justify-end">
+            <button type="button" onclick="setMasterPage(1)" ${page <= 1 ? 'disabled' : ''}
+              class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center space-x-1 shadow-2xs" title="Halaman Pertama">
+              <i data-lucide="chevrons-left" class="w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">Awal</span>
+            </button>
+            <button type="button" onclick="setMasterPage(${page - 1})" ${page <= 1 ? 'disabled' : ''}
+              class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center space-x-1 shadow-2xs" title="Halaman Sebelumnya">
+              <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">Sebelumnya</span>
+            </button>
+
+            <div class="px-2.5 py-1 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg whitespace-nowrap shadow-2xs">
+              Hal <span class="text-blue-950 font-black">${page}</span> / <span>${totalPages}</span>
+            </div>
+
+            <button type="button" onclick="setMasterPage(${page + 1})" ${page >= totalPages ? 'disabled' : ''}
+              class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center space-x-1 shadow-2xs" title="Halaman Berikutnya">
+              <span class="hidden sm:inline">Berikutnya</span>
+              <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </button>
+            <button type="button" onclick="setMasterPage(${totalPages})" ${page >= totalPages ? 'disabled' : ''}
+              class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center space-x-1 shadow-2xs" title="Halaman Terakhir">
+              <span class="hidden sm:inline">Akhir</span>
+              <i data-lucide="chevrons-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }

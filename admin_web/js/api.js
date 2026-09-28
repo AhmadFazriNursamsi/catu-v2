@@ -41,6 +41,7 @@
     async function setMasterSubTab(subTab) {
       state.masterSubTab = subTab;
       state.masterSearch = '';
+      state.masterPage = 1;
       await loadMasterData(subTab);
     }
 

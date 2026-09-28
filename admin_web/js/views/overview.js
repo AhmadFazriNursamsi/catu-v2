@@ -64,7 +64,7 @@
             ${renderOverviewCard('romo_ordo', 'cross', 'bg-purple-50 text-purple-800', totalRomoOrdo, 'Romo Ordo', 'Pastor kongregasi / ordo', 'Ordo', 'bg-purple-50 text-purple-800 border border-purple-200')}
             ${renderOverviewCard('master', 'database', 'bg-slate-100 text-slate-700', totalParoki, 'Master Data', `${totalKeuskupan} Keuskupan terdaftar`, 'Paroki & Wilayah', 'bg-blue-50 text-blue-800 border border-blue-200')}
             ${isSuper ? renderOverviewCard('activity_logs', 'scroll-text', 'bg-rose-50 text-rose-800', 'Audit', 'Log Aktivitas', 'Audit trail operasional sistem', 'Keamanan', 'bg-rose-50 text-rose-800 border border-rose-200') : ''}
-            ${isSuper ? renderOverviewCard('settings', 'download', 'bg-teal-50 text-teal-800', 'APK', 'Download Apps', 'Distribusi aplikasi mobile CATU', 'Android / iOS', 'bg-teal-50 text-teal-800 border border-teal-200') : ''}
+            ${isSuper ? renderOverviewCard('settings', 'download', 'bg-teal-50 text-teal-800', 'APK', 'Download Apps', 'Distribusi aplikasi mobile CATU', 'Hanya Android', 'bg-teal-50 text-teal-800 border border-teal-200') : ''}
           </div>
         </div>
       `;
