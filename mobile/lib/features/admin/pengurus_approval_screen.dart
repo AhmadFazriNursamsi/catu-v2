@@ -350,6 +350,8 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
   }
 
   Widget _buildEmptyState() {
+    final hasSearch = _searchQuery.trim().isNotEmpty;
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
@@ -362,37 +364,64 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFFF1F5F9),
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                border: Border.all(
+                  color: hasSearch ? const Color(0xFFCBD5E1) : const Color(0xFFE2E8F0),
+                  width: 2,
+                ),
               ),
-              child: const Center(
-                child: Icon(Icons.done_all_rounded, size: 40, color: Color(0xFF10B981)),
+              child: Center(
+                child: Icon(
+                  hasSearch ? Icons.person_search_outlined : Icons.done_all_rounded,
+                  size: 40,
+                  color: hasSearch ? const Color(0xFF64748B) : const Color(0xFF10B981),
+                ),
               ),
             ),
             const SizedBox(height: 18),
-            const Text(
-              'Tidak Ada Umat Menunggu',
-              style: TextStyle(
+            Text(
+              hasSearch ? 'Tidak Ditemukan' : 'Tidak Ada Umat Menunggu',
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF0F172A),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Semua pendaftaran umat di lingkungan Anda telah diverifikasi dan disetujui.',
+            Text(
+              hasSearch
+                  ? 'Tidak ditemukan pendaftaran umat dengan kata kunci "$_searchQuery".'
+                  : 'Semua pendaftaran umat di lingkungan Anda telah diverifikasi dan disetujui.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
+              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
             ),
             const SizedBox(height: 20),
-            OutlinedButton.icon(
-              onPressed: _fetchPendingList,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Segarkan'),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFCBD5E1)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            if (hasSearch)
+              OutlinedButton.icon(
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                },
+                icon: const Icon(Icons.clear_rounded, size: 18),
+                label: const Text('Hapus Pencarian', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF475569),
+                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                ),
+              )
+            else
+              OutlinedButton.icon(
+                onPressed: _fetchPendingList,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Segarkan', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF475569),
+                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                ),
               ),
-            ),
           ],
         ),
       ),

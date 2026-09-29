@@ -420,51 +420,7 @@ class _RomoApprovalScreenState extends State<RomoApprovalScreen> {
                     child: CircularProgressIndicator(color: AppConstants.primaryBlue),
                   )
                 : _filteredList.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 72,
-                                height: 72,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFECFDF5),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: const Color(0xFFA7F3D0), width: 2),
-                                ),
-                                child: const Icon(
-                                  Icons.check_circle_outline,
-                                  color: Color(0xFF059669),
-                                  size: 38,
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              const Text(
-                                'Semua Pendaftaran Romo Selesai',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0F172A),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                _searchQuery.isNotEmpty
-                                    ? 'Tidak ditemukan pendaftaran romo dengan kata kunci "$_searchQuery".'
-                                    : 'Tidak ada permohonan akun romo baru yang tertunda untuk wilayah pelayanan Anda saat ini.',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  color: Color(0xFF64748B),
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
+                    ? _buildEmptyState()
                     : RefreshIndicator(
                         onRefresh: _fetchPendingList,
                         color: AppConstants.primaryBlue,
@@ -483,6 +439,87 @@ class _RomoApprovalScreenState extends State<RomoApprovalScreen> {
                       ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    final hasSearch = _searchQuery.trim().isNotEmpty;
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: hasSearch ? const Color(0xFFF1F5F9) : const Color(0xFFECFDF5),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: hasSearch ? const Color(0xFFCBD5E1) : const Color(0xFFA7F3D0),
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                hasSearch ? Icons.person_search_outlined : Icons.check_circle_outline,
+                color: hasSearch ? const Color(0xFF64748B) : const Color(0xFF059669),
+                size: 38,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              hasSearch ? 'Tidak Ditemukan' : 'Semua Pendaftaran Romo Selesai',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              hasSearch
+                  ? 'Tidak ditemukan pendaftaran romo dengan kata kunci "$_searchQuery".'
+                  : 'Tidak ada permohonan akun romo baru yang tertunda untuk wilayah pelayanan Anda saat ini.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12.5,
+                color: Color(0xFF64748B),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (hasSearch)
+              OutlinedButton.icon(
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                },
+                icon: const Icon(Icons.clear_rounded, size: 16),
+                label: const Text('Hapus Pencarian', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF475569),
+                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                ),
+              )
+            else
+              OutlinedButton.icon(
+                onPressed: _fetchPendingList,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Segarkan', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF475569),
+                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

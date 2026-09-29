@@ -55,7 +55,7 @@ function renderApprovalActions(u) {
   `;
 }
 
-function renderApprovalsTable(pendings) {
+function renderApprovalsTable(pendings, hasFilter) {
   return `<div class="overflow-x-auto">
           <table class="w-full min-w-[760px] text-left text-xs">
             <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
@@ -73,9 +73,18 @@ function renderApprovalsTable(pendings) {
                 <tr>
                   <td colspan="6" class="text-center py-16 text-slate-400 space-y-3">
                     <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center mx-auto">
-                      <i data-lucide="check-circle-2" class="w-7 h-7"></i>
+                      <i data-lucide="${hasFilter ? 'search-x' : 'check-circle-2'}" class="w-7 h-7 ${hasFilter ? 'text-slate-400' : 'text-emerald-500'}"></i>
                     </div>
-                    <p class="font-bold text-slate-700 text-sm">Semua pendaftaran telah diverifikasi</p>
+                    <p class="font-bold text-slate-700 text-sm">
+                      ${hasFilter ? 'Tidak ada pendaftaran yang cocok dengan kriteria pencarian' : 'Semua pendaftaran telah diverifikasi'}
+                    </p>
+                    ${hasFilter ? `
+                      <p class="text-xs text-slate-400">Coba periksa kata kunci atau reset filter peran/paroki.</p>
+                      <button onclick="state.approvalsSearch = ''; state.approvalsFilterRole = ''; state.approvalsFilterParoki = ''; renderApp();" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer mt-2">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                        <span>Reset Filter</span>
+                      </button>
+                    ` : ''}
                   </td>
                 </tr>
               ` : pendings.map(u => `
@@ -211,7 +220,7 @@ function renderApprovalsTab() {
               </div>
             </div>
 
-            ${renderApprovalsTable(pendings)}
+            ${renderApprovalsTable(pendings, hasFilter)}
           </div>
         </div>
       `;
