@@ -157,10 +157,10 @@ class _RegisterScreenState extends State<RegisterScreen>
       _wilayahList = [];
       _lingkunganList = [];
       final selectedParoki = _parokiList.firstWhere(
-        (p) => p['id'] == newParokiId,
+        (p) => p['id']?.toString() == newParokiId.toString(),
         orElse: () => {},
       );
-      if (selectedParoki['has_kepala_romo'] == true || selectedParoki['hasKepalaRomo'] == true) {
+      if (selectedParoki['has_kepala_romo'] == true || selectedParoki['hasKepalaRomo'] == true || selectedParoki['has_kepala_romo'] == 'true') {
         _selectedRomoParokiPosition = 'ROMO_BIASA';
       }
     });
@@ -279,21 +279,26 @@ class _RegisterScreenState extends State<RegisterScreen>
           _selectedUmatPosition!.isNotEmpty) {
         if (_selectedLingkunganId != null) {
           final selectedLingkungan = _lingkunganList.firstWhere(
-            (l) => l['id'] == _selectedLingkunganId,
+            (l) => l['id']?.toString() == _selectedLingkunganId?.toString(),
             orElse: () => {},
           );
+          final bool hasKet = selectedLingkungan['has_ketua'] == true || selectedLingkungan['hasKetua'] == true || selectedLingkungan['has_ketua'] == 'true';
+          final bool hasWak = selectedLingkungan['has_wakil'] == true || selectedLingkungan['hasWakil'] == true || selectedLingkungan['has_wakil'] == 'true';
+          final bool hasSek = selectedLingkungan['has_sekretaris'] == true || selectedLingkungan['hasSekretaris'] == true || selectedLingkungan['has_sekretaris'] == 'true';
+          final bool hasBen = selectedLingkungan['has_bendahara'] == true || selectedLingkungan['hasBendahara'] == true || selectedLingkungan['has_bendahara'] == 'true';
+
           bool isTaken = false;
           String posLabel = '';
-          if (_selectedUmatPosition == 'KETUA' && (selectedLingkungan['has_ketua'] == true || selectedLingkungan['hasKetua'] == true)) {
+          if (_selectedUmatPosition == 'KETUA' && hasKet) {
             isTaken = true;
             posLabel = 'Ketua Lingkungan';
-          } else if (_selectedUmatPosition == 'WAKIL' && (selectedLingkungan['has_wakil'] == true || selectedLingkungan['hasWakil'] == true)) {
+          } else if (_selectedUmatPosition == 'WAKIL' && hasWak) {
             isTaken = true;
             posLabel = 'Wakil Ketua Lingkungan';
-          } else if (_selectedUmatPosition == 'SEKRETARIS' && (selectedLingkungan['has_sekretaris'] == true || selectedLingkungan['hasSekretaris'] == true)) {
+          } else if (_selectedUmatPosition == 'SEKRETARIS' && hasSek) {
             isTaken = true;
             posLabel = 'Sekretaris Lingkungan';
-          } else if (_selectedUmatPosition == 'BENDAHARA' && (selectedLingkungan['has_bendahara'] == true || selectedLingkungan['hasBendahara'] == true)) {
+          } else if (_selectedUmatPosition == 'BENDAHARA' && hasBen) {
             isTaken = true;
             posLabel = 'Bendahara Lingkungan';
           }
@@ -319,10 +324,10 @@ class _RegisterScreenState extends State<RegisterScreen>
       }
     } else if (_selectedRole == 'ROMO_ORDO') {
       final selectedOrdo = _ordoList.firstWhere(
-        (o) => o['id'] == _selectedOrdoId,
+        (o) => o['id']?.toString() == _selectedOrdoId?.toString(),
         orElse: () => {},
       );
-      final bool hasKetua = selectedOrdo['has_ketua'] == true || selectedOrdo['hasKetua'] == true;
+      final bool hasKetua = selectedOrdo['has_ketua'] == true || selectedOrdo['hasKetua'] == true || selectedOrdo['has_ketua'] == 'true';
       if (hasKetua && _selectedRomoOrdoPosition == 'KETUA_ROMO') {
         final ketuaName = selectedOrdo['ketua_name'] ?? selectedOrdo['ketuaName'] ?? 'Aktif';
         ScaffoldMessenger.of(context).showSnackBar(
@@ -338,10 +343,10 @@ class _RegisterScreenState extends State<RegisterScreen>
       romoPosition = hasKetua ? 'ROMO_BIASA' : _selectedRomoOrdoPosition;
     } else if (_selectedRole == 'ROMO_PAROKI') {
       final selectedParoki = _parokiList.firstWhere(
-        (p) => p['id'] == _selectedParokiId,
+        (p) => p['id']?.toString() == _selectedParokiId?.toString(),
         orElse: () => {},
       );
-      final bool hasKepala = selectedParoki['has_kepala_romo'] == true || selectedParoki['hasKepalaRomo'] == true;
+      final bool hasKepala = selectedParoki['has_kepala_romo'] == true || selectedParoki['hasKepalaRomo'] == true || selectedParoki['has_kepala_romo'] == 'true';
       if (hasKepala && _selectedRomoParokiPosition == 'KETUA_ROMO') {
         final kepalaName = selectedParoki['kepala_romo_name'] ?? selectedParoki['kepalaRomoName'] ?? 'Aktif';
         ScaffoldMessenger.of(context).showSnackBar(
@@ -428,7 +433,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       if (finalRoleCode == 'ROMO_ORDO' && _selectedOrdoId != null) {
         registeredUser['ordoId'] = _selectedOrdoId;
         final selectedOrdo = _ordoList.firstWhere(
-          (o) => o['id'] == _selectedOrdoId,
+          (o) => o['id']?.toString() == _selectedOrdoId?.toString(),
           orElse: () => {},
         );
         if (selectedOrdo['name'] != null) {
@@ -622,16 +627,21 @@ class _RegisterScreenState extends State<RegisterScreen>
                   setState(() {
                     _selectedLingkunganId = val;
                     final selectedLingkungan = _lingkunganList.firstWhere(
-                      (l) => l['id'] == val,
+                      (l) => l['id']?.toString() == val.toString(),
                       orElse: () => {},
                     );
-                    if (_selectedUmatPosition == 'KETUA' && (selectedLingkungan['has_ketua'] == true || selectedLingkungan['hasKetua'] == true)) {
+                    final bool hasKet = selectedLingkungan['has_ketua'] == true || selectedLingkungan['hasKetua'] == true || selectedLingkungan['has_ketua'] == 'true';
+                    final bool hasWak = selectedLingkungan['has_wakil'] == true || selectedLingkungan['hasWakil'] == true || selectedLingkungan['has_wakil'] == 'true';
+                    final bool hasSek = selectedLingkungan['has_sekretaris'] == true || selectedLingkungan['hasSekretaris'] == true || selectedLingkungan['has_sekretaris'] == 'true';
+                    final bool hasBen = selectedLingkungan['has_bendahara'] == true || selectedLingkungan['hasBendahara'] == true || selectedLingkungan['has_bendahara'] == 'true';
+
+                    if (_selectedUmatPosition == 'KETUA' && hasKet) {
                       _selectedUmatPosition = null;
-                    } else if (_selectedUmatPosition == 'WAKIL' && (selectedLingkungan['has_wakil'] == true || selectedLingkungan['hasWakil'] == true)) {
+                    } else if (_selectedUmatPosition == 'WAKIL' && hasWak) {
                       _selectedUmatPosition = null;
-                    } else if (_selectedUmatPosition == 'SEKRETARIS' && (selectedLingkungan['has_sekretaris'] == true || selectedLingkungan['hasSekretaris'] == true)) {
+                    } else if (_selectedUmatPosition == 'SEKRETARIS' && hasSek) {
                       _selectedUmatPosition = null;
-                    } else if (_selectedUmatPosition == 'BENDAHARA' && (selectedLingkungan['has_bendahara'] == true || selectedLingkungan['hasBendahara'] == true)) {
+                    } else if (_selectedUmatPosition == 'BENDAHARA' && hasBen) {
                       _selectedUmatPosition = null;
                     }
                   });
@@ -663,10 +673,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                 setState(() {
                   _selectedOrdoId = val;
                   final selectedOrdo = _ordoList.firstWhere(
-                    (o) => o['id'] == val,
+                    (o) => o['id']?.toString() == val.toString(),
                     orElse: () => {},
                   );
-                  if (selectedOrdo['has_ketua'] == true || selectedOrdo['hasKetua'] == true) {
+                  if (selectedOrdo['has_ketua'] == true || selectedOrdo['hasKetua'] == true || selectedOrdo['has_ketua'] == 'true') {
                     _selectedRomoOrdoPosition = 'ROMO_BIASA';
                   }
                 });
@@ -685,13 +695,13 @@ class _RegisterScreenState extends State<RegisterScreen>
         _selectedRole == 'PENGURUS_LINGKUNGAN' ||
         _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
       final selectedLingkungan = _lingkunganList.firstWhere(
-        (l) => l['id'] == _selectedLingkunganId,
+        (l) => l['id']?.toString() == _selectedLingkunganId?.toString(),
         orElse: () => {},
       );
-      final bool hasKetua = selectedLingkungan['has_ketua'] == true || selectedLingkungan['hasKetua'] == true;
-      final bool hasWakil = selectedLingkungan['has_wakil'] == true || selectedLingkungan['hasWakil'] == true;
-      final bool hasSekretaris = selectedLingkungan['has_sekretaris'] == true || selectedLingkungan['hasSekretaris'] == true;
-      final bool hasBendahara = selectedLingkungan['has_bendahara'] == true || selectedLingkungan['hasBendahara'] == true;
+      final bool hasKetua = selectedLingkungan['has_ketua'] == true || selectedLingkungan['hasKetua'] == true || selectedLingkungan['has_ketua'] == 'true';
+      final bool hasWakil = selectedLingkungan['has_wakil'] == true || selectedLingkungan['hasWakil'] == true || selectedLingkungan['has_wakil'] == 'true';
+      final bool hasSekretaris = selectedLingkungan['has_sekretaris'] == true || selectedLingkungan['hasSekretaris'] == true || selectedLingkungan['has_sekretaris'] == 'true';
+      final bool hasBendahara = selectedLingkungan['has_bendahara'] == true || selectedLingkungan['hasBendahara'] == true || selectedLingkungan['has_bendahara'] == 'true';
 
       String? currentPos = _selectedUmatPosition == 'KOORDINATOR' ? null : _selectedUmatPosition;
       if (currentPos == 'KETUA' && hasKetua) currentPos = null;
@@ -767,10 +777,10 @@ class _RegisterScreenState extends State<RegisterScreen>
       );
     } else if (_selectedRole == 'ROMO_ORDO') {
       final selectedOrdo = _ordoList.firstWhere(
-        (o) => o['id'] == _selectedOrdoId,
+        (o) => o['id']?.toString() == _selectedOrdoId?.toString(),
         orElse: () => {},
       );
-      final bool hasKetua = selectedOrdo['has_ketua'] == true || selectedOrdo['hasKetua'] == true;
+      final bool hasKetua = selectedOrdo['has_ketua'] == true || selectedOrdo['hasKetua'] == true || selectedOrdo['has_ketua'] == 'true';
 
       return DropdownButtonFormField<String>(
         key: ValueKey('romo_ordo_${_selectedOrdoId}_$hasKetua'),
@@ -806,10 +816,10 @@ class _RegisterScreenState extends State<RegisterScreen>
       );
     } else if (_selectedRole == 'ROMO_PAROKI') {
       final selectedParoki = _parokiList.firstWhere(
-        (p) => p['id'] == _selectedParokiId,
+        (p) => p['id']?.toString() == _selectedParokiId?.toString(),
         orElse: () => {},
       );
-      final bool hasKepala = selectedParoki['has_kepala_romo'] == true || selectedParoki['hasKepalaRomo'] == true;
+      final bool hasKepala = selectedParoki['has_kepala_romo'] == true || selectedParoki['hasKepalaRomo'] == true || selectedParoki['has_kepala_romo'] == 'true';
 
       return DropdownButtonFormField<String>(
         key: ValueKey('romo_paroki_${_selectedParokiId}_$hasKepala'),
