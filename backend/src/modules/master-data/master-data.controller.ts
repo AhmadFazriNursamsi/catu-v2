@@ -36,11 +36,15 @@ import {
   UpdatePositionDto,
 } from '../../orders.dto';
 import { MasterDataService } from './master-data.service';
+import { DatabaseInitService } from '../../database/database-init.service';
 
 @ApiTags('Master Data Gereja & Wilayah')
 @Controller('master')
 export class MasterDataController {
-  constructor(private readonly masterDataService: MasterDataService) {}
+  constructor(
+    private readonly masterDataService: MasterDataService,
+    private readonly databaseInitService: DatabaseInitService,
+  ) {}
 
   // 1. KEUSKUPAN
   @Get('keuskupan')
@@ -267,5 +271,15 @@ export class MasterDataController {
   @ApiOperation({ summary: 'Hapus Jabatan / Posisi (Superadmin Only)' })
   async deletePosition(@Param('id') id: number) {
     return await this.masterDataService.deletePosition(id);
+  }
+
+  @Post('sync-seed-data')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Sinkronisasi Lengkap Data Master (Provinsi, Kota, Keuskupan, Paroki, Wilayah, Lingkungan)' })
+  async syncMasterData(@Query('force') force?: string) {
+    const isForce = force === 'true' || force === '1';
+    return await this.databaseInitService.syncFullMasterData(isForce);
   }
 }

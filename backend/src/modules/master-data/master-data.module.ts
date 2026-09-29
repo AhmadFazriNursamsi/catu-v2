@@ -4,7 +4,10 @@ import { MasterDataService } from './master-data.service';
 import { GeoMasterDataController } from './geo-master-data.controller';
 import { GeoMasterDataService } from './geo-master-data.service';
 
+import { DatabaseInitModule } from '../../database/database-init.module';
+
 @Module({
+  imports: [DatabaseInitModule],
   controllers: [MasterDataController, GeoMasterDataController],
   providers: [MasterDataService, GeoMasterDataService],
   exports: [MasterDataService, GeoMasterDataService],

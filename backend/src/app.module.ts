@@ -35,6 +35,7 @@ import { HttpLoggerMiddleware } from './logger.middleware';
       username: process.env.DB_USERNAME || process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME || 'catu_v2_db',
+      schema: 'public',
       autoLoadEntities: true,
       synchronize: false,
       extra: {
