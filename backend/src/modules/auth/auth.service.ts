@@ -53,10 +53,38 @@ export class AuthService {
     return await this.dataSource.query('SELECT id, name FROM keuskupan ORDER BY name ASC');
   }
   async getParoki(keuskupanId?: number) {
+    const baseQuery = `
+      SELECT p.id, p.keuskupan_id, p.name,
+        EXISTS(
+          SELECT 1 FROM user_profiles up
+          JOIN auth_users au ON up.user_id = au.id
+          JOIN roles ro ON au.role_id = ro.id
+          WHERE up.paroki_id = p.id
+            AND ro.code = 'ROMO_PAROKI'
+            AND au.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+            AND (up.romo_position = 'KETUA_ROMO' OR UPPER(up.romo_position) LIKE '%KETUA%' OR UPPER(up.romo_position) LIKE '%KEPALA%')
+            AND (up.is_jabatan_active IS NOT FALSE)
+            AND (up.jabatan_end_year IS NULL OR up.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))
+        ) as has_kepala_romo,
+        (
+          SELECT up.full_name FROM user_profiles up
+          JOIN auth_users au ON up.user_id = au.id
+          JOIN roles ro ON au.role_id = ro.id
+          WHERE up.paroki_id = p.id
+            AND ro.code = 'ROMO_PAROKI'
+            AND au.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+            AND (up.romo_position = 'KETUA_ROMO' OR UPPER(up.romo_position) LIKE '%KETUA%' OR UPPER(up.romo_position) LIKE '%KEPALA%')
+            AND (up.is_jabatan_active IS NOT FALSE)
+            AND (up.jabatan_end_year IS NULL OR up.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))
+          ORDER BY CASE WHEN au.account_status = 'APPROVED' THEN 1 ELSE 2 END
+          LIMIT 1
+        ) as kepala_romo_name
+      FROM paroki p
+    `;
     if (keuskupanId) {
-      return await this.dataSource.query('SELECT id, keuskupan_id, name FROM paroki WHERE keuskupan_id = $1 ORDER BY name ASC', [keuskupanId]);
+      return await this.dataSource.query(`${baseQuery} WHERE p.keuskupan_id = $1 ORDER BY p.name ASC`, [keuskupanId]);
     }
-    return await this.dataSource.query('SELECT id, keuskupan_id, name FROM paroki ORDER BY name ASC');
+    return await this.dataSource.query(`${baseQuery} ORDER BY p.name ASC`);
   }
   async getWilayah(parokiId?: number) {
     if (parokiId) {
@@ -83,7 +111,35 @@ export class AuthService {
     return await this.dataSource.query('SELECT id, provinsi_id, name, type FROM kabupaten_kota ORDER BY name ASC');
   }
   async getOrdo() {
-    return await this.dataSource.query('SELECT id, code, name FROM ordo ORDER BY name ASC');
+    return await this.dataSource.query(`
+      SELECT o.id, o.code, o.name,
+        EXISTS(
+          SELECT 1 FROM user_profiles up
+          JOIN auth_users au ON up.user_id = au.id
+          JOIN roles ro ON au.role_id = ro.id
+          WHERE (up.ordo_id = o.id OR up.user_id IN (SELECT rp.user_id FROM romo_profiles rp WHERE rp.ordo_id = o.id))
+            AND ro.code = 'ROMO_ORDO'
+            AND au.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+            AND (up.romo_position = 'KETUA_ROMO' OR UPPER(up.romo_position) LIKE '%KETUA%' OR UPPER(up.romo_position) LIKE '%KEPALA%' OR UPPER(up.romo_position) LIKE '%SUPERIOR%')
+            AND (up.is_jabatan_active IS NOT FALSE)
+            AND (up.jabatan_end_year IS NULL OR up.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))
+        ) as has_ketua,
+        (
+          SELECT up.full_name FROM user_profiles up
+          JOIN auth_users au ON up.user_id = au.id
+          JOIN roles ro ON au.role_id = ro.id
+          WHERE (up.ordo_id = o.id OR up.user_id IN (SELECT rp.user_id FROM romo_profiles rp WHERE rp.ordo_id = o.id))
+            AND ro.code = 'ROMO_ORDO'
+            AND au.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+            AND (up.romo_position = 'KETUA_ROMO' OR UPPER(up.romo_position) LIKE '%KETUA%' OR UPPER(up.romo_position) LIKE '%KEPALA%' OR UPPER(up.romo_position) LIKE '%SUPERIOR%')
+            AND (up.is_jabatan_active IS NOT FALSE)
+            AND (up.jabatan_end_year IS NULL OR up.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))
+          ORDER BY CASE WHEN au.account_status = 'APPROVED' THEN 1 ELSE 2 END
+          LIMIT 1
+        ) as ketua_name
+      FROM ordo o
+      ORDER BY o.name ASC
+    `);
   }
   async checkAccountStatus(phone: string) {
     if (!phone) return { statusCode: 400, message: 'Nomor HP wajib disertakan' };
@@ -617,6 +673,76 @@ export class AuthService {
           const existingPos = existingPengurus[0].pengurus_position;
           throw new BadRequestException(
             `Jabatan ${pengurusPositionVal} untuk lingkungan ini sudah terisi / diajukan oleh ${existingName} (${existingPos}). Pengurus dengan jabatan yang sama tidak boleh ganda dalam satu lingkungan.`,
+          );
+        }
+      }
+
+      // Check if Ketua Romo Ordo already exists for this Ordo
+      if (dto.roleCode === 'ROMO_ORDO' && dto.ordoId && (romoPositionVal === 'KETUA_ROMO' || (romoPositionVal && (romoPositionVal.toUpperCase().includes('KETUA') || romoPositionVal.toUpperCase().includes('KEPALA') || romoPositionVal.toUpperCase().includes('SUPERIOR'))))) {
+        const existingKetuaOrdo = await queryRunner.query(
+          `SELECT u.id, p.full_name, p.romo_position, u.account_status
+           FROM user_profiles p
+           JOIN auth_users u ON p.user_id = u.id
+           JOIN roles r ON u.role_id = r.id
+           WHERE (p.ordo_id = $1 OR p.user_id IN (SELECT rp.user_id FROM romo_profiles rp WHERE rp.ordo_id = $1))
+             AND r.code = 'ROMO_ORDO'
+             AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+             AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%' OR UPPER(p.romo_position) LIKE '%SUPERIOR%')
+             AND (p.is_jabatan_active IS NOT FALSE)
+             AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
+          [dto.ordoId],
+        );
+        if (existingKetuaOrdo.length > 0) {
+          const existingName = existingKetuaOrdo[0].full_name;
+          const statusText = existingKetuaOrdo[0].account_status === 'APPROVED' ? 'aktif' : 'sedang diajukan';
+          throw new BadRequestException(
+            `Posisi Ketua / Superior untuk ordo ini sudah terisi (${statusText}) oleh ${existingName}. Tidak dapat mendaftar sebagai Ketua Ordo jika sudah ada ketua aktif/diajukan.`,
+          );
+        }
+      }
+
+      // Check if Kepala Romo Paroki already exists for this Paroki
+      if (dto.roleCode === 'ROMO_PAROKI' && dto.parokiId && (romoPositionVal === 'KETUA_ROMO' || (romoPositionVal && (romoPositionVal.toUpperCase().includes('KETUA') || romoPositionVal.toUpperCase().includes('KEPALA'))))) {
+        const existingKetuaRomo = await queryRunner.query(
+          `SELECT u.id, p.full_name, p.romo_position, u.account_status
+           FROM user_profiles p
+           JOIN auth_users u ON p.user_id = u.id
+           JOIN roles r ON u.role_id = r.id
+           WHERE p.paroki_id = $1
+             AND r.code = 'ROMO_PAROKI'
+             AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+             AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%')
+             AND (p.is_jabatan_active IS NOT FALSE)
+             AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
+          [dto.parokiId],
+        );
+        if (existingKetuaRomo.length > 0) {
+          const existingName = existingKetuaRomo[0].full_name;
+          const statusText = existingKetuaRomo[0].account_status === 'APPROVED' ? 'aktif' : 'sedang diajukan';
+          throw new BadRequestException(
+            `Posisi Kepala Romo Paroki untuk paroki ini sudah terisi (${statusText}) oleh ${existingName}. Tidak dapat mendaftar sebagai Kepala Romo Paroki jika sudah ada kepala romo aktif/diajukan.`,
+          );
+        }
+      }
+
+      // Check if Koordinator already exists for this Keuskupan
+      if (isKoordinatorRegistration && dto.keuskupanId) {
+        const existingKoordinator = await queryRunner.query(
+          `SELECT u.id, p.full_name, p.pengurus_position, u.account_status
+           FROM user_profiles p
+           JOIN auth_users u ON p.user_id = u.id
+           JOIN roles r ON u.role_id = r.id
+           WHERE p.keuskupan_id = $1
+             AND (r.code IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN') OR LOWER(p.pengurus_position) LIKE '%koordinator%')
+             AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+             AND (p.is_jabatan_active IS NOT FALSE)
+             AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
+          [dto.keuskupanId],
+        );
+        if (existingKoordinator.length > 0) {
+          const existingName = existingKoordinator[0].full_name;
+          throw new BadRequestException(
+            `Posisi Koordinator untuk keuskupan ini sudah terisi / diajukan oleh ${existingName}.`,
           );
         }
       }
@@ -1291,6 +1417,80 @@ export class AuthService {
           );
         }
       }
+    } else if (activeRoleCode === 'ROMO_ORDO') {
+      const targetOrdoId = (dto.ordoId !== undefined || (dto as any).ordo_id !== undefined)
+        ? (dto.ordoId ?? (dto as any).ordo_id)
+        : null;
+      let checkOrdoId = targetOrdoId;
+      if (!checkOrdoId) {
+        const curProf = await this.dataSource.query(`SELECT ordo_id FROM user_profiles WHERE user_id = $1`, [uid]);
+        checkOrdoId = curProf[0]?.ordo_id;
+      }
+      const targetRomoPos = (dto as any).romoPosition ?? (dto as any).romo_position;
+      let checkRomoPos = targetRomoPos;
+      if (!checkRomoPos) {
+        const curProf = await this.dataSource.query(`SELECT romo_position FROM user_profiles WHERE user_id = $1`, [uid]);
+        checkRomoPos = curProf[0]?.romo_position;
+      }
+      const isKetua = checkRomoPos === 'KETUA_ROMO' || (checkRomoPos && (checkRomoPos.toUpperCase().includes('KETUA') || checkRomoPos.toUpperCase().includes('KEPALA') || checkRomoPos.toUpperCase().includes('SUPERIOR')));
+      if (isKetua && checkOrdoId) {
+        const existingKetua = await this.dataSource.query(
+          `SELECT u.id, p.full_name, p.romo_position
+           FROM user_profiles p
+           JOIN auth_users u ON p.user_id = u.id
+           JOIN roles r ON u.role_id = r.id
+           WHERE (p.ordo_id = $1 OR p.user_id IN (SELECT rp.user_id FROM romo_profiles rp WHERE rp.ordo_id = $1))
+             AND r.code = 'ROMO_ORDO'
+             AND u.id != $2
+             AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+             AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%' OR UPPER(p.romo_position) LIKE '%SUPERIOR%')
+             AND (p.is_jabatan_active IS NOT FALSE)
+             AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
+          [checkOrdoId, uid],
+        );
+        if (existingKetua.length > 0) {
+          throw new BadRequestException(
+            `Ordo ini sudah memiliki Ketua / Superior aktif (${existingKetua[0].full_name}). Hanya boleh ada 1 Ketua per ordo.`,
+          );
+        }
+      }
+    } else if (activeRoleCode === 'ROMO_PAROKI') {
+      const targetParokiId = (dto.parokiId !== undefined || (dto as any).paroki_id !== undefined)
+        ? (dto.parokiId ?? (dto as any).paroki_id)
+        : null;
+      let checkParokiId = targetParokiId;
+      if (!checkParokiId) {
+        const curProf = await this.dataSource.query(`SELECT paroki_id FROM user_profiles WHERE user_id = $1`, [uid]);
+        checkParokiId = curProf[0]?.paroki_id;
+      }
+      const targetRomoPos = (dto as any).romoPosition ?? (dto as any).romo_position;
+      let checkRomoPos = targetRomoPos;
+      if (!checkRomoPos) {
+        const curProf = await this.dataSource.query(`SELECT romo_position FROM user_profiles WHERE user_id = $1`, [uid]);
+        checkRomoPos = curProf[0]?.romo_position;
+      }
+      const isKepala = checkRomoPos === 'KETUA_ROMO' || (checkRomoPos && (checkRomoPos.toUpperCase().includes('KETUA') || checkRomoPos.toUpperCase().includes('KEPALA')));
+      if (isKepala && checkParokiId) {
+        const existingKepala = await this.dataSource.query(
+          `SELECT u.id, p.full_name, p.romo_position
+           FROM user_profiles p
+           JOIN auth_users u ON p.user_id = u.id
+           JOIN roles r ON u.role_id = r.id
+           WHERE p.paroki_id = $1
+             AND r.code = 'ROMO_PAROKI'
+             AND u.id != $2
+             AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+             AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%')
+             AND (p.is_jabatan_active IS NOT FALSE)
+             AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
+          [checkParokiId, uid],
+        );
+        if (existingKepala.length > 0) {
+          throw new BadRequestException(
+            `Paroki ini sudah memiliki Kepala Romo Paroki aktif (${existingKepala[0].full_name}). Hanya boleh ada 1 Kepala per paroki.`,
+          );
+        }
+      }
     }
 
     const fields: string[] = [];
@@ -1445,7 +1645,7 @@ export class AuthService {
   async approveRegistration(dto: ApproveUserDto) {
     if (dto.action === 'APPROVED') {
       const targetProf = await this.dataSource.query(
-        `SELECT u.role_id, r.code as role_code, p.lingkungan_id, p.keuskupan_id, p.pengurus_position, p.full_name
+        `SELECT u.role_id, r.code as role_code, p.lingkungan_id, p.keuskupan_id, p.paroki_id, p.ordo_id, p.pengurus_position, p.romo_position, p.full_name
          FROM auth_users u
          JOIN roles r ON u.role_id = r.id
          LEFT JOIN user_profiles p ON u.id = p.user_id
@@ -1485,6 +1685,40 @@ export class AuthService {
             throw new BadRequestException(
               `Gagal menyetujui akun: Jabatan ${targetProf[0].pengurus_position} pada lingkungan ini sudah terisi dan aktif oleh ${existingApproved[0].full_name}. Tidak boleh ada jabatan pengurus yang ganda dalam satu lingkungan.`,
             );
+          }
+        }
+
+        // ROMO_ORDO duplicate ketua check
+        if (roleCode === 'ROMO_ORDO' && targetProf[0].ordo_id) {
+          const rPos = (targetProf[0].romo_position || '').toLowerCase();
+          const isKetua = rPos.includes('ketua') || rPos.includes('kepala') || rPos.includes('superior');
+          if (isKetua) {
+            const existingApproved = await this.dataSource.query(
+              `SELECT u.id, p.full_name FROM user_profiles p JOIN auth_users u ON p.user_id = u.id JOIN roles r ON u.role_id = r.id WHERE (p.ordo_id = $1 OR p.user_id IN (SELECT rp.user_id FROM romo_profiles rp WHERE rp.ordo_id = $1)) AND r.code = 'ROMO_ORDO' AND u.id != $2 AND u.account_status = 'APPROVED' AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%' OR UPPER(p.romo_position) LIKE '%SUPERIOR%') AND (p.is_jabatan_active IS NOT FALSE) AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
+              [targetProf[0].ordo_id, dto.targetUserId],
+            );
+            if (existingApproved.length > 0) {
+              throw new BadRequestException(
+                `Gagal menyetujui akun: Ordo ini sudah memiliki Ketua Romo Ordo aktif (${existingApproved[0].full_name}). Hanya boleh ada 1 Ketua per ordo.`,
+              );
+            }
+          }
+        }
+
+        // ROMO_PAROKI duplicate kepala check
+        if (roleCode === 'ROMO_PAROKI' && targetProf[0].paroki_id) {
+          const rPos = (targetProf[0].romo_position || '').toLowerCase();
+          const isKepala = rPos.includes('ketua') || rPos.includes('kepala');
+          if (isKepala) {
+            const existingApproved = await this.dataSource.query(
+              `SELECT u.id, p.full_name FROM user_profiles p JOIN auth_users u ON p.user_id = u.id JOIN roles r ON u.role_id = r.id WHERE p.paroki_id = $1 AND r.code = 'ROMO_PAROKI' AND u.id != $2 AND u.account_status = 'APPROVED' AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%') AND (p.is_jabatan_active IS NOT FALSE) AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
+              [targetProf[0].paroki_id, dto.targetUserId],
+            );
+            if (existingApproved.length > 0) {
+              throw new BadRequestException(
+                `Gagal menyetujui akun: Paroki ini sudah memiliki Kepala Romo Paroki aktif (${existingApproved[0].full_name}). Hanya boleh ada 1 Kepala per paroki.`,
+              );
+            }
           }
         }
       }

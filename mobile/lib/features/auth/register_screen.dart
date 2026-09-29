@@ -156,6 +156,13 @@ class _RegisterScreenState extends State<RegisterScreen>
       _selectedLingkunganId = null;
       _wilayahList = [];
       _lingkunganList = [];
+      final selectedParoki = _parokiList.firstWhere(
+        (p) => p['id'] == newParokiId,
+        orElse: () => {},
+      );
+      if (selectedParoki['has_kepala_romo'] == true || selectedParoki['hasKepalaRomo'] == true) {
+        _selectedRomoParokiPosition = 'ROMO_BIASA';
+      }
     });
     final wilayahs = await ApiService.getWilayah(parokiId: newParokiId);
     setState(() {
@@ -217,6 +224,9 @@ class _RegisterScreenState extends State<RegisterScreen>
 
         if (_ordoList.isNotEmpty) {
           _selectedOrdoId = int.tryParse(_ordoList.first['id'].toString());
+          if (_ordoList.first['has_ketua'] == true || _ordoList.first['hasKetua'] == true) {
+            _selectedRomoOrdoPosition = 'ROMO_BIASA';
+          }
         }
 
         if (_dynamicProvinsiList.isNotEmpty) {
@@ -276,9 +286,43 @@ class _RegisterScreenState extends State<RegisterScreen>
         }
       }
     } else if (_selectedRole == 'ROMO_ORDO') {
-      romoPosition = _selectedRomoOrdoPosition;
+      final selectedOrdo = _ordoList.firstWhere(
+        (o) => o['id'] == _selectedOrdoId,
+        orElse: () => {},
+      );
+      final bool hasKetua = selectedOrdo['has_ketua'] == true || selectedOrdo['hasKetua'] == true;
+      if (hasKetua && _selectedRomoOrdoPosition == 'KETUA_ROMO') {
+        final ketuaName = selectedOrdo['ketua_name'] ?? selectedOrdo['ketuaName'] ?? 'Aktif';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Ordo ini sudah memiliki Ketua / Superior ($ketuaName). Anda tidak dapat mendaftar sebagai Ketua Ordo.',
+            ),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+        return;
+      }
+      romoPosition = hasKetua ? 'ROMO_BIASA' : _selectedRomoOrdoPosition;
     } else if (_selectedRole == 'ROMO_PAROKI') {
-      romoPosition = _selectedRomoParokiPosition;
+      final selectedParoki = _parokiList.firstWhere(
+        (p) => p['id'] == _selectedParokiId,
+        orElse: () => {},
+      );
+      final bool hasKepala = selectedParoki['has_kepala_romo'] == true || selectedParoki['hasKepalaRomo'] == true;
+      if (hasKepala && _selectedRomoParokiPosition == 'KETUA_ROMO') {
+        final kepalaName = selectedParoki['kepala_romo_name'] ?? selectedParoki['kepalaRomoName'] ?? 'Aktif';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Paroki ini sudah memiliki Pastor Kepala ($kepalaName). Anda tidak dapat mendaftar sebagai Pastor Kepala.',
+            ),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+        return;
+      }
+      romoPosition = hasKepala ? 'ROMO_BIASA' : _selectedRomoParokiPosition;
     }
 
     String? jabatanStartDate;
@@ -566,7 +610,18 @@ class _RegisterScreenState extends State<RegisterScreen>
                     ))
                 .toList(),
             onChanged: (val) {
-              if (val != null) setState(() => _selectedOrdoId = val);
+              if (val != null) {
+                setState(() {
+                  _selectedOrdoId = val;
+                  final selectedOrdo = _ordoList.firstWhere(
+                    (o) => o['id'] == val,
+                    orElse: () => {},
+                  );
+                  if (selectedOrdo['has_ketua'] == true || selectedOrdo['hasKetua'] == true) {
+                    _selectedRomoOrdoPosition = 'ROMO_BIASA';
+                  }
+                });
+              }
             },
             emptyMessage: 'Ordo tidak ditemukan',
           ),
@@ -617,56 +672,132 @@ class _RegisterScreenState extends State<RegisterScreen>
         onChanged: (val) => setState(() => _selectedUmatPosition = val),
       );
     } else if (_selectedRole == 'ROMO_ORDO') {
-      return DropdownButtonFormField<String>(
-        initialValue: _selectedRomoOrdoPosition,
-        decoration: _fieldDeco(
-            label: 'Jabatan Romo Ordo', icon: Icons.military_tech_outlined),
-        dropdownColor: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        isExpanded: true,
-        items: const [
-          DropdownMenuItem(
-            value: 'KETUA_ROMO',
-            child: Text('Ketua Ordo',
-                style: TextStyle(fontSize: 13),
-                overflow: TextOverflow.ellipsis),
+      final selectedOrdo = _ordoList.firstWhere(
+        (o) => o['id'] == _selectedOrdoId,
+        orElse: () => {},
+      );
+      final bool hasKetua = selectedOrdo['has_ketua'] == true || selectedOrdo['hasKetua'] == true;
+      final String? ketuaName = selectedOrdo['ketua_name']?.toString() ?? selectedOrdo['ketuaName']?.toString();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DropdownButtonFormField<String>(
+            key: ValueKey('romo_ordo_${_selectedOrdoId}_$hasKetua'),
+            initialValue: hasKetua ? 'ROMO_BIASA' : _selectedRomoOrdoPosition,
+            decoration: _fieldDeco(
+                label: 'Jabatan Romo Ordo', icon: Icons.military_tech_outlined),
+            dropdownColor: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            isExpanded: true,
+            items: [
+              if (!hasKetua)
+                const DropdownMenuItem(
+                  value: 'KETUA_ROMO',
+                  child: Text('Ketua Ordo',
+                      style: TextStyle(fontSize: 13),
+                      overflow: TextOverflow.ellipsis),
+                ),
+              const DropdownMenuItem(
+                value: 'ROMO_BIASA',
+                child: Text('Romo Ordo Biasa',
+                    style: TextStyle(fontSize: 13),
+                    overflow: TextOverflow.ellipsis),
+              ),
+            ],
+            onChanged: hasKetua
+                ? null
+                : (val) {
+                    if (val != null) setState(() => _selectedRomoOrdoPosition = val);
+                  },
           ),
-          DropdownMenuItem(
-            value: 'ROMO_BIASA',
-            child: Text('Romo Ordo Biasa',
-                style: TextStyle(fontSize: 13),
-                overflow: TextOverflow.ellipsis),
-          ),
+          if (hasKetua)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 18, color: Colors.amber.shade800),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Ketua / Superior Ordo ini sudah terisi (${ketuaName ?? "Sudah ada ketua aktif"}). Anda hanya dapat mendaftar sebagai Romo Ordo Biasa.',
+                      style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
-        onChanged: (val) {
-          if (val != null) setState(() => _selectedRomoOrdoPosition = val);
-        },
       );
     } else if (_selectedRole == 'ROMO_PAROKI') {
-      return DropdownButtonFormField<String>(
-        initialValue: _selectedRomoParokiPosition,
-        decoration: _fieldDeco(
-            label: 'Jabatan Romo Paroki', icon: Icons.church_outlined),
-        dropdownColor: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        isExpanded: true,
-        items: const [
-          DropdownMenuItem(
-            value: 'KETUA_ROMO',
-            child: Text('Pastor Kepala (Ketua Paroki)',
-                style: TextStyle(fontSize: 13),
-                overflow: TextOverflow.ellipsis),
+      final selectedParoki = _parokiList.firstWhere(
+        (p) => p['id'] == _selectedParokiId,
+        orElse: () => {},
+      );
+      final bool hasKepala = selectedParoki['has_kepala_romo'] == true || selectedParoki['hasKepalaRomo'] == true;
+      final String? kepalaName = selectedParoki['kepala_romo_name']?.toString() ?? selectedParoki['kepalaRomoName']?.toString();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DropdownButtonFormField<String>(
+            key: ValueKey('romo_paroki_${_selectedParokiId}_$hasKepala'),
+            initialValue: hasKepala ? 'ROMO_BIASA' : _selectedRomoParokiPosition,
+            decoration: _fieldDeco(
+                label: 'Jabatan Romo Paroki', icon: Icons.church_outlined),
+            dropdownColor: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            isExpanded: true,
+            items: [
+              if (!hasKepala)
+                const DropdownMenuItem(
+                  value: 'KETUA_ROMO',
+                  child: Text('Pastor Kepala (Ketua Paroki)',
+                      style: TextStyle(fontSize: 13),
+                      overflow: TextOverflow.ellipsis),
+                ),
+              const DropdownMenuItem(
+                value: 'ROMO_BIASA',
+                child: Text('Romo Paroki Biasa (Pastor Rekan)',
+                    style: TextStyle(fontSize: 13),
+                    overflow: TextOverflow.ellipsis),
+              ),
+            ],
+            onChanged: hasKepala
+                ? null
+                : (val) {
+                    if (val != null) setState(() => _selectedRomoParokiPosition = val);
+                  },
           ),
-          DropdownMenuItem(
-            value: 'ROMO_BIASA',
-            child: Text('Romo Paroki Biasa (Pastor Rekan)',
-                style: TextStyle(fontSize: 13),
-                overflow: TextOverflow.ellipsis),
-          ),
+          if (hasKepala)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 18, color: Colors.amber.shade800),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Pastor Kepala Paroki ini sudah terisi (${kepalaName ?? "Sudah ada Pastor Kepala"}). Anda hanya dapat mendaftar sebagai Pastor Rekan (Romo Biasa).',
+                      style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
-        onChanged: (val) {
-          if (val != null) setState(() => _selectedRomoParokiPosition = val);
-        },
       );
     }
     return const SizedBox.shrink();
