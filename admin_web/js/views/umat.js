@@ -79,14 +79,7 @@ function renderUmatTable(filteredUmat) {
       const hasFilter = state.umatSearch || state.umatFilterParoki || state.umatFilterLingkungan;
 
       // Extract unique paroki & lingkungan for filter options
-      const isPureUmat = u => {
-        const role = (u.role_code || u.roleCode || '').toUpperCase();
-        const pos = (u.pengurus_position || '').trim();
-        const isPengurusOrKoor = role === 'PENGURUS_LINGKUNGAN' || role.includes('KOORDINATOR') || pos.length > 0;
-        return role === 'UMAT' && !isPengurusOrKoor;
-      };
-
-      const allUmatUsers = state.users.filter(isPureUmat);
+      const allUmatUsers = state.users.filter(u => (u.role_code || u.roleCode || '').toUpperCase() === 'UMAT');
       const parokiList = state.paroki?.length > 0 ? state.paroki : Array.from(new Set(allUmatUsers.map(u => u.paroki_name).filter(Boolean))).map(name => ({ id: name, name }));
       const lingList = Array.from(new Set(
         allUmatUsers
@@ -96,8 +89,9 @@ function renderUmatTable(filteredUmat) {
       )).sort();
 
       const umats = state.users.filter(u => {
+        const role = (u.role_code || u.roleCode || '').toUpperCase();
         const status = (u.account_status || u.accountStatus || '').toUpperCase();
-        if (!isPureUmat(u) || status !== 'APPROVED') return false;
+        if (role !== 'UMAT' || status !== 'APPROVED') return false;
 
         if (state.umatFilterParoki) {
           const matchPar = String(u.paroki_id) === String(state.umatFilterParoki) || (u.paroki_name === state.umatFilterParoki);

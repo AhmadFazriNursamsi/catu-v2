@@ -92,18 +92,12 @@
                     <div>
                       <label class="block font-extrabold text-slate-700 mb-1.5">Peran / Role Pengguna</label>
                       <select id="editRoleCode" onchange="syncEditFormToState(); onEditRoleChanged(this.value);" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black text-blue-950 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition">
-                        <optgroup label="── DATA KEUMATAN ──">
-                          <option value="UMAT" ${roleCode === 'UMAT' ? 'selected' : ''}>Umat Katolik</option>
-                          <option value="UMAT_PENDATANG" ${roleCode === 'UMAT_PENDATANG' ? 'selected' : ''}>Umat Pendatang</option>
-                        </optgroup>
-                        <optgroup label="── DATA KEPENGURUSAN ──">
-                          <option value="PENGURUS_LINGKUNGAN" ${roleCode === 'PENGURUS_LINGKUNGAN' ? 'selected' : ''}>Pengurus Lingkungan</option>
-                          <option value="KOORDINATOR" ${roleCode === 'KOORDINATOR' ? 'selected' : ''}>Koordinator Keuskupan</option>
-                        </optgroup>
-                        <optgroup label="── PASTORAL & ROHANIWAN ──">
-                          <option value="ROMO_PAROKI" ${roleCode === 'ROMO_PAROKI' ? 'selected' : ''}>Romo Paroki (Diosesan)</option>
-                          <option value="ROMO_ORDO" ${roleCode === 'ROMO_ORDO' ? 'selected' : ''}>Romo Ordo (Religius)</option>
-                        </optgroup>
+                        <option value="UMAT" ${roleCode === 'UMAT' ? 'selected' : ''}>Umat Katolik</option>
+                        <option value="UMAT_PENDATANG" ${roleCode === 'UMAT_PENDATANG' ? 'selected' : ''}>Umat Pendatang</option>
+                        <option value="PENGURUS_LINGKUNGAN" ${roleCode === 'PENGURUS_LINGKUNGAN' ? 'selected' : ''}>Pengurus Lingkungan</option>
+                        <option value="KOORDINATOR" ${roleCode === 'KOORDINATOR' ? 'selected' : ''}>Koordinator Keuskupan</option>
+                        <option value="ROMO_PAROKI" ${roleCode === 'ROMO_PAROKI' ? 'selected' : ''}>Romo Paroki (Diosesan)</option>
+                        <option value="ROMO_ORDO" ${roleCode === 'ROMO_ORDO' ? 'selected' : ''}>Romo Ordo (Religius)</option>
                       </select>
                     </div>
 
@@ -260,6 +254,7 @@
                             <option value="Wakil Ketua" ${u.pengurus_position === 'Wakil Ketua' ? 'selected' : ''}>Wakil Ketua</option>
                             <option value="Sekretaris" ${u.pengurus_position === 'Sekretaris' ? 'selected' : ''}>Sekretaris</option>
                             <option value="Bendahara" ${u.pengurus_position === 'Bendahara' ? 'selected' : ''}>Bendahara</option>
+                            <option value="Koordinator" ${u.pengurus_position === 'Koordinator' ? 'selected' : ''}>Koordinator (Keuskupan)</option>
                           `}
                         </select>
                       </div>
