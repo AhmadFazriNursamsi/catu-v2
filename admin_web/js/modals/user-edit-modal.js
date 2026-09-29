@@ -7,7 +7,6 @@
       const isKoordinatorUser = posLower.includes('koordinator') || rawRole === 'KOORDINATOR' || rawRole === 'KOORDINATOR_KEUSKUPAN';
       const roleCode = isKoordinatorUser ? 'KOORDINATOR' : rawRole;
       const status = (u.account_status || u.accountStatus || 'APPROVED').toUpperCase();
-      const birthDateVal = u.birth_date ? String(u.birth_date).substring(0, 10) : '';
 
       // Normalize phone number to strip leading 62 or 0
       let rawPhone = String(u.phone_number || u.phoneNumber || '').trim();
@@ -67,11 +66,6 @@
                         </div>
                         <input type="tel" id="editPhone" required value="${rawPhone}" placeholder="81234567890" oninput="onEditPhoneInput(this)" class="block w-full pl-16 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 transition" />
                       </div>
-                    </div>
-
-                    <div>
-                      <label class="block font-extrabold text-slate-700 mb-1.5">Tanggal Lahir</label>
-                      <input type="date" id="editBirthDate" value="${birthDateVal}" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition" />
                     </div>
 
                     <div>

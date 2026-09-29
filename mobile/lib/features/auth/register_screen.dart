@@ -22,7 +22,6 @@ class _RegisterScreenState extends State<RegisterScreen>
   // Text Controllers
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
-  final _birthDateController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _addressController = TextEditingController();
@@ -75,7 +74,6 @@ class _RegisterScreenState extends State<RegisterScreen>
     _phoneController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
-    _birthDateController.dispose();
     _emailController.dispose();
     _addressController.dispose();
     _passwordController.dispose();
@@ -265,7 +263,6 @@ class _RegisterScreenState extends State<RegisterScreen>
     final fullPhone = '62$phone';
     final password = _passwordController.text.trim();
     final email = _emailController.text.trim();
-    final birthDate = _birthDateController.text.trim();
     final address = _addressController.text.trim();
 
     String finalRoleCode = _selectedRole;
@@ -387,7 +384,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       password: password,
       roleCode: finalRoleCode,
       email: email.isNotEmpty ? email : null,
-      birthDate: birthDate.isNotEmpty ? birthDate : null,
+      birthDate: null,
       address: address.isNotEmpty ? address : null,
       keuskupanId: _selectedKeuskupanId,
       parokiId: _selectedParokiId,
@@ -1354,29 +1351,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                                         ),
                                       ),
                                     ],
-                                  ),
-                                  const SizedBox(height: 14),
-
-                                  GestureDetector(
-                                    onTap: () =>
-                                        _selectDate(_birthDateController),
-                                    child: AbsorbPointer(
-                                      child: TextFormField(
-                                        controller: _birthDateController,
-                                        style: const TextStyle(
-                                            fontSize: 14,
-                                            color: AppConstants.textDark),
-                                        decoration: _fieldDeco(
-                                          label: 'Tanggal Lahir',
-                                          icon: Icons.calendar_month_rounded,
-                                          hint: 'DD/MM/YYYY',
-                                          suffix: const Icon(
-                                              Icons.calendar_today_rounded,
-                                              size: 18,
-                                              color: AppConstants.primaryBlue),
-                                        ),
-                                      ),
-                                    ),
                                   ),
                                   const SizedBox(height: 14),
 

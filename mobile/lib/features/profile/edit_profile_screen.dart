@@ -25,7 +25,6 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
-  late TextEditingController _birthDateController;
   late TextEditingController _phoneController;
   late TextEditingController _emailController;
   late TextEditingController _addressController;
@@ -84,7 +83,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     _firstNameController = TextEditingController();
     _lastNameController = TextEditingController();
-    _birthDateController = TextEditingController();
     _phoneController = TextEditingController();
     _emailController = TextEditingController();
     _addressController = TextEditingController();
@@ -143,7 +141,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _firstNameController.dispose();
     _lastNameController.dispose();
-    _birthDateController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _addressController.dispose();
@@ -221,8 +218,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     _firstNameController.text = first;
     _lastNameController.text = last;
-    _birthDateController.text =
-        data['birthDate'] ?? data['birth_date'] ?? '';
     _phoneController.text =
         data['phoneNumber'] ?? data['phone_number'] ?? '';
     _emailController.text = data['email'] ?? '';
@@ -624,36 +619,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Future<void> _pickBirthDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(1990, 1, 1),
-      firstDate: DateTime(1920),
-      lastDate: now,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1D4ED8),
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF0F172A),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      final day = picked.day.toString().padLeft(2, '0');
-      final month = picked.month.toString().padLeft(2, '0');
-      final year = picked.year;
-      setState(() {
-        _birthDateController.text = '$day/$month/$year';
-      });
-    }
-  }
 
   String _roleToCode(String role) {
     if (role == 'Romo Ordo') return 'ROMO_ORDO';
@@ -679,7 +644,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'fullName': fullName,
         'phoneNumber': _phoneController.text.trim(),
         'email': _emailController.text.trim(),
-        'birthDate': _birthDateController.text.trim(),
         'address': _addressController.text.trim(),
         'avatarUrl': _avatarUrl,
         'roleCode': roleCode,
@@ -816,19 +780,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 14),
 
-              GestureDetector(
-                onTap: _pickBirthDate,
-                child: AbsorbPointer(
-                  child: _buildTextField(
-                    controller: _birthDateController,
-                    label: LanguageService.tr('birth_date'),
-                    hint: 'DD/MM/YYYY',
-                    icon: Icons.calendar_month_rounded,
-                    suffixIcon: Icons.calendar_today_rounded,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
 
               _buildTextField(
                 controller: _phoneController,
