@@ -817,28 +817,6 @@ export class AuthService {
         }
       }
 
-      // Check if Koordinator already exists for this Keuskupan
-      if (isKoordinatorRegistration && dto.keuskupanId) {
-        const existingKoordinator = await queryRunner.query(
-          `SELECT u.id, p.full_name, p.pengurus_position, u.account_status
-           FROM user_profiles p
-           JOIN auth_users u ON p.user_id = u.id
-           JOIN roles r ON u.role_id = r.id
-           WHERE p.keuskupan_id = $1
-             AND (r.code IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN') OR LOWER(p.pengurus_position) LIKE '%koordinator%')
-             AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
-             AND (p.is_jabatan_active IS NOT FALSE)
-             AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
-          [dto.keuskupanId],
-        );
-        if (existingKoordinator.length > 0) {
-          const existingName = existingKoordinator[0].full_name;
-          throw new BadRequestException(
-            `Posisi Koordinator untuk keuskupan ini sudah terisi / diajukan oleh ${existingName}.`,
-          );
-        }
-      }
-
       // Flag Jabatan applies ONLY to leadership positions. Ordinary Umat & ordinary Romo have NO leadership position (null).
       const isLeadershipPos = Boolean(
         pengurusPositionVal ||
@@ -1441,38 +1419,7 @@ export class AuthService {
 
     const isKoordinator = activeRoleCode === 'KOORDINATOR' || activeRoleCode === 'KOORDINATOR_KEUSKUPAN' || (targetPengurusPos && String(targetPengurusPos).toLowerCase().includes('koordinator'));
 
-    if (isKoordinator) {
-      const targetKeuskupanId = (dto.keuskupanId !== undefined || (dto as any).keuskupan_id !== undefined)
-        ? (dto.keuskupanId ?? (dto as any).keuskupan_id)
-        : null;
-      let checkKeuskupanId = targetKeuskupanId;
-      if (!checkKeuskupanId) {
-        const curProf = await this.dataSource.query(`SELECT keuskupan_id FROM user_profiles WHERE user_id = $1`, [uid]);
-        checkKeuskupanId = curProf[0]?.keuskupan_id;
-      }
-      if (checkKeuskupanId) {
-        const existingKoordinator = await this.dataSource.query(
-          `SELECT u.id, p.full_name, p.pengurus_position
-           FROM user_profiles p
-           JOIN auth_users u ON p.user_id = u.id
-           JOIN roles r ON u.role_id = r.id
-           WHERE p.keuskupan_id = $1
-             AND u.id != $2
-             AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
-             AND (
-               r.code LIKE '%KOORDINATOR%'
-               OR LOWER(p.pengurus_position) LIKE '%koordinator%'
-             )`,
-          [checkKeuskupanId, uid],
-        );
-        if (existingKoordinator.length > 0) {
-          const existingName = existingKoordinator[0].full_name;
-          throw new BadRequestException(
-            `Keuskupan ini sudah memiliki Koordinator aktif (${existingName}). Koordinator keuskupan hanya boleh 1 orang.`,
-          );
-        }
-      }
-    } else if (activeRoleCode === 'PENGURUS_LINGKUNGAN' || targetPengurusPos) {
+    if ((activeRoleCode === 'PENGURUS_LINGKUNGAN' || targetPengurusPos) && !isKoordinator) {
       let checkLingkunganId = targetLingkunganId;
       if (!checkLingkunganId) {
         const curProf = await this.dataSource.query(`SELECT lingkungan_id FROM user_profiles WHERE user_id = $1`, [uid]);
@@ -1749,23 +1696,6 @@ export class AuthService {
         const roleCode = targetProf[0].role_code;
         const pengurusPos = (targetProf[0].pengurus_position || '').toString().toLowerCase();
         const isKoordinator = pengurusPos.includes('koordinator') || roleCode === 'KOORDINATOR' || roleCode === 'KOORDINATOR_KEUSKUPAN';
-
-        // Check if Koordinator in that Keuskupan already exists
-        if (isKoordinator && targetProf[0].keuskupan_id) {
-          const existingKoordinator = await this.dataSource.query(
-            `SELECT u.id, p.full_name, p.pengurus_position FROM user_profiles p JOIN auth_users u ON p.user_id = u.id WHERE p.keuskupan_id = $1 AND u.id != $2 AND u.account_status = 'APPROVED' AND LOWER(p.pengurus_position) LIKE '%koordinator%' AND (p.is_jabatan_active IS NOT FALSE) AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
-            [targetProf[0].keuskupan_id, dto.targetUserId],
-          );
-          if (existingKoordinator.length > 0) {
-            throw new BadRequestException(
-              `Gagal menyetujui akun: Jabatan Koordinator untuk keuskupan ini sudah aktif oleh ${existingKoordinator[0].full_name}.`,
-            );
-          }
-          await this.dataSource.query(
-            `UPDATE user_profiles SET is_jabatan_active = FALSE WHERE keuskupan_id = $1 AND user_id != $2 AND LOWER(pengurus_position) LIKE '%koordinator%' AND (jabatan_end_year IS NOT NULL AND jabatan_end_year < EXTRACT(YEAR FROM CURRENT_DATE))`,
-            [targetProf[0].keuskupan_id, dto.targetUserId],
-          );
-        }
 
         // Pengurus Lingkungan duplicate position check
         if (roleCode === 'PENGURUS_LINGKUNGAN' && targetProf[0].lingkungan_id && targetProf[0].pengurus_position) {

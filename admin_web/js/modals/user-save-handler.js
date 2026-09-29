@@ -228,19 +228,6 @@ function renderEditUserHeader(u, uName, status, roleCode) {
           renderApp();
           return;
         }
-
-        const duplicateKoordinator = state.users.find(other => {
-          if (String(other.id) === String(u.id) || !['APPROVED', 'PENDING_APPROVAL'].includes((other.account_status || other.accountStatus || '').toUpperCase())) return false;
-          if (String(other.keuskupan_id || other.keuskupanId) !== String(checkKeuskupanId)) return false;
-          const oPos = (other.pengurus_position || other.pengurusPosition || '').toLowerCase();
-          const isOKoor = oPos.includes('koordinator') || (other.role_code || other.roleCode || '').toUpperCase().includes('KOORDINATOR');
-          return isOKoor && isActOther(other);
-        });
-        if (duplicateKoordinator) {
-          state.editFormError = `Keuskupan ini sudah memiliki Koordinator aktif (${duplicateKoordinator.full_name || duplicateKoordinator.fullName}). Hanya boleh ada 1 Koordinator aktif per keuskupan.`;
-          renderApp();
-          return;
-        }
       } else if (roleCode === 'PENGURUS_LINGKUNGAN') {
         const pos = document.getElementById('editPengurusPosition');
         if (pos) payload.pengurusPosition = pos.value;
