@@ -84,9 +84,13 @@
       umatPendatangFilterKeuskupan: '',
       umatPendatangFilterParoki: '',
 
+      pengurusSubTab: 'pengurus', // 'pengurus' | 'koordinator'
       pengurusSearch: '',
       pengurusFilterPosition: '',
       pengurusFilterParoki: '',
+
+      koordinatorSearch: '',
+      koordinatorFilterKeuskupan: '',
 
       romoParokiSearch: '',
       romoParokiFilterPosition: '',

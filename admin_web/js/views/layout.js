@@ -253,7 +253,7 @@
       if (tab === 'orders') return 'Daftar Pelayanan';
       if (tab === 'umat') return 'Data Umat Katolik';
       if (tab === 'umat_pendatang') return 'Data Umat Pendatang';
-      if (tab === 'pengurus') return 'Data Pengurus Lingkungan';
+      if (tab === 'pengurus') return state.pengurusSubTab === 'koordinator' ? 'Data Koordinator Keuskupan' : 'Data Pengurus Lingkungan';
       if (tab === 'romo_paroki') return 'Data Romo Paroki';
       if (tab === 'romo_ordo') return 'Data Romo Ordo';
       if (tab === 'approvals') return 'Persetujuan Pendaftaran Akun';

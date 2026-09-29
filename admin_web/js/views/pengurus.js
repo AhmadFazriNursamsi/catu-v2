@@ -1,192 +1,395 @@
-// ── Pengurus Management View ──
+// ── Helper Checkers ──
+function isKoordinatorUser(u) {
+  const role = (u.role_code || u.roleCode || '').toUpperCase();
+  const pos = (u.pengurus_position || u.pengurusPosition || '').toLowerCase();
+  return role.includes('KOORDINATOR') || pos.includes('koordinator');
+}
+
+function isPurePengurusUser(u) {
+  const role = (u.role_code || u.roleCode || '').toUpperCase();
+  const pos = (u.pengurus_position || u.pengurusPosition || '').toLowerCase();
+  return (role === 'PENGURUS_LINGKUNGAN' || pos.length > 0) && !isKoordinatorUser(u);
+}
+
+// ── Table 1: Pengurus Lingkungan ──
 function renderPengurusTable(filteredPengurus) {
-      return `<div class="overflow-x-auto">
-              <table class="w-full min-w-[760px] text-left text-xs">
-                <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
-                  <tr>
-                    <th class="px-6 py-4">NAMA PENGURUS</th>
-                    <th class="px-6 py-4">JABATAN</th>
-                    <th class="px-6 py-4">KOTA / DOMISILI</th>
-                    <th class="px-6 py-4">KEUSKUPAN</th>
-                    <th class="px-6 py-4">LINGKUNGAN</th>
-                    <th class="px-6 py-4 text-center">STATUS JABATAN</th>
-                    <th class="px-6 py-4">NO. WHATSAPP</th>
-                    <th class="px-6 py-4 text-right">AKSI</th>
+  return `<div class="overflow-x-auto">
+          <table class="w-full min-w-[760px] text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
+              <tr>
+                <th class="px-6 py-4">NAMA PENGURUS</th>
+                <th class="px-6 py-4">JABATAN</th>
+                <th class="px-6 py-4">LINGKUNGAN & PAROKI</th>
+                <th class="px-6 py-4">KEUSKUPAN</th>
+                <th class="px-6 py-4">KOTA / DOMISILI</th>
+                <th class="px-6 py-4 text-center">STATUS JABATAN</th>
+                <th class="px-6 py-4">NO. WHATSAPP</th>
+                <th class="px-6 py-4 text-right">AKSI</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+              ${filteredPengurus.length === 0 ? `
+                <tr>
+                  <td colspan="8" class="text-center py-16 text-slate-400 space-y-3">
+                    <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+                      <i data-lucide="briefcase" class="w-7 h-7"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 text-sm">Tidak ada data pengurus lingkungan yang sesuai filter</p>
+                  </td>
+                </tr>
+              ` : filteredPengurus.map(u => {
+                const currentYear = new Date().getFullYear();
+                const endY = u.jabatan_end_year || (u.jabatan_end_date ? new Date(u.jabatan_end_date).getFullYear() : null);
+                const isExpired = (endY && endY < currentYear) || u.is_jabatan_active === false;
+                return `
+                  <tr onclick="viewUserProfileModal('${u.id}')" class="hover:bg-slate-50/80 transition duration-150 cursor-pointer group">
+                    <td class="px-6 py-4">
+                      <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${u.full_name || 'Pengurus'}</p>
+                      <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                    </td>
+                    <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
+                      ${u.pengurus_position || 'Ketua Lingkungan'}
+                    </td>
+                    <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                      <p class="font-semibold text-slate-800 truncate max-w-[180px]">${u.lingkungan_name || '-'}</p>
+                      <p class="text-[11px] text-slate-400 font-medium truncate max-w-[180px] mt-0.5">${u.paroki_name || '-'}</p>
+                    </td>
+                    <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                      <span class="truncate block max-w-[180px]">${u.keuskupan_name || u.keuskupanName || '-'}</span>
+                    </td>
+                    <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                      <span class="truncate block max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                      ${isExpired ? `
+                        <span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold text-[10.5px]">
+                          <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                          <span>TIDAK AKTIF</span>
+                        </span>
+                      ` : `
+                        <span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10.5px]">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          <span>AKTIF</span>
+                        </span>
+                      `}
+                    </td>
+                    <td class="px-6 py-4 font-semibold text-slate-700">
+                      <span class="inline-flex items-center space-x-1.5 text-xs">
+                        <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
+                        <span>${u.phone_number}</span>
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                      <div class="inline-flex items-center justify-end space-x-2">
+                        <button onclick="event.stopPropagation(); openEditUserModal('${u.id}')"
+                          class="inline-flex items-center space-x-1 text-xs font-semibold text-slate-600 hover:text-slate-900 transition py-1 px-1.5 rounded hover:bg-slate-100">
+                          <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-500"></i>
+                          <span>Edit</span>
+                        </button>
+                        <span class="text-slate-300">·</span>
+                        <button onclick="event.stopPropagation(); viewUserProfileModal('${u.id}')"
+                          class="inline-flex items-center space-x-1 text-xs font-semibold text-blue-700 hover:text-blue-900 transition py-1 px-1.5 rounded hover:bg-blue-50">
+                          <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-600"></i>
+                          <span>Detail</span>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-                  ${filteredPengurus.length === 0 ? `
-                    <tr>
-                      <td colspan="8" class="text-center py-16 text-slate-400 space-y-3">
-                        <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
-                          <i data-lucide="award" class="w-7 h-7"></i>
-                        </div>
-                        <p class="font-bold text-slate-700 text-sm">Tidak ada data pengurus lingkungan yang sesuai filter</p>
-                      </td>
-                    </tr>
-                  ` : filteredPengurus.map(u => {
-                    const currentYear = new Date().getFullYear();
-                    const endY = u.jabatan_end_year || (u.jabatan_end_date ? new Date(u.jabatan_end_date).getFullYear() : null);
-                    const isExpired = (endY && endY < currentYear) || u.is_jabatan_active === false;
-                    return `
-                      <tr onclick="viewUserProfileModal('${u.id}')" class="hover:bg-slate-50/80 transition duration-150 cursor-pointer group">
-                        <td class="px-6 py-4">
-                          <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${u.full_name || 'Pengurus'}</p>
-                          <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
-                        </td>
-                        <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
-                          ${u.pengurus_position || ((u.role_code || '').includes('KOORDINATOR') ? 'Koordinator' : 'Ketua Lingkungan')}
-                        </td>
-                        <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                          <span class="truncate block max-w-[170px]">${u.kota_name || u.address || '-'}</span>
-                        </td>
-                        <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                          <span class="truncate block max-w-[180px]">${u.keuskupan_name || u.keuskupanName || '-'}</span>
-                        </td>
-                        <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                          <p class="font-semibold text-slate-800 truncate max-w-[180px]">${u.lingkungan_name || '-'}</p>
-                          <p class="text-[11px] text-slate-400 font-medium truncate max-w-[180px] mt-0.5">${u.paroki_name || '-'}</p>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                          ${isExpired ? `
-                            <span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold text-[10.5px]">
-                              <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                              <span>TIDAK AKTIF</span>
-                            </span>
-                          ` : `
-                            <span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10.5px]">
-                              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                              <span>AKTIF</span>
-                            </span>
-                          `}
-                        </td>
-                        <td class="px-6 py-4 font-semibold text-slate-700">
-                          <span class="inline-flex items-center space-x-1.5 text-xs">
-                            <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
-                            <span>${u.phone_number}</span>
-                          </span>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                          <div class="inline-flex items-center justify-end space-x-2">
-                            <button onclick="event.stopPropagation(); openEditUserModal('${u.id}')"
-                              class="inline-flex items-center space-x-1 text-xs font-semibold text-slate-600 hover:text-slate-900 transition py-1 px-1.5 rounded hover:bg-slate-100">
-                              <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-500"></i>
-                              <span>Edit</span>
-                            </button>
-                            <span class="text-slate-300">·</span>
-                            <button onclick="event.stopPropagation(); viewUserProfileModal('${u.id}')"
-                              class="inline-flex items-center space-x-1 text-xs font-semibold text-blue-700 hover:text-blue-900 transition py-1 px-1.5 rounded hover:bg-blue-50">
-                              <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-600"></i>
-                              <span>Detail</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── Table 2: Koordinator Keuskupan ──
+function renderKoordinatorTable(filteredKoordinator) {
+  return `<div class="overflow-x-auto">
+          <table class="w-full min-w-[760px] text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 tracking-wider uppercase text-[10.5px]">
+              <tr>
+                <th class="px-6 py-4">NAMA KOORDINATOR</th>
+                <th class="px-6 py-4">JABATAN</th>
+                <th class="px-6 py-4">KEUSKUPAN</th>
+                <th class="px-6 py-4">KOTA / DOMISILI</th>
+                <th class="px-6 py-4 text-center">STATUS JABATAN</th>
+                <th class="px-6 py-4">NO. WHATSAPP</th>
+                <th class="px-6 py-4 text-right">AKSI</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+              ${filteredKoordinator.length === 0 ? `
+                <tr>
+                  <td colspan="7" class="text-center py-16 text-slate-400 space-y-3">
+                    <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+                      <i data-lucide="award" class="w-7 h-7"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 text-sm">Tidak ada data koordinator keuskupan yang sesuai filter</p>
+                  </td>
+                </tr>
+              ` : filteredKoordinator.map(u => {
+                const currentYear = new Date().getFullYear();
+                const endY = u.jabatan_end_year || (u.jabatan_end_date ? new Date(u.jabatan_end_date).getFullYear() : null);
+                const isExpired = (endY && endY < currentYear) || u.is_jabatan_active === false;
+                return `
+                  <tr onclick="viewUserProfileModal('${u.id}')" class="hover:bg-slate-50/80 transition duration-150 cursor-pointer group">
+                    <td class="px-6 py-4">
+                      <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${u.full_name || 'Koordinator'}</p>
+                      <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                    </td>
+                    <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
+                      <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 font-bold border border-indigo-200 text-[11px]">
+                        <i data-lucide="award" class="w-3 h-3 text-indigo-600"></i>
+                        <span>${u.pengurus_position || 'Koordinator'}</span>
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                      <span class="font-bold text-slate-900">${u.keuskupan_name || u.keuskupanName || '-'}</span>
+                    </td>
+                    <td class="px-6 py-4 text-slate-700 font-medium text-xs">
+                      <span class="truncate block max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                      ${isExpired ? `
+                        <span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold text-[10.5px]">
+                          <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                          <span>TIDAK AKTIF</span>
+                        </span>
+                      ` : `
+                        <span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10.5px]">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          <span>AKTIF</span>
+                        </span>
+                      `}
+                    </td>
+                    <td class="px-6 py-4 font-semibold text-slate-700">
+                      <span class="inline-flex items-center space-x-1.5 text-xs">
+                        <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
+                        <span>${u.phone_number}</span>
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                      <div class="inline-flex items-center justify-end space-x-2">
+                        <button onclick="event.stopPropagation(); openEditUserModal('${u.id}')"
+                          class="inline-flex items-center space-x-1 text-xs font-semibold text-slate-600 hover:text-slate-900 transition py-1 px-1.5 rounded hover:bg-slate-100">
+                          <i data-lucide="edit-3" class="w-3.5 h-3.5 text-slate-500"></i>
+                          <span>Edit</span>
+                        </button>
+                        <span class="text-slate-300">·</span>
+                        <button onclick="event.stopPropagation(); viewUserProfileModal('${u.id}')"
+                          class="inline-flex items-center space-x-1 text-xs font-semibold text-blue-700 hover:text-blue-900 transition py-1 px-1.5 rounded hover:bg-blue-50">
+                          <i data-lucide="eye" class="w-3.5 h-3.5 text-blue-600"></i>
+                          <span>Detail</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── Tab: Pengurus Lingkungan & Koordinator Keuskupan ──
+function renderPengurusTab() {
+  const currentSubTab = state.pengurusSubTab || 'pengurus';
+
+  const allApprovedUsers = state.users.filter(u => (u.account_status || u.accountStatus || '').toUpperCase() === 'APPROVED');
+  const allPengurusUsers = allApprovedUsers.filter(isPurePengurusUser);
+  const allKoordinatorUsers = allApprovedUsers.filter(isKoordinatorUser);
+
+  if (currentSubTab === 'koordinator') {
+    const q = (state.koordinatorSearch || '').toLowerCase().trim();
+    const hasFilter = state.koordinatorSearch || state.koordinatorFilterKeuskupan;
+
+    const keuskupanList = state.keuskupan?.length > 0
+      ? state.keuskupan
+      : Array.from(new Set(allKoordinatorUsers.map(u => u.keuskupan_name || u.keuskupanName).filter(Boolean))).map(name => ({ id: name, name }));
+
+    const list = allKoordinatorUsers.filter(u => {
+      if (state.koordinatorFilterKeuskupan) {
+        const matchK = String(u.keuskupan_id) === String(state.koordinatorFilterKeuskupan) || (u.keuskupan_name === state.koordinatorFilterKeuskupan) || (u.keuskupanName === state.koordinatorFilterKeuskupan);
+        if (!matchK) return false;
+      }
+      if (q) {
+        const name = (u.full_name || u.fullName || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
+        const pos = (u.pengurus_position || '').toLowerCase();
+        const keus = (u.keuskupan_name || u.keuskupanName || '').toLowerCase();
+        const kota = (u.kota_name || u.address || '').toLowerCase();
+        if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !pos.includes(q) && !keus.includes(q) && !kota.includes(q)) return false;
+      }
+      return true;
+    });
+
+    return `
+      <div class="space-y-6 animate-fade-in">
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+          <!-- Sub-Tab Header -->
+          <div class="flex items-center space-x-2 border-b border-slate-200/80 px-4 pt-3 pb-0 bg-slate-50/70">
+            <button type="button" onclick="state.pengurusSubTab = 'pengurus'; renderApp();"
+              class="pb-3 px-3.5 text-xs font-extrabold transition border-b-2 flex items-center space-x-2 border-transparent text-slate-500 hover:text-slate-800 cursor-pointer">
+              <i data-lucide="briefcase" class="w-4 h-4 text-slate-400"></i>
+              <span>Pengurus Lingkungan</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-600">
+                ${allPengurusUsers.length}
+              </span>
+            </button>
+            <button type="button" onclick="state.pengurusSubTab = 'koordinator'; renderApp();"
+              class="pb-3 px-3.5 text-xs font-extrabold transition border-b-2 flex items-center space-x-2 border-indigo-600 text-indigo-700 cursor-pointer">
+              <i data-lucide="award" class="w-4 h-4 text-indigo-600"></i>
+              <span>Koordinator Keuskupan</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">
+                ${allKoordinatorUsers.length}
+              </span>
+            </button>
+          </div>
+
+          <!-- Filter & Search Bar -->
+          <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+            <div class="relative w-full max-w-md">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input type="text" id="koordinatorSearchInput" placeholder="Cari nama koordinator, keuskupan, kota, email..." value="${state.koordinatorSearch || ''}"
+                oninput="state.koordinatorSearch = this.value; renderApp();"
+                class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm transition" />
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
+              <div class="relative w-full sm:w-auto">
+                <select onchange="state.koordinatorFilterKeuskupan = this.value; renderApp();"
+                  class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm max-w-none sm:max-w-[220px] truncate">
+                  <option value="">Semua Keuskupan</option>
+                  ${keuskupanList.map(k => `
+                    <option value="${k.id || k.name}" ${String(state.koordinatorFilterKeuskupan) === String(k.id || k.name) ? 'selected' : ''}>${k.name}</option>
+                  `).join('')}
+                </select>
+              </div>
+
+              ${hasFilter ? `
+                <button onclick="state.koordinatorSearch = ''; state.koordinatorFilterKeuskupan = ''; renderApp();"
+                  class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer">
+                  <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
+                  <span>Reset</span>
+                </button>
+              ` : ''}
+
+              <span class="px-3.5 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold whitespace-nowrap">
+                ${list.length} Koordinator Keuskupan Aktif
+              </span>
             </div>
           </div>
-        </div>`;
+
+          ${renderKoordinatorTable(list)}
+    `;
+  }
+
+  // Otherwise: Pengurus Lingkungan
+  const q = (state.pengurusSearch || '').toLowerCase().trim();
+  const hasFilter = state.pengurusSearch || state.pengurusFilterPosition || state.pengurusFilterParoki;
+  const parokiList = state.paroki?.length > 0
+    ? state.paroki
+    : Array.from(new Set(allPengurusUsers.map(u => u.paroki_name).filter(Boolean))).map(name => ({ id: name, name }));
+  const positionList = ['Ketua Lingkungan', 'Wakil Ketua', 'Sekretaris', 'Bendahara'];
+
+  const list = allPengurusUsers.filter(u => {
+    if (state.pengurusFilterPosition) {
+      const userPos = (u.pengurus_position || '').toLowerCase();
+      const targetPos = state.pengurusFilterPosition.toLowerCase();
+      if (userPos !== targetPos) return false;
     }
 
-    function renderPengurusTab() {
-      const q = (state.pengurusSearch || '').toLowerCase().trim();
-      const hasFilter = state.pengurusSearch || state.pengurusFilterPosition || state.pengurusFilterParoki;
+    if (state.pengurusFilterParoki) {
+      const matchPar = String(u.paroki_id) === String(state.pengurusFilterParoki) || (u.paroki_name === state.pengurusFilterParoki);
+      if (!matchPar) return false;
+    }
 
-      const isPengurusOrKoordinator = (u) => {
-        const role = (u.role_code || u.roleCode || '').toUpperCase();
-        const pos = (u.pengurus_position || '').toLowerCase();
-        return role === 'PENGURUS_LINGKUNGAN' || pos.includes('koordinator') || role.includes('KOORDINATOR');
-      };
+    if (q) {
+      const name = (u.full_name || u.fullName || '').toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
+      const pos = (u.pengurus_position || '').toLowerCase();
+      const par = (u.paroki_name || u.parokiName || '').toLowerCase();
+      const ling = (u.lingkungan_name || '').toLowerCase();
+      const kota = (u.kota_name || u.address || '').toLowerCase();
+      const prov = (u.provinsi_name || '').toLowerCase();
+      if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !pos.includes(q) && !par.includes(q) && !ling.includes(q) && !kota.includes(q) && !prov.includes(q)) return false;
+    }
+    return true;
+  });
 
-      const allPengurusUsers = state.users.filter(u => isPengurusOrKoordinator(u));
-      const parokiList = state.paroki?.length > 0 ? state.paroki : Array.from(new Set(allPengurusUsers.map(u => u.paroki_name).filter(Boolean))).map(name => ({ id: name, name }));
-      const positionList = ['Ketua Lingkungan', 'Wakil Ketua', 'Sekretaris', 'Koordinator'];
+  return `
+    <div class="space-y-6 animate-fade-in">
+      <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+        <!-- Sub-Tab Header -->
+        <div class="flex items-center space-x-2 border-b border-slate-200/80 px-4 pt-3 pb-0 bg-slate-50/70">
+          <button type="button" onclick="state.pengurusSubTab = 'pengurus'; renderApp();"
+            class="pb-3 px-3.5 text-xs font-extrabold transition border-b-2 flex items-center space-x-2 border-blue-600 text-blue-700 cursor-pointer">
+            <i data-lucide="briefcase" class="w-4 h-4 text-blue-600"></i>
+            <span>Pengurus Lingkungan</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+              ${allPengurusUsers.length}
+            </span>
+          </button>
+          <button type="button" onclick="state.pengurusSubTab = 'koordinator'; renderApp();"
+            class="pb-3 px-3.5 text-xs font-extrabold transition border-b-2 flex items-center space-x-2 border-transparent text-slate-500 hover:text-slate-800 cursor-pointer">
+            <i data-lucide="award" class="w-4 h-4 text-slate-400"></i>
+            <span>Koordinator Keuskupan</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-600">
+              ${allKoordinatorUsers.length}
+            </span>
+          </button>
+        </div>
 
-      const list = state.users.filter(u => {
-        const status = (u.account_status || u.accountStatus || '').toUpperCase();
-        if (!isPengurusOrKoordinator(u) || status !== 'APPROVED') return false;
+        <!-- Filter & Search Bar -->
+        <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+          <div class="relative w-full max-w-md">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="pengurusSearchInput" placeholder="Cari nama pengurus, kota, email, jabatan..." value="${state.pengurusSearch || ''}"
+              oninput="state.pengurusSearch = this.value; renderApp();"
+              class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm transition" />
+          </div>
 
-        if (state.pengurusFilterPosition) {
-          const userPos = (u.pengurus_position || '').toLowerCase();
-          const targetPos = state.pengurusFilterPosition.toLowerCase();
-          if (targetPos.includes('koordinator')) {
-            const role = (u.role_code || u.roleCode || '').toUpperCase();
-            if (!userPos.includes('koordinator') && !role.includes('KOORDINATOR')) return false;
-          } else if (userPos !== targetPos) {
-            return false;
-          }
-        }
-
-        if (state.pengurusFilterParoki) {
-          const matchPar = String(u.paroki_id) === String(state.pengurusFilterParoki) || (u.paroki_name === state.pengurusFilterParoki);
-          if (!matchPar) return false;
-        }
-
-        if (q) {
-          const name = (u.full_name || u.fullName || '').toLowerCase();
-          const email = (u.email || '').toLowerCase();
-          const phone = (u.phone_number || u.phoneNumber || '').toLowerCase();
-          const pos = (u.pengurus_position || '').toLowerCase();
-          const par = (u.paroki_name || u.parokiName || '').toLowerCase();
-          const ling = (u.lingkungan_name || '').toLowerCase();
-          const kota = (u.kota_name || u.address || '').toLowerCase();
-          const prov = (u.provinsi_name || '').toLowerCase();
-          if (!name.includes(q) && !email.includes(q) && !phone.includes(q) && !pos.includes(q) && !par.includes(q) && !ling.includes(q) && !kota.includes(q) && !prov.includes(q)) return false;
-        }
-        return true;
-      });
-
-      return `
-        <div class="space-y-6 animate-fade-in">
-          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
-            <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
-              <div class="relative w-full max-w-md">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="pengurusSearchInput" placeholder="Cari nama pengurus, koordinator, kota, email, jabatan..." value="${state.pengurusSearch}"
-                  oninput="state.pengurusSearch = this.value; renderApp();"
-                  class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
-              </div>
-
-              <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
-                <div class="relative w-full sm:w-auto">
-                  <select onchange="state.pengurusFilterPosition = this.value; renderApp();"
-                    class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm">
-                    <option value="">Semua Jabatan</option>
-                    ${positionList.map(pos => `
-                      <option value="${pos}" ${state.pengurusFilterPosition === pos ? 'selected' : ''}>${pos}</option>
-                    `).join('')}
-                  </select>
-                </div>
-
-                <div class="relative w-full sm:w-auto">
-                  <select onchange="state.pengurusFilterParoki = this.value; renderApp();"
-                    class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-none sm:max-w-[210px] truncate">
-                    <option value="">Semua Paroki</option>
-                    ${parokiList.map(p => `
-                      <option value="${p.id || p.name}" ${String(state.pengurusFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>${p.name}</option>
-                    `).join('')}
-                  </select>
-                </div>
-
-                ${hasFilter ? `
-                  <button onclick="state.pengurusSearch = ''; state.pengurusFilterPosition = ''; state.pengurusFilterParoki = ''; renderApp();"
-                    class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
-                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
-                    <span>Reset</span>
-                  </button>
-                ` : ''}
-
-                <span class="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold whitespace-nowrap">
-                  ${list.length} Pengurus Lingkungan Aktif
-                </span>
-              </div>
+          <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
+            <div class="relative w-full sm:w-auto">
+              <select onchange="state.pengurusFilterPosition = this.value; renderApp();"
+                class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm">
+                <option value="">Semua Jabatan</option>
+                ${positionList.map(pos => `
+                  <option value="${pos}" ${state.pengurusFilterPosition === pos ? 'selected' : ''}>${pos}</option>
+                `).join('')}
+              </select>
             </div>
 
-            ${renderPengurusTable(list)}
-      `;
-    }
+            <div class="relative w-full sm:w-auto">
+              <select onchange="state.pengurusFilterParoki = this.value; renderApp();"
+                class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm max-w-none sm:max-w-[210px] truncate">
+                <option value="">Semua Paroki</option>
+                ${parokiList.map(p => `
+                  <option value="${p.id || p.name}" ${String(state.pengurusFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>${p.name}</option>
+                `).join('')}
+              </select>
+            </div>
 
-    // ── Tab: Romo Paroki ──
+            ${hasFilter ? `
+              <button onclick="state.pengurusSearch = ''; state.pengurusFilterPosition = ''; state.pengurusFilterParoki = ''; renderApp();"
+                class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
+                <span>Reset</span>
+              </button>
+            ` : ''}
+
+            <span class="px-3.5 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold whitespace-nowrap">
+              ${list.length} Pengurus Lingkungan Aktif
+            </span>
+          </div>
+        </div>
+
+        ${renderPengurusTable(list)}
+  `;
+}
