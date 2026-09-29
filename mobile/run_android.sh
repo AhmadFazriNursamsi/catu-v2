@@ -16,7 +16,7 @@ export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
 
 echo "🏷️ Step 0.5: Auto-updating app version & build timestamp..."
 BUILD_TS=$(date +"%Y%m%d.%H%M%S")
-VERSION_STRING="v2.8.5-build.$BUILD_TS"
+VERSION_STRING="v2.8.6-build.$BUILD_TS"
 API_BASE_URL="${CATU_API_URL:-${PUBLIC_API_URL:-}}"
 if [ -z "$API_BASE_URL" ] && [ -f "$ROOT_ENV_FILE" ]; then
   API_BASE_URL=$(sed -n 's/^CATU_API_URL=//p' "$ROOT_ENV_FILE" | head -1)
