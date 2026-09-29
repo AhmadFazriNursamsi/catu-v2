@@ -277,6 +277,38 @@ class _RegisterScreenState extends State<RegisterScreen>
         _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
       if (_selectedUmatPosition != null &&
           _selectedUmatPosition!.isNotEmpty) {
+        if (_selectedLingkunganId != null) {
+          final selectedLingkungan = _lingkunganList.firstWhere(
+            (l) => l['id'] == _selectedLingkunganId,
+            orElse: () => {},
+          );
+          bool isTaken = false;
+          String posLabel = '';
+          if (_selectedUmatPosition == 'KETUA' && (selectedLingkungan['has_ketua'] == true || selectedLingkungan['hasKetua'] == true)) {
+            isTaken = true;
+            posLabel = 'Ketua Lingkungan';
+          } else if (_selectedUmatPosition == 'WAKIL' && (selectedLingkungan['has_wakil'] == true || selectedLingkungan['hasWakil'] == true)) {
+            isTaken = true;
+            posLabel = 'Wakil Ketua Lingkungan';
+          } else if (_selectedUmatPosition == 'SEKRETARIS' && (selectedLingkungan['has_sekretaris'] == true || selectedLingkungan['hasSekretaris'] == true)) {
+            isTaken = true;
+            posLabel = 'Sekretaris Lingkungan';
+          } else if (_selectedUmatPosition == 'BENDAHARA' && (selectedLingkungan['has_bendahara'] == true || selectedLingkungan['hasBendahara'] == true)) {
+            isTaken = true;
+            posLabel = 'Bendahara Lingkungan';
+          }
+          if (isTaken) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Posisi $posLabel untuk lingkungan ini sudah terisi. Anda tidak dapat memilih posisi tersebut.',
+                ),
+                backgroundColor: Colors.red.shade700,
+              ),
+            );
+            return;
+          }
+        }
         pengurusPosition = _selectedUmatPosition;
         if (_selectedUmatPosition == 'KOORDINATOR') {
           finalRoleCode = 'UMAT';
@@ -586,7 +618,24 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ))
                   .toList(),
               onChanged: (val) {
-                if (val != null) setState(() => _selectedLingkunganId = val);
+                if (val != null) {
+                  setState(() {
+                    _selectedLingkunganId = val;
+                    final selectedLingkungan = _lingkunganList.firstWhere(
+                      (l) => l['id'] == val,
+                      orElse: () => {},
+                    );
+                    if (_selectedUmatPosition == 'KETUA' && (selectedLingkungan['has_ketua'] == true || selectedLingkungan['hasKetua'] == true)) {
+                      _selectedUmatPosition = null;
+                    } else if (_selectedUmatPosition == 'WAKIL' && (selectedLingkungan['has_wakil'] == true || selectedLingkungan['hasWakil'] == true)) {
+                      _selectedUmatPosition = null;
+                    } else if (_selectedUmatPosition == 'SEKRETARIS' && (selectedLingkungan['has_sekretaris'] == true || selectedLingkungan['hasSekretaris'] == true)) {
+                      _selectedUmatPosition = null;
+                    } else if (_selectedUmatPosition == 'BENDAHARA' && (selectedLingkungan['has_bendahara'] == true || selectedLingkungan['hasBendahara'] == true)) {
+                      _selectedUmatPosition = null;
+                    }
+                  });
+                }
               },
               emptyMessage: 'Lingkungan tidak ditemukan pada wilayah ini',
             ),
@@ -635,39 +684,84 @@ class _RegisterScreenState extends State<RegisterScreen>
     if (_selectedRole == 'UMAT' ||
         _selectedRole == 'PENGURUS_LINGKUNGAN' ||
         _selectedRole == 'KOORDINATOR_KEUSKUPAN') {
+      final selectedLingkungan = _lingkunganList.firstWhere(
+        (l) => l['id'] == _selectedLingkunganId,
+        orElse: () => {},
+      );
+      final bool hasKetua = selectedLingkungan['has_ketua'] == true || selectedLingkungan['hasKetua'] == true;
+      final bool hasWakil = selectedLingkungan['has_wakil'] == true || selectedLingkungan['hasWakil'] == true;
+      final bool hasSekretaris = selectedLingkungan['has_sekretaris'] == true || selectedLingkungan['hasSekretaris'] == true;
+      final bool hasBendahara = selectedLingkungan['has_bendahara'] == true || selectedLingkungan['hasBendahara'] == true;
+
+      String? currentPos = _selectedUmatPosition == 'KOORDINATOR' ? null : _selectedUmatPosition;
+      if (currentPos == 'KETUA' && hasKetua) currentPos = null;
+      if (currentPos == 'WAKIL' && hasWakil) currentPos = null;
+      if (currentPos == 'SEKRETARIS' && hasSekretaris) currentPos = null;
+      if (currentPos == 'BENDAHARA' && hasBendahara) currentPos = null;
+
       return DropdownButtonFormField<String?>(
-        initialValue: _selectedUmatPosition == 'KOORDINATOR' ? null : _selectedUmatPosition,
+        key: ValueKey('umat_pos_${_selectedLingkunganId}_${hasKetua}_${hasWakil}_${hasSekretaris}_$hasBendahara'),
+        initialValue: currentPos,
         decoration: _fieldDeco(
             label: 'Jabatan / Peran Umat', icon: Icons.badge_outlined),
         dropdownColor: Colors.white,
         borderRadius: BorderRadius.circular(12),
         isExpanded: true,
-        items: const [
+        items: [
+          const DropdownMenuItem<String?>(
+            value: null,
+            child: Text('Anggota Umat',
+                style: TextStyle(fontSize: 13),
+                overflow: TextOverflow.ellipsis),
+          ),
           DropdownMenuItem<String?>(
-              value: null,
-              child: Text('Anggota Umat',
-                  style: TextStyle(fontSize: 13),
-                  overflow: TextOverflow.ellipsis)),
+            value: 'KETUA',
+            enabled: !hasKetua,
+            child: Text(
+              hasKetua ? 'Ketua Lingkungan (Sudah Terisi)' : 'Ketua Lingkungan',
+              style: TextStyle(
+                fontSize: 13,
+                color: hasKetua ? Colors.grey.shade400 : Colors.black87,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           DropdownMenuItem<String?>(
-              value: 'KETUA',
-              child: Text('Ketua Lingkungan',
-                  style: TextStyle(fontSize: 13),
-                  overflow: TextOverflow.ellipsis)),
+            value: 'WAKIL',
+            enabled: !hasWakil,
+            child: Text(
+              hasWakil ? 'Wakil Ketua Lingkungan (Sudah Terisi)' : 'Wakil Ketua Lingkungan',
+              style: TextStyle(
+                fontSize: 13,
+                color: hasWakil ? Colors.grey.shade400 : Colors.black87,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           DropdownMenuItem<String?>(
-              value: 'WAKIL',
-              child: Text('Wakil Ketua Lingkungan',
-                  style: TextStyle(fontSize: 13),
-                  overflow: TextOverflow.ellipsis)),
+            value: 'SEKRETARIS',
+            enabled: !hasSekretaris,
+            child: Text(
+              hasSekretaris ? 'Sekretaris Lingkungan (Sudah Terisi)' : 'Sekretaris Lingkungan',
+              style: TextStyle(
+                fontSize: 13,
+                color: hasSekretaris ? Colors.grey.shade400 : Colors.black87,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           DropdownMenuItem<String?>(
-              value: 'SEKRETARIS',
-              child: Text('Sekretaris Lingkungan',
-                  style: TextStyle(fontSize: 13),
-                  overflow: TextOverflow.ellipsis)),
-          DropdownMenuItem<String?>(
-              value: 'BENDAHARA',
-              child: Text('Bendahara Lingkungan',
-                  style: TextStyle(fontSize: 13),
-                  overflow: TextOverflow.ellipsis)),
+            value: 'BENDAHARA',
+            enabled: !hasBendahara,
+            child: Text(
+              hasBendahara ? 'Bendahara Lingkungan (Sudah Terisi)' : 'Bendahara Lingkungan',
+              style: TextStyle(
+                fontSize: 13,
+                color: hasBendahara ? Colors.grey.shade400 : Colors.black87,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
         onChanged: (val) => setState(() => _selectedUmatPosition = val),
       );

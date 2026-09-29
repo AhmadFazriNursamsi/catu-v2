@@ -93,10 +93,102 @@ export class AuthService {
     return await this.dataSource.query('SELECT id, paroki_id, name FROM wilayah ORDER BY name ASC');
   }
   async getLingkungan(wilayahId?: number) {
+    const baseQuery = `
+      SELECT l.id, l.wilayah_id, l.name,
+        EXISTS(
+          SELECT 1 FROM user_profiles up
+          JOIN auth_users au ON up.user_id = au.id
+          WHERE up.lingkungan_id = l.id
+            AND au.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+            AND (
+              UPPER(up.pengurus_position) = 'KETUA'
+              OR (UPPER(up.pengurus_position) LIKE '%KETUA%' AND UPPER(up.pengurus_position) NOT LIKE '%WAKIL%')
+            )
+        ) as has_ketua,
+        (
+          SELECT up.full_name FROM user_profiles up
+          JOIN auth_users au ON up.user_id = au.id
+          WHERE up.lingkungan_id = l.id
+            AND au.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+            AND (
+              UPPER(up.pengurus_position) = 'KETUA'
+              OR (UPPER(up.pengurus_position) LIKE '%KETUA%' AND UPPER(up.pengurus_position) NOT LIKE '%WAKIL%')
+            )
+          ORDER BY CASE WHEN au.account_status = 'APPROVED' THEN 1 ELSE 2 END
+          LIMIT 1
+        ) as ketua_name,
+        EXISTS(
+          SELECT 1 FROM user_profiles up
+          JOIN auth_users au ON up.user_id = au.id
+          WHERE up.lingkungan_id = l.id
+            AND au.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+            AND (
+              UPPER(up.pengurus_position) = 'WAKIL'
+              OR UPPER(up.pengurus_position) LIKE '%WAKIL%'
+            )
+        ) as has_wakil,
+        (
+          SELECT up.full_name FROM user_profiles up
+          JOIN auth_users au ON up.user_id = au.id
+          WHERE up.lingkungan_id = l.id
+            AND au.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+            AND (
+              UPPER(up.pengurus_position) = 'WAKIL'
+              OR UPPER(up.pengurus_position) LIKE '%WAKIL%'
+            )
+          ORDER BY CASE WHEN au.account_status = 'APPROVED' THEN 1 ELSE 2 END
+          LIMIT 1
+        ) as wakil_name,
+        EXISTS(
+          SELECT 1 FROM user_profiles up
+          JOIN auth_users au ON up.user_id = au.id
+          WHERE up.lingkungan_id = l.id
+            AND au.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+            AND (
+              UPPER(up.pengurus_position) = 'SEKRETARIS'
+              OR UPPER(up.pengurus_position) LIKE '%SEKRETARIS%'
+            )
+        ) as has_sekretaris,
+        (
+          SELECT up.full_name FROM user_profiles up
+          JOIN auth_users au ON up.user_id = au.id
+          WHERE up.lingkungan_id = l.id
+            AND au.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+            AND (
+              UPPER(up.pengurus_position) = 'SEKRETARIS'
+              OR UPPER(up.pengurus_position) LIKE '%SEKRETARIS%'
+            )
+          ORDER BY CASE WHEN au.account_status = 'APPROVED' THEN 1 ELSE 2 END
+          LIMIT 1
+        ) as sekretaris_name,
+        EXISTS(
+          SELECT 1 FROM user_profiles up
+          JOIN auth_users au ON up.user_id = au.id
+          WHERE up.lingkungan_id = l.id
+            AND au.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+            AND (
+              UPPER(up.pengurus_position) = 'BENDAHARA'
+              OR UPPER(up.pengurus_position) LIKE '%BENDAHARA%'
+            )
+        ) as has_bendahara,
+        (
+          SELECT up.full_name FROM user_profiles up
+          JOIN auth_users au ON up.user_id = au.id
+          WHERE up.lingkungan_id = l.id
+            AND au.account_status IN ('APPROVED', 'PENDING_APPROVAL')
+            AND (
+              UPPER(up.pengurus_position) = 'BENDAHARA'
+              OR UPPER(up.pengurus_position) LIKE '%BENDAHARA%'
+            )
+          ORDER BY CASE WHEN au.account_status = 'APPROVED' THEN 1 ELSE 2 END
+          LIMIT 1
+        ) as bendahara_name
+      FROM lingkungan l
+    `;
     if (wilayahId) {
-      return await this.dataSource.query('SELECT id, wilayah_id, name FROM lingkungan WHERE wilayah_id = $1 ORDER BY name ASC', [wilayahId]);
+      return await this.dataSource.query(`${baseQuery} WHERE l.wilayah_id = $1 ORDER BY l.name ASC`, [wilayahId]);
     }
-    return await this.dataSource.query('SELECT id, wilayah_id, name FROM lingkungan ORDER BY name ASC');
+    return await this.dataSource.query(`${baseQuery} ORDER BY l.name ASC`);
   }
   async getProvinsi() {
     return await this.dataSource.query('SELECT id, name FROM provinsi ORDER BY name ASC');
