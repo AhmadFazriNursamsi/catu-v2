@@ -82,16 +82,20 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       _userData['pengurusPosition']?.toString().toLowerCase().contains('koordinator') == true ||
       _userData['pengurus_position']?.toString().toLowerCase().contains('koordinator') == true ||
       _userData['roleCode'] == 'KOORDINATOR' ||
-      _userData['role_code'] == 'KOORDINATOR';
+      _userData['role_code'] == 'KOORDINATOR' ||
+      _userData['roleCode'] == 'KOORDINATOR_KEUSKUPAN' ||
+      _userData['role_code'] == 'KOORDINATOR_KEUSKUPAN';
 
   bool get _isPengurus =>
-      _isKoordinator ||
-      _userData['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
-      _userData['role_code'] == 'PENGURUS_LINGKUNGAN' ||
-      (_userData['pengurusPosition'] != null &&
-          _userData['pengurusPosition'].toString().trim().isNotEmpty) ||
-      (_userData['pengurus_position'] != null &&
-          _userData['pengurus_position'].toString().trim().isNotEmpty);
+      !_isKoordinator &&
+      (_userData['roleCode'] == 'PENGURUS_LINGKUNGAN' ||
+          _userData['role_code'] == 'PENGURUS_LINGKUNGAN' ||
+          (_userData['pengurusPosition'] != null &&
+              _userData['pengurusPosition'].toString().trim().isNotEmpty &&
+              !_userData['pengurusPosition'].toString().toLowerCase().contains('koordinator')) ||
+          (_userData['pengurus_position'] != null &&
+              _userData['pengurus_position'].toString().trim().isNotEmpty &&
+              !_userData['pengurus_position'].toString().toLowerCase().contains('koordinator')));
 
   bool get _isKetuaRomo {
     final pos = (_userData['romoPosition'] ?? _userData['romo_position'] ?? '').toString().toUpperCase();
@@ -103,14 +107,11 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       if (_isPengurus) {
         final rawLingkungan = _userData['lingkunganId'] ?? _userData['lingkungan_id'];
         final int? lingkunganId = rawLingkungan != null ? int.tryParse(rawLingkungan.toString()) : null;
-        final rawKeuskupan = _userData['keuskupanId'] ?? _userData['keuskupan_id'];
-        final int? keuskupanId = rawKeuskupan != null ? int.tryParse(rawKeuskupan.toString()) : null;
         final rawUserId = _userData['id'] ?? _userData['userId'] ?? _userData['user_id'];
         final int? pengurusUserId = rawUserId != null ? int.tryParse(rawUserId.toString()) : null;
 
         final list = await ApiService.getPengurusPendingUmat(
-          lingkunganId: _isKoordinator ? null : lingkunganId,
-          keuskupanId: _isKoordinator ? keuskupanId : null,
+          lingkunganId: lingkunganId,
           pengurusUserId: pengurusUserId,
         );
         if (mounted) setState(() => _pendingPengurusCount = list.length);
@@ -486,13 +487,11 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       ),
       child: Column(
         children: [
-          // ── Pengurus Lingkungan / Koordinator Keuskupan Approval Tile ──
+          // ── Pengurus Lingkungan Approval Tile ──
           if (_isPengurus) ...[
             _buildMenuItem(
               icon: Icons.how_to_reg_rounded,
-              title: _isKoordinator
-                  ? 'Persetujuan Umat Keuskupan'
-                  : 'Persetujuan Umat Lingkungan',
+              title: 'Persetujuan Umat Lingkungan',
               subtitle: _pendingPengurusCount > 0
                   ? '$_pendingPengurusCount umat baru menunggu verifikasi Anda'
                   : 'Verifikasi pendaftaran umat baru',
