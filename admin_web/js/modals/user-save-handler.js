@@ -168,16 +168,9 @@ function renderEditUserHeader(u, uName, status, roleCode) {
         return;
       }
 
-      // Validate Email
-      if (!email || !email.includes('@')) {
-        state.editFormError = 'Format alamat email tidak valid.';
-        renderApp();
-        return;
-      }
-
       const payload = {
         fullName,
-        email,
+        email: email || null,
         phoneNumber: formattedPhone,
         roleCode,
         accountStatus,

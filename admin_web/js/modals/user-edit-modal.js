@@ -52,8 +52,8 @@
                     </div>
 
                     <div>
-                      <label class="block font-extrabold text-slate-700 mb-1.5">Alamat Email *</label>
-                      <input type="email" id="editEmail" required value="${u.email || ''}" placeholder="nama@email.com" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition" />
+                      <label class="block font-extrabold text-slate-700 mb-1.5">Alamat Email <span class="text-slate-400 font-normal text-[10px]">(Opsional)</span></label>
+                      <input type="text" id="editEmail" value="${u.email || ''}" placeholder="nama@email.com" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition" />
                     </div>
 
                     <!-- WhatsApp with +62 Badge & Realtime Validation -->

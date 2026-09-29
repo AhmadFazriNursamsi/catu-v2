@@ -1541,8 +1541,9 @@ export class AuthService {
       values.push(dto.fullName);
     }
     if (dto.email !== undefined) {
+      const cleanEmail = dto.email && String(dto.email).trim() ? String(dto.email).trim() : null;
       fields.push(`email = $${idx++}`);
-      values.push(dto.email);
+      values.push(cleanEmail);
     }
     if (dto.birthDate !== undefined) {
       const bDate = dto.birthDate && String(dto.birthDate).trim() ? String(dto.birthDate).trim() : null;
