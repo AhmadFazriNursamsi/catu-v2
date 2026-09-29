@@ -68,10 +68,10 @@
 
           <form class="form" id="loginForm">
             <div class="field">
-              <label for="username" class="block mb-1.5">Nomor WhatsApp / Akun</label>
+              <label for="username" class="block mb-1.5">Nomor WhatsApp / No Hp</label>
               <div class="field-control">
                 <span class="field-icon"><i data-lucide="phone" class="w-4.5 h-4.5"></i></span>
-                <input id="username" name="username" type="text" autocomplete="username" placeholder="Masukkan nomor WhatsApp akun Anda" required />
+                <input id="username" name="username" type="text" autocomplete="username" placeholder="Masukkan nomor WhatsApp / No Hp Anda" required />
               </div>
             </div>
 
