@@ -447,6 +447,12 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       if (kunjId.isNotEmpty) '[KunjunganId: $kunjId]',
     ].join(' | ');
 
+    final int? userLingkunganId = int.tryParse((widget.user?['lingkunganId'] ?? widget.user?['lingkungan_id'])?.toString() ?? '');
+    final int? userWilayahId = int.tryParse((widget.user?['wilayahId'] ?? widget.user?['wilayah_id'])?.toString() ?? '');
+    final int? userParokiId = int.tryParse((widget.user?['parokiId'] ?? widget.user?['paroki_id'])?.toString() ?? '');
+    final int? userKeuskupanId = int.tryParse((widget.user?['keuskupanId'] ?? widget.user?['keuskupan_id'])?.toString() ?? '');
+    final int? userKabupatenKotaId = int.tryParse((widget.user?['kabupatenKotaId'] ?? widget.user?['kabupaten_kota_id'])?.toString() ?? '');
+
     final res = await ApiService.createOrder(
       serviceCategoryId: 1,
       urgencyLevelId: _urgensiToId(_selectedUrgensi),
@@ -456,9 +462,11 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       addressDetail: _alamatController.text,
       notes: notes,
       userId: widget.userId,
-      keuskupanId: _isPendatang ? null : (_isSameParish ? null : _selectedKeuskupanId),
-      parokiId: _isPendatang ? null : (_isSameParish ? null : _selectedParokiId),
-      kabupatenKotaId: _isPendatang ? _selectedKabupatenKotaId : (_isSameParish ? null : _selectedKabupatenKotaId),
+      keuskupanId: _isPendatang ? null : (_isSameParish ? userKeuskupanId : _selectedKeuskupanId),
+      parokiId: _isPendatang ? null : (_isSameParish ? userParokiId : _selectedParokiId),
+      wilayahId: _isPendatang ? null : (_isSameParish ? userWilayahId : null),
+      lingkunganId: _isPendatang ? null : (_isSameParish ? userLingkunganId : null),
+      kabupatenKotaId: _isPendatang ? _selectedKabupatenKotaId : (_isSameParish ? userKabupatenKotaId : _selectedKabupatenKotaId),
     );
 
     setState(() => _isLoading = false);

@@ -31,7 +31,12 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND p.lingkungan_id = $1`,
+         WHERE (
+           (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
+           AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
+           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
+           AND r.code NOT LIKE '%KOORDINATOR%'
+         ) AND p.lingkungan_id = $1`,
         [oh.lingkungan_id],
       );
     }
@@ -40,19 +45,31 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND p.paroki_id = $1`,
+         WHERE (
+           (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
+           AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
+           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
+           AND r.code NOT LIKE '%KOORDINATOR%'
+         ) AND p.paroki_id = $1`,
         [oh.paroki_id],
       );
     }
 
-    // Also include Koordinator in the same Keuskupan
-    if (keuskupanId) {
+    // Also include Koordinator in the same Keuskupan or same Lingkungan
+    if (keuskupanId || oh.lingkungan_id) {
       const koordinator = await this.dataSource.query(
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'KOORDINATOR' OR LOWER(p.pengurus_position) LIKE '%koordinator%') AND p.keuskupan_id = $1`,
-        [keuskupanId],
+         WHERE (
+           r.code IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
+           OR r.code LIKE '%KOORDINATOR%'
+           OR LOWER(COALESCE(p.pengurus_position, '')) LIKE '%koordinator%'
+         ) AND (
+           ($1::int IS NOT NULL AND p.keuskupan_id = $1::int)
+           OR ($2::int IS NOT NULL AND p.lingkungan_id = $2::int)
+         )`,
+        [keuskupanId || null, oh.lingkungan_id || null],
       );
       for (const k of koordinator) {
         if (!pengurus.some((p: any) => p.id === k.id)) {
@@ -82,13 +99,24 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
     if (isPendatang) {
       kId = null; pId = null; wId = null; lId = null;
       if (!kabId) kabId = (await this.dataSource.query(`SELECT kabupaten_kota_id FROM user_profiles WHERE user_id = $1`, [userId]))[0]?.kabupaten_kota_id || null;
-    } else if (!kId || !pId || !kabId) {
+    } else if (!kId || !pId || !kabId || !lId) {
       const prof = (await this.dataSource.query(`SELECT keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id FROM user_profiles WHERE user_id = $1`, [userId]))[0];
       kId = kId || prof?.keuskupan_id || 1;
       pId = pId || prof?.paroki_id || 10;
       wId = wId || prof?.wilayah_id || 101;
       lId = lId || prof?.lingkungan_id || 1001;
       kabId = kabId || prof?.kabupaten_kota_id || 3175;
+    }
+
+    // Resolve kId from lingkungan hierarchy if missing or defaulted
+    if (!isPendatang && lId) {
+      const lingKeuskupan = await this.dataSource.query(
+        `SELECT p.keuskupan_id FROM lingkungan l JOIN wilayah w ON l.wilayah_id = w.id JOIN paroki p ON w.paroki_id = p.id WHERE l.id = $1`,
+        [lId],
+      );
+      if (lingKeuskupan.length > 0 && lingKeuskupan[0].keuskupan_id) {
+        kId = lingKeuskupan[0].keuskupan_id;
+      }
     }
 
     const orderResult = await this.dataSource.query(
@@ -115,14 +143,19 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
 
     const order = orderResult[0];
 
-    // 1. Find actual Pengurus Lingkungan for this lingkungan / paroki
+    // 1. Find actual Pengurus Lingkungan for this lingkungan / paroki (excluding any Koordinator)
     let pengurus: any[] = [];
     if (lId) {
       pengurus = await this.dataSource.query(
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND p.lingkungan_id = $1`,
+         WHERE (
+           (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
+           AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
+           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
+           AND r.code NOT LIKE '%KOORDINATOR%'
+         ) AND p.lingkungan_id = $1`,
         [lId],
       );
     }
@@ -131,22 +164,38 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND p.paroki_id = $1`,
+         WHERE (
+           (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
+           AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
+           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
+           AND r.code NOT LIKE '%KOORDINATOR%'
+         ) AND p.paroki_id = $1`,
         [pId],
       );
     }
 
-    // 1b. Find Koordinator for this Keuskupan
+    // 1b. Find Koordinator for this Keuskupan or this Lingkungan
     let koordinator: any[] = [];
-    if (kId) {
+    if (kId || lId) {
       koordinator = await this.dataSource.query(
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'KOORDINATOR' OR LOWER(p.pengurus_position) LIKE '%koordinator%') AND p.keuskupan_id = $1`,
-        [kId],
+         WHERE (
+           r.code IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
+           OR r.code LIKE '%KOORDINATOR%'
+           OR LOWER(COALESCE(p.pengurus_position, '')) LIKE '%koordinator%'
+         ) AND (
+           ($1::int IS NOT NULL AND p.keuskupan_id = $1::int)
+           OR ($2::int IS NOT NULL AND p.lingkungan_id = $2::int)
+         )`,
+        [kId || null, lId || null],
       );
     }
+
+    // Strictly ensure no Koordinator is mistakenly kept in pengurus list
+    const koordinatorUserIds = new Set(koordinator.map((k: any) => Number(k.id)));
+    pengurus = pengurus.filter((p: any) => !koordinatorUserIds.has(Number(p.id)));
 
     // 2. Find Romo Paroki
     let romoParoki: any[] = [];
@@ -218,7 +267,8 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
         // 2b. Add Koordinator Keuskupan
         for (const k of koordinator) {
           await this.dataSource.query(
-            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'KOORDINATOR') ON CONFLICT DO NOTHING`,
+            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'KOORDINATOR')
+             ON CONFLICT (chat_group_id, user_id) DO UPDATE SET role_in_group = 'KOORDINATOR'`,
             [gId, k.id],
           );
         }
@@ -331,7 +381,8 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
       for (const k of koordinator) {
         if (k.id !== userId) {
           await this.dataSource.query(
-            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'KOORDINATOR') ON CONFLICT DO NOTHING`,
+            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'KOORDINATOR')
+             ON CONFLICT (chat_group_id, user_id) DO UPDATE SET role_in_group = 'KOORDINATOR'`,
             [firstGroupId, k.id],
           );
         }
@@ -537,8 +588,46 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
         queryParams.push(parsedRId, parsedRId);
       }
     } else if (userId && !isNaN(parseInt(userId))) {
-      whereClauses.push(`o.user_id = $${paramIdx++}`);
-      queryParams.push(parseInt(userId));
+      const uId = parseInt(userId);
+      const userRes = await this.dataSource.query(
+        `SELECT u.id, r.code as role_code, p.keuskupan_id, p.paroki_id, p.lingkungan_id, p.pengurus_position
+         FROM auth_users u
+         JOIN roles r ON u.role_id = r.id
+         JOIN user_profiles p ON p.user_id = u.id
+         WHERE u.id = $1`,
+        [uId],
+      );
+      if (userRes.length > 0) {
+        const u = userRes[0];
+        const isKoor = (u.role_code && (u.role_code === 'KOORDINATOR' || u.role_code === 'KOORDINATOR_KEUSKUPAN' || u.role_code.includes('KOORDINATOR'))) ||
+                       (u.pengurus_position && u.pengurus_position.toLowerCase().includes('koordinator'));
+        const isPengurus = !isKoor && (u.role_code === 'PENGURUS_LINGKUNGAN' || (u.pengurus_position && u.pengurus_position.trim().length > 0));
+
+        if (isKoor) {
+          whereClauses.push(`(
+            o.user_id = $${paramIdx}
+            OR ($${paramIdx + 1}::int IS NOT NULL AND COALESCE(o.keuskupan_id, p.keuskupan_id) = $${paramIdx + 1}::int)
+            OR ($${paramIdx + 2}::int IS NOT NULL AND COALESCE(o.lingkungan_id, p.lingkungan_id) = $${paramIdx + 2}::int)
+            OR EXISTS (SELECT 1 FROM chat_group_members cgm JOIN chat_groups cg ON cgm.chat_group_id = cg.id WHERE cg.order_id = o.id AND cgm.user_id = $${paramIdx})
+          )`);
+          queryParams.push(uId, u.keuskupan_id || null, u.lingkungan_id || null);
+          paramIdx += 3;
+        } else if (isPengurus && u.lingkungan_id) {
+          whereClauses.push(`(
+            o.user_id = $${paramIdx}
+            OR COALESCE(o.lingkungan_id, p.lingkungan_id) = $${paramIdx + 1}
+            OR EXISTS (SELECT 1 FROM chat_group_members cgm JOIN chat_groups cg ON cgm.chat_group_id = cg.id WHERE cg.order_id = o.id AND cgm.user_id = $${paramIdx})
+          )`);
+          queryParams.push(uId, u.lingkungan_id);
+          paramIdx += 2;
+        } else {
+          whereClauses.push(`o.user_id = $${paramIdx++}`);
+          queryParams.push(uId);
+        }
+      } else {
+        whereClauses.push(`o.user_id = $${paramIdx++}`);
+        queryParams.push(uId);
+      }
     } else if (kabupatenKotaId && !isNaN(parseInt(kabupatenKotaId))) {
       whereClauses.push(`COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++}`);
       queryParams.push(parseInt(kabupatenKotaId));

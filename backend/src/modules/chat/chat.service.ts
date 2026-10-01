@@ -413,7 +413,12 @@ private async resolveGroupId(idParam: string): Promise<number> {
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
          LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.lingkungan_id = $1
+         WHERE (
+           (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
+           AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
+           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
+           AND r.code NOT LIKE '%KOORDINATOR%'
+         ) AND p.lingkungan_id = $1
          ORDER BY u.id ASC`,
         [order.lingkungan_id],
       );
@@ -426,7 +431,12 @@ private async resolveGroupId(idParam: string): Promise<number> {
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
          LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL) AND p.paroki_id = $1
+         WHERE (
+           (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
+           AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
+           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
+           AND r.code NOT LIKE '%KOORDINATOR%'
+         ) AND p.paroki_id = $1
          ORDER BY u.id ASC`,
         [order.paroki_id],
       );
@@ -449,7 +459,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
       await this.dataSource.query('SELECT keuskupan_id FROM user_profiles WHERE user_id = $1', [order.pemohon_id])
     )[0]?.keuskupan_id;
 
-    if (keuskupanId) {
+    if (keuskupanId || order.lingkungan_id) {
       const koordinator = await this.dataSource.query(
         `SELECT u.id as user_id, 'KOORDINATOR' as role_in_group, p.full_name, u.phone_number,
                 COALESCE(k.name, 'Keuskupan') as keuskupan_name
@@ -457,9 +467,16 @@ private async resolveGroupId(idParam: string): Promise<number> {
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
          LEFT JOIN keuskupan k ON p.keuskupan_id = k.id
-         WHERE (r.code = 'KOORDINATOR' OR LOWER(p.pengurus_position) LIKE '%koordinator%') AND p.keuskupan_id = $1
+         WHERE (
+           r.code IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
+           OR r.code LIKE '%KOORDINATOR%'
+           OR LOWER(COALESCE(p.pengurus_position, '')) LIKE '%koordinator%'
+         ) AND (
+           ($1::int IS NOT NULL AND p.keuskupan_id = $1::int)
+           OR ($2::int IS NOT NULL AND p.lingkungan_id = $2::int)
+         )
          ORDER BY u.id ASC`,
-        [keuskupanId],
+        [keuskupanId || null, order.lingkungan_id || null],
       );
 
       for (const k of koordinator) {
@@ -520,6 +537,20 @@ private async resolveGroupId(idParam: string): Promise<number> {
       } else if (user.role_code.startsWith('ROMO')) {
         whereClause = `WHERE (
           EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1)
+        )`;
+      } else if (
+        user.role_code === 'KOORDINATOR' ||
+        user.role_code === 'KOORDINATOR_KEUSKUPAN' ||
+        user.role_code.includes('KOORDINATOR')
+      ) {
+        whereClause = `WHERE (
+          o.user_id = $1
+          OR EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1)
+          OR COALESCE(o.keuskupan_id, p.keuskupan_id) = (SELECT keuskupan_id FROM user_profiles WHERE user_id = $1)
+          OR (
+            (SELECT lingkungan_id FROM user_profiles WHERE user_id = $1) IS NOT NULL
+            AND COALESCE(o.lingkungan_id, p.lingkungan_id) = (SELECT lingkungan_id FROM user_profiles WHERE user_id = $1)
+          )
         )`;
       } else {
         whereClause = `WHERE (o.user_id = $1 OR EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1))`;
