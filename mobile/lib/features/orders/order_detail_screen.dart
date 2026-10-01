@@ -540,10 +540,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                         actions: [
                         if (isAssignedToCurrentRomo &&
                             (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS') &&
-                            !order.hasPendingHandover &&
-                            !displayItem.hasPendingHandover &&
-                            !order.isHandoverCompleted &&
-                            !displayItem.isHandoverCompleted)
+                            (order.items.isNotEmpty
+                                ? (!displayItem.hasPendingHandover && !displayItem.isHandoverCompleted)
+                                : (!order.hasPendingHandover && !order.isHandoverCompleted)))
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: GestureDetector(
@@ -630,36 +629,42 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
 
                             // ── Handover Proposal Card for Target Romo (Romo Baru) ──
                             if (widget.isRomo &&
-                                  widget.romoId != null &&
-                                  (displayItem.handoverTargetRomoId == widget.romoId || order.handoverTargetRomoId == widget.romoId) &&
-                                  (displayItem.hasPendingHandover || order.hasPendingHandover)) ...[
-                                _buildHandoverProposalCardForTargetRomo(order, displayItem),
-                                const SizedBox(height: 12),
-                              ],
+                                widget.romoId != null &&
+                                (order.items.isNotEmpty
+                                    ? (displayItem.handoverTargetRomoId == widget.romoId && displayItem.hasPendingHandover)
+                                    : (order.handoverTargetRomoId == widget.romoId && order.hasPendingHandover))) ...[
+                              _buildHandoverProposalCardForTargetRomo(order, displayItem),
+                              const SizedBox(height: 12),
+                            ],
 
-                              // ── Handover Pending Banner for Proposer Romo (Romo Lama) ──
-                              if (widget.isRomo &&
-                                  widget.romoId != null &&
-                                  (displayItem.handoverProposedBy == widget.romoId || order.handoverProposedBy == widget.romoId) &&
-                                  (displayItem.hasPendingHandover || order.hasPendingHandover)) ...[
-                                _buildHandoverPendingBannerForProposer(order, displayItem),
-                                const SizedBox(height: 12),
-                              ],
+                            // ── Handover Pending Banner for Proposer Romo (Romo Lama) ──
+                            if (widget.isRomo &&
+                                widget.romoId != null &&
+                                (order.items.isNotEmpty
+                                    ? (displayItem.handoverProposedBy == widget.romoId && displayItem.hasPendingHandover)
+                                    : (order.handoverProposedBy == widget.romoId && order.hasPendingHandover))) ...[
+                              _buildHandoverPendingBannerForProposer(order, displayItem),
+                              const SizedBox(height: 12),
+                            ],
 
-                              // ── Handover Rejected Banner for Proposer Romo (Romo Lama) ──
-                              if (widget.isRomo &&
-                                  widget.romoId != null &&
-                                  (displayItem.handoverProposedBy == widget.romoId || order.handoverProposedBy == widget.romoId) &&
-                                  (displayItem.handoverStatus == 'REJECTED' || order.handoverStatus == 'REJECTED')) ...[
-                                _buildHandoverRejectedBannerForProposer(order, displayItem),
-                                const SizedBox(height: 12),
-                              ],
+                            // ── Handover Rejected Banner for Proposer Romo (Romo Lama) ──
+                            if (widget.isRomo &&
+                                widget.romoId != null &&
+                                (order.items.isNotEmpty
+                                    ? (displayItem.handoverProposedBy == widget.romoId && displayItem.handoverStatus == 'REJECTED')
+                                    : (order.handoverProposedBy == widget.romoId && order.handoverStatus == 'REJECTED'))) ...[
+                              _buildHandoverRejectedBannerForProposer(order, displayItem),
+                              const SizedBox(height: 12),
+                            ],
 
-                              // ── Handover Info for Umat ──
-                              if (!widget.isRomo && (displayItem.hasPendingHandover || order.hasPendingHandover)) ...[
-                                _buildHandoverInfoCardForUmat(order, displayItem),
-                                const SizedBox(height: 12),
-                              ],
+                            // ── Handover Info for Umat ──
+                            if (!widget.isRomo &&
+                                (order.items.isNotEmpty
+                                    ? displayItem.hasPendingHandover
+                                    : order.hasPendingHandover)) ...[
+                              _buildHandoverInfoCardForUmat(order, displayItem),
+                              const SizedBox(height: 12),
+                            ],
 
                               // ── Romo yang Bertugas Info Card ──
                               if (isItemAccepted) ...[
@@ -683,7 +688,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                       valueColor: const Color(0xFF059669),
                                       isLast: !isAssignedToCurrentRomo || (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE'),
                                     ),
-                                    if (displayItem.isHandoverCompleted || order.isHandoverCompleted) ...[
+                                    if (order.items.isNotEmpty
+                                        ? displayItem.isHandoverCompleted
+                                        : (displayItem.isHandoverCompleted || order.isHandoverCompleted)) ...[
                                       const SizedBox(height: 8),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
@@ -708,10 +715,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                     ],
                                     if (isAssignedToCurrentRomo &&
                                         (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS') &&
-                                        !order.hasPendingHandover &&
-                                        !displayItem.hasPendingHandover &&
-                                        !order.isHandoverCompleted &&
-                                        !displayItem.isHandoverCompleted) ...[
+                                        (order.items.isNotEmpty
+                                            ? (!displayItem.hasPendingHandover && !displayItem.isHandoverCompleted)
+                                            : (!order.hasPendingHandover && !order.isHandoverCompleted))) ...[
                                       const SizedBox(height: 10),
                                       InkWell(
                                         onTap: () => _showHandoverBottomSheet(order, targetItem: displayItem),
@@ -1806,9 +1812,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   }
 
   Widget _buildRomoAcceptedBottomActions(Order order, {OrderItem? displayItem}) {
-    final bool hasPendingHandover = (displayItem?.hasPendingHandover ?? false) || order.hasPendingHandover;
+    final bool hasPendingHandover = order.items.isNotEmpty
+        ? (displayItem?.hasPendingHandover ?? false)
+        : ((displayItem?.hasPendingHandover ?? false) || order.hasPendingHandover);
     final bool isHandoverProposedByMe = hasPendingHandover &&
-        (displayItem?.handoverProposedBy == widget.romoId || order.handoverProposedBy == widget.romoId);
+        (order.items.isNotEmpty
+            ? (displayItem?.handoverProposedBy == widget.romoId)
+            : (displayItem?.handoverProposedBy == widget.romoId || order.handoverProposedBy == widget.romoId));
 
     if (isHandoverProposedByMe) {
       return Column(
@@ -3370,7 +3380,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     final romoId = widget.romoId;
     if (romoId == null) return;
 
-    if (order.isHandoverCompleted || (targetItem != null && targetItem.isHandoverCompleted)) {
+    final bool alreadyCompleted = order.items.isNotEmpty
+        ? (targetItem?.isHandoverCompleted ?? false)
+        : (order.isHandoverCompleted || (targetItem?.isHandoverCompleted ?? false));
+
+    if (alreadyCompleted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Pelayanan yang telah diterima dari pelimpahan tugas tidak dapat dilimpahkan kembali.'),
@@ -3385,62 +3399,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       order: order,
       targetItem: targetItem,
       currentRomoId: romoId,
-      onHandoverSubmit: ({
-        required int orderId,
-        OrderItem? targetItem,
-        int? targetRomoId,
-        String? externalRomoName,
-        required String reason,
-      }) async {
-        await _submitHandover(
-          order: order,
-          targetItem: targetItem,
-          targetRomoId: targetRomoId,
-          externalRomoName: externalRomoName,
-          reason: reason,
-        );
+      onHandoverSubmit: ({required int orderId, OrderItem? targetItem, int? targetRomoId, String? externalRomoName, required String reason}) async {
+        await _submitHandover(order: order, targetItem: targetItem, targetRomoId: targetRomoId, externalRomoName: externalRomoName, reason: reason);
       },
     );
   }
 
-  Future<void> _submitHandover({
-    required Order order,
-    OrderItem? targetItem,
-    int? targetRomoId,
-    String? externalRomoName,
-    required String reason,
-  }) async {
+  Future<void> _submitHandover({required Order order, OrderItem? targetItem, int? targetRomoId, String? externalRomoName, required String reason}) async {
     final romoId = widget.romoId;
     if (romoId == null) return;
-
     setState(() => _isSubmitting = true);
     try {
-      final res = await ApiService.handoverServiceOrder(
-        order.id,
-        romoId: romoId,
-        itemId: targetItem?.id,
-        targetRomoId: targetRomoId,
-        externalRomoName: externalRomoName,
-        reason: reason,
-      );
-
+      final res = await ApiService.handoverServiceOrder(order.id, romoId: romoId, itemId: targetItem?.id, targetRomoId: targetRomoId, externalRomoName: externalRomoName, reason: reason);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res['message'] ?? 'Pengajuan pelimpahan tugas berhasil diproses.'),
-            backgroundColor: const Color(0xFF0284C7),
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? 'Pengajuan pelimpahan tugas berhasil diproses.'), backgroundColor: const Color(0xFF0284C7)));
         await _fetchFreshOrder();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal melakukan pengalihan: $e'),
-            backgroundColor: Colors.red.shade700,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal melakukan pengalihan: $e'), backgroundColor: Colors.red.shade700));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

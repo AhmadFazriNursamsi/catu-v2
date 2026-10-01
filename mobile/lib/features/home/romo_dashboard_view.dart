@@ -852,8 +852,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
           final isIncomingHandover = romoId != null &&
-              ((item.handoverTargetRomoId == romoId && item.hasPendingHandover) ||
-               (order.handoverTargetRomoId == romoId && order.hasPendingHandover));
+              (item.handoverTargetRomoId == romoId && item.hasPendingHandover);
 
           // EXCLUDE items that are already accepted by ANY Romo, unless it's an incoming handover to this Romo!
           if (item.acceptedRomoId != null && !isIncomingHandover) continue;

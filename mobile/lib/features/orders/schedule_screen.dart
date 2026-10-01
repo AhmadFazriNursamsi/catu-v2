@@ -183,8 +183,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             if (widget.showPendingOnly) {
               // Permintaan Masuk: Only show unaccepted items with status PENDING
               final isIncomingHandover = widget.romoId != null &&
-                  ((item.handoverTargetRomoId == widget.romoId && item.hasPendingHandover) ||
-                   (order.handoverTargetRomoId == widget.romoId && order.hasPendingHandover));
+                  (item.handoverTargetRomoId == widget.romoId && item.hasPendingHandover);
               if (item.acceptedRomoId != null && !isIncomingHandover) continue;
               if (itemSt != 'PENDING' && !isIncomingHandover) continue;
             } else {

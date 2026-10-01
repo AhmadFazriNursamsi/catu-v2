@@ -7,24 +7,13 @@ Future<void> showHandoverRomoBottomSheet({
   required Order order,
   OrderItem? targetItem,
   required int currentRomoId,
-  required Future<void> Function({
-    required int orderId,
-    OrderItem? targetItem,
-    int? targetRomoId,
-    String? externalRomoName,
-    required String reason,
-  }) onHandoverSubmit,
+  required Future<void> Function({required int orderId, OrderItem? targetItem, int? targetRomoId, String? externalRomoName, required String reason}) onHandoverSubmit,
 }) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => HandoverRomoSheet(
-      order: order,
-      targetItem: targetItem,
-      currentRomoId: currentRomoId,
-      onHandoverSubmit: onHandoverSubmit,
-    ),
+    builder: (ctx) => HandoverRomoSheet(order: order, targetItem: targetItem, currentRomoId: currentRomoId, onHandoverSubmit: onHandoverSubmit),
   );
 }
 
@@ -32,21 +21,9 @@ class HandoverRomoSheet extends StatefulWidget {
   final Order order;
   final OrderItem? targetItem;
   final int currentRomoId;
-  final Future<void> Function({
-    required int orderId,
-    OrderItem? targetItem,
-    int? targetRomoId,
-    String? externalRomoName,
-    required String reason,
-  }) onHandoverSubmit;
+  final Future<void> Function({required int orderId, OrderItem? targetItem, int? targetRomoId, String? externalRomoName, required String reason}) onHandoverSubmit;
 
-  const HandoverRomoSheet({
-    super.key,
-    required this.order,
-    this.targetItem,
-    required this.currentRomoId,
-    required this.onHandoverSubmit,
-  });
+  const HandoverRomoSheet({super.key, required this.order, this.targetItem, required this.currentRomoId, required this.onHandoverSubmit});
 
   @override
   State<HandoverRomoSheet> createState() => _HandoverRomoSheetState();
@@ -187,10 +164,15 @@ class _HandoverRomoSheetState extends State<HandoverRomoSheet> {
         children: [
           Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 12),
-          const Row(children: [
-            Icon(Icons.published_with_changes_rounded, color: Color(0xFF0284C7), size: 22),
-            SizedBox(width: 8),
-            Expanded(child: Text('Limpahkan Pelayanan (Ganti Romo)', style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)))),
+          Row(children: [
+            const Icon(Icons.published_with_changes_rounded, color: Color(0xFF0284C7), size: 22),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                widget.targetItem != null ? 'Limpahkan ${widget.targetItem!.itemName}' : 'Limpahkan Pelayanan (Ganti Romo)',
+                style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+              ),
+            ),
           ]),
           const SizedBox(height: 10),
           _buildTabs(),
