@@ -616,10 +616,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ── Multi-Misa Selector Tabs ──
-                            if (order.items.length > 1)
-                              _buildMisaSelector(order, _activeItemId),
-
                             // ── Title + Status Chip ──
                             _buildTitleCard(
                                 displayItem, order, statusColor, statusLabel, statusIcon),
@@ -2621,107 +2617,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMisaSelector(Order order, int? activeId) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: order.items.map((item) {
-            final isSelected = item.id == activeId;
-            final isAccepted = item.acceptedRomoId != null ||
-                item.status.toUpperCase() == 'CONFIRMED' ||
-                item.status.toUpperCase() == 'DONE';
-            final isMyItem = widget.isRomo &&
-                widget.romoId != null &&
-                item.acceptedRomoId == widget.romoId;
-            final bool hasPendingHandover = item.hasPendingHandover;
-            final String badgeText = hasPendingHandover ? 'Pelimpahan' : (isMyItem ? 'Tugas Saya' : (isAccepted ? 'Diterima' : 'Terbuka'));
-            final Color badgeBg = hasPendingHandover ? const Color(0xFFD97706) : (isMyItem ? const Color(0xFF059669) : (isAccepted ? const Color(0xFF10B981) : const Color(0xFF0284C7)));
-
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: InkWell(
-                onTap: () => setState(() => _activeItemId = item.id),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFF1E293B) : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? const Color(0xFFD4AF37) : Colors.grey.shade300,
-                      width: isSelected ? 1.5 : 1,
-                    ),
-                    boxShadow: [
-                      if (isSelected)
-                        BoxShadow(
-                          color: const Color(0xFF1E293B).withValues(alpha: 0.18),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        hasPendingHandover
-                            ? Icons.swap_horiz_rounded
-                            : (isMyItem
-                                ? Icons.check_circle_rounded
-                                : (isAccepted
-                                    ? Icons.person_rounded
-                                    : Icons.church_rounded)),
-                        size: 16,
-                        color: isSelected
-                            ? const Color(0xFFD4AF37)
-                            : (hasPendingHandover
-                                ? const Color(0xFFD97706)
-                                : (isAccepted
-                                    ? Colors.green.shade700
-                                    : const Color(0xFF0284C7))),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        item.itemName,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.w600,
-                          color: isSelected
-                              ? Colors.white
-                              : const Color(0xFF1E293B),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: badgeBg,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          badgeText,
-                          style: const TextStyle(
-                            fontSize: 9.5,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
         ),
       ),
     );
