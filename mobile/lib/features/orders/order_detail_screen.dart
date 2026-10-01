@@ -9,6 +9,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import '../chat/chat_screen.dart';
 import 'widgets/accept_service_dialog.dart';
+import 'widgets/handover_romo_sheet.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final Order order;
@@ -3379,350 +3380,26 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       return;
     }
 
-    int? selectedTargetRomoId;
-    final reasonController = TextEditingController();
-    final searchController = TextEditingController();
-    List<Map<String, dynamic>> allRomos = [];
-    List<Map<String, dynamic>> filteredRomos = [];
-    bool isLoadingRomos = true;
-    String searchQuery = '';
-
-    showModalBottomSheet(
+    await showHandoverRomoBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
-          if (isLoadingRomos) {
-            ApiService.getAvailableRomos().then((list) {
-              if (ctx.mounted) {
-                setModalState(() {
-                  allRomos = list.where((r) {
-                    final rId = int.tryParse(r['id']?.toString() ?? '');
-                    return rId != null && rId != romoId;
-                  }).toList();
-                  filteredRomos = List.from(allRomos);
-                  if (filteredRomos.isNotEmpty && selectedTargetRomoId == null) {
-                    selectedTargetRomoId = int.tryParse(filteredRomos.first['id']?.toString() ?? '');
-                  }
-                  isLoadingRomos = false;
-                });
-              }
-            }).catchError((e) {
-              if (ctx.mounted) {
-                setModalState(() => isLoadingRomos = false);
-              }
-            });
-          }
-
-          void filterList(String q) {
-            searchQuery = q.toLowerCase();
-            setModalState(() {
-              filteredRomos = allRomos.where((r) {
-                final name = (r['fullName'] ?? '').toString().toLowerCase();
-                final paroki = (r['parokiName'] ?? '').toString().toLowerCase();
-                final ordo = (r['ordoName'] ?? r['ordoCode'] ?? '').toString().toLowerCase();
-                final role = (r['roleCode'] ?? '').toString().toLowerCase();
-                return name.contains(searchQuery) ||
-                    paroki.contains(searchQuery) ||
-                    ordo.contains(searchQuery) ||
-                    role.contains(searchQuery);
-              }).toList();
-              if (selectedTargetRomoId != null &&
-                  !filteredRomos.any((r) => int.tryParse(r['id']?.toString() ?? '') == selectedTargetRomoId)) {
-                selectedTargetRomoId = filteredRomos.isNotEmpty
-                    ? int.tryParse(filteredRomos.first['id']?.toString() ?? '')
-                    : null;
-              }
-            });
-          }
-
-          return Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.88,
-            ),
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 16,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            ),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0284C7).withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.published_with_changes_rounded, color: Color(0xFF0284C7), size: 22),
-                    ),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Text(
-                        'Limpahkan Pelayanan (Ganti Romo)',
-                        style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Pilih Romo Paroki atau Romo Ordo aktif untuk menggantikan pelayanan ini.',
-                  style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
-                ),
-                const SizedBox(height: 12),
-
-                // Search field
-                TextField(
-                  controller: searchController,
-                  onChanged: filterList,
-                  decoration: InputDecoration(
-                    hintText: 'Cari Romo, Paroki, atau Ordo...',
-                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
-                    prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Color(0xFF0284C7)),
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-                const Text(
-                  'Pilih Romo Pengganti:',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
-                ),
-                const SizedBox(height: 6),
-
-                // Romo List
-                Expanded(
-                  child: isLoadingRomos
-                      ? const Center(child: CircularProgressIndicator())
-                      : filteredRomos.isEmpty
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(20),
-                                child: Text(
-                                  'Tidak ditemukan Romo yang sesuai.',
-                                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-                                ),
-                              ),
-                            )
-                          : ListView.separated(
-                              shrinkWrap: true,
-                              itemCount: filteredRomos.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 8),
-                              itemBuilder: (context, idx) {
-                                final r = filteredRomos[idx];
-                                final rId = int.tryParse(r['id']?.toString() ?? '') ?? 0;
-                                final isSelected = selectedTargetRomoId == rId;
-                                final name = r['fullName'] ?? 'Romo';
-                                final parokiName = r['parokiName'] ?? '';
-                                final ordoName = r['ordoName'] ?? r['ordoCode'] ?? '';
-                                final roleCode = (r['roleCode'] ?? '').toString();
-                                final isOrdo = roleCode == 'ROMO_ORDO' || ordoName.isNotEmpty;
-
-                                return InkWell(
-                                  onTap: () => setModalState(() => selectedTargetRomoId = rId),
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: isSelected ? const Color(0xFF2563EB) : Colors.grey.shade200,
-                                        width: isSelected ? 1.5 : 1,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 38,
-                                          height: 38,
-                                          decoration: BoxDecoration(
-                                            color: isOrdo
-                                                ? const Color(0xFF8B5CF6).withValues(alpha: 0.12)
-                                                : const Color(0xFF0284C7).withValues(alpha: 0.12),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            isOrdo ? Icons.auto_awesome_rounded : Icons.church_rounded,
-                                            color: isOrdo ? const Color(0xFF7C3AED) : const Color(0xFF0284C7),
-                                            size: 20,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Romo $name',
-                                                style: TextStyle(
-                                                  fontSize: 13.5,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: isSelected ? const Color(0xFF1D4ED8) : const Color(0xFF1E293B),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Row(
-                                                children: [
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                    decoration: BoxDecoration(
-                                                      color: isOrdo
-                                                          ? const Color(0xFFF3E8FF)
-                                                          : const Color(0xFFE0F2FE),
-                                                      borderRadius: BorderRadius.circular(6),
-                                                    ),
-                                                    child: Text(
-                                                      isOrdo
-                                                          ? (ordoName.isNotEmpty ? 'Romo Ordo ($ordoName)' : 'Romo Ordo')
-                                                          : (parokiName.isNotEmpty ? 'Paroki $parokiName' : 'Romo Paroki'),
-                                                      style: TextStyle(
-                                                        fontSize: 10.5,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: isOrdo ? const Color(0xFF7E22CE) : const Color(0xFF0369A1),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        if (isSelected)
-                                          const Icon(Icons.check_circle_rounded, color: Color(0xFF2563EB), size: 22)
-                                        else
-                                          Icon(Icons.radio_button_unchecked_rounded, color: Colors.grey.shade400, size: 20),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // Reason Field
-                const Text('Alasan Pengalihan Tugas (Wajib):', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: reasonController,
-                  maxLines: 2,
-                  decoration: InputDecoration(
-                    hintText: 'Contoh: Sakit mendadak / ada pemakaman keluarga / jadwal bentrok...',
-                    hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // Submit Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (selectedTargetRomoId == null || selectedTargetRomoId == 0) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Silakan pilih Romo pengganti terlebih dahulu.')),
-                        );
-                        return;
-                      }
-
-                      final reasonText = reasonController.text.trim();
-                      if (reasonText.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Silakan masukkan alasan pengalihan tugas.')),
-                        );
-                        return;
-                      }
-
-                      final selectedRomo = allRomos.firstWhere(
-                        (r) => int.tryParse(r['id']?.toString() ?? '') == selectedTargetRomoId,
-                        orElse: () => {},
-                      );
-                      final selectedRomoName = selectedRomo['fullName'] ?? 'Romo Terpilih';
-
-                      final bool? confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (c) => AlertDialog(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                          title: const Text('Konfirmasi Pengalihan', style: TextStyle(fontWeight: FontWeight.bold)),
-                          content: Text(
-                            'Apakah Anda yakin ingin melimpahkan tugas pelayanan ini kepada Romo $selectedRomoName?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(c, false),
-                              child: const Text('Batal'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () => Navigator.pop(c, true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0284C7),
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Ya, Limpahkan'),
-                            ),
-                          ],
-                        ),
-                      );
-
-                      if (confirm == true) {
-                        if (ctx.mounted) Navigator.pop(ctx);
-                        _submitHandover(
-                          order: order,
-                          targetItem: targetItem,
-                          targetRomoId: selectedTargetRomoId,
-                          reason: reasonText,
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0284C7),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text('Limpahkan Pelayanan Sekarang', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+      order: order,
+      targetItem: targetItem,
+      currentRomoId: romoId,
+      onHandoverSubmit: ({
+        required int orderId,
+        OrderItem? targetItem,
+        int? targetRomoId,
+        String? externalRomoName,
+        required String reason,
+      }) async {
+        await _submitHandover(
+          order: order,
+          targetItem: targetItem,
+          targetRomoId: targetRomoId,
+          externalRomoName: externalRomoName,
+          reason: reason,
+        );
+      },
     );
   }
 
@@ -3730,6 +3407,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     required Order order,
     OrderItem? targetItem,
     int? targetRomoId,
+    String? externalRomoName,
     required String reason,
   }) async {
     final romoId = widget.romoId;
@@ -3742,13 +3420,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         romoId: romoId,
         itemId: targetItem?.id,
         targetRomoId: targetRomoId,
+        externalRomoName: externalRomoName,
         reason: reason,
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(res['message'] ?? 'Pengajuan pelimpahan tugas berhasil dikirim.'),
+            content: Text(res['message'] ?? 'Pengajuan pelimpahan tugas berhasil diproses.'),
             backgroundColor: const Color(0xFF0284C7),
           ),
         );

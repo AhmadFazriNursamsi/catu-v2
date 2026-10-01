@@ -104,7 +104,8 @@ export class OrdersController {
     @Body() dto: {
       romoId: number;
       itemId?: number;
-      targetRomoId: number;
+      targetRomoId?: number;
+      externalRomoName?: string;
       reason: string;
     },
   ) {

@@ -733,6 +733,7 @@ class ApiService {
     required int romoId,
     int? itemId,
     int? targetRomoId,
+    String? externalRomoName,
     required String reason,
   }) async {
     try {
@@ -743,14 +744,12 @@ class ApiService {
           'romoId': romoId,
           if (itemId != null) 'itemId': itemId,
           if (targetRomoId != null && targetRomoId > 0) 'targetRomoId': targetRomoId,
+          if (externalRomoName != null && externalRomoName.trim().isNotEmpty) 'externalRomoName': externalRomoName.trim(),
           'reason': reason,
         }),
       );
       final data = jsonDecode(response.body);
-      if (data is Map<String, dynamic>) {
-        return data;
-      }
-      return {'statusCode': response.statusCode, 'message': 'Berhasil memproses pengalihan romo.'};
+      return data is Map<String, dynamic> ? data : {'statusCode': response.statusCode, 'message': 'Berhasil memproses pengalihan romo.'};
     } catch (e) {
       return {'statusCode': 500, 'message': 'Gagal melakukan pengalihan romo: $e'};
     }
