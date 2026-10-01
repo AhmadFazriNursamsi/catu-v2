@@ -417,16 +417,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     OrderItem? targetItem;
     if (_activeItemId != null && order.items.isNotEmpty) {
       for (final item in order.items) {
-        if (item.id == _activeItemId) {
-          targetItem = item;
-          break;
-        }
+        if (item.id == _activeItemId) { targetItem = item; break; }
       }
     }
     if (targetItem == null && widget.selectedItemTitle != null && order.items.isNotEmpty) {
+      final cleanTitle = widget.selectedItemTitle!
+          .replaceAll(RegExp(r'^[^\w\s]+|\s*\[Pelimpahan\]\s*', caseSensitive: false), '')
+          .toLowerCase().trim();
       for (final item in order.items) {
-        if (item.itemName.toLowerCase().trim() ==
-            widget.selectedItemTitle!.toLowerCase().trim()) {
+        final cur = item.itemName.toLowerCase().trim();
+        if (cur == cleanTitle || cur.contains(cleanTitle) || cleanTitle.contains(cur)) {
           targetItem = item;
           _activeItemId = item.id;
           break;
@@ -447,6 +447,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               order.jamSelesaiLabel.isNotEmpty ? order.jamSelesaiLabel : 'Selesai',
           locationName: order.displayAddress,
         );
+
+    final itemReschedules = order.items.isNotEmpty && displayItem.id != null
+        ? order.rescheduleHistory.where((r) => r.itemId == displayItem.id).toList() : order.rescheduleHistory;
+    final itemHandovers = order.items.isNotEmpty && displayItem.id != null
+        ? order.handoverHistory.where((h) => h.itemId == displayItem.id).toList() : order.handoverHistory;
 
     final int? assignedRomoId = order.items.isNotEmpty
         ? displayItem.acceptedRomoId
@@ -622,7 +627,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             const SizedBox(height: 12),
 
                             // ── Reschedule Proposal Card for Umat ──
-                            if (!widget.isRomo && (displayItem.hasPendingReschedule || order.hasPendingReschedule)) ...[
+                            if (!widget.isRomo && (order.items.isNotEmpty ? displayItem.hasPendingReschedule : order.hasPendingReschedule)) ...[
                               _buildRescheduleProposalCard(order, displayItem),
                               const SizedBox(height: 12),
                             ],
@@ -705,7 +710,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                             const SizedBox(width: 6),
                                             Expanded(
                                               child: Text(
-                                                'Pelayanan diterima via pelimpahan tugas dari Romo ${displayItem.handoverProposerName ?? order.handoverProposerName ?? 'sebelumnya'}',
+                                                'Pelayanan diterima via pelimpahan tugas dari Romo ${order.items.isNotEmpty ? (displayItem.handoverProposerName ?? 'sebelumnya') : (displayItem.handoverProposerName ?? order.handoverProposerName ?? 'sebelumnya')}',
                                                 style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF15803D)),
                                               ),
                                             ),
@@ -895,15 +900,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             ),
 
                             // ── Riwayat Perubahan Jadwal (Reschedule History) ──
-                            if (order.rescheduleHistory.isNotEmpty) ...[
+                            if (itemReschedules.isNotEmpty) ...[
                               const SizedBox(height: 12),
-                              _buildRescheduleHistoryCard(order),
+                              _buildRescheduleHistoryCard(order, itemReschedules),
                             ],
 
                             // ── Riwayat Pengalihan Romo (Handover History) ──
-                            if (order.handoverHistory.isNotEmpty) ...[
+                            if (itemHandovers.isNotEmpty) ...[
                               const SizedBox(height: 12),
-                              _buildHandoverHistoryCard(order),
+                              _buildHandoverHistoryCard(order, itemHandovers),
                             ],
                           ],
                         ),
@@ -1280,7 +1285,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     }
   }
 
-  Widget _buildRescheduleHistoryCard(Order order) {
+  Widget _buildRescheduleHistoryCard(Order order, [List<OrderRescheduleLog>? logs]) {
+    final list = logs ?? order.rescheduleHistory;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -1328,7 +1334,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    '${order.rescheduleHistory.length} Log',
+                    '${list.length} Log',
                     style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
                   ),
                 ),
@@ -1340,13 +1346,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            itemCount: order.rescheduleHistory.length,
+            itemCount: list.length,
             separatorBuilder: (_, __) => const Padding(
               padding: EdgeInsets.symmetric(vertical: 10),
               child: Divider(height: 1, color: Color(0xFFF1F5F9)),
             ),
             itemBuilder: (context, idx) {
-              final log = order.rescheduleHistory[idx];
+              final log = list[idx];
               final bool isAccepted = log.status == 'ACCEPTED';
               final bool isRejected = log.status == 'REJECTED';
               final Color badgeColor = isAccepted
@@ -2634,28 +2640,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
             final isMyItem = widget.isRomo &&
                 widget.romoId != null &&
                 item.acceptedRomoId == widget.romoId;
+            final bool hasPendingHandover = item.hasPendingHandover;
+            final String badgeText = hasPendingHandover ? 'Pelimpahan' : (isMyItem ? 'Tugas Saya' : (isAccepted ? 'Diterima' : 'Terbuka'));
+            final Color badgeBg = hasPendingHandover ? const Color(0xFFD97706) : (isMyItem ? const Color(0xFF059669) : (isAccepted ? const Color(0xFF10B981) : const Color(0xFF0284C7)));
 
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: InkWell(
-                onTap: () {
-                  setState(() {
-                    _activeItemId = item.id;
-                  });
-                },
+                onTap: () => setState(() => _activeItemId = item.id),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFF1E293B)
-                        : Colors.white,
+                    color: isSelected ? const Color(0xFF1E293B) : Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isSelected
-                          ? const Color(0xFFD4AF37)
-                          : Colors.grey.shade300,
+                      color: isSelected ? const Color(0xFFD4AF37) : Colors.grey.shade300,
                       width: isSelected ? 1.5 : 1,
                     ),
                     boxShadow: [
@@ -2671,17 +2671,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isMyItem
-                            ? Icons.check_circle_rounded
-                            : (isAccepted
-                                ? Icons.person_rounded
-                                : Icons.church_rounded),
+                        hasPendingHandover
+                            ? Icons.swap_horiz_rounded
+                            : (isMyItem
+                                ? Icons.check_circle_rounded
+                                : (isAccepted
+                                    ? Icons.person_rounded
+                                    : Icons.church_rounded)),
                         size: 16,
                         color: isSelected
                             ? const Color(0xFFD4AF37)
-                            : (isAccepted
-                                ? Colors.green.shade700
-                                : Colors.grey.shade600),
+                            : (hasPendingHandover
+                                ? const Color(0xFFD97706)
+                                : (isAccepted
+                                    ? Colors.green.shade700
+                                    : const Color(0xFF0284C7))),
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -2695,25 +2699,23 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               : const Color(0xFF1E293B),
                         ),
                       ),
-                      if (isMyItem) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.green.shade600,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'Diterima',
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: badgeBg,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          badgeText,
+                          style: const TextStyle(
+                            fontSize: 9.5,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
@@ -3241,7 +3243,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     );
   }
 
-  Widget _buildHandoverHistoryCard(Order order) {
+  Widget _buildHandoverHistoryCard(Order order, [List<OrderRomoHandover>? logs]) {
+    final list = logs ?? order.handoverHistory;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -3289,7 +3292,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    '${order.handoverHistory.length} Log',
+                    '${list.length} Log',
                     style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
                   ),
                 ),
@@ -3301,13 +3304,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            itemCount: order.handoverHistory.length,
+            itemCount: list.length,
             separatorBuilder: (_, __) => const Padding(
               padding: EdgeInsets.symmetric(vertical: 10),
               child: Divider(height: 1, color: Color(0xFFF1F5F9)),
             ),
             itemBuilder: (context, idx) {
-              final h = order.handoverHistory[idx];
+              final h = list[idx];
               final bool isDirect = h.handoverType == 'DIRECT_ASSIGN';
               final String destination = isDirect
                   ? (h.newRomoName != null ? 'Dialihkan ke Romo ${h.newRomoName}' : 'Dialihkan ke Romo Rekan')
@@ -3385,12 +3388,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         : (order.isHandoverCompleted || (targetItem?.isHandoverCompleted ?? false));
 
     if (alreadyCompleted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pelayanan yang telah diterima dari pelimpahan tugas tidak dapat dilimpahkan kembali.'),
-          backgroundColor: Color(0xFF0284C7),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pelayanan yang telah diterima dari pelimpahan tugas tidak dapat dilimpahkan kembali.'), backgroundColor: Color(0xFF0284C7)));
       return;
     }
 

@@ -748,19 +748,18 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 14),
                                   child: GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => OrderDetailScreen(
-                                            order: item.parentOrder,
-                                            userName: userName,
-                                            userId: _userId,
-                                            selectedItemTitle: item.title,
-                                          ),
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => OrderDetailScreen(
+                                          order: item.parentOrder,
+                                          userName: userName,
+                                          userId: _userId,
+                                          selectedItemTitle: item.subItem?.itemName ?? item.title,
+                                          selectedItemId: item.subItem?.id,
                                         ),
-                                      );
-                                    },
+                                      ),
+                                    ),
                                     child: _buildServiceCard(item),
                                   ),
                                 );

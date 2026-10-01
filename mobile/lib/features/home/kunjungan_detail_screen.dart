@@ -253,7 +253,7 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
       for (final o in _orders)
         if (o.items.isNotEmpty)
           for (final item in o.items)
-            {'order': o, 'date': item.scheduledDate.isNotEmpty ? item.scheduledDate : o.scheduledDate, 'title': item.itemName, 'status': item.status}
+            {'order': o, 'date': item.scheduledDate.isNotEmpty ? item.scheduledDate : o.scheduledDate, 'title': item.itemName, 'status': item.status, 'itemId': item.id}
         else
           {'order': o, 'date': o.scheduledDate, 'title': o.categoryName, 'status': o.status},
     ];
@@ -288,7 +288,7 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
               margin: const EdgeInsets.only(bottom: 10), elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Color(0xFFE2E8F0))),
               child: InkWell(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OrderDetailScreen(order: o, userName: userName, userId: userId, selectedItemTitle: title))).then((_) => _loadOrders()),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OrderDetailScreen(order: o, userName: userName, userId: userId, selectedItemTitle: title, selectedItemId: row['itemId'] as int?))).then((_) => _loadOrders()),
                 borderRadius: BorderRadius.circular(14),
                 child: Padding(
                   padding: const EdgeInsets.all(12),

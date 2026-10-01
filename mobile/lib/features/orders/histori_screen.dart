@@ -838,8 +838,8 @@ class _HistoriScreenState extends State<HistoriScreen>
             userName: widget.userName,
             userId: widget.userId,
             selectedItemTitle: displayItem?.itemName,
-            isRomo: widget.isRomo,
-            romoId: widget.romoId,
+            selectedItemId: displayItem?.id,
+            isRomo: widget.isRomo, romoId: widget.romoId,
           ),
         ),
       );

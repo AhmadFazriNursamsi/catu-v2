@@ -1175,14 +1175,14 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
             builder: (_) => OrderDetailScreen(
               order: order,
               userName: widget.user['fullName'] ?? widget.user['full_name'] ?? 'Romo',
-              selectedItemTitle: item.title,
+              selectedItemTitle: item.subItem?.itemName ?? item.title,
+              selectedItemId: item.subItem?.id,
               isRomo: true,
               romoId: romoId,
             ),
           ),
         );
-        widget.onRefresh();
-        if (mounted) setState(() {});
+        widget.onRefresh(); if (mounted) setState(() {});
       },
       child: Container(
         width: 250,

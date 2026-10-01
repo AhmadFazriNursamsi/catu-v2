@@ -1363,8 +1363,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                 userName: widget.userName,
                 userId: widget.userId,
                 selectedItemTitle: entry.item?.itemName,
-                isRomo: widget.isRomo,
-                romoId: widget.romoId,
+                selectedItemId: entry.item?.id,
+                isRomo: widget.isRomo, romoId: widget.romoId,
               ),
             ),
           );
