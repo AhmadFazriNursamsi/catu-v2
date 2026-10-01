@@ -7,39 +7,38 @@
   },
   "files": {
     "mobile/lib/core/models/models.dart": 958,
-    "mobile/lib/core/services/notification_service.dart": 978,
-    "mobile/lib/core/services/api_service.dart": 1112,
-    "mobile/lib/core/services/language_service.dart": 542,
-    "mobile/lib/features/home/umat_dashboard_view.dart": 1294,
-    "mobile/lib/features/home/romo_dashboard_view.dart": 1431,
+    "mobile/lib/core/services/notification_service.dart": 1051,
+    "mobile/lib/core/services/api_service.dart": 1121,
+    "mobile/lib/core/services/language_service.dart": 543,
+    "mobile/lib/features/home/umat_dashboard_view.dart": 1289,
+    "mobile/lib/features/home/romo_dashboard_view.dart": 1443,
     "mobile/lib/features/chat/chat_screen.dart": 1218,
     "mobile/lib/features/chat/chat_list_screen.dart": 923,
-    "mobile/lib/features/auth/pending_approval_screen.dart": 615,
-    "mobile/lib/features/auth/register_screen.dart": 1356,
+    "mobile/lib/features/auth/pending_approval_screen.dart": 678,
+    "mobile/lib/features/auth/register_screen.dart": 1526,
     "mobile/lib/features/auth/login_screen.dart": 1274,
     "mobile/lib/features/auth/forgot_password_screen.dart": 917,
-    "mobile/lib/features/admin/romo_approval_screen.dart": 690,
+    "mobile/lib/features/admin/romo_approval_screen.dart": 727,
     "mobile/lib/features/admin/admin_dashboard_view.dart": 1786,
-    "mobile/lib/features/admin/pengurus_approval_screen.dart": 649,
-    "mobile/lib/features/profile/edit_profile_screen.dart": 1241,
-    "mobile/lib/features/profile/main_menu_screen.dart": 909,
+    "mobile/lib/features/admin/pengurus_approval_screen.dart": 662,
+    "mobile/lib/features/profile/edit_profile_screen.dart": 1192,
+    "mobile/lib/features/profile/main_menu_screen.dart": 850,
     "mobile/lib/features/news/news_detail_screen.dart": 526,
-    "mobile/lib/features/news/public_news_screen.dart": 655,
+    "mobile/lib/features/news/public_news_screen.dart": 651,
     "mobile/lib/features/orders/schedule_screen.dart": 1828,
-    "mobile/lib/features/orders/create_perminyakan_screen.dart": 1256,
+    "mobile/lib/features/orders/create_perminyakan_screen.dart": 1264,
     "mobile/lib/features/orders/histori_screen.dart": 1215,
-    "mobile/lib/features/orders/create_kedukaan_screen.dart": 1628,
+    "mobile/lib/features/orders/create_kedukaan_screen.dart": 1636,
     "mobile/lib/features/orders/order_detail_screen.dart": 3774,
-    "mobile/lib/features/notifications/notification_screen.dart": 977
+    "mobile/lib/features/notifications/notification_screen.dart": 1049
   },
   "functions": {
     "mobile/lib/features/home/umat_dashboard_view.dart": [
-      583,
-      297,
-      133
+      575,
+      297
     ],
     "mobile/lib/features/home/romo_dashboard_view.dart": [
-      572,
+      581,
       302
     ],
     "mobile/lib/features/chat/chat_screen.dart": [
@@ -55,12 +54,14 @@
       373
     ],
     "mobile/lib/features/auth/register_screen.dart": [
-      571,
-      143,
+      512,
+      241,
+      166,
+      136,
       126
     ],
     "mobile/lib/features/auth/login_screen.dart": [
-      486,
+      479,
       460
     ],
     "mobile/lib/features/auth/forgot_password_screen.dart": [
@@ -69,8 +70,8 @@
       136
     ],
     "mobile/lib/features/admin/romo_approval_screen.dart": [
-      215,
-      180
+      180,
+      171
     ],
     "mobile/lib/features/admin/admin_dashboard_view.dart": [
       354,
@@ -82,20 +83,20 @@
       164
     ],
     "mobile/lib/features/profile/edit_profile_screen.dart": [
-      223,
+      210,
       125
     ],
     "mobile/lib/features/profile/main_menu_screen.dart": [
-      182,
-      178,
-      132
+      178
+    ],
+    "mobile/lib/features/news/featured_news_carousel.dart": [
+      154
     ],
     "mobile/lib/features/news/news_detail_screen.dart": [
       366
     ],
     "mobile/lib/features/news/public_news_screen.dart": [
-      269,
-      154
+      274
     ],
     "mobile/lib/features/orders/schedule_screen.dart": [
       385,
@@ -103,17 +104,17 @@
       147
     ],
     "mobile/lib/features/orders/create_order_screen.dart": [
-      137
+      179
     ],
     "mobile/lib/features/orders/create_perminyakan_screen.dart": [
-      459,
-      133
+      395,
+      140
     ],
     "mobile/lib/features/orders/histori_screen.dart": [
       308
     ],
     "mobile/lib/features/orders/create_kedukaan_screen.dart": [
-      688,
+      624,
       127
     ],
     "mobile/lib/features/orders/order_detail_screen.dart": [
@@ -128,7 +129,7 @@
       128
     ],
     "mobile/lib/features/notifications/notification_screen.dart": [
-      373
+      441
     ],
     "mobile/lib/widgets/searchable_select_field.dart": [
       139

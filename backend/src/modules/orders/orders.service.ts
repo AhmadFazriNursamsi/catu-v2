@@ -221,11 +221,13 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
       );
     }
 
-    // Strictly filter out creator from observer / monitoring lists
+    // Strictly filter out creator from observer / monitoring lists,
+    // EXCEPT Koordinator: even if a Koordinator creates an order, they MUST be in the chat group
+    // as KOORDINATOR (with coordinator privileges) and receive the coordinator notification.
     if (userId) {
       const numUserId = Number(userId);
       pengurus = pengurus.filter((p: any) => Number(p.id) !== numUserId);
-      koordinator = koordinator.filter((k: any) => Number(k.id) !== numUserId);
+      // Keep koordinator intact (do not filter out creator) so their role is upgraded to KOORDINATOR
       romoParoki = romoParoki.filter((r: any) => Number(r.id) !== numUserId);
       romoOrdo = romoOrdo.filter((ro: any) => Number(ro.id) !== numUserId);
     }
@@ -295,9 +297,9 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
           }
         }
 
-        // 🔔 4b. Notify Koordinator Keuskupan per-misa (exclude creator)
+        // 🔔 4b. Notify Koordinator Keuskupan per-misa
         for (const k of koordinator) {
-          if (k.id && k.id !== userId) {
+          if (k.id) {
             await this.dataSource.query(
               `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
                VALUES ($1, $2, $3, $4, 'NEW_ORDER_KOORDINATOR', false)`,
@@ -379,7 +381,7 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
       }
 
       for (const k of koordinator) {
-        if (k.id !== userId) {
+        if (k.id) {
           await this.dataSource.query(
             `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'KOORDINATOR')
              ON CONFLICT (chat_group_id, user_id) DO UPDATE SET role_in_group = 'KOORDINATOR'`,
@@ -404,9 +406,9 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
         }
       }
 
-      // 🔔 Notify Koordinator Keuskupan (exclude creator)
+      // 🔔 Notify Koordinator Keuskupan
       for (const k of koordinator) {
-        if (k.id !== userId) {
+        if (k.id) {
           await this.dataSource.query(
             `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
              VALUES ($1, $2, 'Pemantauan Keuskupan: Sakramen Perminyakan', $3, 'NEW_ORDER_KOORDINATOR', false)`,

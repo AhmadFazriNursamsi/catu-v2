@@ -8,31 +8,28 @@
   "files": {
     "backend/src/orders.dto.ts": 513,
     "backend/src/news.service.ts": 583,
-    "backend/src/database/database-init.service.ts": 485,
     "backend/src/modules/assignments/assignments.service.ts": 376,
-    "backend/src/modules/chat/chat.service.ts": 585,
-    "backend/src/modules/auth/auth.service.ts": 1492,
+    "backend/src/modules/chat/chat.service.ts": 616,
+    "backend/src/modules/auth/auth.service.ts": 1994,
     "backend/src/modules/master-data/master-data.service.ts": 414,
-    "backend/src/modules/orders/orders.service.ts": 1582
+    "backend/src/modules/orders/orders.service.ts": 1673
   },
   "functions": {
     "backend/src/news.service.ts": [
       121
     ],
-    "backend/src/database/database-init.service.ts": [
-      474
-    ],
     "backend/src/modules/assignments/assignments.service.ts": [
       130
     ],
     "backend/src/modules/chat/chat.service.ts": [
-      139
+      156
     ],
     "backend/src/modules/auth/auth.service.ts": [
-      320
+      383,
+      138
     ],
     "backend/src/modules/orders/orders.service.ts": [
-      399,
+      419,
       239,
       191
     ]

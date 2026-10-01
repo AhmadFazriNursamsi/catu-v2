@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/app_constants.dart';
 
 class LanguageService {
   static final ValueNotifier<String> currentLanguage =
@@ -131,7 +132,7 @@ class LanguageService {
       'settings': 'Setelan',
       'settings_sub': 'Notifikasi, bahasa & tampilan',
       'about_app': 'Tentang Catu',
-      'about_app_sub': 'Versi aplikasi v2.8.0 & lisensi',
+      'about_app_sub': 'Versi aplikasi ${AppConstants.appVersion} & lisensi',
       'logout_sub': 'Keluar dari akun CATU',
       'help_center_sub': 'Kontak sekretariat paroki & FAQ',
 
@@ -299,7 +300,7 @@ class LanguageService {
       'settings': 'Settings',
       'settings_sub': 'Notifications, language & display',
       'about_app': 'About Catu',
-      'about_app_sub': 'App version v2.8.0 & licenses',
+      'about_app_sub': 'App version ${AppConstants.appVersion} & licenses',
       'logout_sub': 'Sign out from CATU account',
       'help_center_sub': 'Parish secretariat contact & FAQ',
 
@@ -467,7 +468,7 @@ class LanguageService {
       'settings': 'Configuratio',
       'settings_sub': 'Nuntii, lingua et modus',
       'about_app': 'De Applicatione',
-      'about_app_sub': 'Versio applicationis v2.8.0',
+      'about_app_sub': 'Versio applicationis ${AppConstants.appVersion}',
       'logout_sub': 'Exire ex ratione CATU',
       'help_center_sub': 'Contactus secretariatus et FAQ',
 
