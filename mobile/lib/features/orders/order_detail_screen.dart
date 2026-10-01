@@ -8,6 +8,7 @@ import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import '../chat/chat_screen.dart';
+import 'widgets/accept_service_dialog.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final Order order;
@@ -2488,14 +2489,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   }
 
   Future<void> _acceptService(Order order, {OrderItem? targetItem}) async {
+    final confirmed = await showAcceptServiceDialog(context, order: order, targetItem: targetItem);
+    if (!confirmed) return;
+
     setState(() => _isSubmitting = true);
     try {
-      final res = await ApiService.respondAssignment(
-        order.id,
-        'CONFIRMED',
-        romoId: widget.romoId,
-        itemId: targetItem?.id,
-      );
+      final res = await ApiService.respondAssignment(order.id, 'CONFIRMED', romoId: widget.romoId, itemId: targetItem?.id);
       if (mounted) {
         if (targetItem != null && widget.romoId != null) {
           targetItem.status = 'CONFIRMED';
@@ -2520,10 +2519,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menerima pelayanan: $e'),
-            backgroundColor: Colors.red.shade700,
-          ),
+          SnackBar(content: Text('Gagal menerima pelayanan: $e'), backgroundColor: Colors.red.shade700),
         );
       }
     } finally {
