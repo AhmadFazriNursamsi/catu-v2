@@ -20,7 +20,8 @@ Every task must follow this serial execution lifecycle:
 
 ## 2. Working and Safety Boundaries
 
-- **Development boundary**: Agents operate in local development environments only. Production deployments, database migrations against live production, domain/DNS changes, or credential rotations require explicit human direction.
+- **Development boundary**: Agents operate in local development environments only. Production deployments, database migrations against live production, domain/DNS changes, or credential rotations require explicit human direction. Under NO circumstances should agents execute requests (curl, HTTP requests, scripts) or mutating actions against production domains (e.g. `catu.devoutsys.com`). All development, testing, and debugging must strictly target the local development runtime (`catu_backend` / local PostgreSQL).
+- **Network & Production isolation**: In production, the backend domain/port must never be exposed directly to the public internet (`0.0.0.0`). The backend communicates with frontends (admin web / reverse proxy) strictly via private internal network (Docker `shared-network`) or local loopback (`127.0.0.1`).
 - **Git safety**:
   - Base branch is `main`.
   - Never run destructive Git commands (`git reset --hard`, `git clean -fd`, `git checkout -- .`) without explicit instruction.
