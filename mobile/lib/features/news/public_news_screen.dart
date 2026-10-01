@@ -79,17 +79,13 @@ class _PublicNewsScreenState extends State<PublicNewsScreen> {
     try {
       final raw = await ApiService.getNewsCategories();
       if (raw.isNotEmpty) {
-        final list = raw.map((c) => NewsCategory.fromJson(c)).toList();
+        final list = raw
+            .map((c) => NewsCategory.fromJson(c))
+            .where((c) => c.slug.toLowerCase() != 'semua' && c.name.toLowerCase() != 'semua')
+            .toList();
         setState(() {
           _categories = [
-            NewsCategory(
-              id: 0,
-              name: 'Semua',
-              slug: 'semua',
-              description: 'Semua berita Katolik',
-              iconName: 'newspaper',
-              displayOrder: 0,
-            ),
+            NewsCategory(id: 0, name: 'Semua', slug: 'semua', description: 'Semua berita Katolik', iconName: 'newspaper', displayOrder: 0),
             ...list,
           ];
         });
