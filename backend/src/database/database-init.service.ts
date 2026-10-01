@@ -113,9 +113,10 @@ export class DatabaseInitService implements OnModuleInit {
         -- Seed roles & default superadmin / admin accounts
         INSERT INTO roles (code, name) VALUES ('SUPERADMIN', 'Super Admin'), ('ADMIN', 'Administrator') ON CONFLICT (code) DO NOTHING;
         UPDATE roles SET name = 'Administrator' WHERE code = 'ADMIN';
-        UPDATE auth_users SET role_id = (SELECT id FROM roles WHERE code = 'SUPERADMIN'), password_hash = '$2b$10$x0H6poxRP4Tkze07bgwd5OCFegOxjzYlHOuuqCJLK8xdm3osY09M6' WHERE phone_number = '6289999999999';
-        INSERT INTO auth_users (phone_number, password_hash, role_id, account_status) SELECT '6288888888888', '$2b$10$x0H6poxRP4Tkze07bgwd5OCFegOxjzYlHOuuqCJLK8xdm3osY09M6', (SELECT id FROM roles WHERE code = 'ADMIN'), 'APPROVED' WHERE NOT EXISTS (SELECT 1 FROM auth_users WHERE phone_number = '6288888888888');
+        UPDATE auth_users SET role_id = (SELECT id FROM roles WHERE code = 'SUPERADMIN'), password_hash = '$2b$10$Tv2.dDx8z2.kprJSimWlauu7DsgGgzeAtYvhnnRC35HAtYv7xeA0C' WHERE phone_number = '6289999999999';
+        INSERT INTO auth_users (phone_number, password_hash, role_id, account_status) SELECT '6288888888888', '$2b$10$Tv2.dDx8z2.kprJSimWlauu7DsgGgzeAtYvhnnRC35HAtYv7xeA0C', (SELECT id FROM roles WHERE code = 'ADMIN'), 'APPROVED' WHERE NOT EXISTS (SELECT 1 FROM auth_users WHERE phone_number = '6288888888888');
         INSERT INTO user_profiles (user_id, full_name, email) SELECT u.id, 'Administrator Sistem', 'admin@catu.id' FROM auth_users u WHERE u.phone_number = '6288888888888' AND NOT EXISTS (SELECT 1 FROM user_profiles WHERE user_id = u.id);
+        INSERT INTO user_profiles (user_id, full_name, email) SELECT u.id, 'Super Admin CATU', 'admin@catu.or.id' FROM auth_users u WHERE u.phone_number = '6289999999999' AND NOT EXISTS (SELECT 1 FROM user_profiles WHERE user_id = u.id);
       `);
 
       // Automatically sync complete master data (Provinsi, Kota, Keuskupan, Paroki, Wilayah, Lingkungan, Ordo)
