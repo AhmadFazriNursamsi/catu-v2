@@ -132,14 +132,14 @@ export class OrdersController {
 
   @Post(':id/review')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Umat memberikan ulasan dan rating pada pelayanan yang telah selesai atau ditutup' })
+  @ApiOperation({ summary: 'Umat memberikan ulasan pada pelayanan yang telah selesai atau ditutup' })
   async submitReview(
     @Param('id') idParam: string,
     @Body() dto: {
       userId?: number;
       itemId?: number;
-      rating: number;
-      reviewNotes?: string;
+      rating?: number;
+      reviewNotes: string;
     },
   ) {
     return await this.orderReviewsService.submitReview(idParam, dto);

@@ -17,9 +17,8 @@ class OrderReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int? rating = targetItem?.rating ?? order.rating;
     final String? notes = targetItem?.reviewNotes ?? order.reviewNotes;
-    final bool hasReview = rating != null && rating > 0;
+    final bool hasReview = notes != null && notes.trim().isNotEmpty;
 
     if (isRomo) {
       if (!hasReview) {
@@ -44,7 +43,7 @@ class OrderReviewCard extends StatelessWidget {
                     ),
                     SizedBox(height: 2),
                     Text(
-                      'Pelayanan selesai. Menunggu penilaian & ulasan dari umat.',
+                      'Pelayanan selesai. Menunggu kesan atau ulasan dari umat.',
                       style: TextStyle(fontSize: 11.5, color: Color(0xFFB45309)),
                     ),
                   ],
@@ -54,7 +53,7 @@ class OrderReviewCard extends StatelessWidget {
           ),
         );
       } else {
-        return _buildReviewedCard(rating, notes, 'Ulasan dari Umat');
+        return _buildReviewedCard(notes, 'Ulasan dari Umat');
       }
     } else {
       if (!hasReview) {
@@ -77,7 +76,7 @@ class OrderReviewCard extends StatelessWidget {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.star_rounded, color: Color(0xFFD97706), size: 22),
+                  Icon(Icons.edit_note_rounded, color: Color(0xFF1D4ED8), size: 22),
                   SizedBox(width: 8),
                   Text(
                     'Ulasan Pelayanan',
@@ -87,8 +86,8 @@ class OrderReviewCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Pelayanan telah selesai dilaksanakan. Mohon kesediaan Anda memberikan penilaian atas pelayanan Romo.',
-                style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                'Pelayanan telah selesai dilaksanakan. Mohon kesediaan Anda memberikan kesan, ulasan, atau ucapan terima kasih kepada Romo.',
+                style: TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.4),
               ),
               const SizedBox(height: 12),
               SizedBox(
@@ -97,9 +96,9 @@ class OrderReviewCard extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: onReviewPressed,
                   icon: const Icon(Icons.rate_review_rounded, size: 16),
-                  label: const Text('Beri Ulasan Pelayanan ⭐', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  label: const Text('Beri Ulasan Pelayanan', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD97706),
+                    backgroundColor: const Color(0xFF1D4ED8),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -110,12 +109,12 @@ class OrderReviewCard extends StatelessWidget {
           ),
         );
       } else {
-        return _buildReviewedCard(rating, notes, 'Ulasan Anda ⭐');
+        return _buildReviewedCard(notes, 'Ulasan Anda');
       }
     }
   }
 
-  Widget _buildReviewedCard(int rating, String? notes, String title) {
+  Widget _buildReviewedCard(String notes, String title) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -128,45 +127,37 @@ class OrderReviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
+              Icon(
+                isRomo ? Icons.chat_bubble_outline_rounded : Icons.check_circle_outline_rounded,
+                size: 18,
+                color: const Color(0xFF059669),
+              ),
+              const SizedBox(width: 8),
               Text(
                 title,
                 style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
               ),
-              const Spacer(),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(
-                  5,
-                  (i) => Icon(
-                    Icons.star_rounded,
-                    size: 18,
-                    color: i < rating ? const Color(0xFFF59E0B) : const Color(0xFFE2E8F0),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '$rating/5',
-                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Color(0xFFD97706)),
-              ),
             ],
           ),
-          if (notes != null && notes.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFF1F5F9)),
-              ),
-              child: Text(
-                '"$notes"',
-                style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Color(0xFF334155)),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFF1F5F9)),
+            ),
+            child: Text(
+              '"$notes"',
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontStyle: FontStyle.italic,
+                color: Color(0xFF334155),
+                height: 1.4,
               ),
             ),
-          ],
+          ),
         ],
       ),
     );

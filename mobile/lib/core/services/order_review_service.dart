@@ -5,23 +5,21 @@ import '../constants/app_constants.dart';
 class OrderReviewService {
   static String get baseUrl => AppConstants.apiBaseUrl;
 
-  /// Submit review (rating 1-5 + optional notes) for an order or order item
+  /// Submit review notes for an order or order item
   static Future<Map<String, dynamic>> submitReview(
     int orderId, {
     int? userId,
     int? itemId,
-    required int rating,
-    String? reviewNotes,
+    required String reviewNotes,
+    int? rating,
   }) async {
     try {
       final body = <String, dynamic>{
-        'rating': rating,
+        'reviewNotes': reviewNotes.trim(),
       };
+      if (rating != null) body['rating'] = rating;
       if (userId != null) body['userId'] = userId;
       if (itemId != null) body['itemId'] = itemId;
-      if (reviewNotes != null && reviewNotes.trim().isNotEmpty) {
-        body['reviewNotes'] = reviewNotes.trim();
-      }
 
       final response = await http.post(
         Uri.parse('$baseUrl/orders/$orderId/review'),

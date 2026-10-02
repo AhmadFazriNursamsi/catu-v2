@@ -8,7 +8,7 @@ Future<void> showOrderReviewBottomSheet({
   required Order order,
   OrderItem? targetItem,
   int? userId,
-  required Function(int rating, String notes) onReviewSubmitted,
+  required Function(String notes) onReviewSubmitted,
 }) {
   return showModalBottomSheet(
     context: context,
@@ -27,7 +27,7 @@ class _OrderReviewSheetContent extends StatefulWidget {
   final Order order;
   final OrderItem? targetItem;
   final int? userId;
-  final Function(int rating, String notes) onReviewSubmitted;
+  final Function(String notes) onReviewSubmitted;
 
   const _OrderReviewSheetContent({
     required this.order,
@@ -41,18 +41,8 @@ class _OrderReviewSheetContent extends StatefulWidget {
 }
 
 class _OrderReviewSheetContentState extends State<_OrderReviewSheetContent> {
-  int _selectedRating = 5;
   final TextEditingController _notesCtrl = TextEditingController();
   bool _isSubmitting = false;
-
-  static const List<String> _ratingLabels = [
-    '',
-    'Sangat Kurang',
-    'Kurang',
-    'Cukup Baik',
-    'Baik',
-    'Sangat Baik & Memuaskan',
-  ];
 
   @override
   void dispose() {
@@ -61,15 +51,26 @@ class _OrderReviewSheetContentState extends State<_OrderReviewSheetContent> {
   }
 
   Future<void> _submitReview() async {
+    final notes = _notesCtrl.text.trim();
+    if (notes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Mohon tuliskan ulasan atau pesan Anda terlebih dahulu'),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
+
     HapticFeedback.mediumImpact();
     setState(() => _isSubmitting = true);
-    final notes = _notesCtrl.text.trim();
 
     final res = await OrderReviewService.submitReview(
       widget.order.id,
       userId: widget.userId,
       itemId: widget.targetItem?.id,
-      rating: _selectedRating,
       reviewNotes: notes,
     );
 
@@ -77,7 +78,7 @@ class _OrderReviewSheetContentState extends State<_OrderReviewSheetContent> {
     setState(() => _isSubmitting = false);
 
     if (res['success'] == true) {
-      widget.onReviewSubmitted(_selectedRating, notes);
+      widget.onReviewSubmitted(notes);
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -138,10 +139,10 @@ class _OrderReviewSheetContentState extends State<_OrderReviewSheetContent> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
+                    color: const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.star_rounded, color: Color(0xFFD97706), size: 22),
+                  child: const Icon(Icons.rate_review_rounded, color: Color(0xFF1D4ED8), size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -167,47 +168,35 @@ class _OrderReviewSheetContentState extends State<_OrderReviewSheetContent> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Bagaimana pengalaman pelayanan Romo?',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(5, (index) {
-                final starValue = index + 1;
-                final isSelected = starValue <= _selectedRating;
-                return GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() => _selectedRating = starValue);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: Icon(
-                      Icons.star_rounded,
-                      size: 40,
-                      color: isSelected ? const Color(0xFFF59E0B) : const Color(0xFFE2E8F0),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFF0284C7)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Silakan tuliskan ulasan, kesan, atau ucapan terima kasih atas pelayanan yang telah dilaksanakan oleh Romo.',
+                      style: TextStyle(fontSize: 12.5, color: Color(0xFF334155), height: 1.4),
                     ),
                   ),
-                );
-              }),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _ratingLabels[_selectedRating],
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFFD97706)),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _notesCtrl,
-              maxLines: 3,
-              maxLength: 300,
+              maxLines: 4,
+              maxLength: 400,
               decoration: InputDecoration(
-                hintText: 'Tuliskan pesan atau ucapan terima kasih kepada Romo (opsional)...',
+                hintText: 'Tuliskan ulasan atau ucapan terima kasih kepada Romo...',
                 hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
                 filled: true,
                 fillColor: const Color(0xFFF8FAFC),

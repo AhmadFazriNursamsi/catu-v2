@@ -3185,14 +3185,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       order: order,
       targetItem: targetItem,
       userId: widget.userId,
-      onReviewSubmitted: (rating, notes) {
+      onReviewSubmitted: (notes) {
         setState(() {
           if (targetItem != null) {
-            targetItem.rating = rating;
             targetItem.reviewNotes = notes;
             targetItem.reviewedAt = DateTime.now().toIso8601String();
           }
-          order.rating = rating;
           order.reviewNotes = notes;
           order.reviewedAt = DateTime.now().toIso8601String();
         });

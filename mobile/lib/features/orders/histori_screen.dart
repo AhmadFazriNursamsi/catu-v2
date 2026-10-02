@@ -944,7 +944,7 @@ class _HistoriScreenState extends State<HistoriScreen>
                                 ),
                               ),
                               if (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE')
-                                _buildReviewBadge(displayItem?.rating ?? order.rating),
+                                _buildReviewBadge(displayItem?.hasReview ?? order.hasReview),
                             ],
                           ),
                         ],
@@ -1063,21 +1063,19 @@ class _HistoriScreenState extends State<HistoriScreen>
     );
   }
 
-  Widget _buildReviewBadge(int? rating) {
-    final bool hasRating = rating != null && rating > 0;
-    final String label = hasRating ? '$rating/5' : (widget.isRomo ? 'Menunggu Ulasan' : 'Beri Ulasan');
-    final IconData icon = hasRating ? Icons.star_rounded : (widget.isRomo ? Icons.hourglass_top_rounded : Icons.rate_review_rounded);
+  Widget _buildReviewBadge(bool hasReview) {
+    final String label = hasReview ? (widget.isRomo ? 'Ada Ulasan' : 'Sudah Diulas') : (widget.isRomo ? 'Menunggu Ulasan' : 'Beri Ulasan');
+    final IconData icon = hasReview ? Icons.chat_bubble_rounded : (widget.isRomo ? Icons.hourglass_top_rounded : Icons.rate_review_rounded);
+    final Color bgColor = hasReview ? const Color(0xFFEFF6FF) : const Color(0xFFFEF3C7);
+    final Color contentColor = hasReview ? const Color(0xFF1D4ED8) : const Color(0xFFD97706);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
-      decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(8)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 11, color: const Color(0xFFD97706)),
-          const SizedBox(width: 3.5),
-          Text(label, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFFD97706))),
-        ],
-      ),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 11, color: contentColor),
+        const SizedBox(width: 3.5),
+        Text(label, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: contentColor)),
+      ]),
     );
   }
 

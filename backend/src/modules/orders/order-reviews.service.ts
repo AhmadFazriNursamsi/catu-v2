@@ -15,8 +15,8 @@ export class OrderReviewsService {
     dto: {
       userId?: number;
       itemId?: number;
-      rating: number;
-      reviewNotes?: string;
+      rating?: number;
+      reviewNotes: string;
     },
   ) {
     const orderId = parseInt(orderIdParam, 10) || 0;
@@ -24,10 +24,12 @@ export class OrderReviewsService {
       throw new BadRequestException('ID order tidak valid');
     }
 
-    const rating = Math.round(Number(dto.rating));
-    if (isNaN(rating) || rating < 1 || rating > 5) {
-      throw new BadRequestException('Rating harus berupa angka antara 1 sampai 5');
+    const reviewNotes = dto.reviewNotes?.trim();
+    if (!reviewNotes) {
+      throw new BadRequestException('Ulasan tidak boleh kosong');
     }
+
+    const rating = dto.rating != null ? Math.round(Number(dto.rating)) : null;
 
     const orderRows = await this.dataSource.query(
       `SELECT id, order_number, user_id, status, scheduled_date, accepted_romo_id FROM orders WHERE id = $1`,
@@ -64,7 +66,7 @@ export class OrderReviewsService {
 
       await this.dataSource.query(
         `UPDATE order_items SET rating = $1, review_notes = $2, reviewed_at = NOW() WHERE id = $3`,
-        [rating, dto.reviewNotes?.trim() || null, dto.itemId],
+        [rating, reviewNotes, dto.itemId],
       );
     } else {
       const orderSt = (order.status || '').toUpperCase();
@@ -75,17 +77,17 @@ export class OrderReviewsService {
 
     await this.dataSource.query(
       `UPDATE orders SET rating = $1, review_notes = $2, reviewed_at = NOW() WHERE id = $3`,
-      [rating, dto.reviewNotes?.trim() || null, orderId],
+      [rating, reviewNotes, orderId],
     );
 
     if (targetRomoId) {
-      const notifTitle = 'Ulasan Pelayanan Diterima ⭐';
-      const notifBody = `Umat telah memberikan ulasan (${rating}/5) untuk pelayanan #${order.order_number}`;
+      const notifTitle = 'Ulasan Pelayanan Diterima';
+      const notifBody = `Umat telah memberikan ulasan untuk pelayanan #${order.order_number}`;
       const notifData = JSON.stringify({
         type: 'ORDER_REVIEW',
         orderId: order.id,
         orderNumber: order.order_number,
-        rating,
+        reviewNotes,
       });
 
       await this.fcmService.sendPushToUsers([targetRomoId], {
@@ -95,7 +97,6 @@ export class OrderReviewsService {
           type: 'ORDER_REVIEW',
           orderId: order.id.toString(),
           orderNumber: order.order_number,
-          rating: rating.toString(),
         },
       }).catch(() => {});
 
@@ -108,12 +109,11 @@ export class OrderReviewsService {
 
     return {
       success: true,
-      message: 'Ulasan berhasil disimpan. Terima kasih atas masukan Anda!',
+      message: 'Ulasan berhasil dikirim. Terima kasih atas masukan Anda!',
       data: {
         orderId,
         itemId: dto.itemId || null,
-        rating,
-        reviewNotes: dto.reviewNotes?.trim() || '',
+        reviewNotes,
         reviewedAt: new Date().toISOString(),
       },
     };
