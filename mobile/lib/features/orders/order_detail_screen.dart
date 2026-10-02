@@ -485,12 +485,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         effectiveStatus == 'DONE' ||
         effectiveStatus == 'CLOSE';
 
-    final bool isIncomingHandoverToCurrentRomo = widget.isRomo &&
-        widget.romoId != null &&
-        (order.items.isNotEmpty
-            ? (displayItem.handoverTargetRomoId == widget.romoId && displayItem.hasPendingHandover)
-            : (order.handoverTargetRomoId == widget.romoId && order.hasPendingHandover));
-
     final bool isReceivedFromHandover = (order.handoverStatus.toUpperCase() == 'ACCEPTED') ||
         (displayItem.handoverStatus.toUpperCase() == 'ACCEPTED') ||
         order.handoverHistory.any((h) =>
@@ -508,8 +502,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         isItemAccepted &&
         assignedRomoId != null &&
         widget.romoId != null &&
-        widget.romoId != assignedRomoId &&
-        !isIncomingHandoverToCurrentRomo;
+        widget.romoId != assignedRomoId;
 
     final statusColor = _getStatusColor(effectiveStatus);
     final statusLabel = _getStatusLabel(effectiveStatus);
@@ -849,7 +842,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               isItemAccepted: isItemAccepted,
               isAssignedToCurrentRomo: isAssignedToCurrentRomo,
               isAssignedToOtherRomo: isAssignedToOtherRomo,
-              isIncomingHandoverToCurrentRomo: isIncomingHandoverToCurrentRomo,
             ))
               Positioned(
                 left: 16,
@@ -862,7 +854,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   isItemAccepted: isItemAccepted,
                   isAssignedToCurrentRomo: isAssignedToCurrentRomo,
                   isAssignedToOtherRomo: isAssignedToOtherRomo,
-                  isIncomingHandoverToCurrentRomo: isIncomingHandoverToCurrentRomo,
                 ),
               ),
           ],
@@ -876,10 +867,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     required bool isItemAccepted,
     required bool isAssignedToCurrentRomo,
     required bool isAssignedToOtherRomo,
-    required bool isIncomingHandoverToCurrentRomo,
   }) {
     if (widget.isRomo) {
-      if (isIncomingHandoverToCurrentRomo) return true;
       if (isAssignedToOtherRomo) return false;
       // If service is pending/unaccepted, show Accept/Reject buttons
       if (!isItemAccepted && effectiveStatus == 'PENDING') return true;
@@ -906,12 +895,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     required bool isItemAccepted,
     required bool isAssignedToCurrentRomo,
     required bool isAssignedToOtherRomo,
-    required bool isIncomingHandoverToCurrentRomo,
   }) {
     if (widget.isRomo) {
-      if (isIncomingHandoverToCurrentRomo) {
-        return _buildHandoverResponseButtonBar(order, displayItem);
-      }
       if (isAssignedToOtherRomo) {
         return const SizedBox.shrink();
       }
@@ -1456,43 +1441,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               ),
             ),
           ],
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isSubmitting ? null : () => _respondHandover(order, displayItem, 'REJECT'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFDC2626),
-                    side: const BorderSide(color: Color(0xFFF87171), width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text('Tolak Limpahan', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                  ),
-                ),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isSubmitting ? null : () => _respondHandover(order, displayItem),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF059669),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 13),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : () => _respondHandover(order, displayItem, 'ACCEPT'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text('Terima Limpahan', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ),
-            ],
+              icon: const Icon(Icons.check_circle_outline_rounded, size: 20),
+              label: const Text('Terima Limpahan', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
+            ),
           ),
         ],
       ),
@@ -1648,19 +1610,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     );
   }
 
-  Future<void> _respondHandover(Order order, OrderItem? displayItem, String action) async {
+  Future<void> _respondHandover(Order order, OrderItem? displayItem) async {
     final romoId = widget.romoId;
     if (romoId == null) return;
 
-    final isAccept = action == 'ACCEPT';
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text(isAccept ? 'Terima Pelimpahan Tugas?' : 'Tolak Pelimpahan Tugas?', style: const TextStyle(fontWeight: FontWeight.bold)),
-        content: Text(isAccept
-            ? 'Dengan menerima, Anda resmi menjadi Romo yang bertugas untuk melayani pesanan ini.'
-            : 'Apakah Anda yakin ingin menolak pelimpahan tugas pelayanan ini? Tanggung jawab pelayanan akan tetap berada pada Romo sebelumnya.'),
+        title: const Text('Terima Pelimpahan Tugas?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('Dengan menerima, Anda resmi menjadi Romo yang bertugas untuk melayani pesanan ini.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(c, false),
@@ -1669,10 +1628,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: isAccept ? const Color(0xFF059669) : const Color(0xFFDC2626),
+              backgroundColor: const Color(0xFF059669),
               foregroundColor: Colors.white,
             ),
-            child: Text(isAccept ? 'Ya, Terima' : 'Ya, Tolak'),
+            child: const Text('Ya, Terima'),
           ),
         ],
       ),
@@ -1686,21 +1645,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         order.id,
         romoId: romoId,
         itemId: displayItem?.id,
-        action: action,
+        action: 'ACCEPT',
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(res['message'] ?? (isAccept ? 'Pelimpahan tugas berhasil diterima.' : 'Pelimpahan tugas berhasil ditolak.')),
-            backgroundColor: isAccept ? const Color(0xFF059669) : const Color(0xFFDC2626),
+            content: Text(res['message'] ?? 'Pelimpahan tugas berhasil diterima.'),
+            backgroundColor: const Color(0xFF059669),
           ),
         );
-        if (!isAccept) {
-          Navigator.pop(context, true);
-        } else {
-          await _fetchFreshOrder();
-        }
+        await _fetchFreshOrder();
       }
     } catch (e) {
       if (mounted) {
@@ -2477,45 +2432,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
-  }
-
-  Widget _buildHandoverResponseButtonBar(Order order, OrderItem displayItem) {
-    Widget buildBtn({required bool isReject, required String label, required IconData icon, required VoidCallback? onTap}) {
-      final color = isReject ? const Color(0xFFDC2626) : const Color(0xFF059669);
-      return Container(
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), boxShadow: [
-          BoxShadow(color: color.withValues(alpha: isReject ? 0.18 : 0.3), blurRadius: 14, offset: const Offset(0, 4)),
-        ]),
-        child: Material(
-          color: isReject ? Colors.white : color,
-          shape: isReject ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Color(0xFFF87171), width: 1.5)) : null,
-          borderRadius: isReject ? null : BorderRadius.circular(16),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, color: isReject ? color : Colors.white, size: 18),
-                  const SizedBox(width: 6),
-                  Text(label, style: TextStyle(color: isReject ? color : Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Row(
-      children: [
-        Expanded(flex: 4, child: buildBtn(isReject: true, label: 'Tolak Limpahan', icon: Icons.cancel_outlined, onTap: _isSubmitting ? null : () => _respondHandover(order, displayItem, 'REJECT'))),
-        const SizedBox(width: 10),
-        Expanded(flex: 5, child: buildBtn(isReject: false, label: 'Terima Limpahan', icon: Icons.check_circle_outline_rounded, onTap: _isSubmitting ? null : () => _respondHandover(order, displayItem, 'ACCEPT'))),
-      ],
-    );
   }
 
   Widget _buildRomoAcceptButtonBar(Order order, OrderItem displayItem) {
