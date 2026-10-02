@@ -723,6 +723,7 @@ class ChatGroupItem {
   final String? requesterAvatar;
   final String notes;
   final int unreadCount;
+  final bool canChat;
 
   ChatGroupItem({
     required this.groupId,
@@ -745,6 +746,7 @@ class ChatGroupItem {
     this.requesterAvatar,
     this.notes = '',
     this.unreadCount = 0,
+    this.canChat = true,
   });
 
   /// Urgency Level Icon Data
@@ -912,25 +914,21 @@ class ChatGroupItem {
   }
 
   /// Default display text for last message preview
-  String get displayLastMessage {
-    return formatLastMessage();
-  }
+  String get displayLastMessage => formatLastMessage();
 
   factory ChatGroupItem.fromJson(Map<String, dynamic> json) {
     final rawGId = json['group_id'] ?? json['groupId'] ?? json['id'];
     final parsedGId = rawGId is int ? rawGId : int.tryParse(rawGId?.toString() ?? '') ?? 0;
-
     final rawOId = json['order_id'] ?? json['orderId'];
     final parsedOId = rawOId is int ? rawOId : int.tryParse(rawOId?.toString() ?? '') ?? 0;
-
     final rawOrderItemId = json['order_item_id'] ?? json['orderItemId'];
     final parsedOrderItemId = rawOrderItemId is int ? rawOrderItemId : int.tryParse(rawOrderItemId?.toString() ?? '');
-
     final rawUnread = json['unread_count'] ?? json['unreadCount'];
     final parsedUnread = rawUnread is int ? rawUnread : int.tryParse(rawUnread?.toString() ?? '') ?? 0;
-
     final rawSenderId = json['last_sender_id'] ?? json['lastSenderId'];
     final parsedSenderId = rawSenderId is int ? rawSenderId : int.tryParse(rawSenderId?.toString() ?? '');
+    final rawCanChat = json['can_chat'] ?? json['canChat'];
+    final canChat = rawCanChat == null ? true : (rawCanChat is bool ? rawCanChat : rawCanChat.toString().toLowerCase() == 'true');
 
     return ChatGroupItem(
       groupId: parsedGId,
@@ -953,6 +951,7 @@ class ChatGroupItem {
       requesterAvatar: json['requester_avatar'] ?? json['requesterAvatar'],
       notes: json['notes'] ?? '',
       unreadCount: parsedUnread,
+      canChat: canChat,
     );
   }
 }

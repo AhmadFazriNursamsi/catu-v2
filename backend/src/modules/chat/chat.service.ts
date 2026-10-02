@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
@@ -98,6 +99,12 @@ private async resolveGroupId(idParam: string): Promise<number> {
     const groupId = await this.resolveGroupId(groupIdParam);
     const senderId = dto.senderId || 1;
 
+    const members = await this.getGroupMembers(groupIdParam);
+    const senderMember = members.find((m: any) => Number(m.user_id) === Number(senderId));
+    if (!senderMember) {
+      throw new ForbiddenException('Hanya anggota yang terdaftar dalam grup chat yang dapat mengirim pesan.');
+    }
+
     const msgText = (dto.message && dto.message.trim().length > 0)
       ? dto.message
       : (dto.messageType === 'IMAGE' ? 'Foto' : (dto.messageType === 'LOCATION' ? 'Lokasi' : 'Pesan'));
@@ -116,14 +123,14 @@ private async resolveGroupId(idParam: string): Promise<number> {
     if (result.length > 0 && result[0].id) {
       await this.dataSource.query(
         `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group, last_read_message_id)
-         VALUES ($1, $2, 'MEMBER', $3)
+         VALUES ($1, $2, $4, $3)
          ON CONFLICT (chat_group_id, user_id)
          DO UPDATE SET last_read_message_id = GREATEST(COALESCE(chat_group_members.last_read_message_id, 0), $3)`,
-        [groupId, senderId, result[0].id],
+        [groupId, senderId, result[0].id, senderMember.role_in_group || 'MEMBER'],
       );
     }
 
-    // 🔔 Notify other group members
+    // 🔔 Notify other canonical group members
     try {
       const senderProfile = await this.dataSource.query(
         `SELECT full_name FROM user_profiles WHERE user_id = $1`,
@@ -134,7 +141,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
       const groupInfo = await this.dataSource.query(
         `SELECT g.id, g.title, g.order_id, o.order_number, sc.name as category_name,
                 COALESCE(oi.item_name, sc.name) as item_name,
-                p.full_name as penerima_name, o.user_id as order_creator_id
+                p.full_name as penerima_name
          FROM chat_groups g
          LEFT JOIN orders o ON g.order_id = o.id
          LEFT JOIN service_categories sc ON o.service_category_id = sc.id
@@ -149,36 +156,15 @@ private async resolveGroupId(idParam: string): Promise<number> {
       const itemTitle = groupInfo[0]?.item_name || '';
       const penerimaName = groupInfo[0]?.penerima_name || '';
 
-      const members = await this.dataSource.query(
-        `SELECT DISTINCT user_id FROM chat_group_members WHERE chat_group_id = $1 AND user_id != $2 AND user_id IS NOT NULL`,
-        [groupId, senderId],
-      );
-
       const targetUserIds: number[] = [];
       const msgBody = dto.messageType === 'IMAGE'
         ? '📷 Mengirim gambar'
         : (dto.messageType === 'LOCATION' ? '📍 Berbagi lokasi' : (dto.message || 'Pesan baru'));
 
       for (const m of members) {
-        if (m.user_id && Number(m.user_id) !== Number(senderId) && !targetUserIds.includes(Number(m.user_id))) {
-          targetUserIds.push(Number(m.user_id));
-        }
-      }
-
-      if (orderId) {
-        const orderCreatorId = groupInfo[0]?.order_creator_id;
-        if (orderCreatorId && Number(orderCreatorId) !== Number(senderId) && !targetUserIds.includes(Number(orderCreatorId))) {
-          targetUserIds.push(Number(orderCreatorId));
-        }
-
-        const assignments = await this.dataSource.query(
-          `SELECT romo_id FROM order_assignments WHERE order_id = $1 AND romo_id IS NOT NULL`,
-          [orderId],
-        );
-        for (const a of assignments) {
-          if (a.romo_id && Number(a.romo_id) !== Number(senderId) && !targetUserIds.includes(Number(a.romo_id))) {
-            targetUserIds.push(Number(a.romo_id));
-          }
+        const uid = Number(m.user_id);
+        if (uid && uid !== Number(senderId) && !targetUserIds.includes(uid)) {
+          targetUserIds.push(uid);
         }
       }
 
@@ -238,10 +224,8 @@ private async resolveGroupId(idParam: string): Promise<number> {
 
     if (maxId > 0 && userId > 0) {
       await this.dataSource.query(
-        `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group, last_read_message_id)
-         VALUES ($1, $2, 'MEMBER', $3)
-         ON CONFLICT (chat_group_id, user_id)
-         DO UPDATE SET last_read_message_id = GREATEST(COALESCE(chat_group_members.last_read_message_id, 0), $3)`,
+        `UPDATE chat_group_members SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), $3)
+         WHERE chat_group_id = $1 AND user_id = $2`,
         [groupId, userId, maxId],
       );
       await this.dataSource.query(
@@ -270,10 +254,8 @@ private async resolveGroupId(idParam: string): Promise<number> {
         if (maxId > 0) {
           try {
             await this.dataSource.query(
-              `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group, last_read_message_id)
-               VALUES ($1, $2, 'MEMBER', $3)
-               ON CONFLICT (chat_group_id, user_id)
-               DO UPDATE SET last_read_message_id = GREATEST(COALESCE(chat_group_members.last_read_message_id, 0), $3)`,
+              `UPDATE chat_group_members SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), $3)
+               WHERE chat_group_id = $1 AND user_id = $2`,
               [groupId, uId, maxId],
             );
             await this.dataSource.query(
@@ -359,7 +341,15 @@ private async resolveGroupId(idParam: string): Promise<number> {
       throw new NotFoundException(`Chat group with ID ${groupId} not found`);
     }
 
-    return result[0];
+    const members = await this.getGroupMembers(groupIdParam);
+    const canChat = members.some((m: any) => Number(m.user_id) === Number(userId));
+
+    return {
+      ...result[0],
+      can_chat: canChat,
+      canChat,
+      members,
+    };
   }
   async getGroupMembers(groupIdParam: string) {
     const groupId = await this.resolveGroupId(groupIdParam);

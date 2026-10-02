@@ -6,13 +6,13 @@
     "directCodeFilesPerDirectory": 12
   },
   "files": {
-    "mobile/lib/core/models/models.dart": 958,
+    "mobile/lib/core/models/models.dart": 957,
     "mobile/lib/core/services/notification_service.dart": 1051,
     "mobile/lib/core/services/api_service.dart": 1120,
     "mobile/lib/core/services/language_service.dart": 543,
     "mobile/lib/features/home/umat_dashboard_view.dart": 1288,
     "mobile/lib/features/home/romo_dashboard_view.dart": 1441,
-    "mobile/lib/features/chat/chat_screen.dart": 1218,
+    "mobile/lib/features/chat/chat_screen.dart": 1215,
     "mobile/lib/features/chat/chat_list_screen.dart": 923,
     "mobile/lib/features/auth/pending_approval_screen.dart": 678,
     "mobile/lib/features/auth/register_screen.dart": 1526,

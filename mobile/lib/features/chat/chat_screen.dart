@@ -138,8 +138,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-
-
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 150), () {
       if (_scrollController.hasClients) {
@@ -153,6 +151,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _sendMessage() async {
+    if (_groupItem != null && !_groupItem!.canChat) return;
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
@@ -193,6 +192,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ImagePicker _picker = ImagePicker();
 
   Future<void> _pickAndSendImage(ImageSource source) async {
+    if (_groupItem != null && !_groupItem!.canChat) return;
     HapticFeedback.lightImpact();
     try {
       final XFile? pickedFile = await _picker.pickImage(
@@ -811,88 +811,85 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
           ),
 
-          // ── Bottom Input Field Container (Matching Reference DetailChat.png) ──
-          Container(
-            padding: EdgeInsets.fromLTRB(
-                16, 10, 16, MediaQuery.of(context).padding.bottom + 10),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(color: Color(0xFFF1F5F9)),
+          // ── Bottom Input Field Container (Disabled when not group member) ──
+          if (_groupItem != null && !_groupItem!.canChat)
+            Container(
+              padding: EdgeInsets.fromLTRB(16, 14, 16, MediaQuery.of(context).padding.bottom + 14),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF8FAFC),
+                border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
               ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFF1E5399),
-                        width: 1.5,
+              child: Row(
+                children: [
+                  const Icon(Icons.lock_outline_rounded, color: Color(0xFF64748B), size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Hanya anggota yang terdaftar dalam grup ini yang dapat mengirim pesan.',
+                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: EdgeInsets.fromLTRB(16, 10, 16, MediaQuery.of(context).padding.bottom + 10),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFF1E5399), width: 1.5),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _messageController,
+                              style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+                              decoration: const InputDecoration(
+                                hintText: 'Ketik disini',
+                                hintStyle: TextStyle(fontSize: 14, color: Color(0xFF94A3B8)),
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              ),
+                              onSubmitted: (_) => _sendMessage(),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.photo_library_outlined, color: Color(0xFF1E5399), size: 22),
+                            tooltip: 'Pilih dari Galeri',
+                            onPressed: () => _pickAndSendImage(ImageSource.gallery),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.camera_alt_outlined, color: Color(0xFF1E5399), size: 22),
+                            tooltip: 'Ambil Foto Kamera',
+                            onPressed: () => _pickAndSendImage(ImageSource.camera),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _messageController,
-                            style: const TextStyle(
-                                fontSize: 14, color: Color(0xFF0F172A)),
-                            decoration: const InputDecoration(
-                              hintText: 'Ketik disini',
-                              hintStyle: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF94A3B8),
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10),
-                            ),
-                            onSubmitted: (_) => _sendMessage(),
-                          ),
-                        ),
-                        // Gallery / Document Icon (🖼️/📄)
-                        IconButton(
-                          icon: const Icon(Icons.photo_library_outlined,
-                              color: Color(0xFF1E5399), size: 22),
-                          tooltip: 'Pilih dari Galeri',
-                          onPressed: () => _pickAndSendImage(ImageSource.gallery),
-                        ),
-                        // Camera Icon (📷)
-                        IconButton(
-                          icon: const Icon(Icons.camera_alt_outlined,
-                              color: Color(0xFF1E5399), size: 22),
-                          tooltip: 'Ambil Foto Kamera',
-                          onPressed: () => _pickAndSendImage(ImageSource.camera),
-                        ),
-                      ],
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _sendMessage,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(color: Color(0xFF1E5399), shape: BoxShape.circle),
+                      child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-
-                // Send Button
-                GestureDetector(
-                  onTap: _sendMessage,
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF1E5399),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.send_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
