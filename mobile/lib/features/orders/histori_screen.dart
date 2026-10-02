@@ -79,8 +79,6 @@ class _HistoriScreenState extends State<HistoriScreen>
 
   static const List<String> _statusFilters = [
     'SEMUA',
-    'PENDING',
-    'CONFIRMED',
     'IN_PROGRESS',
     'DONE',
     'CLOSE',
@@ -209,6 +207,10 @@ class _HistoriScreenState extends State<HistoriScreen>
 
   List<HistoriEntryItem> get _historyBaseEntries {
     final List<HistoriEntryItem> entries = [];
+    void addValid(HistoriEntryItem it) {
+      final s = it.effectiveStatus;
+      if (s != 'PENDING' && s != 'CONFIRMED') entries.add(it);
+    }
 
     for (final o in widget.orders) {
       final st = o.status.toUpperCase();
@@ -220,33 +222,26 @@ class _HistoriScreenState extends State<HistoriScreen>
             final itemSt = item.status.toUpperCase();
             if (widget.romoId != null && item.acceptedRomoId != widget.romoId) continue;
             if (item.acceptedRomoId == null) continue;
-
             if (isParentDone || itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL' || _isDateBeforeToday(item.scheduledDate)) {
-              entries.add(HistoriEntryItem(parentOrder: o, subItem: item));
+              addValid(HistoriEntryItem(parentOrder: o, subItem: item));
             }
           }
         } else {
           if (st == 'PENDING') continue;
           if (widget.romoId != null && o.acceptedRomoId != widget.romoId) continue;
           if (o.acceptedRomoId == null) continue;
-
-          if (isParentDone) {
-            entries.add(HistoriEntryItem(parentOrder: o, subItem: null));
-          }
+          if (isParentDone) addValid(HistoriEntryItem(parentOrder: o, subItem: null));
         }
       } else {
-        // Umat / Parishioner
         if (o.items.isNotEmpty) {
           for (final item in o.items) {
             final itemSt = item.status.toUpperCase();
             if (isParentDone || itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL' || _isDateBeforeToday(item.scheduledDate)) {
-              entries.add(HistoriEntryItem(parentOrder: o, subItem: item));
+              addValid(HistoriEntryItem(parentOrder: o, subItem: item));
             }
           }
-        } else {
-          if (isParentDone || o.isHistoryOrder) {
-            entries.add(HistoriEntryItem(parentOrder: o, subItem: null));
-          }
+        } else if (isParentDone || o.isHistoryOrder) {
+          addValid(HistoriEntryItem(parentOrder: o, subItem: null));
         }
       }
     }
@@ -302,17 +297,9 @@ class _HistoriScreenState extends State<HistoriScreen>
     final all = _historyBaseEntries;
     return {
       'total': all.length,
-      'pending': all
-          .where((e) => e.effectiveStatus == 'PENDING')
-          .length,
-      'berlangsung': all
-          .where((e) =>
-              e.effectiveStatus == 'CONFIRMED' ||
-              e.effectiveStatus == 'IN_PROGRESS')
-          .length,
-      'selesai': all
-          .where((e) => e.effectiveStatus == 'DONE' || e.effectiveStatus == 'FAIL' || e.effectiveStatus == 'CLOSE')
-          .length,
+      'berlangsung': all.where((e) => e.effectiveStatus == 'IN_PROGRESS').length,
+      'selesai': all.where((e) => e.effectiveStatus == 'DONE').length,
+      'ditutup': all.where((e) => e.effectiveStatus == 'CLOSE' || e.effectiveStatus == 'FAIL').length,
     };
   }
 
@@ -517,31 +504,31 @@ class _HistoriScreenState extends State<HistoriScreen>
       child: Row(
         children: [
           _buildStatItem(
-            '${counts['total']}',
+            '${counts['total'] ?? 0}',
             'Total',
             const Color(0xFF1D4ED8),
             Icons.list_alt_rounded,
           ),
           _buildStatDivider(),
           _buildStatItem(
-            '${counts['pending']}',
-            LanguageService.tr('status_pending_short'),
-            const Color(0xFFD97706),
-            Icons.schedule_rounded,
-          ),
-          _buildStatDivider(),
-          _buildStatItem(
-            '${counts['berlangsung']}',
+            '${counts['berlangsung'] ?? 0}',
             LanguageService.tr('status_in_progress'),
             const Color(0xFF2563EB),
             Icons.timelapse_rounded,
           ),
           _buildStatDivider(),
           _buildStatItem(
-            '${counts['selesai']}',
+            '${counts['selesai'] ?? 0}',
             LanguageService.tr('status_done'),
             const Color(0xFF059669),
             Icons.check_circle_rounded,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            '${counts['ditutup'] ?? 0}',
+            'Ditutup',
+            const Color(0xFF0D9488),
+            Icons.archive_outlined,
           ),
         ],
       ),
@@ -650,8 +637,6 @@ class _HistoriScreenState extends State<HistoriScreen>
   String _filterChipLabel(String s) {
     switch (s) {
       case 'SEMUA':       return 'Semua';
-      case 'PENDING':     return LanguageService.tr('status_pending_short');
-      case 'CONFIRMED':   return 'Dikonfirmasi';
       case 'IN_PROGRESS': return LanguageService.tr('status_in_progress');
       case 'DONE':        return LanguageService.tr('status_done');
       case 'CLOSE':       return 'Ditutup';
