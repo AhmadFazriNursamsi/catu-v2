@@ -487,19 +487,12 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
              COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id,
              o.accepted_romo_id as "acceptedRomoId",
              COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
-             COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus",
-             o.reschedule_proposed_by as "rescheduleProposedBy",
-             o.reschedule_new_date as "rescheduleNewDate",
-             o.reschedule_new_time as "rescheduleNewTime",
-             o.reschedule_new_time_end as "rescheduleNewTimeEnd",
-             o.reschedule_reason as "rescheduleReason",
-             COALESCE(o.handover_status, 'NONE') as "handoverStatus",
-             o.handover_proposed_by as "handoverProposedBy",
-             (SELECT full_name FROM user_profiles WHERE user_id = o.handover_proposed_by) as "handoverProposerName",
-             o.handover_target_romo_id as "handoverTargetRomoId",
-             COALESCE((SELECT full_name FROM user_profiles WHERE user_id = o.handover_target_romo_id), o.external_romo_name) as "handoverTargetRomoName",
-             o.external_romo_name as "externalRomoName",
-             o.handover_reason as "handoverReason"
+             COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus", o.reschedule_proposed_by as "rescheduleProposedBy",
+             o.reschedule_new_date as "rescheduleNewDate", o.reschedule_new_time as "rescheduleNewTime", o.reschedule_new_time_end as "rescheduleNewTimeEnd",
+             o.reschedule_reason as "rescheduleReason", COALESCE(o.handover_status, 'NONE') as "handoverStatus",
+             o.handover_proposed_by as "handoverProposedBy", (SELECT full_name FROM user_profiles WHERE user_id = o.handover_proposed_by) as "handoverProposerName",
+             o.handover_target_romo_id as "handoverTargetRomoId", COALESCE((SELECT full_name FROM user_profiles WHERE user_id = o.handover_target_romo_id), o.external_romo_name) as "handoverTargetRomoName",
+             o.external_romo_name as "externalRomoName", o.handover_reason as "handoverReason"
       FROM orders o
       JOIN service_categories sc ON o.service_category_id = sc.id
       JOIN urgency_levels ul ON o.urgency_level_id = ul.id
@@ -509,7 +502,7 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
     `;
 
-    let orders: any[];
+    let orders: any[], requestingRomo: any = null;
     const whereClauses: string[] = [];
     const queryParams: any[] = [];
     let paramIdx = 1;
@@ -532,6 +525,7 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
       );
       if (romoRes.length > 0) {
         const romo = romoRes[0];
+        requestingRomo = { ...romo, id: parsedRId };
         const assignedOrHandoverClause = `(o.accepted_romo_id = $${paramIdx} OR o.handover_proposed_by = $${paramIdx} OR (o.handover_target_romo_id = $${paramIdx} AND o.handover_status = 'PENDING') OR EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id AND (oi.accepted_romo_id = $${paramIdx} OR oi.handover_proposed_by = $${paramIdx} OR (oi.handover_target_romo_id = $${paramIdx} AND oi.handover_status = 'PENDING'))))`;
         paramIdx++;
         queryParams.push(parsedRId);
@@ -632,7 +626,18 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
          ORDER BY id ASC`,
         [order.id],
       );
-      order.items = items;
+      if (requestingRomo) {
+        const inJurisdiction = (requestingRomo.role_code === 'ROMO_ORDO' && requestingRomo.kabupaten_kota_id)
+          ? Number(order.kabupaten_kota_id) === Number(requestingRomo.kabupaten_kota_id)
+          : (requestingRomo.paroki_id ? Number(order.paroki_id) === Number(requestingRomo.paroki_id) : false);
+        order.items = inJurisdiction ? items : items.filter((it: any) =>
+          Number(it.acceptedRomoId) === requestingRomo.id ||
+          Number(it.handoverTargetRomoId) === requestingRomo.id ||
+          Number(it.handoverProposedBy) === requestingRomo.id,
+        );
+      } else {
+        order.items = items;
+      }
 
       const reschedules = await this.dataSource.query(
         `SELECT r.id, r.order_id as "orderId", r.item_id as "itemId",
@@ -692,22 +697,16 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
              o.attachment_url as "attachmentUrl",
              p.full_name as pemohon_name,
              k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
+             COALESCE(o.paroki_id, p.paroki_id) as paroki_id, COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id,
              o.user_id,
              o.accepted_romo_id as "acceptedRomoId",
              COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
-             COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus",
-             o.reschedule_proposed_by as "rescheduleProposedBy",
-             o.reschedule_new_date as "rescheduleNewDate",
-             o.reschedule_new_time as "rescheduleNewTime",
-             o.reschedule_new_time_end as "rescheduleNewTimeEnd",
-             o.reschedule_reason as "rescheduleReason",
-             COALESCE(o.handover_status, 'NONE') as "handoverStatus",
-             o.handover_proposed_by as "handoverProposedBy",
-             (SELECT full_name FROM user_profiles WHERE user_id = o.handover_proposed_by) as "handoverProposerName",
-             o.handover_target_romo_id as "handoverTargetRomoId",
-             COALESCE((SELECT full_name FROM user_profiles WHERE user_id = o.handover_target_romo_id), o.external_romo_name) as "handoverTargetRomoName",
-             o.external_romo_name as "externalRomoName",
-             o.handover_reason as "handoverReason"
+             COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus", o.reschedule_proposed_by as "rescheduleProposedBy",
+             o.reschedule_new_date as "rescheduleNewDate", o.reschedule_new_time as "rescheduleNewTime", o.reschedule_new_time_end as "rescheduleNewTimeEnd",
+             o.reschedule_reason as "rescheduleReason", COALESCE(o.handover_status, 'NONE') as "handoverStatus",
+             o.handover_proposed_by as "handoverProposedBy", (SELECT full_name FROM user_profiles WHERE user_id = o.handover_proposed_by) as "handoverProposerName",
+             o.handover_target_romo_id as "handoverTargetRomoId", COALESCE((SELECT full_name FROM user_profiles WHERE user_id = o.handover_target_romo_id), o.external_romo_name) as "handoverTargetRomoName",
+             o.external_romo_name as "externalRomoName", o.handover_reason as "handoverReason"
       FROM orders o
       JOIN service_categories sc ON o.service_category_id = sc.id
       JOIN urgency_levels ul ON o.urgency_level_id = ul.id

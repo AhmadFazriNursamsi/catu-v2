@@ -303,6 +303,7 @@ class Order {
   final String keuskupanName;
   final String parokiName;
   final String lingkunganName;
+  final int? parokiId; final int? kabupatenKotaId;
   final List<OrderItem> items;
   final String? attachmentUrl;
   String rescheduleStatus;
@@ -338,21 +339,17 @@ class Order {
     this.keuskupanName = '',
     this.parokiName = '',
     this.lingkunganName = '',
+    this.parokiId,
+    this.kabupatenKotaId,
     this.items = const [],
     this.attachmentUrl,
     this.rescheduleStatus = 'NONE',
     this.rescheduleProposedBy,
-    this.rescheduleNewDate,
-    this.rescheduleNewTime,
-    this.rescheduleNewTimeEnd,
-    this.rescheduleReason,
-    this.rescheduleHistory = const [],
-    this.handoverHistory = const [],
-    this.handoverStatus = 'NONE',
-    this.handoverProposedBy,
-    this.handoverProposerName,
-    this.handoverTargetRomoId,
-    this.handoverTargetRomoName,
+    this.rescheduleNewDate, this.rescheduleNewTime, this.rescheduleNewTimeEnd,
+    this.rescheduleReason, this.rescheduleHistory = const [],
+    this.handoverHistory = const [], this.handoverStatus = 'NONE',
+    this.handoverProposedBy, this.handoverProposerName,
+    this.handoverTargetRomoId, this.handoverTargetRomoName,
     this.handoverReason = '',
   });
 
@@ -619,6 +616,9 @@ class Order {
 
     final rawHandoverTargetRomoId = json['handoverTargetRomoId'] ?? json['handover_target_romo_id'];
     final int? parsedHandoverTargetRomoId = rawHandoverTargetRomoId != null ? int.tryParse(rawHandoverTargetRomoId.toString()) : null;
+    final rawParokiId = json['paroki_id'] ?? json['parokiId'];
+    final int? parsedParokiId = rawParokiId != null ? int.tryParse(rawParokiId.toString()) : null;
+    final rawKabKotaId = json['kabupaten_kota_id'] ?? json['kabupatenKotaId']; final int? parsedKabKotaId = rawKabKotaId != null ? int.tryParse(rawKabKotaId.toString()) : null;
 
     return Order(
       id: parsedId,
@@ -638,6 +638,8 @@ class Order {
       keuskupanName: json['keuskupan_name'] ?? json['keuskupanName'] ?? '',
       parokiName: json['paroki_name'] ?? json['parokiName'] ?? '',
       lingkunganName: json['lingkungan_name'] ?? json['lingkunganName'] ?? '',
+      parokiId: parsedParokiId,
+      kabupatenKotaId: parsedKabKotaId,
       items: parsedItems,
       attachmentUrl: json['attachment_url'] ?? json['attachmentUrl'],
       rescheduleStatus: (json['rescheduleStatus'] ?? json['reschedule_status'] ?? 'NONE').toString().toUpperCase(),
@@ -646,13 +648,11 @@ class Order {
       rescheduleNewTime: json['rescheduleNewTime'] ?? json['reschedule_new_time'],
       rescheduleNewTimeEnd: json['rescheduleNewTimeEnd'] ?? json['reschedule_new_time_end'],
       rescheduleReason: json['rescheduleReason'] ?? json['reschedule_reason'],
-      rescheduleHistory: parsedReschedules,
-      handoverHistory: parsedHandovers,
+      rescheduleHistory: parsedReschedules, handoverHistory: parsedHandovers,
       handoverStatus: (json['handoverStatus'] ?? json['handover_status'] ?? 'NONE').toString().toUpperCase(),
       handoverProposedBy: parsedHandoverProposedBy,
       handoverProposerName: json['handoverProposerName'] ?? json['handover_proposer_name'],
-      handoverTargetRomoId: parsedHandoverTargetRomoId,
-      handoverTargetRomoName: json['handoverTargetRomoName'] ?? json['handover_target_romo_name'],
+      handoverTargetRomoId: parsedHandoverTargetRomoId, handoverTargetRomoName: json['handoverTargetRomoName'] ?? json['handover_target_romo_name'],
       handoverReason: json['handoverReason'] ?? json['handover_reason'] ?? '',
     );
   }
