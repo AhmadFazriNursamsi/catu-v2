@@ -673,20 +673,10 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                       children: [
                         const SizedBox(
                           width: 180,
-                          child: Text(
-                            'Jadwal\nPelayanan\nHari Ini',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F172A),
-                              height: 1.2,
-                            ),
-                          ),
+                          child: Text('Jadwal\nPelayanan\nHari Ini', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A), height: 1.2)),
                         ),
                         ElevatedButton(
-                          onPressed: () {
-                            setState(() => _currentNavIndex = 2);
-                          },
+                          onPressed: () => setState(() => _currentNavIndex = 2),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1E5399),
                             foregroundColor: Colors.white,
@@ -697,10 +687,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                'Lihat Lainnya',
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                              ),
+                              Text('Lihat Lainnya', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                               SizedBox(width: 6),
                               Icon(Icons.arrow_forward_rounded, size: 16),
                             ],
@@ -709,14 +696,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      '${DateTime.now().day} Masehi ${DateTime.now().year}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    Text(_formatTodayHeader(), style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -1091,6 +1071,13 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       default:
         return const Color(0xFFD97706);
     }
+  }
+
+  String _formatTodayHeader() {
+    const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    final now = DateTime.now();
+    return '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} ${now.year}';
   }
 
   String _statusLabel(String status) {
