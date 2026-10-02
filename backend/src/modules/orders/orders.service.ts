@@ -1150,15 +1150,15 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
     },
   ) {
     const orderId = parseInt(idParam, 10) || 0;
-    const { romoId, itemId, targetRomoId, reason, externalRomoName } = dto;
+    const { romoId, itemId, targetRomoId, externalRomoName } = dto;
+    const effectiveReason = dto.reason?.trim() || 'Berhalangan hadir (telah dikonfirmasi ke keluarga & Romo pengganti)';
 
-    if (!romoId || !reason || (!targetRomoId && !externalRomoName?.trim())) {
-      return { statusCode: 400, message: 'Alasan berhalangan, Romo asal, dan Romo pengganti wajib diisi.' };
+    if (!romoId || (!targetRomoId && !externalRomoName?.trim())) {
+      return { statusCode: 400, message: 'Romo asal dan Romo pengganti wajib diisi.' };
     }
 
     const orderRes = await this.dataSource.query(
-      `SELECT id, order_number, user_id, status, scheduled_date, scheduled_time, accepted_romo_id, paroki_id FROM orders WHERE id = $1`,
-      [orderId],
+      `SELECT id, order_number, user_id, status, scheduled_date, scheduled_time, accepted_romo_id, paroki_id FROM orders WHERE id = $1`, [orderId],
     );
     if (orderRes.length === 0) {
       return { statusCode: 404, message: 'Order tidak ditemukan.' };
@@ -1196,7 +1196,7 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
     const prevRomoName = prevRomoProf.length > 0 ? prevRomoProf[0].full_name : 'Romo';
 
     if (externalRomoName && externalRomoName.trim().length > 0) {
-      return await this._handoverToExternalRomo(order, dto, prevRomoName, targetItemName);
+      return await this._handoverToExternalRomo(order, { ...dto, reason: effectiveReason }, prevRomoName, targetItemName);
     }
 
     const newRomoProf = await this.dataSource.query(`SELECT full_name FROM user_profiles WHERE user_id = $1`, [targetRomoId]);
@@ -1204,16 +1204,16 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
     const itemPrefix = targetItemName ? `[${targetItemName}] ` : '';
 
     if (itemId) {
-      await this.dataSource.query(`UPDATE order_items SET handover_status = 'PENDING', handover_proposed_by = $1, handover_target_romo_id = $2, handover_reason = $3 WHERE id = $4 AND order_id = $5`, [romoId, targetRomoId, reason, itemId, orderId]);
+      await this.dataSource.query(`UPDATE order_items SET handover_status = 'PENDING', handover_proposed_by = $1, handover_target_romo_id = $2, handover_reason = $3 WHERE id = $4 AND order_id = $5`, [romoId, targetRomoId, effectiveReason, itemId, orderId]);
     } else {
-      await this.dataSource.query(`UPDATE order_items SET handover_status = 'PENDING', handover_proposed_by = $1, handover_target_romo_id = $2, handover_reason = $3 WHERE order_id = $4`, [romoId, targetRomoId, reason, orderId]);
-      await this.dataSource.query(`UPDATE orders SET handover_status = 'PENDING', handover_proposed_by = $1, handover_target_romo_id = $2, handover_reason = $3 WHERE id = $4`, [romoId, targetRomoId, reason, orderId]);
+      await this.dataSource.query(`UPDATE order_items SET handover_status = 'PENDING', handover_proposed_by = $1, handover_target_romo_id = $2, handover_reason = $3 WHERE order_id = $4`, [romoId, targetRomoId, effectiveReason, orderId]);
+      await this.dataSource.query(`UPDATE orders SET handover_status = 'PENDING', handover_proposed_by = $1, handover_target_romo_id = $2, handover_reason = $3 WHERE id = $4`, [romoId, targetRomoId, effectiveReason, orderId]);
     }
 
     // Record handover audit
     await this.dataSource.query(
       `INSERT INTO order_romo_handovers (order_id, item_id, previous_romo_id, new_romo_id, handover_type, reason, status) VALUES ($1, $2, $3, $4, 'DIRECT_ASSIGN', $5, 'PENDING')`,
-      [orderId, itemId || null, romoId, targetRomoId, reason],
+      [orderId, itemId || null, romoId, targetRomoId, effectiveReason],
     );
 
     // Post chat system event to existing group members (Romo Baru has not accepted yet so does not join chat yet)
@@ -1223,7 +1223,7 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
     if (groups.length > 0) {
       await this.dataSource.query(
         `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
-        [groups[0].id, `Pemberitahuan: Romo ${prevRomoName} mengajukan pelimpahan tugas pelayanan ${itemPrefix}kepada Romo ${newRomoName} ("${reason}"). Menunggu konfirmasi dari Romo ${newRomoName}.`],
+        [groups[0].id, `Pemberitahuan: Romo ${prevRomoName} mengajukan pelimpahan tugas pelayanan ${itemPrefix}kepada Romo ${newRomoName} ("${effectiveReason}"). Menunggu konfirmasi dari Romo ${newRomoName}.`],
       );
     }
 
@@ -1233,20 +1233,20 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
     // Notify Umat
     await this.dataSource.query(
       `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-      [order.user_id, orderId, `Pengajuan Ganti Romo: ${serviceTitle}`, `Romo ${prevRomoName} berhalangan ("${reason}"). Pengalihan tugas pelayanan ${serviceTitle} (${order.order_number}) ke Romo ${newRomoName} sedang menunggu konfirmasi.`],
+      [order.user_id, orderId, `Pengajuan Ganti Romo: ${serviceTitle}`, `Romo ${prevRomoName} berhalangan ("${effectiveReason}"). Pengalihan tugas pelayanan ${serviceTitle} (${order.order_number}) ke Romo ${newRomoName} sedang menunggu konfirmasi.`],
     );
 
     // Notify New Romo
     await this.dataSource.query(
       `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-      [targetRomoId, orderId, `Permintaan Pelimpahan Pelayanan: ${serviceTitle}`, `Romo ${prevRomoName} melimpahkan tugas pelayanan ${serviceTitle} (${order.order_number}) kepada Anda. Alasan: "${reason}". Buka aplikasi untuk menerima atau menolak.`],
+      [targetRomoId, orderId, `Permintaan Pelimpahan Pelayanan: ${serviceTitle}`, `Romo ${prevRomoName} melimpahkan tugas pelayanan ${serviceTitle} (${order.order_number}) kepada Anda. Alasan: "${effectiveReason}". Buka aplikasi untuk menerima atau menolak.`],
     );
 
     // Notify Pengurus Lingkungan
     for (const p of pengurusHandover) {
       await this.dataSource.query(
         `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-        [p.id, orderId, `Pengajuan Ganti Romo: ${serviceTitle}`, `Romo ${prevRomoName} mengajukan pengalihan pelayanan ${serviceTitle} (${order.order_number}) kepada Romo ${newRomoName} ("${reason}").`],
+        [p.id, orderId, `Pengajuan Ganti Romo: ${serviceTitle}`, `Romo ${prevRomoName} mengajukan pengalihan pelayanan ${serviceTitle} (${order.order_number}) kepada Romo ${newRomoName} ("${effectiveReason}").`],
       );
     }
 
@@ -1255,7 +1255,7 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
       // 1. Push to Target Romo
       await this.fcmService.sendPushToUsers(targetRomoId!, {
         title: `Permintaan Pelimpahan Pelayanan: ${serviceTitle}`,
-        body: `Romo ${prevRomoName} melimpahkan tugas pelayanan ${serviceTitle} (${order.order_number}) kepada Anda. Alasan: "${reason}".`,
+        body: `Romo ${prevRomoName} melimpahkan tugas pelayanan ${serviceTitle} (${order.order_number}) kepada Anda. Alasan: "${effectiveReason}".`,
         data: {
           type: 'ROMO_HANDOVER',
           orderId: orderId.toString(),
