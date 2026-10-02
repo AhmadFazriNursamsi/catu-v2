@@ -24,8 +24,8 @@ export class DatabaseInitService implements OnModuleInit {
         ADD COLUMN IF NOT EXISTS avatar_url TEXT;
         ALTER TABLE user_profiles ALTER COLUMN pengurus_position TYPE VARCHAR(100) USING pengurus_position::text;
         ALTER TABLE user_profiles ALTER COLUMN romo_position TYPE VARCHAR(100) USING romo_position::text;
-        ALTER TABLE orders ADD COLUMN IF NOT EXISTS attachment_url TEXT, ADD COLUMN IF NOT EXISTS accepted_romo_id INT, ADD COLUMN IF NOT EXISTS external_romo_name VARCHAR(255);
-        ALTER TABLE order_items ADD COLUMN IF NOT EXISTS external_romo_name VARCHAR(255);
+        ALTER TABLE orders ADD COLUMN IF NOT EXISTS attachment_url TEXT, ADD COLUMN IF NOT EXISTS accepted_romo_id INT, ADD COLUMN IF NOT EXISTS external_romo_name VARCHAR(255), ADD COLUMN IF NOT EXISTS rating INT, ADD COLUMN IF NOT EXISTS review_notes TEXT, ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP;
+        ALTER TABLE order_items ADD COLUMN IF NOT EXISTS external_romo_name VARCHAR(255), ADD COLUMN IF NOT EXISTS rating INT, ADD COLUMN IF NOT EXISTS review_notes TEXT, ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP;
         ALTER TABLE order_romo_handovers ADD COLUMN IF NOT EXISTS external_romo_name VARCHAR(255);
         -- Auto-sync PostgreSQL sequences to prevent duplicate key errors on insert
         SELECT setval('keuskupan_id_seq', (SELECT COALESCE(MAX(id), 1) FROM keuskupan));

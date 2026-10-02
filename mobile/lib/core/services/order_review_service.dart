@@ -1,0 +1,45 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../constants/app_constants.dart';
+
+class OrderReviewService {
+  static String get baseUrl => AppConstants.apiBaseUrl;
+
+  /// Submit review (rating 1-5 + optional notes) for an order or order item
+  static Future<Map<String, dynamic>> submitReview(
+    int orderId, {
+    int? userId,
+    int? itemId,
+    required int rating,
+    String? reviewNotes,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'rating': rating,
+      };
+      if (userId != null) body['userId'] = userId;
+      if (itemId != null) body['itemId'] = itemId;
+      if (reviewNotes != null && reviewNotes.trim().isNotEmpty) {
+        body['reviewNotes'] = reviewNotes.trim();
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/orders/$orderId/review'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {'success': true, 'data': decoded};
+      } else {
+        return {
+          'success': false,
+          'message': decoded is Map ? (decoded['message'] ?? 'Gagal mengirim ulasan') : 'Gagal mengirim ulasan',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan koneksi: $e'};
+    }
+  }
+}

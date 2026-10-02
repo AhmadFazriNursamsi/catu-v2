@@ -6,7 +6,7 @@
     "directCodeFilesPerDirectory": 12
   },
   "files": {
-    "mobile/lib/core/models/models.dart": 957,
+    "mobile/lib/core/models/models.dart": 954,
     "mobile/lib/core/services/notification_service.dart": 1035,
     "mobile/lib/core/services/api_service.dart": 1118,
     "mobile/lib/core/services/language_service.dart": 539,
@@ -27,9 +27,9 @@
     "mobile/lib/features/news/public_news_screen.dart": 651,
     "mobile/lib/features/orders/schedule_screen.dart": 1823,
     "mobile/lib/features/orders/create_perminyakan_screen.dart": 1264,
-    "mobile/lib/features/orders/histori_screen.dart": 1195,
+    "mobile/lib/features/orders/histori_screen.dart": 1192,
     "mobile/lib/features/orders/create_kedukaan_screen.dart": 1636,
-    "mobile/lib/features/orders/order_detail_screen.dart": 3210,
+    "mobile/lib/features/orders/order_detail_screen.dart": 3202,
     "mobile/lib/features/notifications/notification_screen.dart": 1049
   },
   "functions": {

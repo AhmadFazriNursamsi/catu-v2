@@ -13,11 +13,15 @@ import {
 } from '@nestjs/swagger';
 import { CreateOrderDto } from '../../orders.dto';
 import { OrdersService } from './orders.service';
+import { OrderReviewsService } from './order-reviews.service';
 
 @ApiTags('Orders & Pelayanan')
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly orderReviewsService: OrderReviewsService,
+  ) {}
 
   @Post()
   @ApiBearerAuth('JWT-auth')
@@ -124,5 +128,20 @@ export class OrdersController {
     },
   ) {
     return await this.ordersService.respondHandover(idParam, dto);
+  }
+
+  @Post(':id/review')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Umat memberikan ulasan dan rating pada pelayanan yang telah selesai atau ditutup' })
+  async submitReview(
+    @Param('id') idParam: string,
+    @Body() dto: {
+      userId?: number;
+      itemId?: number;
+      rating: number;
+      reviewNotes?: string;
+    },
+  ) {
+    return await this.orderReviewsService.submitReview(idParam, dto);
   }
 }

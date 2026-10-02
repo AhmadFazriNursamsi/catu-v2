@@ -485,7 +485,7 @@ export class OrdersService {
     await this.autoSyncOrderStatuses();
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status,
-             o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, o.attachment_url as "attachmentUrl", o.user_id,
+             o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, o.attachment_url as "attachmentUrl", o.user_id, o.rating, o.review_notes as "reviewNotes", o.reviewed_at as "reviewedAt",
              p.full_name as pemohon_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
              COALESCE(o.paroki_id, p.paroki_id) as paroki_id, COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id,
              o.accepted_romo_id as "acceptedRomoId", COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
@@ -608,7 +608,7 @@ export class OrdersService {
       const items = await this.dataSource.query(
         `SELECT id, item_name as "itemName", scheduled_date as "scheduledDate",
                 scheduled_time_start as "scheduledTimeStart", scheduled_time_end as "scheduledTimeEnd",
-                location_name as "locationName", COALESCE(status, 'PENDING') as status, accepted_romo_id as "acceptedRomoId",
+                location_name as "locationName", COALESCE(status, 'PENDING') as status, accepted_romo_id as "acceptedRomoId", rating, review_notes as "reviewNotes", reviewed_at as "reviewedAt",
                 COALESCE((SELECT full_name FROM user_profiles WHERE user_id = accepted_romo_id), external_romo_name) as "acceptedRomoName",
                 COALESCE(reschedule_status, 'NONE') as "rescheduleStatus",
                 reschedule_proposed_by as "rescheduleProposedBy",
@@ -696,7 +696,7 @@ export class OrdersService {
     const orderId = parseInt(idParam, 10) || 0;
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status,
-             o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, o.attachment_url as "attachmentUrl",
+             o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, o.attachment_url as "attachmentUrl", o.rating, o.review_notes as "reviewNotes", o.reviewed_at as "reviewedAt",
              p.full_name as pemohon_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
              COALESCE(o.paroki_id, p.paroki_id) as paroki_id, COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id, o.user_id,
              o.accepted_romo_id as "acceptedRomoId", COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
@@ -721,7 +721,7 @@ export class OrdersService {
       const items = await this.dataSource.query(
         `SELECT id, item_name as "itemName", scheduled_date as "scheduledDate",
                 scheduled_time_start as "scheduledTimeStart", scheduled_time_end as "scheduledTimeEnd",
-                location_name as "locationName", COALESCE(status, 'PENDING') as status, accepted_romo_id as "acceptedRomoId",
+                location_name as "locationName", COALESCE(status, 'PENDING') as status, accepted_romo_id as "acceptedRomoId", rating, review_notes as "reviewNotes", reviewed_at as "reviewedAt",
                 COALESCE((SELECT full_name FROM user_profiles WHERE user_id = accepted_romo_id), external_romo_name) as "acceptedRomoName",
                 COALESCE(reschedule_status, 'NONE') as "rescheduleStatus",
                 reschedule_proposed_by as "rescheduleProposedBy",

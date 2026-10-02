@@ -50,20 +50,11 @@ class OrderItem {
   final String scheduledTimeEnd;
   final String locationName;
   String status;
-  int? acceptedRomoId;
-  String? acceptedRomoName;
-  String rescheduleStatus;
-  int? rescheduleProposedBy;
-  String? rescheduleNewDate;
-  String? rescheduleNewTimeStart;
-  String? rescheduleNewTimeEnd;
-  String rescheduleReason;
-  String handoverStatus;
-  int? handoverProposedBy;
-  String? handoverProposerName;
-  int? handoverTargetRomoId;
-  String? handoverTargetRomoName;
-  String handoverReason;
+  int? acceptedRomoId, rating;
+  String? acceptedRomoName, reviewNotes, reviewedAt;
+  String rescheduleStatus, rescheduleReason, handoverStatus, handoverReason;
+  int? rescheduleProposedBy, handoverProposedBy, handoverTargetRomoId;
+  String? rescheduleNewDate, rescheduleNewTimeStart, rescheduleNewTimeEnd, handoverProposerName, handoverTargetRomoName;
 
   OrderItem({
     this.id,
@@ -75,6 +66,9 @@ class OrderItem {
     this.status = 'PENDING',
     this.acceptedRomoId,
     this.acceptedRomoName,
+    this.rating,
+    this.reviewNotes,
+    this.reviewedAt,
     this.rescheduleStatus = 'NONE',
     this.rescheduleProposedBy,
     this.rescheduleNewDate,
@@ -92,6 +86,7 @@ class OrderItem {
   bool get hasPendingReschedule => rescheduleStatus.toUpperCase() == 'PENDING_UMAT';
   bool get hasPendingHandover => handoverStatus.toUpperCase() == 'PENDING';
   bool get isHandoverCompleted => handoverStatus.toUpperCase() == 'ACCEPTED';
+  bool get hasReview => rating != null && rating! > 0;
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     final rawId = json['id'];
@@ -131,6 +126,7 @@ class OrderItem {
       handoverTargetRomoId: parsedHandoverTargetRomoId,
       handoverTargetRomoName: json['handoverTargetRomoName'] ?? json['handover_target_romo_name'],
       handoverReason: json['handoverReason'] ?? json['handover_reason'] ?? '',
+      rating: int.tryParse(json['rating']?.toString() ?? ''), reviewNotes: json['reviewNotes'] ?? json['review_notes'], reviewedAt: json['reviewedAt'] ?? json['reviewed_at'],
     );
   }
 
@@ -314,12 +310,9 @@ class Order {
   String? rescheduleReason;
   List<OrderRescheduleLog> rescheduleHistory;
   List<OrderRomoHandover> handoverHistory;
-  String handoverStatus;
-  int? handoverProposedBy;
-  String? handoverProposerName;
-  int? handoverTargetRomoId;
-  String? handoverTargetRomoName;
-  String handoverReason;
+  String handoverStatus, handoverReason;
+  int? handoverProposedBy, handoverTargetRomoId, rating;
+  String? handoverProposerName, handoverTargetRomoName, reviewNotes, reviewedAt;
 
   Order({
     required this.id,
@@ -351,11 +344,13 @@ class Order {
     this.handoverProposedBy, this.handoverProposerName,
     this.handoverTargetRomoId, this.handoverTargetRomoName,
     this.handoverReason = '',
+    this.rating, this.reviewNotes, this.reviewedAt,
   });
 
   bool get hasPendingReschedule => rescheduleStatus.toUpperCase() == 'PENDING_UMAT';
   bool get hasPendingHandover => handoverStatus.toUpperCase() == 'PENDING';
   bool get isHandoverCompleted => handoverStatus.toUpperCase() == 'ACCEPTED';
+  bool get hasReview => rating != null && rating! > 0;
 
   /// Parse "Jam Mulai" from notes
   String get jamMulaiLabel {
@@ -652,8 +647,10 @@ class Order {
       handoverStatus: (json['handoverStatus'] ?? json['handover_status'] ?? 'NONE').toString().toUpperCase(),
       handoverProposedBy: parsedHandoverProposedBy,
       handoverProposerName: json['handoverProposerName'] ?? json['handover_proposer_name'],
-      handoverTargetRomoId: parsedHandoverTargetRomoId, handoverTargetRomoName: json['handoverTargetRomoName'] ?? json['handover_target_romo_name'],
+      handoverTargetRomoId: parsedHandoverTargetRomoId,
+      handoverTargetRomoName: json['handoverTargetRomoName'] ?? json['handover_target_romo_name'],
       handoverReason: json['handoverReason'] ?? json['handover_reason'] ?? '',
+      rating: int.tryParse(json['rating']?.toString() ?? ''), reviewNotes: json['reviewNotes'] ?? json['review_notes'], reviewedAt: json['reviewedAt'] ?? json['reviewed_at'],
     );
   }
 }

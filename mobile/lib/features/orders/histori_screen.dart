@@ -550,23 +550,8 @@ class _HistoriScreenState extends State<HistoriScreen>
             child: Icon(icon, size: 18, color: color),
           ),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: color,
-              letterSpacing: -0.5,
-            ),
-          ),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF94A3B8),
-            ),
-          ),
+          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: color, letterSpacing: -0.5)),
+          Text(label, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w500, color: Color(0xFF94A3B8))),
         ],
       ),
     );
@@ -651,13 +636,8 @@ class _HistoriScreenState extends State<HistoriScreen>
     return GestureDetector(
       onTap: _showSortSheet,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFE2E8F0))),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -940,33 +920,32 @@ class _HistoriScreenState extends State<HistoriScreen>
                             ],
                           ),
                           const SizedBox(height: 7),
-                          // Status badge — own row, no competition
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: statusColor.withValues(alpha: 0.09),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(statusIcon,
-                                    size: 12, color: statusColor),
-                                const SizedBox(width: 5),
-                                Flexible(
-                                  child: Text(
-                                    statusLabel,
-                                    style: TextStyle(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: statusColor,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: statusColor.withValues(alpha: 0.09),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                              ],
-                            ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(statusIcon, size: 12, color: statusColor),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      statusLabel,
+                                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: statusColor),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE')
+                                _buildReviewBadge(displayItem?.rating ?? order.rating),
+                            ],
                           ),
                         ],
                       ),
@@ -1080,6 +1059,24 @@ class _HistoriScreenState extends State<HistoriScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildReviewBadge(int? rating) {
+    final bool hasRating = rating != null && rating > 0;
+    final String label = hasRating ? '$rating/5' : (widget.isRomo ? 'Menunggu Ulasan' : 'Beri Ulasan');
+    final IconData icon = hasRating ? Icons.star_rounded : (widget.isRomo ? Icons.hourglass_top_rounded : Icons.rate_review_rounded);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+      decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: const Color(0xFFD97706)),
+          const SizedBox(width: 3.5),
+          Text(label, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFFD97706))),
+        ],
       ),
     );
   }

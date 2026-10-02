@@ -10,6 +10,8 @@ import '../../core/services/language_service.dart';
 import '../chat/chat_screen.dart';
 import 'widgets/accept_service_dialog.dart';
 import 'widgets/handover_romo_sheet.dart';
+import 'widgets/order_review_sheet.dart';
+import 'widgets/order_review_card.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final Order order;
@@ -525,18 +527,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                         child: GestureDetector(
                           onTap: () => Navigator.pop(context),
                           child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.4),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  width: 1),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: Colors.white,
-                              size: 16,
-                            ),
+                            decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.4), shape: BoxShape.circle, border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1)),
+                            child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
                           ),
                         ),
                       ),
@@ -553,12 +545,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               onTap: () => _showHandoverBottomSheet(order, targetItem: displayItem),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF0284C7).withValues(alpha: 0.85),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.3)),
-                                ),
+                                decoration: BoxDecoration(color: const Color(0xFF0284C7).withValues(alpha: 0.85), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withValues(alpha: 0.3))),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -581,23 +568,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                           padding: const EdgeInsets.only(right: 16),
                           child: Center(
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.25)),
-                              ),
-                              child: Text(
-                                '#${order.orderNumber}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withValues(alpha: 0.25))),
+                              child: Text('#${order.orderNumber}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
                             ),
                           ),
                         ),
@@ -620,6 +593,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                 displayItem, order, statusColor, statusLabel, statusIcon),
 
                             const SizedBox(height: 12),
+
+                            // ── Service Review Card (DONE or CLOSE) ──
+                            if (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE') ...[
+                              OrderReviewCard(
+                                order: order,
+                                targetItem: order.items.isNotEmpty ? displayItem : null,
+                                isRomo: widget.isRomo,
+                                onReviewPressed: () => _openReviewSheet(order, targetItem: order.items.isNotEmpty ? displayItem : null),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
 
                             // ── Reschedule Proposal Card for Umat ──
                             if (!widget.isRomo && (order.items.isNotEmpty ? displayItem.hasPendingReschedule : order.hasPendingReschedule)) ...[
@@ -712,21 +696,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                         borderRadius: BorderRadius.circular(10),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFF0F9FF),
-                                            borderRadius: BorderRadius.circular(10),
-                                            border: Border.all(color: const Color(0xFFBAE6FD)),
-                                          ),
+                                          decoration: BoxDecoration(color: const Color(0xFFF0F9FF), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFBAE6FD))),
                                           child: const Row(
                                             children: [
                                               Icon(Icons.published_with_changes_rounded, size: 16, color: Color(0xFF0284C7)),
                                               SizedBox(width: 8),
-                                              Expanded(
-                                                child: Text(
-                                                  'Berhalangan Hadir? Alihkan / Ganti Romo',
-                                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0369A1)),
-                                                ),
-                                              ),
+                                              Expanded(child: Text('Berhalangan Hadir? Alihkan / Ganti Romo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0369A1)))),
                                               Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF0284C7)),
                                             ],
                                           ),
@@ -1043,11 +1018,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFDE68A)),
-            ),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFFDE68A))),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -3206,5 +3177,26 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  void _openReviewSheet(Order order, {OrderItem? targetItem}) {
+    showOrderReviewBottomSheet(
+      context: context,
+      order: order,
+      targetItem: targetItem,
+      userId: widget.userId,
+      onReviewSubmitted: (rating, notes) {
+        setState(() {
+          if (targetItem != null) {
+            targetItem.rating = rating;
+            targetItem.reviewNotes = notes;
+            targetItem.reviewedAt = DateTime.now().toIso8601String();
+          }
+          order.rating = rating;
+          order.reviewNotes = notes;
+          order.reviewedAt = DateTime.now().toIso8601String();
+        });
+      },
+    );
   }
 }

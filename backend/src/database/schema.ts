@@ -119,6 +119,9 @@ export const orders = pgTable('orders', {
   parokiId: integer('paroki_id'),
   lingkunganId: integer('lingkungan_id'),
   keuskupanId: integer('keuskupan_id'),
+  rating: integer('rating'),
+  reviewNotes: text('review_notes'),
+  reviewedAt: timestamp('reviewed_at'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -129,6 +132,9 @@ export const orderItems = pgTable('order_items', {
   scheduledDate: varchar('scheduled_date', { length: 50 }),
   scheduledTime: varchar('scheduled_time', { length: 50 }),
   notes: text('notes'),
+  rating: integer('rating'),
+  reviewNotes: text('review_notes'),
+  reviewedAt: timestamp('reviewed_at'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
