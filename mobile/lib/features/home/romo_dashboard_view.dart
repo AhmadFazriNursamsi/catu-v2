@@ -803,19 +803,19 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     );
   }
 
-  bool _isDateBeforeToday(String dateStr) {
-    if (dateStr.isEmpty) return false;
+  int _getDaysPassed(String dateStr) {
+    if (dateStr.isEmpty) return 0;
     try {
-      String cleanStr = dateStr;
-      if (cleanStr.contains('T')) cleanStr = cleanStr.split('T').first;
+      final cleanStr = dateStr.contains('T') ? dateStr.split('T').first : dateStr;
       final d = DateTime.parse(cleanStr);
       final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      return DateTime(d.year, d.month, d.day).isBefore(today);
+      return DateTime(now.year, now.month, now.day).difference(DateTime(d.year, d.month, d.day)).inDays;
     } catch (_) {
-      return false;
+      return 0;
     }
   }
+
+  bool _isDateBeforeToday(String dateStr) => _getDaysPassed(dateStr) > 0;
 
   List<RomoDashboardCardItem> get _displayParishRequestsCardItems {
     final int? romoId = int.tryParse((widget.user['id'] ?? widget.user['userId'] ?? '').toString());
@@ -1059,17 +1059,14 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
   Color _statusColor(String status) {
     switch (status.toUpperCase()) {
       case 'ACCEPTED':
-      case 'CONFIRMED':
-        return const Color(0xFF059669);
-      case 'DONE':
-        return const Color(0xFF059669);
+      case 'CONFIRMED': return const Color(0xFF059669);
+      case 'IN_PROGRESS': return const Color(0xFF7C3AED);
+      case 'DONE': return const Color(0xFF2563EB);
+      case 'CLOSE': return const Color(0xFF0D9488);
       case 'REJECTED':
-      case 'FAIL':
-      case 'CLOSE':
-        return const Color(0xFFDC2626);
+      case 'FAIL': return const Color(0xFFDC2626);
       case 'PENDING':
-      default:
-        return const Color(0xFFD97706);
+      default: return const Color(0xFFD97706);
     }
   }
 
@@ -1083,33 +1080,28 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
   String _statusLabel(String status) {
     switch (status.toUpperCase()) {
       case 'ACCEPTED':
-      case 'CONFIRMED':
-        return 'Telah Dikonfirmasi';
-      case 'DONE':
-        return 'Telah Selesai';
+      case 'CONFIRMED': return 'Telah Dikonfirmasi';
+      case 'IN_PROGRESS': return 'Sedang Berlangsung';
+      case 'DONE': return 'Telah Selesai';
+      case 'CLOSE': return 'Closed (Ditutup Sistem)';
       case 'REJECTED':
-      case 'FAIL':
-      case 'CLOSE':
-        return 'Batal / Gagal';
+      case 'FAIL': return 'Batal / Gagal';
       case 'PENDING':
-      default:
-        return 'Menunggu Konfirmasi';
+      default: return 'Menunggu Konfirmasi';
     }
   }
 
   IconData _statusIcon(String status) {
     switch (status.toUpperCase()) {
       case 'ACCEPTED':
-      case 'CONFIRMED':
+      case 'CONFIRMED': return Icons.check_circle_rounded;
+      case 'IN_PROGRESS': return Icons.timelapse_rounded;
       case 'DONE':
-        return Icons.check_circle_rounded;
+      case 'CLOSE': return Icons.task_alt_rounded;
       case 'REJECTED':
-      case 'FAIL':
-      case 'CLOSE':
-        return Icons.cancel_rounded;
+      case 'FAIL': return Icons.cancel_rounded;
       case 'PENDING':
-      default:
-        return Icons.hourglass_bottom_rounded;
+      default: return Icons.hourglass_bottom_rounded;
     }
   }
 
@@ -1126,16 +1118,20 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
   Widget _buildServiceCardFromCardItem(RomoDashboardCardItem item) {
     final order = item.parentOrder;
     final bool isSubItemAccepted = item.subItem != null
-        ? (item.subItem!.acceptedRomoId != null || item.subItem!.status.toUpperCase() == 'ACCEPTED' || item.subItem!.status.toUpperCase() == 'CONFIRMED' || item.subItem!.status.toUpperCase() == 'DONE')
+        ? (item.subItem!.acceptedRomoId != null || item.subItem!.status.toUpperCase() == 'ACCEPTED' || item.subItem!.status.toUpperCase() == 'CONFIRMED' || item.subItem!.status.toUpperCase() == 'IN_PROGRESS' || item.subItem!.status.toUpperCase() == 'DONE')
         : (order.acceptedRomoId != null && order.status.toUpperCase() != 'PENDING');
+    final String rawStatus = (item.subItem != null ? item.subItem!.status : order.status).toUpperCase();
+    final String dateStr = item.subItem != null ? item.subItem!.scheduledDate : order.scheduledDate;
+    final int days = _getDaysPassed(dateStr);
 
-    final String effectiveStatus = item.subItem != null
-        ? (isSubItemAccepted
-            ? (item.subItem!.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
-            : 'PENDING')
-        : (isSubItemAccepted
-            ? (order.status.toUpperCase() == 'DONE' ? 'DONE' : 'CONFIRMED')
-            : order.status.toUpperCase());
+    String effectiveStatus = rawStatus;
+    if (effectiveStatus != 'DONE' && effectiveStatus != 'CLOSE' && effectiveStatus != 'FAIL') {
+      if (isSubItemAccepted || effectiveStatus == 'CONFIRMED' || effectiveStatus == 'ACCEPTED' || effectiveStatus == 'IN_PROGRESS') {
+        effectiveStatus = days >= 2 ? 'CLOSE' : (days == 1 ? 'IN_PROGRESS' : 'CONFIRMED');
+      } else if (days >= 1) {
+        effectiveStatus = 'FAIL';
+      }
+    }
 
     final statusColor = _statusColor(effectiveStatus);
     final statusLabel = _statusLabel(effectiveStatus);

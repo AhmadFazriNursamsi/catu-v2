@@ -33,40 +33,34 @@ class HistoriEntryItem {
 
   HistoriEntryItem({required this.parentOrder, this.subItem});
 
-  static bool _isDatePassed(String dateStr) {
-    if (dateStr.isEmpty) return false;
+  static int _getDaysPassed(String dateStr) {
+    if (dateStr.isEmpty) return 0;
     try {
-      String cleanStr = dateStr;
-      if (cleanStr.contains('T')) cleanStr = cleanStr.split('T').first;
+      final cleanStr = dateStr.contains('T') ? dateStr.split('T').first : dateStr;
       final d = DateTime.parse(cleanStr);
       final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      return DateTime(d.year, d.month, d.day).isBefore(today);
+      return DateTime(now.year, now.month, now.day).difference(DateTime(d.year, d.month, d.day)).inDays;
     } catch (_) {
-      return false;
+      return 0;
     }
   }
 
   String get effectiveStatus {
-    if (subItem != null) {
-      final st = subItem!.status.toUpperCase();
-      if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
-      final bool romoAccepted = subItem!.acceptedRomoId != null || parentOrder.acceptedRomoId != null;
-      final bool datePassed = _isDatePassed(subItem!.scheduledDate) || _isDatePassed(parentOrder.scheduledDate);
-      if (datePassed) {
-        return romoAccepted ? 'CLOSE' : 'FAIL';
-      }
-      return st;
-    } else {
-      final st = parentOrder.status.toUpperCase();
-      if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
-      final bool romoAccepted = parentOrder.acceptedRomoId != null;
-      final bool datePassed = _isDatePassed(parentOrder.scheduledDate);
-      if (datePassed) {
-        return romoAccepted ? 'CLOSE' : 'FAIL';
-      }
-      return st;
+    final item = subItem;
+    final st = (item != null ? item.status : parentOrder.status).toUpperCase();
+    if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
+    final bool romoAccepted = item != null
+        ? (item.acceptedRomoId != null || (item.acceptedRomoName != null && item.acceptedRomoName!.isNotEmpty) || parentOrder.acceptedRomoId != null || (parentOrder.acceptedRomoName != null && parentOrder.acceptedRomoName!.isNotEmpty))
+        : (parentOrder.acceptedRomoId != null || (parentOrder.acceptedRomoName != null && parentOrder.acceptedRomoName!.isNotEmpty));
+    final String dateStr = (item != null && item.scheduledDate.isNotEmpty) ? item.scheduledDate : parentOrder.scheduledDate;
+    final int days = _getDaysPassed(dateStr);
+    if (romoAccepted || st == 'CONFIRMED' || st == 'ACCEPTED' || st == 'IN_PROGRESS') {
+      if (days >= 2) return 'CLOSE';
+      if (days == 1) return 'IN_PROGRESS';
+      return 'CONFIRMED';
     }
+    if (days >= 1) return 'FAIL';
+    return 'PENDING';
   }
 }
 
@@ -826,7 +820,8 @@ class _HistoriScreenState extends State<HistoriScreen>
     final bool showDetail = effectiveStatus.toUpperCase() == 'DONE' ||
         effectiveStatus.toUpperCase() == 'CLOSE' ||
         effectiveStatus.toUpperCase() == 'FAIL' ||
-        effectiveStatus.toUpperCase() == 'CONFIRMED';
+        effectiveStatus.toUpperCase() == 'CONFIRMED' ||
+        effectiveStatus.toUpperCase() == 'IN_PROGRESS';
 
     void goToDetail() async {
       HapticFeedback.lightImpact();

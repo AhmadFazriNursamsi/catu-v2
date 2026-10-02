@@ -395,17 +395,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     );
   }
 
-  bool _isDateBeforeToday(String dateStr) {
-    if (dateStr.isEmpty) return false;
+  int _getDaysPassed(String dateStr) {
+    if (dateStr.isEmpty) return 0;
     try {
-      String cleanStr = dateStr;
-      if (cleanStr.contains('T')) cleanStr = cleanStr.split('T').first;
+      final cleanStr = dateStr.contains('T') ? dateStr.split('T').first : dateStr;
       final d = DateTime.parse(cleanStr);
       final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      return DateTime(d.year, d.month, d.day).isBefore(today);
+      return DateTime(now.year, now.month, now.day).difference(DateTime(d.year, d.month, d.day)).inDays;
     } catch (_) {
-      return false;
+      return 0;
     }
   }
 
@@ -453,27 +451,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     final itemHandovers = order.items.isNotEmpty && displayItem.id != null
         ? order.handoverHistory.where((h) => h.itemId == displayItem.id).toList() : order.handoverHistory;
 
-    final int? assignedRomoId = order.items.isNotEmpty
-        ? displayItem.acceptedRomoId
-        : order.acceptedRomoId;
+    final int? assignedRomoId = order.items.isNotEmpty ? displayItem.acceptedRomoId : order.acceptedRomoId;
+    final String assignedRomoName = order.items.isNotEmpty ? (displayItem.acceptedRomoName ?? '') : (order.acceptedRomoName ?? '');
+    final String currentStatus = (order.items.isNotEmpty ? displayItem.status : order.status).toUpperCase();
 
-    final String assignedRomoName = order.items.isNotEmpty
-        ? (displayItem.acceptedRomoName ?? '')
-        : (order.acceptedRomoName ?? '');
-
-    final String currentStatus = order.items.isNotEmpty
-        ? displayItem.status.toUpperCase()
-        : order.status.toUpperCase();
-
-    final bool isRomoAccepted = assignedRomoId != null;
-    final bool datePassed = _isDateBeforeToday(displayItem.scheduledDate.isNotEmpty ? displayItem.scheduledDate : order.scheduledDate);
+    final bool isRomoAccepted = assignedRomoId != null || assignedRomoName.isNotEmpty;
+    final int daysPassed = _getDaysPassed(displayItem.scheduledDate.isNotEmpty ? displayItem.scheduledDate : order.scheduledDate);
 
     String computedStatus = currentStatus;
     if (computedStatus != 'DONE' && computedStatus != 'CLOSE' && computedStatus != 'FAIL') {
-      if (datePassed) {
-        computedStatus = isRomoAccepted ? 'CLOSE' : 'FAIL';
-      } else if (isRomoAccepted && computedStatus == 'PENDING') {
-        computedStatus = 'CONFIRMED';
+      if (isRomoAccepted || computedStatus == 'CONFIRMED' || computedStatus == 'ACCEPTED' || computedStatus == 'IN_PROGRESS') {
+        computedStatus = daysPassed >= 2 ? 'CLOSE' : (daysPassed == 1 ? 'IN_PROGRESS' : 'CONFIRMED');
+      } else if (daysPassed >= 1) {
+        computedStatus = 'FAIL';
       }
     }
 

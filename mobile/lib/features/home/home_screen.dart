@@ -89,14 +89,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       );
 
       if (mounted) {
-        bool hasChanges = latestOrders.length != _orders.length;
-        if (!hasChanges && latestOrders.isNotEmpty && _orders.isNotEmpty) {
-          if (latestOrders.first.id != _orders.first.id ||
-              latestOrders.first.status != _orders.first.status ||
-              latestOrders.last.status != _orders.last.status) {
-            hasChanges = true;
-          }
-        }
+        final bool hasChanges = latestOrders.length != _orders.length ||
+            latestOrders.any((lo) => _orders.any((o) => o.id == lo.id && (o.status != lo.status || o.scheduledDate != lo.scheduledDate)));
         if (hasChanges) {
           setState(() {
             _orders = latestOrders;

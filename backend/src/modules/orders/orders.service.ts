@@ -7,7 +7,23 @@ import { FcmService } from "../../fcm.service";
 @Injectable()
 export class OrdersService {
   constructor(@InjectDataSource() private readonly dataSource: DataSource, private readonly fcmService: FcmService) {}
-private async getPengurusForOrder(orderId: number, excludeUserId?: number): Promise<any[]> {
+
+  private lastStatusSyncDate = '';
+  private async autoSyncOrderStatuses() {
+    const today = new Date().toISOString().slice(0, 10);
+    if (this.lastStatusSyncDate === today) return;
+    this.lastStatusSyncDate = today;
+    await this.dataSource.query(`
+      UPDATE orders SET status = 'IN_PROGRESS' WHERE status::text = 'CONFIRMED' AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) = 1;
+      UPDATE orders SET status = 'CLOSE' WHERE status::text IN ('CONFIRMED', 'IN_PROGRESS') AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) >= 2;
+      UPDATE orders SET status = 'FAIL' WHERE status::text = 'PENDING' AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) >= 1;
+      UPDATE order_items SET status = 'IN_PROGRESS' WHERE status::text = 'CONFIRMED' AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) = 1;
+      UPDATE order_items SET status = 'CLOSE' WHERE status::text IN ('CONFIRMED', 'IN_PROGRESS') AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) >= 2;
+      UPDATE order_items SET status = 'FAIL' WHERE status::text = 'PENDING' AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) >= 1;
+    `).catch(() => {});
+  }
+
+  private async getPengurusForOrder(orderId: number, excludeUserId?: number): Promise<any[]> {
     const orderHierarchy = await this.dataSource.query(
       `SELECT o.lingkungan_id, o.paroki_id, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id
        FROM orders o
@@ -21,29 +37,19 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
     let pengurus: any[] = [];
     if (oh.lingkungan_id) {
       pengurus = await this.dataSource.query(
-        `SELECT u.id FROM auth_users u
-         JOIN user_profiles p ON u.id = p.user_id
-         JOIN roles r ON u.role_id = r.id
-         WHERE (
-           (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
+        `SELECT u.id FROM auth_users u JOIN user_profiles p ON u.id = p.user_id JOIN roles r ON u.role_id = r.id
+         WHERE ((r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
-           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
-           AND r.code NOT LIKE '%KOORDINATOR%'
-         ) AND p.lingkungan_id = $1`,
+           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN') AND r.code NOT LIKE '%KOORDINATOR%') AND p.lingkungan_id = $1`,
         [oh.lingkungan_id],
       );
     }
     if (pengurus.length === 0 && oh.paroki_id) {
       pengurus = await this.dataSource.query(
-        `SELECT u.id FROM auth_users u
-         JOIN user_profiles p ON u.id = p.user_id
-         JOIN roles r ON u.role_id = r.id
-         WHERE (
-           (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
+        `SELECT u.id FROM auth_users u JOIN user_profiles p ON u.id = p.user_id JOIN roles r ON u.role_id = r.id
+         WHERE ((r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
-           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
-           AND r.code NOT LIKE '%KOORDINATOR%'
-         ) AND p.paroki_id = $1`,
+           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN') AND r.code NOT LIKE '%KOORDINATOR%') AND p.paroki_id = $1`,
         [oh.paroki_id],
       );
     }
@@ -476,17 +482,13 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
     lingkunganId?: string,
     isKoordinator?: string,
   ) {
+    await this.autoSyncOrderStatuses();
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status,
-             o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes,
-             o.attachment_url as "attachmentUrl",
-             o.user_id,
-             p.full_name as pemohon_name,
-             k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
-             COALESCE(o.paroki_id, p.paroki_id) as paroki_id,
-             COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id,
-             o.accepted_romo_id as "acceptedRomoId",
-             COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
+             o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, o.attachment_url as "attachmentUrl", o.user_id,
+             p.full_name as pemohon_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
+             COALESCE(o.paroki_id, p.paroki_id) as paroki_id, COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id,
+             o.accepted_romo_id as "acceptedRomoId", COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
              COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus", o.reschedule_proposed_by as "rescheduleProposedBy",
              o.reschedule_new_date as "rescheduleNewDate", o.reschedule_new_time as "rescheduleNewTime", o.reschedule_new_time_end as "rescheduleNewTimeEnd",
              o.reschedule_reason as "rescheduleReason", COALESCE(o.handover_status, 'NONE') as "handoverStatus",
@@ -690,17 +692,14 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
     return await this.dataSource.query(query);
   }
   async getOrderById(idParam: string) {
+    await this.autoSyncOrderStatuses();
     const orderId = parseInt(idParam, 10) || 0;
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status,
-             o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes,
-             o.attachment_url as "attachmentUrl",
-             p.full_name as pemohon_name,
-             k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
-             COALESCE(o.paroki_id, p.paroki_id) as paroki_id, COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id,
-             o.user_id,
-             o.accepted_romo_id as "acceptedRomoId",
-             COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
+             o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, o.attachment_url as "attachmentUrl",
+             p.full_name as pemohon_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
+             COALESCE(o.paroki_id, p.paroki_id) as paroki_id, COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id, o.user_id,
+             o.accepted_romo_id as "acceptedRomoId", COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
              COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus", o.reschedule_proposed_by as "rescheduleProposedBy",
              o.reschedule_new_date as "rescheduleNewDate", o.reschedule_new_time as "rescheduleNewTime", o.reschedule_new_time_end as "rescheduleNewTimeEnd",
              o.reschedule_reason as "rescheduleReason", COALESCE(o.handover_status, 'NONE') as "handoverStatus",

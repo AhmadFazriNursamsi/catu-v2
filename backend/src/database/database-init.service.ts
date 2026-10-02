@@ -58,6 +58,14 @@ export class DatabaseInitService implements OnModuleInit {
         UPDATE orders SET status = 'DONE' WHERE status::text = 'SELESAI' OR status::text = 'COMPLETED';
         UPDATE orders SET status = 'FAIL' WHERE status::text = 'REJECTED';
         UPDATE orders SET status = 'FAIL' WHERE status::text = 'PENDING' AND (scheduled_date < CURRENT_DATE);
+        UPDATE orders SET status = 'IN_PROGRESS' WHERE status::text = 'CONFIRMED' AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) = 1;
+        UPDATE orders SET status = 'CLOSE' WHERE status::text IN ('CONFIRMED', 'IN_PROGRESS') AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) >= 2;
+        UPDATE order_items SET status = 'CONFIRMED' WHERE status::text = 'ACCEPTED';
+        UPDATE order_items SET status = 'DONE' WHERE status::text = 'SELESAI' OR status::text = 'COMPLETED';
+        UPDATE order_items SET status = 'FAIL' WHERE status::text = 'REJECTED';
+        UPDATE order_items SET status = 'FAIL' WHERE status::text = 'PENDING' AND (scheduled_date < CURRENT_DATE);
+        UPDATE order_items SET status = 'IN_PROGRESS' WHERE status::text = 'CONFIRMED' AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) = 1;
+        UPDATE order_items SET status = 'CLOSE' WHERE status::text IN ('CONFIRMED', 'IN_PROGRESS') AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) >= 2;
         -- Cleanup existing non-Romo profiles so romo_position is NULL
         UPDATE user_profiles
         SET romo_position = NULL

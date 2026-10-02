@@ -28,34 +28,30 @@ class ScheduleTimelineEntry {
     required this.parsedDate,
   });
 
-  bool get isPastDate {
+  int get daysPassed {
     final d = parsedDate;
-    if (d == null) return false;
+    if (d == null) return 0;
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    return DateTime(d.year, d.month, d.day).isBefore(today);
+    return DateTime(now.year, now.month, now.day).difference(DateTime(d.year, d.month, d.day)).inDays;
   }
 
+  bool get isPastDate => daysPassed > 0;
+
   String get effectiveStatus {
-    if (item != null) {
-      final st = item!.status.toUpperCase();
-      if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
-      final bool romoAccepted = item!.acceptedRomoId != null;
-      if (isPastDate) {
-        return romoAccepted ? 'CLOSE' : 'FAIL';
-      }
-      if (romoAccepted && st == 'PENDING') return 'CONFIRMED';
-      return st;
-    } else {
-      final st = parentOrder.status.toUpperCase();
-      if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
-      final bool romoAccepted = parentOrder.acceptedRomoId != null;
-      if (isPastDate) {
-        return romoAccepted ? 'CLOSE' : 'FAIL';
-      }
-      if (romoAccepted && st == 'PENDING') return 'CONFIRMED';
-      return st;
+    final it = item;
+    final st = (it != null ? it.status : parentOrder.status).toUpperCase();
+    if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
+    final bool romoAccepted = it != null
+        ? (it.acceptedRomoId != null || (it.acceptedRomoName != null && it.acceptedRomoName!.isNotEmpty) || parentOrder.acceptedRomoId != null || (parentOrder.acceptedRomoName != null && parentOrder.acceptedRomoName!.isNotEmpty))
+        : (parentOrder.acceptedRomoId != null || (parentOrder.acceptedRomoName != null && parentOrder.acceptedRomoName!.isNotEmpty));
+    final int days = daysPassed;
+    if (romoAccepted || st == 'CONFIRMED' || st == 'ACCEPTED' || st == 'IN_PROGRESS') {
+      if (days >= 2) return 'CLOSE';
+      if (days == 1) return 'IN_PROGRESS';
+      return 'CONFIRMED';
     }
+    if (days >= 1) return 'FAIL';
+    return 'PENDING';
   }
 }
 
