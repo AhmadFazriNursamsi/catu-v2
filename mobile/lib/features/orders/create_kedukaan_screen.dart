@@ -1128,9 +1128,9 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
                     const SizedBox(height: 16),
 
-                    // ── Card 3: Alamat Paroki Penerima Sakramen (Cross-Parish Toggle) ──
+                    // ── Card 3: Alamat & Paroki Pelayanan Kedukaan (Cross-Parish Toggle) ──
                     _buildFormCard(
-                      title: LanguageService.tr('parish_address'),
+                      title: LanguageService.tr('parish_address_kedukaan'),
                       icon: Icons.location_city_rounded,
                       iconColor: const Color(0xFF1E5399),
                       children: [

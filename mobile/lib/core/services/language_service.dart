@@ -3,8 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 
 class LanguageService {
-  static final ValueNotifier<String> currentLanguage =
-      ValueNotifier<String>('id');
+  static final ValueNotifier<String> currentLanguage = ValueNotifier<String>('id');
 
   static const String _prefKey = 'user_language_code';
 
@@ -156,6 +155,7 @@ class LanguageService {
       'schedule_location': 'Jadwal & Lokasi Pelayanan',
       'address_detail': 'Alamat Detail',
       'parish_address': 'Alamat Paroki Penerima Sakramen',
+      'parish_address_kedukaan': 'Alamat & Paroki Pelayanan Kedukaan',
       'same_parish': 'Paroki yang sama?',
       'deceased_data': 'Data Almarhum / Almarhumah',
       'deceased_name': 'Nama Yang Meninggal',
@@ -172,13 +172,11 @@ class LanguageService {
       'service_discussion': 'Diskusi Pelayanan',
       'view_detail': 'Lihat Detail',
       'search_hint': 'Cari nama, kategori, lokasi...',
-
       // Form Errors
       'error_form_incomplete': 'Harap lengkapi semua kolom wajib dengan benar.',
       'error_date_unselected': 'Tanggal pelayanan belum dipilih.',
       'error_time_unselected': 'Jam mulai dan selesai harus dipilih.',
       'error_end_before_start': 'Jam selesai harus lebih besar dari jam mulai.',
-
       // History
       'history_title': 'Histori Permintaan',
       'no_requests': 'Belum Ada Permintaan',
@@ -324,6 +322,7 @@ class LanguageService {
       'schedule_location': 'Service Schedule & Location',
       'address_detail': 'Detailed Address',
       'parish_address': 'Recipient Parish Address',
+      'parish_address_kedukaan': 'Funeral Parish & Service Address',
       'same_parish': 'Same parish?',
       'deceased_data': 'Deceased Person Data',
       'deceased_name': 'Name of Deceased',
@@ -340,13 +339,11 @@ class LanguageService {
       'service_discussion': 'Service Discussion',
       'view_detail': 'View Detail',
       'search_hint': 'Search name, category, location...',
-
       // Form Errors
       'error_form_incomplete': 'Please fill in all required fields correctly.',
       'error_date_unselected': 'Service date has not been selected.',
       'error_time_unselected': 'Start and end time must be selected.',
       'error_end_before_start': 'End time must be later than start time.',
-
       // History
       'history_title': 'Request History',
       'no_requests': 'No Requests Yet',
@@ -492,6 +489,7 @@ class LanguageService {
       'schedule_location': 'Horarium et Locus Ministerii',
       'address_detail': 'Domicilium Singulare',
       'parish_address': 'Domicilium Paroeciae Recipientis',
+      'parish_address_kedukaan': 'Domicilium Paroeciae et Ministerii Exsequiarum',
       'same_parish': 'Eadem paroecia?',
       'deceased_data': 'Data Defuncti',
       'deceased_name': 'Nomen Defuncti',
@@ -508,13 +506,11 @@ class LanguageService {
       'service_discussion': 'Disputatio Ministerii',
       'view_detail': 'Videre Singula',
       'search_hint': 'Quaerere nomen, genus, locum...',
-
       // Form Errors
       'error_form_incomplete': 'Omnia campi necessarii recte complendi sunt.',
       'error_date_unselected': 'Dies ministerii nondum selectus est.',
       'error_time_unselected': 'Hora initii et finis eligenda sunt.',
       'error_end_before_start': 'Hora finis posterior hora initii esse debet.',
-
       // History
       'history_title': 'Historia Petitionum',
       'no_requests': 'Nullae Petitiones Adhuc',
