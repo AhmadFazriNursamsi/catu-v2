@@ -808,18 +808,16 @@ class ApiService {
 
   static Future<void> markAllNotificationsRead(int userId) async {
     try {
-      await http.post(
-        Uri.parse('$baseUrl/notifications/read-all'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'userId': userId}),
-      );
+      await http.post(Uri.parse('$baseUrl/notifications/read-all'), headers: {'Content-Type': 'application/json'}, body: jsonEncode({'userId': userId}));
     } catch (_) {}
   }
 
   static Future<void> deleteNotification(int id) async {
-    try {
-      await http.delete(Uri.parse('$baseUrl/notifications/$id'));
-    } catch (_) {}
+    try { await http.delete(Uri.parse('$baseUrl/notifications/$id')).timeout(const Duration(seconds: 4)); } catch (_) {}
+  }
+
+  static Future<void> deleteAllNotifications(int userId) async {
+    try { await http.delete(Uri.parse('$baseUrl/notifications/user/$userId')).timeout(const Duration(seconds: 4)); } catch (_) {}
   }
 
   // 5. Fetch WhatsApp Group Messages

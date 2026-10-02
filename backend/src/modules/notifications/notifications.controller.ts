@@ -70,6 +70,14 @@ export class NotificationsController {
     return await this.notificationsService.markAllRead(body.userId);
   }
 
+  @Delete('user/:userId')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Hapus semua notifikasi untuk user' })
+  async deleteAllForUser(@Param('userId') userIdParam: string) {
+    const userId = parseInt(userIdParam, 10);
+    return await this.notificationsService.deleteAllForUser(userId);
+  }
+
   @Delete(':id')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Hapus notifikasi' })

@@ -98,6 +98,15 @@ export class NotificationsService {
     return { success: true };
   }
 
+  async deleteAllForUser(userId: number) {
+    if (!isNaN(userId)) {
+      await this.dataSource.query('DELETE FROM notifications WHERE user_id = $1', [
+        userId,
+      ]);
+    }
+    return { success: true };
+  }
+
   async deleteNotification(id: number) {
     if (!isNaN(id)) {
       await this.dataSource.query('DELETE FROM notifications WHERE id = $1', [

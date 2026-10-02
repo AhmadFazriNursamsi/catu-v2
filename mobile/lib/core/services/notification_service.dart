@@ -901,18 +901,19 @@ class NotificationService {
   // ─── Delete One ───────────────────────────────────────────────────────────
 
   static Future<void> delete(String id) async {
-    if (id.startsWith('backend_')) {
-      final intId = int.tryParse(id.replaceFirst('backend_', ''));
-      if (intId != null) {
-        await ApiService.deleteNotification(intId);
-      }
+    final intId = id.startsWith('backend_')
+        ? int.tryParse(id.replaceFirst('backend_', ''))
+        : int.tryParse(id);
+    if (intId != null) {
+      await ApiService.deleteNotification(intId);
     }
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_key) ?? [];
     final updated = raw.where((s) {
       try {
         final map = jsonDecode(s) as Map<String, dynamic>;
-        return map['id'] != id;
+        final mapId = map['id']?.toString() ?? '';
+        return mapId != id && mapId != 'backend_$id' && 'backend_$mapId' != id;
       } catch (_) {
         return true;
       }
@@ -929,27 +930,10 @@ class NotificationService {
     int? kabupatenKotaId,
   }) async {
     if (userId != null && userId > 0) {
-      await ApiService.markAllNotificationsRead(userId);
+      await ApiService.deleteAllNotifications(userId);
     }
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getStringList(_key) ?? [];
-    final updated = raw.where((s) {
-      try {
-        final map = jsonDecode(s) as Map<String, dynamic>;
-        if (map['role'] == role) {
-          if (role == 'ROMO_PAROKI' && parokiId != null && map['parokiId'] != null) {
-            return map['parokiId'] != parokiId;
-          } else if (role == 'ROMO_ORDO' && kabupatenKotaId != null && map['kabupatenKotaId'] != null) {
-            return map['kabupatenKotaId'] != kabupatenKotaId;
-          }
-          return false;
-        }
-        return true;
-      } catch (_) {
-        return true;
-      }
-    }).toList();
-    await prefs.setStringList(_key, updated);
+    await prefs.remove(_key);
   }
 
   static Future<String> _uniqueId(String prefix) async {

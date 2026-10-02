@@ -7,8 +7,8 @@
   },
   "files": {
     "mobile/lib/core/models/models.dart": 957,
-    "mobile/lib/core/services/notification_service.dart": 1051,
-    "mobile/lib/core/services/api_service.dart": 1120,
+    "mobile/lib/core/services/notification_service.dart": 1035,
+    "mobile/lib/core/services/api_service.dart": 1118,
     "mobile/lib/core/services/language_service.dart": 539,
     "mobile/lib/features/home/umat_dashboard_view.dart": 1288,
     "mobile/lib/features/home/romo_dashboard_view.dart": 1428,

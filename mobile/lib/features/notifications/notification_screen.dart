@@ -77,7 +77,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
     try {
       final items = await NotificationService.getForRole(widget.role, userId: _userId, parokiId: _parokiId, kabupatenKotaId: _kabupatenKotaId);
       if (mounted) {
-        if (items.isEmpty && _allItems.isNotEmpty) { _isSilentRefreshing = false; return; }
         bool hasChanges = items.length != _allItems.length;
         if (!hasChanges && items.isNotEmpty && _allItems.isNotEmpty) {
           if (items.first.id != _allItems.first.id || items.first.isRead != _allItems.first.isRead) hasChanges = true;
@@ -142,10 +141,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Future<void> _deleteItem(NotificationItem item) async {
     HapticFeedback.mediumImpact();
-    await NotificationService.delete(item.id);
     setState(() {
       _allItems.removeWhere((n) => n.id == item.id);
     });
+    await NotificationService.delete(item.id);
+    NotificationService.updateBadgeCount(_allItems.where((n) => !n.isRead).length);
   }
 
   Future<void> _deleteAll() async {
