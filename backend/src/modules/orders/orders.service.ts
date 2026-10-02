@@ -1185,6 +1185,13 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
       return { statusCode: 403, message: 'Hanya Romo yang bertugas yang dapat mengajukan pelimpahan pelayanan ini.' };
     }
 
+    const wasReceivedViaHandover = itemId
+      ? (await this.dataSource.query(`SELECT 1 FROM order_items WHERE id = $1 AND order_id = $2 AND (handover_status = 'ACCEPTED' OR EXISTS (SELECT 1 FROM order_romo_handovers WHERE item_id = $1 AND new_romo_id = $3 AND status = 'ACCEPTED'))`, [itemId, orderId, romoId])).length > 0
+      : (await this.dataSource.query(`SELECT 1 FROM orders WHERE id = $1 AND (handover_status = 'ACCEPTED' OR EXISTS (SELECT 1 FROM order_romo_handovers WHERE order_id = $1 AND new_romo_id = $2 AND status = 'ACCEPTED'))`, [orderId, romoId])).length > 0;
+    if (wasReceivedViaHandover) {
+      return { statusCode: 400, message: 'Pelayanan yang telah diterima dari pelimpahan tugas tidak dapat dilimpahkan kembali ke Romo lain.' };
+    }
+
     const prevRomoProf = await this.dataSource.query(`SELECT full_name FROM user_profiles WHERE user_id = $1`, [romoId]);
     const prevRomoName = prevRomoProf.length > 0 ? prevRomoProf[0].full_name : 'Romo';
 
@@ -1192,10 +1199,7 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
       return await this._handoverToExternalRomo(order, dto, prevRomoName, targetItemName);
     }
 
-    const newRomoProf = await this.dataSource.query(
-      `SELECT full_name FROM user_profiles WHERE user_id = $1`,
-      [targetRomoId],
-    );
+    const newRomoProf = await this.dataSource.query(`SELECT full_name FROM user_profiles WHERE user_id = $1`, [targetRomoId]);
     const newRomoName = newRomoProf.length > 0 ? newRomoProf[0].full_name : 'Romo Pengganti';
     const itemPrefix = targetItemName ? `[${targetItemName}] ` : '';
 
@@ -1407,6 +1411,7 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
       if (itemId) {
         await this.dataSource.query(`UPDATE order_items SET accepted_romo_id = $1, handover_status = 'ACCEPTED', status = 'CONFIRMED' WHERE id = $2 AND order_id = $3`, [romoId, itemId, orderId]);
         await this.dataSource.query(`UPDATE order_romo_handovers SET status = 'ACCEPTED', responded_at = CURRENT_TIMESTAMP WHERE order_id = $1 AND item_id = $2 AND new_romo_id = $3 AND status = 'PENDING'`, [orderId, itemId, romoId]);
+        await this.dataSource.query(`UPDATE orders SET handover_status = 'ACCEPTED' WHERE id = $1 AND handover_status = 'PENDING'`, [orderId]);
       } else {
         await this.dataSource.query(`UPDATE order_items SET accepted_romo_id = $1, handover_status = 'ACCEPTED', status = 'CONFIRMED' WHERE order_id = $2`, [romoId, orderId]);
         await this.dataSource.query(`UPDATE orders SET accepted_romo_id = $1, handover_status = 'ACCEPTED', status = 'CONFIRMED' WHERE id = $2`, [romoId, orderId]);
@@ -1510,31 +1515,12 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
     } else {
       // Romo Baru rejects: stays with Romo Lama
       if (itemId) {
-        await this.dataSource.query(
-          `UPDATE order_items SET handover_status = 'REJECTED' WHERE id = $1 AND order_id = $2`,
-          [itemId, orderId],
-        );
-        await this.dataSource.query(
-          `UPDATE order_romo_handovers
-           SET status = 'REJECTED', responded_at = CURRENT_TIMESTAMP
-           WHERE order_id = $1 AND item_id = $2 AND new_romo_id = $3 AND status = 'PENDING'`,
-          [orderId, itemId, romoId],
-        );
+        await this.dataSource.query(`UPDATE order_items SET handover_status = 'REJECTED' WHERE id = $1 AND order_id = $2`, [itemId, orderId]);
+        await this.dataSource.query(`UPDATE order_romo_handovers SET status = 'REJECTED', responded_at = CURRENT_TIMESTAMP WHERE order_id = $1 AND item_id = $2 AND new_romo_id = $3 AND status = 'PENDING'`, [orderId, itemId, romoId]);
       } else {
-        await this.dataSource.query(
-          `UPDATE order_items SET handover_status = 'REJECTED' WHERE order_id = $1`,
-          [orderId],
-        );
-        await this.dataSource.query(
-          `UPDATE orders SET handover_status = 'REJECTED' WHERE id = $1`,
-          [orderId],
-        );
-        await this.dataSource.query(
-          `UPDATE order_romo_handovers
-           SET status = 'REJECTED', responded_at = CURRENT_TIMESTAMP
-           WHERE order_id = $1 AND new_romo_id = $2 AND status = 'PENDING'`,
-          [orderId, romoId],
-        );
+        await this.dataSource.query(`UPDATE order_items SET handover_status = 'REJECTED' WHERE order_id = $1`, [orderId]);
+        await this.dataSource.query(`UPDATE orders SET handover_status = 'REJECTED' WHERE id = $1`, [orderId]);
+        await this.dataSource.query(`UPDATE order_romo_handovers SET status = 'REJECTED', responded_at = CURRENT_TIMESTAMP WHERE order_id = $1 AND new_romo_id = $2 AND status = 'PENDING'`, [orderId, romoId]);
       }
 
       // System chat message

@@ -485,6 +485,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         effectiveStatus == 'DONE' ||
         effectiveStatus == 'CLOSE';
 
+    final bool isIncomingHandoverToCurrentRomo = widget.isRomo &&
+        widget.romoId != null &&
+        (order.items.isNotEmpty
+            ? (displayItem.handoverTargetRomoId == widget.romoId && displayItem.hasPendingHandover)
+            : (order.handoverTargetRomoId == widget.romoId && order.hasPendingHandover));
+
+    final bool isReceivedFromHandover = (order.handoverStatus.toUpperCase() == 'ACCEPTED') ||
+        (displayItem.handoverStatus.toUpperCase() == 'ACCEPTED') ||
+        order.handoverHistory.any((h) =>
+            h.status.toUpperCase() == 'ACCEPTED' &&
+            widget.romoId != null &&
+            h.newRomoId == widget.romoId &&
+            (order.items.isEmpty || displayItem.id == null || h.itemId == displayItem.id || h.itemId == null));
+
     final bool isAssignedToCurrentRomo = widget.isRomo &&
         widget.romoId != null &&
         assignedRomoId != null &&
@@ -494,7 +508,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         isItemAccepted &&
         assignedRomoId != null &&
         widget.romoId != null &&
-        widget.romoId != assignedRomoId;
+        widget.romoId != assignedRomoId &&
+        !isIncomingHandoverToCurrentRomo;
 
     final statusColor = _getStatusColor(effectiveStatus);
     final statusLabel = _getStatusLabel(effectiveStatus);
@@ -545,6 +560,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                         actions: [
                         if (isAssignedToCurrentRomo &&
                             (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS') &&
+                            !isReceivedFromHandover &&
                             (order.items.isNotEmpty
                                 ? (!displayItem.hasPendingHandover && !displayItem.isHandoverCompleted)
                                 : (!order.hasPendingHandover && !order.isHandoverCompleted)))
@@ -674,21 +690,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                   iconBg: const Color(0xFF059669),
                                   title: 'Romo yang Bertugas',
                                   children: [
-                                    _buildInfoTile(
-                                      icon: Icons.verified_user_rounded,
-                                      label: 'Romo / Pastor',
-                                      value: assignedRomoName.isNotEmpty
-                                          ? assignedRomoName
-                                          : (isAssignedToCurrentRomo ? widget.userName : 'Romo yang Bertugas'),
-                                      valueColor: const Color(0xFF059669),
-                                    ),
-                                    _buildInfoTile(
-                                      icon: Icons.check_circle_outline_rounded,
-                                      label: 'Status Konfirmasi',
-                                      value: effectiveStatus == 'DONE' ? 'Telah Selesai Dilaksanakan' : 'Telah Mengonfirmasi Kehadiran',
-                                      valueColor: const Color(0xFF059669),
-                                      isLast: !isAssignedToCurrentRomo || (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE'),
-                                    ),
+                                    _buildInfoTile(icon: Icons.verified_user_rounded, label: 'Romo / Pastor', value: assignedRomoName.isNotEmpty ? assignedRomoName : (isAssignedToCurrentRomo ? widget.userName : 'Romo yang Bertugas'), valueColor: const Color(0xFF059669)),
+                                    _buildInfoTile(icon: Icons.check_circle_outline_rounded, label: 'Status Konfirmasi', value: effectiveStatus == 'DONE' ? 'Telah Selesai Dilaksanakan' : 'Telah Mengonfirmasi Kehadiran', valueColor: const Color(0xFF059669), isLast: !isAssignedToCurrentRomo || (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE')),
                                     if (order.items.isNotEmpty
                                         ? displayItem.isHandoverCompleted
                                         : (displayItem.isHandoverCompleted || order.isHandoverCompleted)) ...[
@@ -716,6 +719,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                     ],
                                     if (isAssignedToCurrentRomo &&
                                         (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS') &&
+                                        !isReceivedFromHandover &&
                                         (order.items.isNotEmpty
                                             ? (!displayItem.hasPendingHandover && !displayItem.isHandoverCompleted)
                                             : (!order.hasPendingHandover && !order.isHandoverCompleted))) ...[
@@ -757,27 +761,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               iconBg: const Color(0xFF1D4ED8),
                               title: LanguageService.tr('time_location'),
                               children: [
-                                _buildInfoTile(
-                                  icon: Icons.calendar_month_rounded,
-                                  label: 'Tanggal Misa',
-                                  value: formatServiceDate(displayItem.scheduledDate.isNotEmpty
-                                      ? displayItem.scheduledDate
-                                      : order.scheduledDate),
-                                ),
-                                _buildInfoTile(
-                                  icon: Icons.access_time_rounded,
-                                  label: 'Jam Pelaksanaan',
-                                  value:
-                                      '${displayItem.scheduledTimeStart} – ${displayItem.scheduledTimeEnd} WIB',
-                                ),
-                                _buildInfoTile(
-                                  icon: Icons.place_rounded,
-                                  label: 'Lokasi',
-                                  value: displayItem.locationName.isNotEmpty
-                                      ? displayItem.locationName
-                                      : order.displayAddress,
-                                  isLast: true,
-                                ),
+                                _buildInfoTile(icon: Icons.calendar_month_rounded, label: 'Tanggal Misa', value: formatServiceDate(displayItem.scheduledDate.isNotEmpty ? displayItem.scheduledDate : order.scheduledDate)),
+                                _buildInfoTile(icon: Icons.access_time_rounded, label: 'Jam Pelaksanaan', value: '${displayItem.scheduledTimeStart} – ${displayItem.scheduledTimeEnd} WIB'),
+                                _buildInfoTile(icon: Icons.place_rounded, label: 'Lokasi', value: displayItem.locationName.isNotEmpty ? displayItem.locationName : order.displayAddress, isLast: true),
                               ],
                             ),
 
@@ -790,33 +776,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                 iconBg: const Color(0xFF7C3AED),
                                 title: LanguageService.tr('deceased_data'),
                                 children: [
-                                  _buildInfoTile(
-                                    icon: Icons.badge_rounded,
-                                    label: LanguageService.tr('name_label'),
-                                    value: order.penerimaName,
-                                  ),
-                                  _buildInfoTile(
-                                    icon: Icons.favorite_border_rounded,
-                                    label: 'Hubungan Pemohon',
-                                    value: order.hubunganLabel,
-                                  ),
-                                  _buildInfoTile(
-                                    icon: Icons.event_busy_rounded,
-                                    label: 'Tanggal Meninggal',
-                                    value: order.tanggalMeninggalLabel,
-                                  ),
-                                  _buildInfoTile(
-                                    icon: Icons.schedule_rounded,
-                                    label: 'Waktu Meninggal',
-                                    value: '${order.waktuMeninggalLabel} WIB',
-                                  ),
-                                  _buildInfoTile(
-                                    icon: Icons.priority_high_rounded,
-                                    label: 'Tingkat Urgensi',
-                                    value: order.urgencyName,
-                                    valueColor: urgencyColor,
-                                    isLast: true,
-                                  ),
+                                  _buildInfoTile(icon: Icons.badge_rounded, label: LanguageService.tr('name_label'), value: order.penerimaName),
+                                  _buildInfoTile(icon: Icons.favorite_border_rounded, label: 'Hubungan Pemohon', value: order.hubunganLabel),
+                                  _buildInfoTile(icon: Icons.event_busy_rounded, label: 'Tanggal Meninggal', value: order.tanggalMeninggalLabel),
+                                  _buildInfoTile(icon: Icons.schedule_rounded, label: 'Waktu Meninggal', value: '${order.waktuMeninggalLabel} WIB'),
+                                  _buildInfoTile(icon: Icons.priority_high_rounded, label: 'Tingkat Urgensi', value: order.urgencyName, valueColor: urgencyColor, isLast: true),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -826,26 +790,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                 iconBg: const Color(0xFF7C3AED),
                                 title: LanguageService.tr('recipient_data'),
                                 children: [
-                                  _buildInfoTile(
-                                    icon: Icons.badge_rounded,
-                                    label: LanguageService.tr('name_label'),
-                                    value: order.penerimaName,
-                                  ),
-                                  _buildInfoTile(
-                                    icon: Icons.wc_rounded,
-                                    label: 'Jenis Kelamin',
-                                    value: order.genderLabel.isNotEmpty
-                                        ? order.genderLabel
-                                        : '-',
-                                  ),
-                                  _buildInfoTile(
-                                    icon: Icons.cake_rounded,
-                                    label: 'Usia',
-                                    value: order.usiaLabel.isNotEmpty
-                                        ? order.usiaLabel
-                                        : '-',
-                                    isLast: true,
-                                  ),
+                                  _buildInfoTile(icon: Icons.badge_rounded, label: LanguageService.tr('name_label'), value: order.penerimaName),
+                                  _buildInfoTile(icon: Icons.wc_rounded, label: 'Jenis Kelamin', value: order.genderLabel.isNotEmpty ? order.genderLabel : '-'),
+                                  _buildInfoTile(icon: Icons.cake_rounded, label: 'Usia', value: order.usiaLabel.isNotEmpty ? order.usiaLabel : '-', isLast: true),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -857,17 +804,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               iconBg: const Color(0xFF0D9488),
                               title: LanguageService.tr('parish_region'),
                               children: [
-                                _buildInfoTile(
-                                  icon: Icons.location_city_rounded,
-                                  label: 'Keuskupan',
-                                  value: order.keuskupanName,
-                                ),
-                                _buildInfoTile(
-                                  icon: Icons.apartment_rounded,
-                                  label: 'Paroki',
-                                  value: order.parokiName,
-                                  isLast: true,
-                                ),
+                                _buildInfoTile(icon: Icons.location_city_rounded, label: 'Keuskupan', value: order.keuskupanName),
+                                _buildInfoTile(icon: Icons.apartment_rounded, label: 'Paroki', value: order.parokiName, isLast: true),
                               ],
                             ),
 
@@ -879,19 +817,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               iconBg: const Color(0xFFD97706),
                               title: LanguageService.tr('notes_applicant'),
                               children: [
-                                _buildInfoTile(
-                                  icon: Icons.account_circle_outlined,
-                                  label: 'Nama Pemohon',
-                                  value: order.pemohonName,
-                                ),
-                                _buildInfoTile(
-                                  icon: Icons.groups_rounded,
-                                  label: 'Lingkungan',
-                                  value: 'Lingkungan ${order.lingkunganName}',
-                                  isLast: order.catatanLabel.isEmpty,
-                                ),
-                                if (order.catatanLabel.isNotEmpty)
-                                  _buildNotesTile(order.catatanLabel),
+                                _buildInfoTile(icon: Icons.account_circle_outlined, label: 'Nama Pemohon', value: order.pemohonName),
+                                _buildInfoTile(icon: Icons.groups_rounded, label: 'Lingkungan', value: 'Lingkungan ${order.lingkunganName}', isLast: order.catatanLabel.isEmpty),
+                                if (order.catatanLabel.isNotEmpty) _buildNotesTile(order.catatanLabel),
                               ],
                             ),
 
@@ -921,6 +849,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               isItemAccepted: isItemAccepted,
               isAssignedToCurrentRomo: isAssignedToCurrentRomo,
               isAssignedToOtherRomo: isAssignedToOtherRomo,
+              isIncomingHandoverToCurrentRomo: isIncomingHandoverToCurrentRomo,
             ))
               Positioned(
                 left: 16,
@@ -933,6 +862,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   isItemAccepted: isItemAccepted,
                   isAssignedToCurrentRomo: isAssignedToCurrentRomo,
                   isAssignedToOtherRomo: isAssignedToOtherRomo,
+                  isIncomingHandoverToCurrentRomo: isIncomingHandoverToCurrentRomo,
                 ),
               ),
           ],
@@ -946,9 +876,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     required bool isItemAccepted,
     required bool isAssignedToCurrentRomo,
     required bool isAssignedToOtherRomo,
+    required bool isIncomingHandoverToCurrentRomo,
   }) {
     if (widget.isRomo) {
-      // If taken by another Romo, DO NOT show any actions (no Selesai, no Chat)
+      if (isIncomingHandoverToCurrentRomo) return true;
       if (isAssignedToOtherRomo) return false;
       // If service is pending/unaccepted, show Accept/Reject buttons
       if (!isItemAccepted && effectiveStatus == 'PENDING') return true;
@@ -975,8 +906,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     required bool isItemAccepted,
     required bool isAssignedToCurrentRomo,
     required bool isAssignedToOtherRomo,
+    required bool isIncomingHandoverToCurrentRomo,
   }) {
     if (widget.isRomo) {
+      if (isIncomingHandoverToCurrentRomo) {
+        return _buildHandoverResponseButtonBar(order, displayItem);
+      }
       if (isAssignedToOtherRomo) {
         return const SizedBox.shrink();
       }
@@ -1535,7 +1470,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   ),
                   child: const FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text('Tolak', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    child: Text('Tolak Limpahan', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
@@ -1553,7 +1488,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   ),
                   child: const FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text('Terima Pelimpahan', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    child: Text('Terima Limpahan', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ),
@@ -1725,7 +1660,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         title: Text(isAccept ? 'Terima Pelimpahan Tugas?' : 'Tolak Pelimpahan Tugas?', style: const TextStyle(fontWeight: FontWeight.bold)),
         content: Text(isAccept
             ? 'Dengan menerima, Anda resmi menjadi Romo yang bertugas untuk melayani pesanan ini.'
-            : 'Jika ditolak, tanggung jawab pelayanan akan tetap berada pada Romo sebelumnya.'),
+            : 'Apakah Anda yakin ingin menolak pelimpahan tugas pelayanan ini? Tanggung jawab pelayanan akan tetap berada pada Romo sebelumnya.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(c, false),
@@ -1757,11 +1692,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(res['message'] ?? 'Berhasil memproses respon.'),
+            content: Text(res['message'] ?? (isAccept ? 'Pelimpahan tugas berhasil diterima.' : 'Pelimpahan tugas berhasil ditolak.')),
             backgroundColor: isAccept ? const Color(0xFF059669) : const Color(0xFFDC2626),
           ),
         );
-        await _fetchFreshOrder();
+        if (!isAccept) {
+          Navigator.pop(context, true);
+        } else {
+          await _fetchFreshOrder();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -2540,6 +2479,45 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     }
   }
 
+  Widget _buildHandoverResponseButtonBar(Order order, OrderItem displayItem) {
+    Widget buildBtn({required bool isReject, required String label, required IconData icon, required VoidCallback? onTap}) {
+      final color = isReject ? const Color(0xFFDC2626) : const Color(0xFF059669);
+      return Container(
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), boxShadow: [
+          BoxShadow(color: color.withValues(alpha: isReject ? 0.18 : 0.3), blurRadius: 14, offset: const Offset(0, 4)),
+        ]),
+        child: Material(
+          color: isReject ? Colors.white : color,
+          shape: isReject ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Color(0xFFF87171), width: 1.5)) : null,
+          borderRadius: isReject ? null : BorderRadius.circular(16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: isReject ? color : Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(label, style: TextStyle(color: isReject ? color : Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(flex: 4, child: buildBtn(isReject: true, label: 'Tolak Limpahan', icon: Icons.cancel_outlined, onTap: _isSubmitting ? null : () => _respondHandover(order, displayItem, 'REJECT'))),
+        const SizedBox(width: 10),
+        Expanded(flex: 5, child: buildBtn(isReject: false, label: 'Terima Limpahan', icon: Icons.check_circle_outline_rounded, onTap: _isSubmitting ? null : () => _respondHandover(order, displayItem, 'ACCEPT'))),
+      ],
+    );
+  }
+
   Widget _buildRomoAcceptButtonBar(Order order, OrderItem displayItem) {
     return Container(
       decoration: BoxDecoration(
@@ -3278,12 +3256,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     final romoId = widget.romoId;
     if (romoId == null) return;
 
-    final bool alreadyCompleted = order.items.isNotEmpty
-        ? (targetItem?.isHandoverCompleted ?? false)
-        : (order.isHandoverCompleted || (targetItem?.isHandoverCompleted ?? false));
+    final item = targetItem ?? (order.items.isNotEmpty ? order.items.first : null);
+    final bool isReceived = (order.handoverStatus.toUpperCase() == 'ACCEPTED') ||
+        (item != null && item.handoverStatus.toUpperCase() == 'ACCEPTED') ||
+        order.handoverHistory.any((h) =>
+            h.status.toUpperCase() == 'ACCEPTED' &&
+            h.newRomoId == romoId &&
+            (order.items.isEmpty || item?.id == null || h.itemId == item?.id || h.itemId == null));
 
-    if (alreadyCompleted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pelayanan yang telah diterima dari pelimpahan tugas tidak dapat dilimpahkan kembali.'), backgroundColor: Color(0xFF0284C7)));
+    if (isReceived) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Pelayanan yang telah diterima dari pelimpahan tugas tidak dapat dilimpahkan kembali.'),
+        backgroundColor: Color(0xFFDC2626),
+      ));
       return;
     }
 
