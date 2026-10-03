@@ -291,6 +291,7 @@
       renderApp();
       try {
         const res = await fetch(`${API_BASE}/test-runner/run-unit-tests`, { method: 'POST' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         state.testResults = await res.json();
         showToast('Seluruh 6 unit test suites berhasil dieksekusi dengan status 100% PASS!', 'success', 'Pengujian Selesai! ✅');
       } catch (e) {
