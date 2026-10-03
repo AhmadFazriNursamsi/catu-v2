@@ -854,7 +854,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       order: order!,
                       userName: userName,
                       userId: _userId,
-                      selectedItemTitle: item.itemTitle,
+                      selectedItemTitle: item.itemTitle, selectedItemId: item.itemId,
                       isRomo: widget.isRomo,
                       romoId: widget.romoId,
                     ),

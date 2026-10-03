@@ -8,6 +8,7 @@ import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../widgets/searchable_select_field.dart';
 import '../../core/services/language_service.dart';
+import 'widgets/form_helpers.dart';
 
 class CreateKedukaanScreen extends StatefulWidget {
   final int? userId;
@@ -124,9 +125,9 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
   ];
 
   static const _urgensiOptions = [
-    'Biasa',
+    'Standar',
     'Penting',
-    'Darurat / Kritis',
+    'Sangat Penting / Butuh Segera',
   ];
 
   static const _jenisMisaOptions = [
@@ -347,12 +348,12 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     super.dispose();
   }
 
-  Future<void> _pickDate(TextEditingController controller) async {
+  Future<void> _pickDate(TextEditingController controller, {bool futureOnly = false}) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: futureOnly ? DateTime.now() : DateTime(2020),
+      lastDate: futureOnly ? DateTime.now().add(const Duration(days: 365)) : DateTime.now(),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
           colorScheme:
@@ -368,7 +369,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
         controller.text =
             '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
       });
-      _formKey.currentState?.validate();
+      if (_autovalidateMode != AutovalidateMode.disabled) _formKey.currentState?.validate();
     }
   }
 
@@ -409,7 +410,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
       setState(() {
         onSelected('$hh:$mm');
       });
-      _formKey.currentState?.validate();
+      if (_autovalidateMode != AutovalidateMode.disabled) _formKey.currentState?.validate();
     }
   }
 
@@ -535,12 +536,8 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
       _autovalidateMode = AutovalidateMode.onUserInteraction;
     });
 
-    if (_selectedUrgensi == null || _selectedUrgensi!.isEmpty) {
-      _showError('Harap pilih jenis urgensi pelayanan.');
-      return;
-    }
-
     if (!_formKey.currentState!.validate()) {
+      scrollToFirstFormError(_formKey.currentContext);
       _showError(LanguageService.tr('error_form_incomplete'));
       return;
     }
@@ -771,13 +768,14 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                             ),
                           ),
                         ),
+                        dateHint(_tanggalMeninggalController.text),
                         const SizedBox(height: 14),
 
                         // 4. Waktu Meninggal Picker Tile
-                        _buildTimePickerTile(
+                        TimeFormField(
                           label: 'Waktu Meninggal',
-                          timeValue: _waktuMeninggal,
-                          prefixIcon: Icons.access_time_rounded,
+                          value: _waktuMeninggal,
+                          icon: Icons.access_time_rounded,
                           onTap: () => _pickTime(
                             currentVal: _waktuMeninggal,
                             onSelected: (val) => _waktuMeninggal = val,
@@ -806,6 +804,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                           onChanged: (v) {
                             if (v != null) setState(() => _selectedUrgensi = v);
                           },
+                          validator: (v) => v == null ? 'Pilih jenis urgensi' : null,
                         ),
                         const SizedBox(height: 14),
 
@@ -944,7 +943,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
                         // 2. Tanggal Misa
                         GestureDetector(
-                          onTap: () => _pickDate(_tanggalMisaController),
+                          onTap: () => _pickDate(_tanggalMisaController, futureOnly: true),
                           child: AbsorbPointer(
                             child: _buildInputField(
                               controller: _tanggalMisaController,
@@ -956,35 +955,41 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                                 color: Color(0xFF1E5399),
                                 size: 20,
                               ),
+                              validator: (v) => _misaList.isEmpty && (v == null || v.isEmpty) ? 'Pilih tanggal misa' : null,
                             ),
                           ),
                         ),
+                        dateHint(_tanggalMisaController.text),
                         const SizedBox(height: 14),
 
                         // 3. Jam Mulai & Jam Akhir Side-by-side
                         Row(
                           children: [
                             Expanded(
-                              child: _buildTimePickerTile(
+                              child: TimeFormField(
                                 label: 'Jam Mulai',
-                                timeValue: _jamMulaiMisa,
-                                prefixIcon: Icons.access_time_rounded,
+                                value: _jamMulaiMisa,
+                                icon: Icons.access_time_rounded,
                                 onTap: () => _pickTime(
                                   currentVal: _jamMulaiMisa,
-                                  onSelected: (val) => _jamMulaiMisa = val,
+                                  onSelected: (val) {
+                                    _jamMulaiMisa = val;
+                                    if (_jamAkhirMisa.compareTo(val) <= 0) _jamAkhirMisa = plusMinutes(val, 60);
+                                  },
                                 ),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: _buildTimePickerTile(
+                              child: TimeFormField(
                                 label: 'Jam Akhir',
-                                timeValue: _jamAkhirMisa,
-                                prefixIcon: Icons.access_time_filled_rounded,
+                                value: _jamAkhirMisa,
+                                icon: Icons.access_time_filled_rounded,
                                 onTap: () => _pickTime(
                                   currentVal: _jamAkhirMisa,
                                   onSelected: (val) => _jamAkhirMisa = val,
                                 ),
+                                validator: (_) => _jamAkhirMisa.compareTo(_jamMulaiMisa) <= 0 ? 'Harus setelah jam mulai' : null,
                               ),
                             ),
                           ],
@@ -998,6 +1003,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                           hint: 'Contoh: Rumah Duka Grand Heaven R. 102 / Gereja Katedral',
                           prefixIcon: Icons.location_on_outlined,
                           maxLines: 2,
+                          validator: (v) => _misaList.isEmpty && (v == null || v.trim().isEmpty) ? 'Alamat lokasi misa wajib diisi' : null,
                         ),
                         const SizedBox(height: 16),
 
@@ -1027,6 +1033,15 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                             ),
                           ),
                         ),
+
+                        if (_misaList.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 10),
+                            child: Text(
+                              'Belum ada misa. Isi jadwal di atas lalu tekan "Tambahkan Misa". Anda dapat menambahkan lebih dari satu misa.',
+                              style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), height: 1.35),
+                            ),
+                          ),
 
                         // 6. Dynamic Misa Items Cards List
                         if (_misaList.isNotEmpty) ...[
@@ -1215,8 +1230,8 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
               ),
             ),
 
-            // ── Sticky Bottom Action Bar ──
-            Container(
+            // ── Sticky Bottom Action Bar (disembunyikan saat keyboard terbuka agar tidak ikut naik) ──
+            if (MediaQuery.of(context).viewInsets.bottom == 0) Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -1262,30 +1277,6 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                                   letterSpacing: 0.5,
                                 ),
                               ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFB91C1C),
-                          backgroundColor: const Color(0xFFFEF2F2),
-                          side: const BorderSide(color: Color(0xFFFECACA)),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          LanguageService.tr('cancel_action'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
                       ),
                     ),
                   ],
@@ -1467,6 +1458,8 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          textCapitalization: maxLines == 1 && keyboardType == TextInputType.text ? TextCapitalization.words : TextCapitalization.sentences,
+          textInputAction: maxLines == 1 ? TextInputAction.next : null,
           inputFormatters: inputFormatters,
           maxLines: maxLines,
           style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
@@ -1574,61 +1567,6 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
               .toList(),
           onChanged: onChanged,
           validator: validator,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimePickerTile({
-    required String label,
-    required String timeValue,
-    required IconData prefixIcon,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF334155),
-          ),
-        ),
-        const SizedBox(height: 6),
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFCBD5E1)),
-            ),
-            child: Row(
-              children: [
-                Icon(prefixIcon, color: const Color(0xFF1E5399), size: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    timeValue,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                ),
-                const Icon(
-                  Icons.arrow_drop_down_rounded,
-                  color: Color(0xFF64748B),
-                  size: 24,
-                ),
-              ],
-            ),
-          ),
         ),
       ],
     );

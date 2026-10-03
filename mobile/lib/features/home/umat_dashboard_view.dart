@@ -11,6 +11,8 @@ import '../orders/create_perminyakan_screen.dart';
 import '../orders/create_kedukaan_screen.dart';
 import '../orders/create_order_screen.dart';
 import '../orders/order_detail_screen.dart';
+import '../orders/widgets/service_type_sheet.dart';
+import '../../core/widgets/urgency_flag.dart';
 import '../orders/histori_screen.dart';
 import '../orders/schedule_screen.dart';
 import '../profile/main_menu_screen.dart';
@@ -18,7 +20,6 @@ import '../chat/chat_list_screen.dart';
 import '../notifications/notification_screen.dart';
 import '../admin/pengurus_approval_screen.dart';
 import '../../core/services/api_service.dart';
-import '../../core/constants/app_constants.dart';
 
 List<LiquidNavItem> _buildNavItems() => [
       LiquidNavItem(
@@ -328,12 +329,16 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                         const SizedBox(height: 3),
                         Row(
                           children: [
-                            Text(
-                              positionTitle,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E5399),
+                            Flexible(
+                              child: Text(
+                                positionTitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E5399),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 6),
@@ -668,8 +673,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(
-                            width: 180,
+                          Expanded(
                             child: Text(
                               LanguageService.tr('recent_orders'),
                               style: const TextStyle(
@@ -680,7 +684,10 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                               ),
                             ),
                           ),
-                          ElevatedButton(
+                          const SizedBox(width: 10),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 150),
+                            child: ElevatedButton(
                             onPressed: _showServiceSelectionModal,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1E5399),
@@ -696,15 +703,19 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                               children: [
                                 const Icon(Icons.add_rounded, size: 16),
                                 const SizedBox(width: 5),
-                                Text(
-                                  LanguageService.tr('quick_services'),
-                                  style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600),
-                                  textAlign: TextAlign.center,
+                                Flexible(
+                                  child: Text(
+                                    LanguageService.tr('quick_services'),
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                  ),
                                 ),
                               ],
                             ),
+                          ),
                           ),
                         ],
                       ),
@@ -788,80 +799,15 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
   }
 
   void _showServiceSelectionModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      backgroundColor: Colors.white,
-      builder: (ctx) => ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-              const SizedBox(height: 16),
-              const Text('Pilih Jenis Pelayanan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-              const SizedBox(height: 4),
-              const Text('Silakan pilih jenis sakramen / misa pelayanan yang Anda butuhkan', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
-              const SizedBox(height: 16),
-              Flexible(
-                child: FutureBuilder<List<Map<String, dynamic>>>(
-                  future: ApiService.getServiceCategories(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: Padding(padding: EdgeInsets.all(24.0), child: CircularProgressIndicator()));
-                    }
-                    final categories = (snapshot.data ?? []).where((c) => c['is_active'] != false).toList();
-                    if (categories.isEmpty) {
-                      return const Center(child: Padding(padding: EdgeInsets.all(16.0), child: Text('Tidak ada kategori pelayanan aktif')));
-                    }
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: categories.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (_, index) {
-                        final cat = categories[index];
-                        final catId = (cat['id'] as num?)?.toInt() ?? 0;
-                        final name = cat['name']?.toString() ?? 'Pelayanan';
-                        final desc = cat['description']?.toString() ?? '';
-                        final isPerm = catId == 1 || name.toLowerCase().contains('perminyakan');
-                        final isKedu = catId == 2 || name.toLowerCase().contains('kedukaan');
-                        final icon = isPerm ? Icons.sanitizer_rounded : (isKedu ? Icons.personal_injury_rounded : Icons.home_repair_service_rounded);
-                        final color = isPerm ? const Color(0xFF1E5399) : (isKedu ? const Color(0xFF0D9488) : const Color(0xFFD97706));
-
-                        return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Colors.grey.shade200)),
-                          leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(icon, color: color)),
-                          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                          subtitle: desc.isNotEmpty ? Text(desc, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))) : null,
-                          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                          onTap: () async {
-                            Navigator.pop(ctx);
-                            final screen = isPerm
-                                ? CreatePerminyakanScreen(userId: _userId, user: widget.user)
-                                : isKedu
-                                    ? CreateKedukaanScreen(userId: _userId, user: widget.user)
-                                    : CreateOrderScreen(initialCategoryId: catId, categoryName: name, user: widget.user);
-                            await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
-                            widget.onRefresh();
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Center(child: Text('Versi Aplikasi: ${AppConstants.appVersion}', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500))),
-            ],
-          ),
-        ),
-      ),
-    );
+    showServiceTypeSheet(context, onSelected: (type) async {
+      final screen = type.isPerminyakan
+          ? CreatePerminyakanScreen(userId: _userId, user: widget.user)
+          : type.isKedukaan
+              ? CreateKedukaanScreen(userId: _userId, user: widget.user)
+              : CreateOrderScreen(initialCategoryId: type.id, categoryName: type.name, user: widget.user);
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+      widget.onRefresh();
+    });
   }
 
   // ── Helpers ──
@@ -919,9 +865,9 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
           String rawDate = item.scheduledDate;
           String scheduleStr = formatServiceDate(rawDate);
           if (item.scheduledTimeStart.isNotEmpty) {
-            scheduleStr = '$scheduleStr • ${item.scheduledTimeStart}';
+            scheduleStr = '$scheduleStr • ${item.scheduledTimeStart.split(':').take(2).join(':')}';
             if (item.scheduledTimeEnd.isNotEmpty) {
-              scheduleStr += ' - ${item.scheduledTimeEnd} WIB';
+              scheduleStr += ' - ${item.scheduledTimeEnd.split(':').take(2).join(':')} WIB';
             } else {
               scheduleStr += ' WIB';
             }
@@ -1033,8 +979,8 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                 children: [
                   Positioned.fill(
                     child: Image.asset(
-                      'assets/images/church_1.jpg',
-                      fit: BoxFit.cover,
+                      'assets/images/katedral_jakarta.jpg',
+                      fit: BoxFit.cover, alignment: const Alignment(0, -0.55),
                     ),
                   ),
                   Positioned.fill(
@@ -1242,21 +1188,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: urgencyColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Text(
-                          order.urgencyName,
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: urgencyColor,
-                          ),
-                        ),
-                      ),
+                      UrgencyFlag(urgencyName: order.urgencyName, size: 13),
                     ],
                   ),
                 ],

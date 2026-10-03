@@ -6,6 +6,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../widgets/searchable_select_field.dart';
 import '../../core/services/language_service.dart';
+import 'widgets/form_helpers.dart';
 
 class CreatePerminyakanScreen extends StatefulWidget {
   final int? userId;
@@ -65,8 +66,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     final hh = now.hour.toString().padLeft(2, '0');
     final mm = (now.minute < 30 ? 0 : 30).toString().padLeft(2, '0');
     _jamMulai = '$hh:$mm';
-    final endHour = (now.hour + 2) % 24;
-    _jamSelesai = '${endHour.toString().padLeft(2, '0')}:$mm';
+    _jamSelesai = plusMinutes(_jamMulai!, 120); // dibatasi 23:59 agar tidak melewati tengah malam
 
     _loadMasterData();
   }
@@ -290,7 +290,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
         _tanggalController.text =
             '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
       });
-      _formKey.currentState?.validate();
+      if (_autovalidateMode != AutovalidateMode.disabled) _formKey.currentState?.validate();
     }
   }
 
@@ -351,11 +351,12 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       setState(() {
         if (isStart) {
           _jamMulai = '$hh:$mm';
+          if (_jamSelesai == null || _jamSelesai!.compareTo(_jamMulai!) <= 0) _jamSelesai = plusMinutes(_jamMulai!, 60);
         } else {
           _jamSelesai = '$hh:$mm';
         }
       });
-      _formKey.currentState?.validate();
+      if (_autovalidateMode != AutovalidateMode.disabled) _formKey.currentState?.validate();
     }
   }
 
@@ -379,6 +380,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
     });
 
     if (!_formKey.currentState!.validate()) {
+      scrollToFirstFormError(_formKey.currentContext);
       _showError(LanguageService.tr('error_form_incomplete'));
       return;
     }
@@ -731,6 +733,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                                 ),
                               ),
                             ),
+                            dateHint(_tanggalController.text),
                           ],
                         ),
                         const SizedBox(height: 14),
@@ -738,20 +741,24 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: _buildTimePickerButton(
+                              child: TimeFormField(
                                 label: 'Jam Mulai',
-                                timeValue: _jamMulai,
-                                prefixIcon: Icons.access_time_rounded,
+                                value: _jamMulai,
+                                icon: Icons.access_time_rounded,
                                 onTap: () => _pickTime(true),
+                                validator: (_) => _jamMulai == null ? 'Pilih jam mulai' : null,
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: _buildTimePickerButton(
+                              child: TimeFormField(
                                 label: 'Jam Selesai',
-                                timeValue: _jamSelesai,
-                                prefixIcon: Icons.access_time_filled_rounded,
+                                value: _jamSelesai,
+                                icon: Icons.access_time_filled_rounded,
                                 onTap: () => _pickTime(false),
+                                validator: (_) => _jamSelesai == null
+                                    ? 'Pilih jam selesai'
+                                    : (_jamMulai != null && _jamSelesai!.compareTo(_jamMulai!) <= 0 ? 'Harus setelah jam mulai' : null),
                               ),
                             ),
                           ],
@@ -861,8 +868,8 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
               ),
             ),
 
-            // ── Sticky Bottom Submit Bar ──
-            Container(
+            // ── Sticky Bottom Submit Bar (disembunyikan saat keyboard terbuka agar tidak ikut naik) ──
+            if (MediaQuery.of(context).viewInsets.bottom == 0) Container(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -904,7 +911,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                               const Icon(Icons.send_rounded,
                                   color: Colors.white, size: 18),
                               const SizedBox(width: 8),
-                              Text(
+                              Flexible(child: Text(
                                 LanguageService.tr('submit_service'),
                                 style: const TextStyle(
                                   color: Colors.white,
@@ -912,7 +919,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 0.5,
                                 ),
-                              ),
+                              )),
                             ],
                           ),
                   ),
@@ -1025,14 +1032,14 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                 child: Icon(icon, size: 18, color: iconColor),
               ),
               const SizedBox(width: 10),
-              Text(
+              Expanded(child: Text(
                 title,
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0F172A),
                 ),
-              ),
+              )),
             ],
           ),
           const SizedBox(height: 16),
@@ -1071,6 +1078,8 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
           controller: controller,
           maxLines: maxLines,
           keyboardType: keyboardType,
+          textCapitalization: maxLines == 1 && keyboardType == TextInputType.text ? TextCapitalization.words : TextCapitalization.sentences,
+          textInputAction: maxLines == 1 ? TextInputAction.next : null,
           inputFormatters: inputFormatters,
           validator: validator,
           style: const TextStyle(
@@ -1203,60 +1212,6 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                   ))
               .toList(),
           onChanged: onChanged,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimePickerButton({
-    required String label,
-    required String? timeValue,
-    required IconData prefixIcon,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF334155),
-          ),
-        ),
-        const SizedBox(height: 6),
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-            ),
-            child: Row(
-              children: [
-                Icon(prefixIcon, color: const Color(0xFF1E5399), size: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    timeValue ?? 'Pilih Jam',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: timeValue != null
-                          ? const Color(0xFF0F172A)
-                          : const Color(0xFF94A3B8),
-                    ),
-                  ),
-                ),
-                const Icon(Icons.arrow_drop_down_rounded,
-                    color: Color(0xFF64748B)),
-              ],
-            ),
-          ),
         ),
       ],
     );

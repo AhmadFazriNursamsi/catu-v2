@@ -6,12 +6,15 @@ class AppConstants {
   
   // Canonical Environments: Only Publish (Server) and Local Development
   static const String publishApiUrl = 'https://catu.devoutsys.com/api';
-  static const String localApiUrl = 'http://10.0.10.92:3005';
 
+  // URL backend dikirim lewat build (--dart-define=CATU_API_URL=...); tidak ada fallback ke IP internal.
   static const String apiBaseUrl = String.fromEnvironment(
     'CATU_API_URL',
-    defaultValue: String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.10.92:3005'),
+    defaultValue: String.fromEnvironment('API_BASE_URL'),
   );
+
+  // "Local" = URL backend yang dikonfigurasi saat build.
+  static const String localApiUrl = apiBaseUrl;
   
   // Custom HSL Colors
   static const Color primaryBlue = Color(0xFF1E3A8A); // Deep Catholic Church Blue

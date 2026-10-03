@@ -1,11 +1,34 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../features/news/public_news_screen.dart';
+import 'auth_http.dart';
 import 'notification_service.dart';
 
 class AuthService {
   static const String _userKey = 'catu_current_user_profile';
   static const String _isLoggedInKey = 'catu_is_logged_in';
+  static bool _expiring = false;
+
+  /// Dipanggil saat server menolak token (401): bersihkan sesi lalu kembali ke layar publik.
+  static Future<void> handleSessionExpired() async {
+    if (_expiring || _currentUser == null) return;
+    _expiring = true;
+    final ctx = NotificationService.navigatorKey.currentContext;
+    final messenger = ctx == null ? null : ScaffoldMessenger.maybeOf(ctx);
+    try {
+      await logout();
+      NotificationService.navigatorKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const PublicNewsScreen()),
+        (_) => false,
+      );
+      messenger?.showSnackBar(
+        const SnackBar(content: Text('Sesi Anda telah berakhir. Silakan masuk kembali.')),
+      );
+    } finally {
+      _expiring = false;
+    }
+  }
 
   static Map<String, dynamic>? _currentUser;
   static Map<String, dynamic>? get currentUser => _currentUser;
@@ -83,6 +106,7 @@ class AuthService {
     } catch (_) {}
 
     _currentUser = null;
+    await AuthTokenStore.clear();
     NotificationService.stopPolling();
     NotificationService.currentUser = null;
     NotificationService.clearKnownNotifs();

@@ -34,6 +34,7 @@ class _HandoverRomoSheetState extends State<HandoverRomoSheet> {
   final _phoneCtrl = TextEditingController();
   bool _contactedUmat = false;
   bool _contactedRomo = false;
+  bool _showErrors = false;
   int? _selectedTargetRomoId;
   String? _selectedRomoLabel;
   List<Map<String, dynamic>> _allRomos = [];
@@ -70,10 +71,11 @@ class _HandoverRomoSheetState extends State<HandoverRomoSheet> {
     }).toList();
   }
 
-  InputDecoration _inputDec({required String hint}) {
-    const border = OutlineInputBorder(
-      borderRadius: BorderRadius.all(Radius.circular(8)),
-      borderSide: BorderSide(color: Color(0xFF1E5399), width: 1.5),
+  InputDecoration _inputDec({required String hint, bool error = false}) {
+    final color = error ? Colors.red : const Color(0xFF1E5399);
+    final border = OutlineInputBorder(
+      borderRadius: const BorderRadius.all(Radius.circular(8)),
+      borderSide: BorderSide(color: color, width: 1.5),
     );
     return InputDecoration(
       hintText: hint,
@@ -81,9 +83,9 @@ class _HandoverRomoSheetState extends State<HandoverRomoSheet> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: border,
       enabledBorder: border,
-      focusedBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
-        borderSide: BorderSide(color: Color(0xFF1E5399), width: 2),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
+        borderSide: BorderSide(color: color, width: 2),
       ),
     );
   }
@@ -155,6 +157,7 @@ class _HandoverRomoSheetState extends State<HandoverRomoSheet> {
   }
 
   Future<void> _onSubmit() async {
+    setState(() => _showErrors = true);
     if (!_contactedUmat || !_contactedRomo) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Harap centang konfirmasi telah menghubungi Umat dan Romo Pengganti.'), backgroundColor: Colors.red));
       return;
@@ -210,20 +213,25 @@ class _HandoverRomoSheetState extends State<HandoverRomoSheet> {
   }
 
   Widget _buildConfirmRow({required String question, required bool value, required ValueChanged<bool?> onChanged}) {
+    final error = _showErrors && !value;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(question, style: const TextStyle(fontSize: 13, color: Colors.black87)),
+        Text(question, style: TextStyle(fontSize: 13, color: error ? Colors.red : Colors.black87)),
         const SizedBox(height: 2),
         InkWell(
           onTap: () => onChanged(!value),
           borderRadius: BorderRadius.circular(6),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: error ? Colors.red : Colors.transparent, width: 1.5),
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Checkbox(value: value, onChanged: onChanged, activeColor: const Color(0xFF0D9488), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), visualDensity: VisualDensity.compact, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                Checkbox(value: value, onChanged: onChanged, activeColor: const Color(0xFF0D9488), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), side: error ? const BorderSide(color: Colors.red, width: 2) : null, visualDensity: VisualDensity.compact, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
                 const SizedBox(width: 4),
                 const Text('Sudah', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
               ],
@@ -293,15 +301,13 @@ class _HandoverRomoSheetState extends State<HandoverRomoSheet> {
             const SizedBox(height: 6),
             TextField(
               controller: _nameCtrl,
-              onChanged: (v) {
+              onChanged: (v) => setState(() {
                 if (_selectedTargetRomoId != null && v.trim() != _selectedRomoLabel) {
-                  setState(() {
-                    _selectedTargetRomoId = null;
-                    _selectedRomoLabel = null;
-                  });
+                  _selectedTargetRomoId = null;
+                  _selectedRomoLabel = null;
                 }
-              },
-              decoration: _inputDec(hint: 'Nama Romo'),
+              }),
+              decoration: _inputDec(hint: 'Nama Romo', error: _showErrors && _nameCtrl.text.trim().isEmpty),
             ),
             const SizedBox(height: 12),
             const Text('Nomor ponsel', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.black)),

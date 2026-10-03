@@ -14,92 +14,15 @@ import '../../features/chat/chat_screen.dart';
 import '../../features/chat/chat_list_screen.dart';
 import '../../features/notifications/notification_screen.dart';
 
+import 'notification_item.dart';
+import 'order_notification_router.dart';
+export 'notification_item.dart';
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     await Firebase.initializeApp();
   } catch (_) {}
-}
-
-class NotificationItem {
-  final String id;
-  final String title;
-  final String body;
-  final String type; // 'NEW_REQUEST', 'ROMO_ACCEPTED', 'ROMO_DECLINED', 'STATUS_UPDATE', 'ROMO_HANDOVER', etc.
-  final String role; // 'UMAT', 'ROMO_ORDO', 'ROMO_PAROKI', 'PENGURUS'
-  final DateTime createdAt;
-  bool isRead;
-  final String? orderId;
-  final String? categoryName; // 'Misa Kedukaan' or 'Perminyakan'
-  final String? itemTitle; // Specific misa name e.g. 'Misa Tutup Peti'
-  final int? parokiId;
-  final int? kabupatenKotaId;
-  final int? groupId;
-  final String? orderNumber;
-
-  NotificationItem({
-    required this.id,
-    required this.title,
-    required this.body,
-    required this.type,
-    required this.role,
-    required this.createdAt,
-    this.isRead = false,
-    this.orderId,
-    this.categoryName,
-    this.itemTitle,
-    this.parokiId,
-    this.kabupatenKotaId,
-    this.groupId,
-    this.orderNumber,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'body': body,
-        'type': type,
-        'role': role,
-        'createdAt': createdAt.toIso8601String(),
-        'isRead': isRead,
-        'orderId': orderId,
-        'categoryName': categoryName,
-        'itemTitle': itemTitle,
-        'parokiId': parokiId,
-        'kabupatenKotaId': kabupatenKotaId,
-        'groupId': groupId,
-        'orderNumber': orderNumber,
-      };
-
-  factory NotificationItem.fromJson(Map<String, dynamic> json) {
-    return NotificationItem(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      body: json['body'] ?? '',
-      type: json['type'] ?? 'STATUS_UPDATE',
-      role: json['role'] ?? 'UMAT',
-      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
-      isRead: json['isRead'] ?? false,
-      orderId: json['orderId'],
-      categoryName: json['categoryName'],
-      itemTitle: json['itemTitle'],
-      parokiId: json['parokiId'] != null ? int.tryParse(json['parokiId'].toString()) : null,
-      kabupatenKotaId: json['kabupatenKotaId'] != null ? int.tryParse(json['kabupatenKotaId'].toString()) : null,
-      groupId: json['groupId'] != null ? int.tryParse(json['groupId'].toString()) : null,
-      orderNumber: json['orderNumber'],
-    );
-  }
-
-  String get timeAgo {
-    final diff = DateTime.now().difference(createdAt);
-    if (diff.inSeconds < 60) return 'Baru saja';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} menit lalu';
-    if (diff.inHours < 24) return '${diff.inHours} jam lalu';
-    if (diff.inDays == 1) return '1 hari lalu';
-    if (diff.inDays < 7) return '${diff.inDays} hari lalu';
-    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()} minggu lalu';
-    return '${(diff.inDays / 30).floor()} bulan lalu';
-  }
 }
 
 class NotificationService {
@@ -291,7 +214,7 @@ class NotificationService {
       }
 
       // 💬 1. CHAT NOTIFICATION -> Langsung masuk ke Grup Chatting
-      if (type == 'CHAT_MESSAGE' || data.containsKey('groupId') || data.containsKey('chat_group_id')) {
+      if (type == 'CHAT_MESSAGE' || (type.isEmpty && (data.containsKey('groupId') || data.containsKey('chat_group_id')))) {
         int? groupId = int.tryParse(data['groupId']?.toString() ?? data['group_id']?.toString() ?? data['chat_group_id']?.toString() ?? '');
         final int? orderId = int.tryParse(data['orderId']?.toString() ?? data['order_id']?.toString() ?? '');
         final orderNumber = data['orderNumber']?.toString() ?? (orderId != null ? 'ORD-$orderId' : 'Grup Pelayanan');
@@ -337,7 +260,11 @@ class NotificationService {
         return;
       }
 
-      // 🔔 2. GENERAL NOTIFICATION -> Cukup sampai di List Notif saja
+      // 🔔 2. NOTIFIKASI PELAYANAN -> buka detail misa tujuan; bila tidak ada order, cukup daftar notifikasi
+      if (await openOrderFromNotification(navState, data: data, userName: uName.toString(), userId: currentUserId, isRomo: isRomo)) {
+        await syncBadgeCount(userId: currentUserId, role: role);
+        return;
+      }
       await navState.push(
         MaterialPageRoute(
           builder: (_) => NotificationScreen(
@@ -720,6 +647,7 @@ class NotificationService {
                   'type': n['type'],
                   'orderId': n['orderId'] ?? n['order_id'],
                   'groupId': n['groupId'] ?? n['group_id'],
+                  'itemId': n['itemId'],
                   'orderNumber': n['orderNumber'] ?? n['order_number'],
                   'title': n['title'],
                   'body': n['body'],
@@ -795,6 +723,8 @@ class NotificationService {
             orderId: rawOrder?.toString(),
             categoryName: r['categoryName'] ?? r['category_name'],
             groupId: rawGroup != null ? int.tryParse(rawGroup.toString()) : null,
+            itemId: int.tryParse('${r['itemId'] ?? ''}'),
+            itemTitle: r['itemTitle'],
             orderNumber: r['orderNumber'] ?? r['order_number'],
           );
         }

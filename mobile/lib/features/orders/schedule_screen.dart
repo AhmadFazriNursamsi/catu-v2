@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
+import '../../core/widgets/urgency_flag.dart';
 import 'order_detail_screen.dart';
 import '../../core/services/language_service.dart';
 import '../../core/services/api_service.dart';
@@ -1648,21 +1649,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: urgencyColor.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Text(
-                              order.urgencyName,
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: urgencyColor,
-                              ),
-                            ),
-                          ),
+                          UrgencyFlag(urgencyName: order.urgencyName, size: 13),
                         ],
                       ),
                       const SizedBox(height: 10),

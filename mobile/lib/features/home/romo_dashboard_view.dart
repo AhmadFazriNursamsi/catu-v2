@@ -5,6 +5,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/widgets/liquid_bottom_nav_bar.dart';
+import '../../core/widgets/urgency_flag.dart';
 import '../chat/chat_list_screen.dart';
 import '../orders/histori_screen.dart';
 import '../orders/order_detail_screen.dart';
@@ -846,8 +847,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           String rawDate = item.scheduledDate;
           String scheduleStr = formatServiceDate(rawDate);
           if (item.scheduledTimeStart.isNotEmpty) {
-            scheduleStr = '$scheduleStr • ${item.scheduledTimeStart}';
-            scheduleStr += item.scheduledTimeEnd.isNotEmpty ? ' - ${item.scheduledTimeEnd} WIB' : ' WIB';
+            scheduleStr = '$scheduleStr • ${item.scheduledTimeStart.split(':').take(2).join(':')}';
+            scheduleStr += item.scheduledTimeEnd.isNotEmpty ? ' - ${item.scheduledTimeEnd.split(':').take(2).join(':')} WIB' : ' WIB';
           }
 
           cardList.add(
@@ -915,9 +916,9 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           String rawDate = item.scheduledDate.isNotEmpty ? item.scheduledDate : order.scheduledDate;
           String scheduleStr = formatServiceDate(rawDate);
           if (item.scheduledTimeStart.isNotEmpty) {
-            scheduleStr = '$scheduleStr • ${item.scheduledTimeStart}';
+            scheduleStr = '$scheduleStr • ${item.scheduledTimeStart.split(':').take(2).join(':')}';
             if (item.scheduledTimeEnd.isNotEmpty) {
-              scheduleStr += ' - ${item.scheduledTimeEnd} WIB';
+              scheduleStr += ' - ${item.scheduledTimeEnd.split(':').take(2).join(':')} WIB';
             } else {
               scheduleStr += ' WIB';
             }
@@ -1191,8 +1192,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                   children: [
                     Positioned.fill(
                       child: Image.asset(
-                        'assets/images/church_1.jpg',
-                        fit: BoxFit.cover,
+                        'assets/images/katedral_jakarta.jpg',
+                        fit: BoxFit.cover, alignment: const Alignment(0, -0.55),
                       ),
                     ),
                     Positioned.fill(
@@ -1395,21 +1396,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: urgencyColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            order.urgencyName,
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: urgencyColor,
-                            ),
-                          ),
-                        ),
+                        UrgencyFlag(urgencyName: order.urgencyName, size: 13),
                       ],
                     ),
                   ],

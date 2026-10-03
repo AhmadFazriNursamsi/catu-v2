@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'auth_http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../models/models.dart';
@@ -884,9 +884,9 @@ class ApiService {
   }
 
   // 7b. Fetch Chat Group ID for Order
-  static Future<int> getChatGroupIdForOrder(int orderId) async {
+  static Future<int> getChatGroupIdForOrder(int orderId, {int? itemId}) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/chat/order/$orderId'));
+      final response = await http.get(Uri.parse('$baseUrl/chat/order/$orderId${itemId != null ? '?itemId=$itemId' : ''}'));
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
         final raw = data['groupId'];

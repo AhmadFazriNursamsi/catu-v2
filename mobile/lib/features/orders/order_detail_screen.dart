@@ -10,6 +10,8 @@ import '../../core/services/language_service.dart';
 import '../chat/chat_screen.dart';
 import 'widgets/accept_service_dialog.dart';
 import 'widgets/handover_romo_sheet.dart';
+import 'widgets/reschedule_sheet.dart';
+import 'widgets/reschedule_validation.dart';
 import 'widgets/order_review_sheet.dart';
 import 'widgets/order_review_card.dart';
 
@@ -1635,7 +1637,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
 
     int targetGroupId = order.id;
     try {
-      final res = await ApiService.getChatGroupIdForOrder(order.id);
+      final res = await ApiService.getChatGroupIdForOrder(order.id, itemId: _activeItemId);
       if (res > 0) targetGroupId = res;
     } catch (_) {}
 
@@ -1900,7 +1902,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                     ],
                   ),
                   child: Material(
-                    color: const Color(0xFFD97706),
+                    color: rescheduleRejections(order.rescheduleHistory, displayItem?.id) >= kRescheduleMaxRejections ? Colors.grey.shade500 : const Color(0xFFD97706),
                     borderRadius: BorderRadius.circular(16),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
@@ -1988,7 +1990,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   ],
                 ),
                 child: Material(
-                  color: const Color(0xFFD97706),
+                  color: rescheduleRejections(order.rescheduleHistory, displayItem?.id) >= kRescheduleMaxRejections ? Colors.grey.shade500 : const Color(0xFFD97706),
                   borderRadius: BorderRadius.circular(16),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
@@ -2056,255 +2058,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   }
 
   void _showRescheduleBottomSheet(Order order, {OrderItem? targetItem}) {
-    String selectedDate = targetItem?.scheduledDate.isNotEmpty == true ? targetItem!.scheduledDate : order.scheduledDate;
-    TimeOfDay selectedTimeStart = const TimeOfDay(hour: 18, minute: 0);
-    TimeOfDay? selectedTimeEnd = const TimeOfDay(hour: 19, minute: 30);
-    final TextEditingController reasonController = TextEditingController();
-
-    showModalBottomSheet(
+    final item = (targetItem != null && targetItem.scheduledDate.isNotEmpty) ? targetItem : null;
+    showRescheduleSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Container(
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 20,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-            ),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD97706).withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.edit_calendar_rounded, color: Color(0xFFD97706), size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'Ajukan Perubahan Jam Pelayanan',
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Ajukan penyesuaian jam atau tanggal pelayanan kepada Umat pemohon. Perubahan akan aktif setelah disetujui Umat.',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.3),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // Pick Date
-                  const Text('Tanggal Pelayanan Baru', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                  const SizedBox(height: 6),
-                  InkWell(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.tryParse(selectedDate) ?? DateTime.now(),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 60)),
-                      );
-                      if (picked != null) {
-                        setModalState(() {
-                          selectedDate = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-                        });
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(selectedDate, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                          const Icon(Icons.calendar_today_rounded, size: 18, color: Color(0xFF64748B)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Pick Start & End Time
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Jam Mulai Baru', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                            const SizedBox(height: 6),
-                            InkWell(
-                              onTap: () async {
-                                final picked = await showTimePicker(
-                                  context: context,
-                                  initialTime: selectedTimeStart,
-                                );
-                                if (picked != null) {
-                                  setModalState(() => selectedTimeStart = picked);
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey.shade300),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      '${selectedTimeStart.hour.toString().padLeft(2, '0')}:${selectedTimeStart.minute.toString().padLeft(2, '0')}',
-                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                                    ),
-                                    const Icon(Icons.access_time_rounded, size: 18, color: Color(0xFF64748B)),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Jam Selesai (Opsional)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                            const SizedBox(height: 6),
-                            InkWell(
-                              onTap: () async {
-                                final picked = await showTimePicker(
-                                  context: context,
-                                  initialTime: selectedTimeEnd ?? const TimeOfDay(hour: 19, minute: 30),
-                                );
-                                if (picked != null) {
-                                  setModalState(() => selectedTimeEnd = picked);
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey.shade300),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      selectedTimeEnd != null
-                                          ? '${selectedTimeEnd!.hour.toString().padLeft(2, '0')}:${selectedTimeEnd!.minute.toString().padLeft(2, '0')}'
-                                          : 'Selesai',
-                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                                    ),
-                                    const Icon(Icons.access_time_rounded, size: 18, color: Color(0xFF64748B)),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Reason text field
-                  const Text('Alasan Perubahan Jam', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155))),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: reasonController,
-                    maxLines: 2,
-                    decoration: InputDecoration(
-                      hintText: 'Contoh: Ada misa konselebrasi mendadak di paroki...',
-                      hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Submit button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final reasonText = reasonController.text.trim();
-                        if (reasonText.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Silakan masukkan alasan perubahan jam.')),
-                          );
-                          return;
-                        }
-                        Navigator.pop(ctx);
-                        _submitRescheduleProposal(
-                          order: order,
-                          targetItem: targetItem,
-                          newDate: selectedDate,
-                          newTimeStart: '${selectedTimeStart.hour.toString().padLeft(2, '0')}:${selectedTimeStart.minute.toString().padLeft(2, '0')}',
-                          newTimeEnd: selectedTimeEnd != null
-                              ? '${selectedTimeEnd!.hour.toString().padLeft(2, '0')}:${selectedTimeEnd!.minute.toString().padLeft(2, '0')}'
-                              : null,
-                          reason: reasonText,
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD97706),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: const Text('Kirim Pengajuan ke Umat', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+      itemName: item?.itemName ?? order.categoryName, rejectedCount: rescheduleRejections(order.rescheduleHistory, item?.id),
+      currentDate: parseDateOnly(item?.scheduledDate ?? order.scheduledDate),
+      currentStart: parseTimeOfDay(item?.scheduledTimeStart ?? order.jamMulaiLabel),
+      currentEnd: parseTimeOfDay(item?.scheduledTimeEnd ?? order.jamSelesaiLabel),
+      onSubmit: (request) => _submitRescheduleProposal(order: order, targetItem: targetItem, request: request),
     );
   }
 
-  Future<void> _submitRescheduleProposal({
+  /// Mengembalikan pesan error (form tetap terbuka) atau null bila pengajuan berhasil.
+  Future<String?> _submitRescheduleProposal({
     required Order order,
     OrderItem? targetItem,
-    required String newDate,
-    required String newTimeStart,
-    String? newTimeEnd,
-    required String reason,
+    required RescheduleRequest request,
   }) async {
     final romoId = widget.romoId;
-    if (romoId == null) return;
+    if (romoId == null) return 'Akun Romo tidak dikenali. Silakan keluar lalu masuk kembali.';
 
     setState(() => _isSubmitting = true);
     try {
@@ -2312,45 +2084,41 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         order.id,
         romoId: romoId,
         itemId: targetItem?.id,
-        newDate: newDate,
-        newTimeStart: newTimeStart,
-        newTimeEnd: newTimeEnd,
-        reason: reason,
+        newDate: request.newDate,
+        newTimeStart: request.newTimeStart,
+        newTimeEnd: request.newTimeEnd,
+        reason: request.reason,
       );
-
-      if (mounted) {
-        order.rescheduleStatus = 'PENDING_UMAT';
-        order.rescheduleNewDate = newDate;
-        order.rescheduleNewTime = newTimeStart;
-        order.rescheduleNewTimeEnd = newTimeEnd;
-        order.rescheduleReason = reason;
-
-        if (targetItem != null) {
-          targetItem.rescheduleStatus = 'PENDING_UMAT';
-          targetItem.rescheduleNewDate = newDate;
-          targetItem.rescheduleNewTimeStart = newTimeStart;
-          targetItem.rescheduleNewTimeEnd = newTimeEnd;
-          targetItem.rescheduleReason = reason;
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res['message'] ?? 'Pengajuan perubahan jadwal berhasil dikirimkan ke Umat.'),
-            backgroundColor: const Color(0xFFD97706),
-          ),
-        );
-        setState(() {});
-        _fetchFreshOrder();
+      final code = res['statusCode'];
+      if (code is int && code >= 400) {
+        final msg = res['message'];
+        return (msg is List ? msg.join('\n') : msg ?? 'Pengajuan ditolak oleh server.').toString();
       }
+      if (!mounted) return null;
+
+      order.rescheduleStatus = 'PENDING_UMAT';
+      order.rescheduleNewDate = request.newDate;
+      order.rescheduleNewTime = request.newTimeStart;
+      order.rescheduleNewTimeEnd = request.newTimeEnd;
+      order.rescheduleReason = request.reason;
+      if (targetItem != null) {
+        targetItem.rescheduleStatus = 'PENDING_UMAT';
+        targetItem.rescheduleNewDate = request.newDate;
+        targetItem.rescheduleNewTimeStart = request.newTimeStart;
+        targetItem.rescheduleNewTimeEnd = request.newTimeEnd;
+        targetItem.rescheduleReason = request.reason;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text((res['message'] ?? 'Pengajuan perubahan jadwal berhasil dikirimkan ke Umat.').toString()),
+          backgroundColor: const Color(0xFFD97706),
+        ),
+      );
+      setState(() {});
+      _fetchFreshOrder();
+      return null;
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal mengajukan perubahan jadwal: $e'),
-            backgroundColor: Colors.red.shade700,
-          ),
-        );
-      }
+      return 'Gagal mengajukan perubahan jadwal: $e';
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -2902,44 +2670,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () async {
-            HapticFeedback.lightImpact();
-            final int? currentSenderId = widget.userId ?? (widget.isRomo ? widget.romoId : (order.userId ?? 1));
-
-            int targetGroupId = order.id;
-            try {
-              final res = await ApiService.getChatGroupIdForOrder(order.id);
-              if (res > 0) targetGroupId = res;
-            } catch (_) {}
-
-            if (!mounted) return;
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ChatScreen(
-                  groupId: targetGroupId,
-                  orderNumber: order.orderNumber,
-                  userName: widget.userName,
-                  userId: currentSenderId,
-                  isRomo: widget.isRomo,
-                  groupItem: ChatGroupItem(
-                    groupId: targetGroupId,
-                    orderId: order.id,
-                    groupTitle: 'Group Pelayanan ${order.categoryName}',
-                    orderTitle: order.categoryName,
-                    orderCategory: order.categoryName,
-                    orderStatus: order.status,
-                    scheduledDate: order.scheduledDate,
-                    scheduledTimeStart: order.jamMulaiLabel,
-                    scheduledTimeEnd: order.jamSelesaiLabel,
-                    penerimaName: order.penerimaName,
-                    requesterName: order.pemohonName.isNotEmpty ? order.pemohonName : (order.penerimaName.isNotEmpty ? order.penerimaName : 'Umat Pemohon'),
-                  ),
-                ),
-              ),
-            );
-          },
+          onTap: () => _openChat(order),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
             child: Row(

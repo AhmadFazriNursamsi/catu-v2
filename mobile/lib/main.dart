@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart' show LicenseEntryWithLineBreaks, LicenseRegistry;
 import 'package:flutter/material.dart';
 import 'core/constants/app_constants.dart';
 import 'core/services/api_service.dart';
+import 'core/services/auth_http.dart' show AuthTokenStore;
 import 'core/services/auth_service.dart';
 import 'core/services/language_service.dart';
 import 'core/services/notification_service.dart';
@@ -10,6 +12,14 @@ import 'features/news/public_news_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  LicenseRegistry.addLicense(() async* {
+    yield const LicenseEntryWithLineBreaks(
+      ['Foto Katedral Jakarta'],
+      'Foto "Cathedral of Jakarta - exterior (2025) - img 08" oleh Chainwit., lisensi CC BY 4.0 '
+      '(https://creativecommons.org/licenses/by/4.0/). Sumber: Wikimedia Commons.',
+    );
+  });
+  AuthTokenStore.onUnauthorized = AuthService.handleSessionExpired;
   await ApiService.loadCustomBaseUrl();
   await LanguageService.init();
   final savedUser = await AuthService.initSession();

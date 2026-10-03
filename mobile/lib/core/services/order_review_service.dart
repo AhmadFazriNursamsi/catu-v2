@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'auth_http.dart' as http;
 import '../constants/app_constants.dart';
 
 class OrderReviewService {

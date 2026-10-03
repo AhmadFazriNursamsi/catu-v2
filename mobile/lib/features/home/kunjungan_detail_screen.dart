@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../orders/create_kedukaan_screen.dart';
 import '../orders/create_order_screen.dart';
 import '../orders/create_perminyakan_screen.dart';
 import '../orders/order_detail_screen.dart';
+import '../orders/widgets/service_type_sheet.dart';
 
 class KunjunganDetailScreen extends StatefulWidget {
   final Map<String, dynamic> kunjungan;
@@ -90,79 +90,27 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
     visitUser['kabupatenKota'] = kotaKunjungan;
     visitUser['alamat_kunjungan'] = alamatKunjungan;
 
-    showModalBottomSheet(
-      context: context, isScrollControlled: true, backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
-        child: Padding(
-          padding: const EdgeInsets.all(22.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-              const SizedBox(height: 16),
-              const Text('Pilih Jenis Pelayanan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-              const SizedBox(height: 4),
-              const Text('Silakan pilih jenis sakramen / misa pelayanan yang Anda butuhkan', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
-              const SizedBox(height: 16),
-              Flexible(
-                child: FutureBuilder<List<Map<String, dynamic>>>(
-                  future: ApiService.getServiceCategories(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: Padding(padding: EdgeInsets.all(24.0), child: CircularProgressIndicator()));
-                    final categories = (snapshot.data ?? []).where((c) => c['is_active'] != false).toList();
-                    if (categories.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(16.0), child: Text('Tidak ada kategori pelayanan aktif')));
-                    return ListView.separated(
-                      shrinkWrap: true, itemCount: categories.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (_, index) {
-                        final cat = categories[index];
-                        final catId = (cat['id'] as num?)?.toInt() ?? 0;
-                        final name = cat['name']?.toString() ?? 'Pelayanan';
-                        final desc = cat['description']?.toString() ?? '';
-                        final isPerm = catId == 1 || name.toLowerCase().contains('perminyakan');
-                        final isKedu = catId == 2 || name.toLowerCase().contains('kedukaan');
-                        final icon = isPerm ? Icons.sanitizer_rounded : (isKedu ? Icons.personal_injury_rounded : Icons.home_repair_service_rounded);
-                        final color = isPerm ? const Color(0xFF1E5399) : (isKedu ? const Color(0xFF0D9488) : const Color(0xFFD97706));
-                        return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Colors.grey.shade200)),
-                          leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(icon, color: color)),
-                          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5)),
-                          subtitle: desc.isNotEmpty ? Text(desc, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))) : null,
-                          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 15),
-                          onTap: () async {
-                            Navigator.pop(ctx);
-                            final screen = isPerm ? CreatePerminyakanScreen(userId: userId, user: visitUser) : isKedu ? CreateKedukaanScreen(userId: userId, user: visitUser) : CreateOrderScreen(initialCategoryId: catId, categoryName: name, user: visitUser);
-                            final res = await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
-                            if (res != null) {
-                              final createdId = int.tryParse(res.toString());
-                              if (createdId != null) {
-                                final List curIds = List.from(widget.kunjungan['orderIds'] ?? []);
-                                if (!curIds.contains(createdId)) {
-                                  curIds.add(createdId);
-                                  widget.kunjungan['orderIds'] = curIds;
-                                  widget.onUpdateKunjungan?.call(widget.kunjungan);
-                                }
-                              }
-                            }
-                            await _loadOrders();
-                            widget.onRefresh();
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Center(child: Text('Versi Aplikasi: ${AppConstants.appVersion}', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500))),
-            ],
-          ),
-        ),
-      ),
-    );
+    showServiceTypeSheet(context, onSelected: (type) async {
+      final screen = type.isPerminyakan
+          ? CreatePerminyakanScreen(userId: userId, user: visitUser)
+          : type.isKedukaan
+              ? CreateKedukaanScreen(userId: userId, user: visitUser)
+              : CreateOrderScreen(initialCategoryId: type.id, categoryName: type.name, user: visitUser);
+      final res = await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+      if (res != null) {
+        final createdId = int.tryParse(res.toString());
+        if (createdId != null) {
+          final List curIds = List.from(widget.kunjungan['orderIds'] ?? []);
+          if (!curIds.contains(createdId)) {
+            curIds.add(createdId);
+            widget.kunjungan['orderIds'] = curIds;
+            widget.onUpdateKunjungan?.call(widget.kunjungan);
+          }
+        }
+      }
+      await _loadOrders();
+      widget.onRefresh();
+    });
   }
 
   Widget _buildStatusBadge(String status) {
