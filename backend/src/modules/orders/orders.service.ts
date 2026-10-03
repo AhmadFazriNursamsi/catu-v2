@@ -880,7 +880,7 @@ export class OrdersService {
     const itemPrefix = targetItemName ? `[${targetItemName}] ` : '';
 
     // Insert Chat System Event
-    const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
+    const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1 ORDER BY (order_item_id IS NOT DISTINCT FROM $2::bigint) DESC, id ASC LIMIT 1`, [orderId, itemId || null]);
     if (groups.length > 0) {
       const groupId = groups[0].id;
       await this.dataSource.query(
@@ -891,16 +891,16 @@ export class OrdersService {
 
     // Send Notification to Umat
     await this.dataSource.query(
-      `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'RESCHEDULE_PROPOSED', false)`,
-      [ order.user_id, orderId, `Usulan Perubahan Jadwal: ${targetItemName || 'Pelayanan'}`, `Romo ${romoName} mengajukan perubahan jam pelayanan ${itemPrefix}menjadi ${timeDisplay}. Alasan: "${reason || '-'}". Ketuk untuk menanggapi.`, ],
+      `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read) VALUES ($1, $2, (SELECT id FROM chat_groups WHERE order_id = $2 ORDER BY (order_item_id IS NOT DISTINCT FROM $5::bigint) DESC, id ASC LIMIT 1), $3, $4, 'RESCHEDULE_PROPOSED', false)`,
+      [ order.user_id, orderId, `Usulan Perubahan Jadwal: ${targetItemName || 'Pelayanan'}`, `Romo ${romoName} mengajukan perubahan jam pelayanan ${itemPrefix}menjadi ${timeDisplay}. Alasan: "${reason || '-'}". Ketuk untuk menanggapi.`, itemId || null, ],
     );
 
     // Send Notification to Pengurus Lingkungan
     const pengurusResched = await this.getPengurusForOrder(orderId);
     for (const p of pengurusResched) {
       await this.dataSource.query(
-        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'RESCHEDULE_PROPOSED', false)`,
-        [ p.id, orderId, `Usulan Perubahan Jadwal: ${targetItemName || 'Pelayanan'}`, `Romo ${romoName} mengajukan perubahan jam pelayanan ${itemPrefix}menjadi ${timeDisplay} (${order.order_number}).`, ],
+        `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read) VALUES ($1, $2, (SELECT id FROM chat_groups WHERE order_id = $2 ORDER BY (order_item_id IS NOT DISTINCT FROM $5::bigint) DESC, id ASC LIMIT 1), $3, $4, 'RESCHEDULE_PROPOSED', false)`,
+        [ p.id, orderId, `Usulan Perubahan Jadwal: ${targetItemName || 'Pelayanan'}`, `Romo ${romoName} mengajukan perubahan jam pelayanan ${itemPrefix}menjadi ${timeDisplay} (${order.order_number}).`, itemId || null, ],
       );
     }
 
@@ -915,11 +915,7 @@ export class OrdersService {
         await this.fcmService.sendPushToUsers(targetReschedUsers, {
           title: `Usulan Perubahan Jadwal: ${targetItemName || 'Pelayanan'}`,
           body: `Romo ${romoName} mengajukan perubahan jam pelayanan ${itemPrefix}menjadi ${timeDisplay}. Alasan: "${reason || '-'}".`,
-          data: {
-            type: 'RESCHEDULE_PROPOSED',
-            orderId: orderId.toString(),
-            orderNumber: order.order_number,
-          },
+          data: { type: 'RESCHEDULE_PROPOSED', orderId: orderId.toString(), orderNumber: order.order_number, itemId: String(itemId || '') },
         });
       }
     } catch (fcmErr) {
@@ -1004,11 +1000,11 @@ export class OrdersService {
       await this.dataSource.query(
         `UPDATE order_reschedules
          SET status = 'ACCEPTED', responded_by = $1, responded_at = CURRENT_TIMESTAMP
-         WHERE order_id = $2 AND status = 'PENDING_UMAT'`,
-        [userId || order.user_id, orderId],
+         WHERE order_id = $2 AND status = 'PENDING_UMAT' AND ($3::bigint IS NULL OR item_id = $3::bigint)`,
+        [userId || order.user_id, orderId, itemId || null],
       );
 
-      const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
+      const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1 ORDER BY (order_item_id IS NOT DISTINCT FROM $2::bigint) DESC, id ASC LIMIT 1`, [orderId, itemId || null]);
       if (groups.length > 0) {
         await this.dataSource.query(
           `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
@@ -1019,16 +1015,16 @@ export class OrdersService {
       // 🔔 Notify Romo Bertugas
       if (romoId) {
         await this.dataSource.query(
-          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'RESCHEDULE_ACCEPTED', false)`,
-          [ romoId, orderId, `Perubahan Jadwal Disetujui: ${serviceTitle}`, `Umat telah menyetujui jadwal baru untuk pelayanan ${serviceTitle} (${order.order_number}).`, ],
+          `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read) VALUES ($1, $2, (SELECT id FROM chat_groups WHERE order_id = $2 ORDER BY (order_item_id IS NOT DISTINCT FROM $5::bigint) DESC, id ASC LIMIT 1), $3, $4, 'RESCHEDULE_ACCEPTED', false)`,
+          [ romoId, orderId, `Perubahan Jadwal Disetujui: ${serviceTitle}`, `Umat telah menyetujui jadwal baru untuk pelayanan ${serviceTitle} (${order.order_number}).`, itemId || null, ],
         );
       }
 
       // 🔔 Notify Pengurus Lingkungan
       for (const p of pengurusRespond) {
         await this.dataSource.query(
-          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'RESCHEDULE_ACCEPTED', false)`,
-          [ p.id, orderId, `Perubahan Jadwal Disetujui: ${serviceTitle}`, `Jadwal pelayanan ${serviceTitle} (${order.order_number}) telah disesuaikan mengikuti persetujuan Umat.`, ],
+          `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read) VALUES ($1, $2, (SELECT id FROM chat_groups WHERE order_id = $2 ORDER BY (order_item_id IS NOT DISTINCT FROM $5::bigint) DESC, id ASC LIMIT 1), $3, $4, 'RESCHEDULE_ACCEPTED', false)`,
+          [ p.id, orderId, `Perubahan Jadwal Disetujui: ${serviceTitle}`, `Jadwal pelayanan ${serviceTitle} (${order.order_number}) telah disesuaikan mengikuti persetujuan Umat.`, itemId || null, ],
         );
       }
 
@@ -1043,11 +1039,7 @@ export class OrdersService {
           await this.fcmService.sendPushToUsers(targetReschedRespUsers, {
             title: `Perubahan Jadwal Disetujui: ${serviceTitle}`,
             body: `Umat telah menyetujui jadwal baru untuk pelayanan ${serviceTitle} (${order.order_number}).`,
-            data: {
-              type: 'RESCHEDULE_ACCEPTED',
-              orderId: orderId.toString(),
-              orderNumber: order.order_number,
-            },
+            data: { type: 'RESCHEDULE_ACCEPTED', orderId: orderId.toString(), orderNumber: order.order_number, itemId: String(itemId || '') },
           });
         }
       } catch (fcmErr) {
@@ -1080,11 +1072,11 @@ export class OrdersService {
       await this.dataSource.query(
         `UPDATE order_reschedules
          SET status = 'REJECTED', responded_by = $1, responded_at = CURRENT_TIMESTAMP
-         WHERE order_id = $2 AND status = 'PENDING_UMAT'`,
-        [userId || order.user_id, orderId],
+         WHERE order_id = $2 AND status = 'PENDING_UMAT' AND ($3::bigint IS NULL OR item_id = $3::bigint)`,
+        [userId || order.user_id, orderId, itemId || null],
       );
 
-      const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1`, [orderId]);
+      const groups = await this.dataSource.query(`SELECT id FROM chat_groups WHERE order_id = $1 ORDER BY (order_item_id IS NOT DISTINCT FROM $2::bigint) DESC, id ASC LIMIT 1`, [orderId, itemId || null]);
       if (groups.length > 0) {
         await this.dataSource.query(
           `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
@@ -1095,16 +1087,16 @@ export class OrdersService {
       // 🔔 Notify Romo Bertugas
       if (romoId) {
         await this.dataSource.query(
-          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'RESCHEDULE_REJECTED', false)`,
-          [ romoId, orderId, `Perubahan Jadwal Ditolak: ${serviceTitle}`, `Umat tidak menyetujui perubahan jadwal (${order.order_number}). Pelayanan tetap pada jadwal semula.`, ],
+          `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read) VALUES ($1, $2, (SELECT id FROM chat_groups WHERE order_id = $2 ORDER BY (order_item_id IS NOT DISTINCT FROM $5::bigint) DESC, id ASC LIMIT 1), $3, $4, 'RESCHEDULE_REJECTED', false)`,
+          [ romoId, orderId, `Perubahan Jadwal Ditolak: ${serviceTitle}`, `Umat tidak menyetujui perubahan jadwal (${order.order_number}). Pelayanan tetap pada jadwal semula.`, itemId || null, ],
         );
       }
 
       // 🔔 Notify Pengurus Lingkungan
       for (const p of pengurusRespond) {
         await this.dataSource.query(
-          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'RESCHEDULE_REJECTED', false)`,
-          [ p.id, orderId, `Perubahan Jadwal Ditolak: ${serviceTitle}`, `Umat menolak perubahan jadwal pelayanan ${serviceTitle} (${order.order_number}). Pelayanan tetap sesuai jadwal awal.`, ],
+          `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read) VALUES ($1, $2, (SELECT id FROM chat_groups WHERE order_id = $2 ORDER BY (order_item_id IS NOT DISTINCT FROM $5::bigint) DESC, id ASC LIMIT 1), $3, $4, 'RESCHEDULE_REJECTED', false)`,
+          [ p.id, orderId, `Perubahan Jadwal Ditolak: ${serviceTitle}`, `Umat menolak perubahan jadwal pelayanan ${serviceTitle} (${order.order_number}). Pelayanan tetap sesuai jadwal awal.`, itemId || null, ],
         );
       }
 
@@ -1119,11 +1111,7 @@ export class OrdersService {
           await this.fcmService.sendPushToUsers(targetReschedRespUsers, {
             title: `Perubahan Jadwal Ditolak: ${serviceTitle}`,
             body: `Umat menolak perubahan jadwal (${order.order_number}). Pelayanan tetap pada jadwal awal.`,
-            data: {
-              type: 'RESCHEDULE_REJECTED',
-              orderId: orderId.toString(),
-              orderNumber: order.order_number,
-            },
+            data: { type: 'RESCHEDULE_REJECTED', orderId: orderId.toString(), orderNumber: order.order_number, itemId: String(itemId || '') },
           });
         }
       } catch (fcmErr) {

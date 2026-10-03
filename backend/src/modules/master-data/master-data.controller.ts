@@ -17,6 +17,8 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Public } from '../../common/decorators/public.decorator';
+import { ADMIN_ROLES } from '../../common/access/role-groups';
 import {
   CreateKeuskupanDto,
   UpdateKeuskupanDto,
@@ -40,6 +42,7 @@ import { DatabaseInitService } from '../../database/database-init.service';
 
 @ApiTags('Master Data Gereja & Wilayah')
 @Controller('master')
+@Roles(...ADMIN_ROLES)
 export class MasterDataController {
   constructor(
     private readonly masterDataService: MasterDataService,
@@ -47,6 +50,7 @@ export class MasterDataController {
   ) {}
 
   // 1. KEUSKUPAN
+  @Public()
   @Get('keuskupan')
   @ApiOperation({ summary: 'Daftar Semua Keuskupan dari Database' })
   async getAllKeuskupan() {
@@ -72,6 +76,7 @@ export class MasterDataController {
   }
 
   // 2. PAROKI
+  @Public()
   @Get('paroki')
   @ApiOperation({ summary: 'Daftar Semua Paroki dari Database' })
   async getAllParoki(@Query('keuskupanId') keuskupanId?: number) {
@@ -97,6 +102,7 @@ export class MasterDataController {
   }
 
   // 3. WILAYAH
+  @Public()
   @Get('wilayah')
   @ApiOperation({ summary: 'Daftar Semua Wilayah dari Database' })
   async getAllWilayah(@Query('parokiId') parokiId?: number) {
@@ -122,6 +128,7 @@ export class MasterDataController {
   }
 
   // 4. LINGKUNGAN
+  @Public()
   @Get('lingkungan')
   @ApiOperation({ summary: 'Daftar Semua Lingkungan dari Database' })
   async getAllLingkungan(@Query('wilayahId') wilayahId?: number) {
@@ -147,6 +154,7 @@ export class MasterDataController {
   }
 
   // 5. ORDO
+  @Public()
   @Get('ordo')
   @ApiOperation({ summary: 'Daftar Semua Ordo / Kongregasi dari Database' })
   async getAllOrdo() {
@@ -172,6 +180,7 @@ export class MasterDataController {
   }
 
   // 6. SERVICE CATEGORIES
+  @Public()
   @Get('service-categories')
   @ApiOperation({ summary: 'Daftar Kategori Pelayanan dari Database' })
   async getAllServiceCategories() {
@@ -206,6 +215,7 @@ export class MasterDataController {
   }
 
   // 7. ROLES
+  @Public()
   @Get('roles')
   @ApiOperation({ summary: 'Daftar Semua Jenis Role / Pengguna dari Database' })
   async getAllRoles() {
@@ -240,6 +250,7 @@ export class MasterDataController {
   }
 
   // 8. POSITIONS
+  @Public()
   @Get('positions')
   @ApiOperation({ summary: 'Daftar Semua Jabatan / Posisi dari Database' })
   async getAllPositions(@Query('category') category?: string) {

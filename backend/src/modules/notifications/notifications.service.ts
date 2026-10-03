@@ -65,8 +65,10 @@ export class NotificationsService {
              COALESCE(n.chat_group_id, cg.id) as "groupId",
              n.title, n.body, n.type, n.is_read as "isRead", n.created_at as "createdAt",
              o.order_number as "orderNumber", sc.name as "categoryName",
-             o.status as "orderStatus"
+             o.status as "orderStatus", g.order_item_id as "itemId", oi.item_name as "itemTitle"
       FROM notifications n
+      LEFT JOIN chat_groups g ON g.id = n.chat_group_id
+      LEFT JOIN order_items oi ON oi.id = g.order_item_id
       LEFT JOIN orders o ON n.order_id = o.id
       LEFT JOIN service_categories sc ON o.service_category_id = sc.id
       LEFT JOIN LATERAL (

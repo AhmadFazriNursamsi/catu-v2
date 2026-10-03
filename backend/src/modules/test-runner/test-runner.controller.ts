@@ -57,9 +57,12 @@ import {
   UpdatePositionDto,
 } from '../../orders.dto';
 import { FcmService } from '../../fcm.service';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../common/access/role-groups';
 
 @ApiTags('Testing & Quality Assurance')
 @Controller('test-runner')
+@Roles(...ADMIN_ROLES)
 export class TestRunnerController {
   @Post('run-unit-tests')
   @ApiOperation({

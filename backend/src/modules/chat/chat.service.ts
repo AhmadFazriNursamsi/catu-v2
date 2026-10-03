@@ -56,13 +56,13 @@ private async resolveGroupId(idParam: string): Promise<number> {
 
     return num;
   }
-  async getGroupByOrderId(orderIdParam: string) {
+  async getGroupByOrderId(orderIdParam: string, itemIdParam?: string) {
     const orderId = parseInt(orderIdParam, 10) || 0;
     if (orderId <= 0) return { groupId: 1 };
 
     const existing = await this.dataSource.query(
-      `SELECT id FROM chat_groups WHERE order_id = $1 LIMIT 1`,
-      [orderId],
+      `SELECT id FROM chat_groups WHERE order_id = $1 ORDER BY (order_item_id IS NOT DISTINCT FROM $2::bigint) DESC, id ASC LIMIT 1`,
+      [orderId, parseInt(itemIdParam ?? '', 10) || null],
     );
 
     if (existing.length > 0) {

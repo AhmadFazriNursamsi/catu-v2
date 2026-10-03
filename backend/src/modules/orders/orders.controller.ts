@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Post,
   Body,
@@ -14,6 +15,12 @@ import {
 import { CreateOrderDto } from '../../orders.dto';
 import { OrdersService } from './orders.service';
 import { OrderReviewsService } from './order-reviews.service';
+import { validateRescheduleProposal } from './reschedule-validation';
+import { MAX_RESCHEDULE_REJECTIONS, OrderEventsService } from '../order-events/order-events.service';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { AccessService, AuthUser } from '../../common/access/access.service';
+import { ADMIN_ROLES, ROMO_ROLES } from '../../common/access/role-groups';
 
 @ApiTags('Orders & Pelayanan')
 @Controller('orders')
@@ -21,21 +28,54 @@ export class OrdersController {
   constructor(
     private readonly ordersService: OrdersService,
     private readonly orderReviewsService: OrderReviewsService,
+    private readonly access: AccessService,
+    private readonly events: OrderEventsService,
   ) {}
+
+  /** Identitas aktor selalu dari token; admin boleh bertindak atas nama pengguna lain. */
+  private actor(user: AuthUser, requested?: number): number | undefined {
+    return this.access.isAdmin(user) ? requested ?? user.sub : user.sub;
+  }
+
+  /** Setelah Umat menolak: umumkan sisa kesempatan, atau penutupan bila batas penolakan tercapai. */
+  private async afterRescheduleRejected(orderId: number, itemId?: number) {
+    const rejected = await this.events.rejectedRescheduleCount(orderId, itemId);
+    const closed = rejected >= MAX_RESCHEDULE_REJECTIONS;
+    const name = await this.events.itemName(orderId, itemId);
+    const label = name ? ` untuk ${name}` : '';
+    await this.events.postChat(
+      orderId,
+      itemId,
+      closed
+        ? `Pengajuan ubah jam${label} telah ditolak ${rejected} kali dan sekarang DITUTUP. Pelayanan dilaksanakan sesuai jadwal terakhir.`
+        : `Pengajuan ubah jam${label} ditolak. Romo masih dapat mengajukan ${MAX_RESCHEDULE_REJECTIONS - rejected} kali lagi.`,
+    );
+    if (closed) {
+      await this.events.notify([await this.events.lastRescheduleProposer(orderId, itemId)], {
+        orderId,
+        itemId,
+        type: 'RESCHEDULE_CLOSED',
+        title: `Ubah Jam Ditutup${name ? `: ${name}` : ''}`,
+        body: `Pengajuan ubah jam telah ditolak ${rejected} kali. Jadwal tidak dapat diubah lagi.`,
+      });
+    }
+    return { rejectedCount: rejected, rescheduleClosed: closed };
+  }
 
   @Post()
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Membuat Pesanan Pelayanan Baru (Perminyakan / Misa Kedukaan Multi-Item)',
   })
-  async createOrder(@Body() dto: CreateOrderDto) {
-    return await this.ordersService.createOrder(dto);
+  async createOrder(@CurrentUser() user: AuthUser, @Body() dto: CreateOrderDto) {
+    return await this.ordersService.createOrder({ ...dto, userId: this.actor(user, dto.userId) });
   }
 
   @Get()
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Mendapatkan Daftar Pelayanan / Monitoring Orders dari Database PostgreSQL' })
   async getOrders(
+    @CurrentUser() user: AuthUser,
     @Query('userId') userId?: string,
     @Query('parokiId') parokiId?: string,
     @Query('romoId') romoId?: string,
@@ -44,6 +84,10 @@ export class OrdersController {
     @Query('lingkunganId') lingkunganId?: string,
     @Query('isKoordinator') isKoordinator?: string,
   ) {
+    // Umat hanya melihat order miliknya sendiri, filter scope dari klien diabaikan.
+    if (this.access.isEndUser(user)) {
+      return await this.ordersService.getOrders(String(user.sub));
+    }
     return await this.ordersService.getOrders(
       userId,
       parokiId,
@@ -65,14 +109,17 @@ export class OrdersController {
   @Get(':id')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Mendapatkan Detail Transaksi Order Pelayanan berdasarkan ID' })
-  async getOrderById(@Param('id') idParam: string) {
+  async getOrderById(@CurrentUser() user: AuthUser, @Param('id') idParam: string) {
+    await this.access.assertOrderAccess(user, idParam);
     return await this.ordersService.getOrderById(idParam);
   }
 
   @Post(':id/reschedule/propose')
+  @Roles(...ROMO_ROLES, ...ADMIN_ROLES)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Romo mengajukan perubahan jadwal (reschedule) ke Umat' })
   async proposeReschedule(
+    @CurrentUser() user: AuthUser,
     @Param('id') idParam: string,
     @Body() dto: {
       romoId: number;
@@ -83,13 +130,20 @@ export class OrdersController {
       reason: string;
     },
   ) {
-    return await this.ordersService.proposeReschedule(idParam, dto);
+    const invalid = validateRescheduleProposal(dto);
+    if (invalid) throw new BadRequestException(invalid);
+    await this.events.assertRescheduleOpen(Number(idParam), dto.itemId);
+    return await this.ordersService.proposeReschedule(idParam, {
+      ...dto,
+      romoId: this.actor(user, dto.romoId) as number,
+    });
   }
 
   @Post(':id/reschedule/respond')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Umat merespon (terima / tolak) pengajuan reschedule dari Romo' })
   async respondReschedule(
+    @CurrentUser() user: AuthUser,
     @Param('id') idParam: string,
     @Body() dto: {
       userId: number;
@@ -97,13 +151,23 @@ export class OrdersController {
       action: 'ACCEPT' | 'REJECT' | 'ACCEPTED' | 'REJECTED';
     },
   ) {
-    return await this.ordersService.respondReschedule(idParam, dto);
+    await this.access.assertOrderAccess(user, idParam);
+    const result: any = await this.ordersService.respondReschedule(idParam, {
+      ...dto,
+      userId: this.actor(user, dto.userId) as number,
+    });
+    if (result?.statusCode === 200 && /^REJECT/i.test(dto.action)) {
+      return { ...result, ...(await this.afterRescheduleRejected(Number(idParam), dto.itemId)) };
+    }
+    return result;
   }
 
   @Post(':id/handover')
+  @Roles(...ROMO_ROLES, ...ADMIN_ROLES)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Romo mengajukan pelimpahan tugas pelayanan (Ganti Romo / Berhalangan)' })
   async handoverOrder(
+    @CurrentUser() user: AuthUser,
     @Param('id') idParam: string,
     @Body() dto: {
       romoId: number;
@@ -113,13 +177,18 @@ export class OrdersController {
       reason: string;
     },
   ) {
-    return await this.ordersService.handoverOrder(idParam, dto);
+    return await this.ordersService.handoverOrder(idParam, {
+      ...dto,
+      romoId: this.actor(user, dto.romoId) as number,
+    });
   }
 
   @Post(':id/handover/respond')
+  @Roles(...ROMO_ROLES, ...ADMIN_ROLES)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Romo Baru menerima atau menolak pelimpahan tugas pelayanan' })
   async respondHandover(
+    @CurrentUser() user: AuthUser,
     @Param('id') idParam: string,
     @Body() dto: {
       romoId: number;
@@ -127,13 +196,17 @@ export class OrdersController {
       action: 'ACCEPT' | 'REJECT';
     },
   ) {
-    return await this.ordersService.respondHandover(idParam, dto);
+    return await this.ordersService.respondHandover(idParam, {
+      ...dto,
+      romoId: this.actor(user, dto.romoId) as number,
+    });
   }
 
   @Post(':id/review')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Umat memberikan ulasan pada pelayanan yang telah selesai atau ditutup' })
   async submitReview(
+    @CurrentUser() user: AuthUser,
     @Param('id') idParam: string,
     @Body() dto: {
       userId?: number;
@@ -142,6 +215,14 @@ export class OrdersController {
       reviewNotes: string;
     },
   ) {
-    return await this.orderReviewsService.submitReview(idParam, dto);
+    await this.access.assertOrderAccess(user, idParam);
+    const result = await this.orderReviewsService.submitReview(idParam, {
+      ...dto,
+      userId: this.actor(user, dto.userId),
+    });
+    const orderId = Number(idParam);
+    const name = await this.events.itemName(orderId, dto.itemId);
+    await this.events.postChat(orderId, dto.itemId, `Umat pemohon telah memberikan ulasan${name ? ` untuk ${name}` : ''}. Terima kasih atas pelayanannya.`);
+    return result;
   }
 }

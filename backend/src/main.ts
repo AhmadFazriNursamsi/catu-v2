@@ -6,13 +6,23 @@ import { AppModule } from './app.module';
 import { json, urlencoded } from 'express';
 import helmet from 'helmet';
 import { AllExceptionsFilter } from './all-exceptions.filter';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import {
+  assertSecureEnvironment,
+  buildCorsOptions,
+  bodyLimit,
+  swaggerEnabled,
+  trustProxySetting,
+} from './common/config/bootstrap-config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  assertSecureEnvironment();
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  app.set('trust proxy', trustProxySetting());
   app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
-  app.use(json({ limit: '50mb' }));
-  app.use(urlencoded({ limit: '50mb', extended: true }));
+  app.use(json({ limit: bodyLimit() }));
+  app.use(urlencoded({ limit: bodyLimit(), extended: true }));
 
   // Transparently support both /api/* and non-/api/* routes
   app.use((req: any, _res: any, next: any) => {
@@ -34,11 +44,12 @@ async function bootstrap() {
 
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  app.enableCors({
-    origin: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-  });
+  app.enableCors(buildCorsOptions());
+
+  if (!swaggerEnabled()) {
+    await app.listen(process.env.PORT || 3000, process.env.HOST || '0.0.0.0');
+    return;
+  }
 
   const config = new DocumentBuilder()
     .setTitle('CATU v2 API Documentation')

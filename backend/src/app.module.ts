@@ -1,9 +1,12 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+
+import { GLOBAL_GUARD_PROVIDERS } from './common/guards/global-guards';
+import { AccessModule } from './common/access/access.module';
+import { OrderEventsModule } from './modules/order-events/order-events.module';
 
 import { DatabaseInitModule } from './database/database-init.module';
 import { DrizzleModule } from './database/drizzle.module';
@@ -47,7 +50,7 @@ import { HttpLoggerMiddleware } from './logger.middleware';
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '30d' },
+      signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN || '14d') as any },
     }),
     ThrottlerModule.forRoot([
       {
@@ -55,6 +58,8 @@ import { HttpLoggerMiddleware } from './logger.middleware';
         limit: 300,
       },
     ]),
+    AccessModule,
+    OrderEventsModule,
     DatabaseInitModule,
     DrizzleModule,
     FcmModule,
@@ -66,16 +71,14 @@ import { HttpLoggerMiddleware } from './logger.middleware';
     NotificationsModule,
     MasterDataModule,
     NewsModule,
-    TestRunnerModule,
+    // Live Unit Test Runner hanya tersedia di luar production.
+    ...(process.env.NODE_ENV === 'production' ? [] : [TestRunnerModule]),
     ApkModule,
     ActivityLogsModule,
   ],
   providers: [
     AppService,
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
+    ...GLOBAL_GUARD_PROVIDERS,
   ],
 })
 export class AppModule implements NestModule {

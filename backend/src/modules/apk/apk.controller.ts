@@ -16,12 +16,14 @@ import { ApkService } from './apk.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('Public Downloads')
 @Controller('public')
 export class ApkController {
   constructor(private readonly apkService: ApkService) {}
 
+  @Public()
   @Get('apk')
   @Header('Cache-Control', 'no-store')
   @Header('X-Content-Type-Options', 'nosniff')

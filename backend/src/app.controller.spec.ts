@@ -8,12 +8,17 @@ import {
 import { AuthService } from './modules/auth/auth.service';
 import { PasswordService } from './modules/auth/password.service';
 import { OrdersService } from './modules/orders/orders.service';
+import { OrderReviewsService } from './modules/orders/order-reviews.service';
 import { AssignmentsService } from './modules/assignments/assignments.service';
 import { ChatService } from './modules/chat/chat.service';
 import { DataSource } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { FcmService } from './fcm.service';
+import { AccessService } from './common/access/access.service';
+import { OrderEventsService } from './modules/order-events/order-events.service';
 import * as bcrypt from 'bcrypt';
+
+const adminUser = { sub: 1, roleCode: 'ADMIN' };
 
 describe('CATU v2 Controllers & Services (Unit Tests)', () => {
   let authController: AuthController;
@@ -62,6 +67,9 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
         OrdersService,
         AssignmentsService,
         ChatService,
+        OrderReviewsService,
+        AccessService,
+        OrderEventsService,
         {
           provide: DataSource,
           useValue: mockDataSource,
@@ -176,7 +184,7 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
         addressDetail: 'Jl. Salemba Raya No. 41',
       };
 
-      const result = await ordersController.createOrder(dto);
+      const result = await ordersController.createOrder(adminUser, dto);
 
       expect(result.order.id).toEqual(101);
       expect(result.chatGroupId).toEqual(50);
@@ -192,7 +200,7 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
         .mockResolvedValueOnce([{ id: 50 }]) // chat group
         .mockResolvedValue([]); // other queries
 
-      const result = await assignmentsController.respondAssignment('101', {
+      const result = await assignmentsController.respondAssignment(adminUser, '101', {
         status: 'ACCEPTED',
       });
 
@@ -203,6 +211,9 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
 
   describe('ChatController', () => {
     it('harus berhasil mengirim pesan chat ke WhatsApp Group', async () => {
+      jest
+        .spyOn(ChatService.prototype, 'getGroupMembers')
+        .mockResolvedValue([{ user_id: 1, role_in_group: 'MEMBER' }] as any);
       mockDataSource.query
         .mockResolvedValueOnce([{ id: 50 }]) // resolveGroupId: chat_groups check
         .mockResolvedValueOnce([
@@ -216,7 +227,7 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
         ]) // insert chat_messages
         .mockResolvedValue([]); // subsequent queries
 
-      const result = await chatController.sendMessage('50', {
+      const result = await chatController.sendMessage(adminUser, '50', {
         messageType: 'TEXT',
         message: 'Halo Romo',
       });

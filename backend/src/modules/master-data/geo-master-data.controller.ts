@@ -13,6 +13,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { GeoMasterDataService } from './geo-master-data.service';
 import {
   CreateProvinsiDto,
@@ -27,6 +28,7 @@ export class GeoMasterDataController {
   constructor(private readonly geoService: GeoMasterDataService) {}
 
   // ── PROVINSI ──
+  @Public()
   @Get('provinsi')
   @ApiOperation({ summary: 'Daftar Semua Provinsi' })
   async getAllProvinsi() {
@@ -61,6 +63,7 @@ export class GeoMasterDataController {
   }
 
   // ── KABUPATEN / KOTA ──
+  @Public()
   @Get('kabupaten-kota')
   @ApiOperation({ summary: 'Daftar Semua Kabupaten/Kota' })
   async getAllKabupatenKota(@Query('provinsiId') provinsiId?: string) {

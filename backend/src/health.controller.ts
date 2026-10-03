@@ -1,12 +1,14 @@
 import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DataSource } from 'typeorm';
+import { Public } from './common/decorators/public.decorator';
 
 @ApiTags('System & Health')
 @Controller('health')
 export class HealthController {
   constructor(private readonly dataSource: DataSource) {}
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'Periksa status kesehatan sistem, database PostgreSQL, dan memori' })
   @ApiResponse({ status: 200, description: 'Sistem dan Database sehat' })
@@ -22,7 +24,7 @@ export class HealthController {
       dbLatencyMs = Date.now() - dbStart;
       dbStatus = 'up';
     } catch (err: any) {
-      dbStatus = `down: ${err?.message || 'unknown error'}`;
+      dbStatus = 'down';
     }
 
     const memoryUsage = process.memoryUsage();
