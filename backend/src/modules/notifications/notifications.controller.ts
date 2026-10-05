@@ -15,6 +15,7 @@ import {
 import { SkipThrottle } from '@nestjs/throttler';
 import { NotificationsService } from './notifications.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AllowInactiveAccount } from '../../common/decorators/allow-inactive.decorator';
 import { AccessService, AuthUser } from '../../common/access/access.service';
 
 @ApiTags('Notifications')
@@ -26,6 +27,7 @@ export class NotificationsController {
     private readonly access: AccessService,
   ) {}
 
+  @AllowInactiveAccount()
   @Post('register-device')
   @ApiOperation({ summary: 'Mendaftarkan FCM device token untuk push notification' })
   async registerDevice(
@@ -36,6 +38,7 @@ export class NotificationsController {
     return await this.notificationsService.registerDevice(body);
   }
 
+  @AllowInactiveAccount()
   @Post('unregister-device')
   @ApiOperation({ summary: 'Menghapus FCM device token saat logout' })
   async unregisterDevice(
@@ -57,6 +60,7 @@ export class NotificationsController {
   }
 
   @SkipThrottle()
+  @AllowInactiveAccount()
   @Get()
   @ApiOperation({ summary: 'Mendapatkan daftar notifikasi untuk user' })
   async getNotifications(
@@ -68,6 +72,7 @@ export class NotificationsController {
     return await this.notificationsService.getNotifications(effectiveUserId, role);
   }
 
+  @AllowInactiveAccount()
   @Post(':id/read')
   @ApiOperation({ summary: 'Tandai notifikasi sebagai sudah dibaca' })
   async markRead(@CurrentUser() user: AuthUser, @Param('id') idParam: string) {
@@ -76,6 +81,7 @@ export class NotificationsController {
     return await this.notificationsService.markRead(notifId);
   }
 
+  @AllowInactiveAccount()
   @Post('read-all')
   @ApiOperation({ summary: 'Tandai semua notifikasi user sebagai sudah dibaca' })
   async markAllRead(@CurrentUser() user: AuthUser) {

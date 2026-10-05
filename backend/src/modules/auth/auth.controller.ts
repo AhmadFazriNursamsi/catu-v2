@@ -5,16 +5,19 @@ import {
   Body,
   Get,
   Param,
+  ParseIntPipe,
   Query,
   HttpCode,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
+import { AllowInactiveAccount } from '../../common/decorators/allow-inactive.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AccessService, AuthUser } from '../../common/access/access.service';
-import { ADMIN_ROLES, APPROVER_ROLES } from '../../common/access/role-groups';
+import { ADMIN_ROLES } from '../../common/access/role-groups';
 import { signAccountToken } from '../../common/access/account-token';
 
 // Batas ketat untuk endpoint rawan brute force (login, OTP, registrasi): 10 request/menit per IP.
@@ -28,16 +31,17 @@ import {
 import {
   RegisterUserDto,
   LoginDto,
-  ApproveUserDto,
   RegisterResponseDto,
   LoginResponseDto,
-  ApproveUserResponseDto,
   RequestResetOtpDto,
   VerifyResetOtpDto,
   ResetPasswordDto,
   ChangePasswordDto,
 } from '../../auth.dto';
 import { UpdateProfileDto } from './update-profile.dto';
+import { registrationError } from './registration-rules';
+import { AdminOrderStatusDto } from './admin-order-status.dto';
+import { OrderGuardsService } from '../order-rules/order-guards.service';
 import { AuthService } from './auth.service';
 import { PasswordService } from './password.service';
 
@@ -49,6 +53,7 @@ export class AuthController {
     private readonly passwordService: PasswordService,
     private readonly access: AccessService,
     private readonly jwtService: JwtService,
+    private readonly orderGuards: OrderGuardsService,
   ) {}
 
   @Public()
@@ -114,6 +119,7 @@ export class AuthController {
     return await this.authService.getOrdo();
   }
 
+  @AllowInactiveAccount()
   @Get('check-status')
   @ApiOperation({ summary: 'Cek Status Akun Terbaru Berdasarkan Nomor HP' })
   async checkAccountStatus(@CurrentUser() user: AuthUser, @Query('phone') phone: string) {
@@ -121,52 +127,6 @@ export class AuthController {
     // Respons memuat profil lengkap: hanya pemilik akun (atau admin) yang boleh melihatnya.
     if (result?.user && !this.access.isAdmin(user)) this.access.assertSelf(user, result.user.id);
     return result;
-  }
-
-  @Get('pengurus/pending-umat')
-  @Roles(...APPROVER_ROLES)
-  @ApiOperation({ summary: 'Daftar Umat Baru yang Menunggu Persetujuan Pengurus Lingkungan / Koordinator Keuskupan' })
-  async getPengurusPendingUmat(
-    @CurrentUser() user: AuthUser,
-    @Query('lingkunganId') lingkunganId?: string,
-    @Query('keuskupanId') keuskupanId?: string,
-    @Query('pengurusUserId') pengurusUserId?: string,
-  ) {
-    const actingUserId = this.access.isAdmin(user) ? pengurusUserId : String(user.sub);
-    return await this.authService.getPengurusPendingUmat(lingkunganId, keuskupanId, actingUserId);
-  }
-
-  @Post('pengurus/process-approval')
-  @Roles(...APPROVER_ROLES)
-  @ApiOperation({ summary: 'Proses Persetujuan Umat oleh Pengurus Lingkungan' })
-  async processPengurusApproval(
-    @CurrentUser() user: AuthUser,
-    @Body() body: { targetUserId: number; approverUserId: number; action: 'APPROVE' | 'REJECT'; rejectionReason?: string },
-  ) {
-    return await this.authService.processPengurusApproval({ ...body, approverUserId: user.sub });
-  }
-
-  @Get('romo/pending-romo')
-  @Roles(...APPROVER_ROLES)
-  @ApiOperation({ summary: 'Daftar Romo Baru yang Menunggu Persetujuan Kepala Romo Paroki / Ketua Romo Ordo' })
-  async getRomoPendingRomo(
-    @CurrentUser() user: AuthUser,
-    @Query('romoUserId') romoUserId?: string,
-    @Query('parokiId') parokiId?: string,
-    @Query('ordoId') ordoId?: string,
-  ) {
-    const actingUserId = this.access.isAdmin(user) ? romoUserId : String(user.sub);
-    return await this.authService.getRomoPendingRomo(actingUserId, parokiId, ordoId);
-  }
-
-  @Post('romo/process-approval')
-  @Roles(...APPROVER_ROLES)
-  @ApiOperation({ summary: 'Proses Persetujuan Romo oleh Kepala Romo Paroki / Ketua Romo Ordo' })
-  async processRomoApproval(
-    @CurrentUser() user: AuthUser,
-    @Body() body: { targetUserId: number; approverUserId: number; action: 'APPROVE' | 'REJECT'; rejectionReason?: string },
-  ) {
-    return await this.authService.processRomoApproval({ ...body, approverUserId: user.sub });
   }
 
   @Public()
@@ -179,6 +139,8 @@ export class AuthController {
   })
   @ApiResponse({ status: 201, description: 'Registrasi berhasil, akun berstatus PENDING_APPROVAL.', type: RegisterResponseDto })
   async register(@Body() dto: RegisterUserDto) {
+    const invalid = registrationError(dto);
+    if (invalid) throw new BadRequestException(invalid);
     const result = await this.authService.register(dto);
     const accessToken = signAccountToken(this.jwtService, result.user);
     return { ...result, accessToken };
@@ -251,6 +213,7 @@ export class AuthController {
     return await this.passwordService.changePassword({ ...dto, userId: user.sub, phoneNumber: undefined });
   }
 
+  @AllowInactiveAccount()
   @Get('profile/:userId')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Ambil Detail Profil User Lengkap dari Database' })
@@ -270,18 +233,6 @@ export class AuthController {
   ) {
     this.access.assertSelf(user, userIdParam);
     return await this.authService.updateProfile(userIdParam, dto);
-  }
-
-  @Post('approve-registration')
-  @Roles(...APPROVER_ROLES)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({
-    summary: 'Persetujuan Registrasi Pendaftaran User (Approval di auth_users)',
-    description: 'Mengubah status pendaftaran user di auth_users dari PENDING_APPROVAL menjadi APPROVED atau REJECTED.',
-  })
-  @ApiResponse({ status: 200, description: 'Status persetujuan akun berhasil diperbarui.', type: ApproveUserResponseDto })
-  async approveRegistration(@Body() dto: ApproveUserDto) {
-    return await this.authService.approveRegistration(dto);
   }
 
   @Roles(...ADMIN_ROLES)
@@ -331,10 +282,11 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update Status Pelayanan oleh Admin' })
   async updateAdminOrderStatus(
-    @Param('orderId') orderIdParam: string,
-    @Body() body: { status: string },
+    @Param('orderId', ParseIntPipe) orderId: number,
+    @Body() body: AdminOrderStatusDto,
   ) {
-    return await this.authService.updateAdminOrderStatus(orderIdParam, body);
+    await this.orderGuards.assertExists(orderId);
+    return await this.authService.updateAdminOrderStatus(String(orderId), body);
   }
 
   @Roles(...ADMIN_ROLES)

@@ -4,9 +4,10 @@ import { DataSource } from "typeorm";
 import { CreateOrderDto } from "../../orders.dto";
 import { FcmService } from "../../fcm.service";
 import { generateOrderNumber } from './order-number';
+import { EscalationSettingsService } from '../escalation/escalation-settings.service';
 @Injectable()
 export class OrdersService {
-  constructor(@InjectDataSource() private readonly dataSource: DataSource, private readonly fcmService: FcmService) {}
+  constructor(@InjectDataSource() private readonly dataSource: DataSource, private readonly fcmService: FcmService, private readonly escalation: EscalationSettingsService) {}
 
   private lastStatusSyncDate = '';
   private async autoSyncOrderStatuses() {
@@ -52,29 +53,6 @@ export class OrdersService {
            AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN') AND r.code NOT LIKE '%KOORDINATOR%') AND p.paroki_id = $1`,
         [oh.paroki_id],
       );
-    }
-
-    // Also include Koordinator in the same Keuskupan or same Lingkungan
-    if (keuskupanId || oh.lingkungan_id) {
-      const koordinator = await this.dataSource.query(
-        `SELECT u.id FROM auth_users u
-         JOIN user_profiles p ON u.id = p.user_id
-         JOIN roles r ON u.role_id = r.id
-         WHERE (
-           r.code IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
-           OR r.code LIKE '%KOORDINATOR%'
-           OR LOWER(COALESCE(p.pengurus_position, '')) LIKE '%koordinator%'
-         ) AND (
-           ($1::int IS NOT NULL AND p.keuskupan_id = $1::int)
-           OR ($2::int IS NOT NULL AND p.lingkungan_id = $2::int)
-         )`,
-        [keuskupanId || null, oh.lingkungan_id || null],
-      );
-      for (const k of koordinator) {
-        if (!pengurus.some((p: any) => p.id === k.id)) {
-          pengurus.push(k);
-        }
-      }
     }
 
     if (excludeUserId) {
@@ -173,29 +151,6 @@ export class OrdersService {
       );
     }
 
-    // 1b. Find Koordinator for this Keuskupan or this Lingkungan
-    let koordinator: any[] = [];
-    if (kId || lId) {
-      koordinator = await this.dataSource.query(
-        `SELECT u.id FROM auth_users u
-         JOIN user_profiles p ON u.id = p.user_id
-         JOIN roles r ON u.role_id = r.id
-         WHERE (
-           r.code IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
-           OR r.code LIKE '%KOORDINATOR%'
-           OR LOWER(COALESCE(p.pengurus_position, '')) LIKE '%koordinator%'
-         ) AND (
-           ($1::int IS NOT NULL AND p.keuskupan_id = $1::int)
-           OR ($2::int IS NOT NULL AND p.lingkungan_id = $2::int)
-         )`,
-        [kId || null, lId || null],
-      );
-    }
-
-    // Strictly ensure no Koordinator is mistakenly kept in pengurus list
-    const koordinatorUserIds = new Set(koordinator.map((k: any) => Number(k.id)));
-    pengurus = pengurus.filter((p: any) => !koordinatorUserIds.has(Number(p.id)));
-
     // 2. Find Romo Paroki
     let romoParoki: any[] = [];
     if (pId) {
@@ -208,27 +163,12 @@ export class OrdersService {
       );
     }
 
-    // 3. Find Romo Ordo
-    let romoOrdo: any[] = [];
-    if (kabId) {
-      romoOrdo = await this.dataSource.query(
-        `SELECT u.id FROM auth_users u
-         JOIN user_profiles p ON u.id = p.user_id
-         JOIN roles r ON u.role_id = r.id
-         WHERE r.code = 'ROMO_ORDO' AND p.kabupaten_kota_id = $1`,
-        [kabId],
-      );
-    }
-
-    // Strictly filter out creator from observer / monitoring lists,
-    // EXCEPT Koordinator: even if a Koordinator creates an order, they MUST be in the chat group
-    // as KOORDINATOR (with coordinator privileges) and receive the coordinator notification.
+    // Pemohon tidak masuk daftar pemantau. Romo Ordo dan Koordinator baru diberi tahu lewat eskalasi
+    // (EscalationService) bila pelayanan belum diterima setelah batas menit pada master data.
     if (userId) {
       const numUserId = Number(userId);
       pengurus = pengurus.filter((p: any) => Number(p.id) !== numUserId);
-      // Keep koordinator intact (do not filter out creator) so their role is upgraded to KOORDINATOR
       romoParoki = romoParoki.filter((r: any) => Number(r.id) !== numUserId);
-      romoOrdo = romoOrdo.filter((ro: any) => Number(ro.id) !== numUserId);
     }
 
     let firstGroupId: number | null = null;
@@ -265,14 +205,6 @@ export class OrdersService {
           );
         }
 
-        // 2b. Add Koordinator Keuskupan
-        for (const k of koordinator) {
-          await this.dataSource.query(
-            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'KOORDINATOR') ON CONFLICT (chat_group_id, user_id) DO UPDATE SET role_in_group = 'KOORDINATOR'`,
-            [gId, k.id],
-          );
-        }
-
         // 3. Welcome message
         await this.dataSource.query(
           `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
@@ -289,44 +221,12 @@ export class OrdersService {
           }
         }
 
-        // 🔔 4b. Notify Koordinator Keuskupan per-misa
-        for (const k of koordinator) {
-          if (k.id) {
-            await this.dataSource.query(
-              `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'NEW_ORDER_KOORDINATOR', false)`,
-              [ k.id, order.id, `Pemantauan Keuskupan: ${item.itemName}`, `Ada permintaan ${item.itemName} (${order.order_number}) di keuskupan Anda. Ketuk untuk memantau status dan koordinasi via chat.` ],
-            );
-          }
-        }
-
         // 🔔 5. Notify Romo Paroki per-misa (exclude creator)
         for (const rp of romoParoki) {
           if (rp.id && rp.id !== userId) {
             await this.dataSource.query(
               `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'NEW_ORDER_ROMO', false)`,
               [ rp.id, order.id, `Permintaan Pelayanan ${item.itemName}`, `Umat yang berada di paroki anda telah membuat permintaan pelayanan ${item.itemName} (${order.order_number}).` ],
-            );
-          }
-        }
-
-        // 🔔 6. Notify Romo Ordo per-misa (exclude creator)
-        let targetRomoOrdo = romoOrdo;
-        const itemKabId = item.kabupatenKotaId || kabId;
-        if (itemKabId && itemKabId !== kabId) {
-          targetRomoOrdo = await this.dataSource.query(
-            `SELECT u.id FROM auth_users u
-             JOIN user_profiles p ON u.id = p.user_id
-             JOIN roles r ON u.role_id = r.id
-             WHERE r.code = 'ROMO_ORDO' AND p.kabupaten_kota_id = $1`,
-            [itemKabId],
-          );
-        }
-
-        for (const ro of targetRomoOrdo) {
-          if (ro.id && ro.id !== userId) {
-            await this.dataSource.query(
-              `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'NEW_ORDER_ROMO', false)`,
-              [ ro.id, order.id, `Permintaan Pelayanan ${item.itemName}`, `Umat yang berada di kota anda telah membuat permintaan pelayanan ${item.itemName} (${order.order_number}).` ],
             );
           }
         }
@@ -354,15 +254,6 @@ export class OrdersService {
         }
       }
 
-      for (const k of koordinator) {
-        if (k.id) {
-          await this.dataSource.query(
-            `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'KOORDINATOR') ON CONFLICT (chat_group_id, user_id) DO UPDATE SET role_in_group = 'KOORDINATOR'`,
-            [firstGroupId, k.id],
-          );
-        }
-      }
-
       await this.dataSource.query(
         `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
         [firstGroupId, `Grup Pelayanan ${order.order_number} telah dibuat. Menunggu konfirmasi kehadiran Romo.`],
@@ -378,16 +269,6 @@ export class OrdersService {
         }
       }
 
-      // 🔔 Notify Koordinator Keuskupan
-      for (const k of koordinator) {
-        if (k.id) {
-          await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, 'Pemantauan Keuskupan: Sakramen Perminyakan', $3, 'NEW_ORDER_KOORDINATOR', false)`,
-            [k.id, order.id, `Ada permintaan pelayanan Sakramen Perminyakan (${order.order_number}) di keuskupan Anda. Ketuk untuk memantau status dan koordinasi via chat.`],
-          );
-        }
-      }
-
       // 🔔 Notify Romo Paroki (exclude creator)
       for (const rp of romoParoki) {
         if (rp.id !== userId) {
@@ -398,28 +279,16 @@ export class OrdersService {
         }
       }
 
-      // 🔔 Notify Romo Ordo (exclude creator)
-      for (const ro of romoOrdo) {
-        if (ro.id !== userId) {
-          await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, 'Permintaan Pelayanan Sakramen Perminyakan', $3, 'NEW_ORDER_ROMO', false)`,
-            [ro.id, order.id, `Umat yang berada di kota anda telah membuat permintaan pelayanan Sakramen Perminyakan (${order.order_number}).`],
-          );
-        }
-      }
     }
 
-    // 🔔 7. Send Real-Time FCM Push Notifications to Romo, Pengurus, and Koordinator
+    // 🔔 7. Send Real-Time FCM Push Notifications to Romo Paroki and Pengurus
     try {
       const catRow = await this.dataSource.query('SELECT name FROM service_categories WHERE id = $1', [dto.serviceCategoryId]);
       const catName = catRow[0]?.name || 'Pelayanan';
       const isKedukaan = catName.toLowerCase().includes('kedukaan');
 
-      // Unique Romo Paroki & Romo Ordo IDs (exclude creator)
-      const allRomoIds = Array.from(new Set([
-        ...romoParoki.map((r: any) => r.id),
-        ...romoOrdo.map((ro: any) => ro.id),
-      ])).filter((id: number) => id && id !== userId);
+      // Hanya Romo Paroki yang diberi tahu saat dibuat; Romo Ordo lewat eskalasi (EscalationService)
+      const allRomoIds = Array.from(new Set(romoParoki.map((r: any) => r.id))).filter((id: number) => id && id !== userId);
 
       if (allRomoIds.length > 0) {
         await this.fcmService.sendPushToUsers(allRomoIds, {
@@ -449,20 +318,6 @@ export class OrdersService {
         });
       }
 
-      // Unique Koordinator IDs (exclude creator)
-      const allKoordinatorIds = Array.from(new Set(koordinator.map((k: any) => k.id))).filter((id: number) => id && id !== userId);
-      if (allKoordinatorIds.length > 0) {
-        await this.fcmService.sendPushToUsers(allKoordinatorIds, {
-          title: `Pemantauan Keuskupan: ${catName}`,
-          body: `Ada permohonan ${catName} (${order.order_number}) baru di keuskupan Anda.`,
-          data: {
-            type: 'NEW_ORDER_KOORDINATOR',
-            orderId: order.id.toString(),
-            orderNumber: order.order_number,
-            categoryName: catName,
-          },
-        });
-      }
     } catch (fcmErr) {
       console.error('Error dispatching FCM in createOrder:', fcmErr);
     }
@@ -533,8 +388,9 @@ export class OrdersService {
         queryParams.push(parsedRId);
 
         if (romo.role_code === 'ROMO_ORDO' && romo.kabupaten_kota_id) {
-          whereClauses.push(`(COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++} OR ${assignedOrHandoverClause})`);
-          queryParams.push(romo.kabupaten_kota_id);
+          // Romo Ordo baru melihat pelayanan setelah batas menit eskalasi (kecuali tanpa paroki atau sudah menjadi tugasnya).
+          whereClauses.push(`((COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++} AND (COALESCE(o.paroki_id, p.paroki_id) IS NULL OR o.created_at <= NOW() - ($${paramIdx++}::int * INTERVAL '1 minute'))) OR ${assignedOrHandoverClause})`);
+          queryParams.push(romo.kabupaten_kota_id, (await this.escalation.get()).ordoAfterMinutes);
         } else if (romo.paroki_id) {
           whereClauses.push(`((o.paroki_id = $${paramIdx} OR (o.paroki_id IS NULL AND o.kabupaten_kota_id IS NULL AND p.paroki_id = $${paramIdx})) OR ${assignedOrHandoverClause})`);
           queryParams.push(romo.paroki_id);
@@ -565,16 +421,8 @@ export class OrdersService {
                        (u.pengurus_position && u.pengurus_position.toLowerCase().includes('koordinator'));
         const isPengurus = !isKoor && (u.role_code === 'PENGURUS_LINGKUNGAN' || (u.pengurus_position && u.pengurus_position.trim().length > 0));
 
-        if (isKoor) {
-          whereClauses.push(`(
-            o.user_id = $${paramIdx}
-            OR ($${paramIdx + 1}::int IS NOT NULL AND COALESCE(o.keuskupan_id, p.keuskupan_id) = $${paramIdx + 1}::int)
-            OR ($${paramIdx + 2}::int IS NOT NULL AND COALESCE(o.lingkungan_id, p.lingkungan_id) = $${paramIdx + 2}::int)
-            OR EXISTS (SELECT 1 FROM chat_group_members cgm JOIN chat_groups cg ON cgm.chat_group_id = cg.id WHERE cg.order_id = o.id AND cgm.user_id = $${paramIdx})
-          )`);
-          queryParams.push(uId, u.keuskupan_id || null, u.lingkungan_id || null);
-          paramIdx += 3;
-        } else if (isPengurus && u.lingkungan_id) {
+        // Koordinator hanya melihat pelayanan miliknya sendiri (pelayanan lain cukup lewat notifikasi eskalasi).
+        if (isPengurus && u.lingkungan_id) {
           whereClauses.push(`(
             o.user_id = $${paramIdx}
             OR COALESCE(o.lingkungan_id, p.lingkungan_id) = $${paramIdx + 1}

@@ -449,7 +449,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
       await this.dataSource.query('SELECT keuskupan_id FROM user_profiles WHERE user_id = $1', [order.pemohon_id])
     )[0]?.keuskupan_id;
 
-    if (keuskupanId || order.lingkungan_id) {
+    if (keuskupanId) {
       const koordinator = await this.dataSource.query(
         `SELECT u.id as user_id, 'KOORDINATOR' as role_in_group, p.full_name, u.phone_number,
                 COALESCE(k.name, 'Keuskupan') as keuskupan_name
@@ -461,12 +461,9 @@ private async resolveGroupId(idParam: string): Promise<number> {
            r.code IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
            OR r.code LIKE '%KOORDINATOR%'
            OR LOWER(COALESCE(p.pengurus_position, '')) LIKE '%koordinator%'
-         ) AND (
-           ($1::int IS NOT NULL AND p.keuskupan_id = $1::int)
-           OR ($2::int IS NOT NULL AND p.lingkungan_id = $2::int)
-         )
+         ) AND p.keuskupan_id = $1::int
          ORDER BY u.id ASC`,
-        [keuskupanId || null, order.lingkungan_id || null],
+        [keuskupanId],
       );
 
       for (const k of koordinator) {
@@ -537,10 +534,6 @@ private async resolveGroupId(idParam: string): Promise<number> {
           o.user_id = $1
           OR EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1)
           OR COALESCE(o.keuskupan_id, p.keuskupan_id) = (SELECT keuskupan_id FROM user_profiles WHERE user_id = $1)
-          OR (
-            (SELECT lingkungan_id FROM user_profiles WHERE user_id = $1) IS NOT NULL
-            AND COALESCE(o.lingkungan_id, p.lingkungan_id) = (SELECT lingkungan_id FROM user_profiles WHERE user_id = $1)
-          )
         )`;
       } else {
         whereClause = `WHERE (o.user_id = $1 OR EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1))`;

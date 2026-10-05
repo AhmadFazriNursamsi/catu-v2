@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Query,
+  BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
 import {
@@ -14,6 +15,7 @@ import {
 } from '@nestjs/swagger';
 import { SendChatMessageDto } from '../../orders.dto';
 import { ChatService } from './chat.service';
+import { chatMessageError } from './chat-message-rules';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { AccessService, AuthUser } from '../../common/access/access.service';
@@ -27,9 +29,13 @@ export class ChatController {
     private readonly access: AccessService,
   ) {}
 
-  /** Anggota dihitung oleh ChatService (pemohon, Romo, pengurus lingkungan); admin dan koordinator (scope) dikecualikan. */
+  /** Anggota dihitung oleh ChatService; Admin dikecualikan. Koordinator hanya untuk pelayanan di keuskupan yang sama dengan umat pemohon. */
   private async assertMember(user: AuthUser, groupIdParam: string): Promise<void> {
-    if (this.access.isAdmin(user) || user.roleCode.includes('KOORDINATOR')) return;
+    if (this.access.isAdmin(user)) return;
+    if (user.roleCode.includes('KOORDINATOR')) {
+      if (await this.access.koordinatorSharesKeuskupan(user.sub, groupIdParam)) return;
+      throw new ForbiddenException('Akses ditolak: pelayanan ini berada di luar keuskupan Anda');
+    }
     const members = await this.chatService.getGroupMembers(groupIdParam);
     if (!members.some((m: any) => Number(m.user_id) === Number(user.sub))) {
       throw new ForbiddenException('Akses ditolak: Anda bukan anggota grup chat ini');
@@ -57,6 +63,8 @@ export class ChatController {
     @Body() dto: SendChatMessageDto,
   ) {
     await this.assertMember(user, groupIdParam);
+    const invalid = chatMessageError(dto);
+    if (invalid) throw new BadRequestException(invalid);
     // Pengirim selalu identitas dari token, bukan dari body.
     return await this.chatService.sendMessage(groupIdParam, { ...dto, senderId: user.sub });
   }

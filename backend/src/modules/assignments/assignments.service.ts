@@ -45,22 +45,6 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
       );
     }
 
-    // Also include Koordinator in the same Keuskupan
-    if (keuskupanId) {
-      const koordinator = await this.dataSource.query(
-        `SELECT u.id FROM auth_users u
-         JOIN user_profiles p ON u.id = p.user_id
-         JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'KOORDINATOR' OR LOWER(p.pengurus_position) LIKE '%koordinator%') AND p.keuskupan_id = $1`,
-        [keuskupanId],
-      );
-      for (const k of koordinator) {
-        if (!pengurus.some((p: any) => p.id === k.id)) {
-          pengurus.push(k);
-        }
-      }
-    }
-
     if (excludeUserId) {
       pengurus = pengurus.filter((p: any) => p.id !== excludeUserId);
     }

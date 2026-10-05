@@ -7,6 +7,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { GLOBAL_GUARD_PROVIDERS } from './common/guards/global-guards';
 import { AccessModule } from './common/access/access.module';
 import { OrderEventsModule } from './modules/order-events/order-events.module';
+import { EscalationModule } from './modules/escalation/escalation.module';
+import { OrderRulesModule } from './modules/order-rules/order-rules.module';
 
 import { DatabaseInitModule } from './database/database-init.module';
 import { DrizzleModule } from './database/drizzle.module';
@@ -60,6 +62,8 @@ import { HttpLoggerMiddleware } from './logger.middleware';
     ]),
     AccessModule,
     OrderEventsModule,
+    EscalationModule,
+    OrderRulesModule,
     DatabaseInitModule,
     DrizzleModule,
     FcmModule,

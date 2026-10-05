@@ -779,7 +779,7 @@ export class AuthService {
              AND r.code = 'ROMO_ORDO'
              AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
              AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%' OR UPPER(p.romo_position) LIKE '%SUPERIOR%')
-             AND (p.is_jabatan_active IS NOT FALSE)
+             AND (u.account_status = 'PENDING_APPROVAL' OR p.is_jabatan_active IS NOT FALSE)
              AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
           [dto.ordoId],
         );
@@ -803,7 +803,7 @@ export class AuthService {
              AND r.code = 'ROMO_PAROKI'
              AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
              AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%')
-             AND (p.is_jabatan_active IS NOT FALSE)
+             AND (u.account_status = 'PENDING_APPROVAL' OR p.is_jabatan_active IS NOT FALSE)
              AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
           [dto.parokiId],
         );
@@ -1482,7 +1482,7 @@ export class AuthService {
              AND u.id != $2
              AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
              AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%' OR UPPER(p.romo_position) LIKE '%SUPERIOR%')
-             AND (p.is_jabatan_active IS NOT FALSE)
+             AND (u.account_status = 'PENDING_APPROVAL' OR p.is_jabatan_active IS NOT FALSE)
              AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
           [checkOrdoId, uid],
         );
@@ -1519,7 +1519,7 @@ export class AuthService {
              AND u.id != $2
              AND u.account_status IN ('APPROVED', 'PENDING_APPROVAL')
              AND (p.romo_position = 'KETUA_ROMO' OR UPPER(p.romo_position) LIKE '%KETUA%' OR UPPER(p.romo_position) LIKE '%KEPALA%')
-             AND (p.is_jabatan_active IS NOT FALSE)
+             AND (u.account_status = 'PENDING_APPROVAL' OR p.is_jabatan_active IS NOT FALSE)
              AND (p.jabatan_end_year IS NULL OR p.jabatan_end_year >= EXTRACT(YEAR FROM CURRENT_DATE))`,
           [checkParokiId, uid],
         );
@@ -1887,7 +1887,7 @@ export class AuthService {
     search?: string,
   ) {
     let query = `
-      SELECT u.id, u.uuid, u.phone_number, u.account_status, u.is_active, u.created_at,
+      SELECT u.id, u.uuid, u.phone_number, u.account_status, u.is_active, u.created_at, u.approval_assigned_to_user_id, (SELECT ap.full_name FROM user_profiles ap WHERE ap.user_id = u.approval_assigned_to_user_id) as approver_name,
              r.id as role_id, r.code as role_code, r.name as role_name,
              p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url,
              p.keuskupan_id, k.name as keuskupan_name,

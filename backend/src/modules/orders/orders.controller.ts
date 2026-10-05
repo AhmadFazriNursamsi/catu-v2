@@ -16,6 +16,8 @@ import { CreateOrderDto } from '../../orders.dto';
 import { OrdersService } from './orders.service';
 import { OrderReviewsService } from './order-reviews.service';
 import { validateRescheduleProposal } from './reschedule-validation';
+import { validateNewOrder } from '../order-rules/order-input-rules';
+import { OrderGuardsService } from '../order-rules/order-guards.service';
 import { MAX_RESCHEDULE_REJECTIONS, OrderEventsService } from '../order-events/order-events.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -30,6 +32,7 @@ export class OrdersController {
     private readonly orderReviewsService: OrderReviewsService,
     private readonly access: AccessService,
     private readonly events: OrderEventsService,
+    private readonly guards: OrderGuardsService,
   ) {}
 
   /** Identitas aktor selalu dari token; admin boleh bertindak atas nama pengguna lain. */
@@ -68,6 +71,9 @@ export class OrdersController {
     summary: 'Membuat Pesanan Pelayanan Baru (Perminyakan / Misa Kedukaan Multi-Item)',
   })
   async createOrder(@CurrentUser() user: AuthUser, @Body() dto: CreateOrderDto) {
+    const invalid = validateNewOrder(dto);
+    if (invalid) throw new BadRequestException(invalid);
+    await this.guards.assertNewOrderRefs(dto);
     return await this.ordersService.createOrder({ ...dto, userId: this.actor(user, dto.userId) });
   }
 
@@ -84,8 +90,8 @@ export class OrdersController {
     @Query('lingkunganId') lingkunganId?: string,
     @Query('isKoordinator') isKoordinator?: string,
   ) {
-    // Umat hanya melihat order miliknya sendiri, filter scope dari klien diabaikan.
-    if (this.access.isEndUser(user)) {
+    // Umat dan Koordinator hanya melihat order miliknya sendiri, filter scope dari klien diabaikan.
+    if (this.access.isEndUser(user) || user.roleCode.includes('KOORDINATOR')) {
       return await this.ordersService.getOrders(String(user.sub));
     }
     return await this.ordersService.getOrders(
@@ -133,6 +139,7 @@ export class OrdersController {
     const invalid = validateRescheduleProposal(dto);
     if (invalid) throw new BadRequestException(invalid);
     await this.events.assertRescheduleOpen(Number(idParam), dto.itemId);
+    await this.guards.assertRescheduleProposable(Number(idParam), dto.itemId);
     return await this.ordersService.proposeReschedule(idParam, {
       ...dto,
       romoId: this.actor(user, dto.romoId) as number,
@@ -152,6 +159,7 @@ export class OrdersController {
     },
   ) {
     await this.access.assertOrderAccess(user, idParam);
+    await this.guards.assertReschedulePending(Number(idParam), dto.itemId);
     const result: any = await this.ordersService.respondReschedule(idParam, {
       ...dto,
       userId: this.actor(user, dto.userId) as number,
@@ -177,10 +185,9 @@ export class OrdersController {
       reason: string;
     },
   ) {
-    return await this.ordersService.handoverOrder(idParam, {
-      ...dto,
-      romoId: this.actor(user, dto.romoId) as number,
-    });
+    const romoId = this.actor(user, dto.romoId) as number;
+    await this.guards.assertHandoverAllowed(Number(idParam), dto.itemId, { ...dto, romoId });
+    return await this.ordersService.handoverOrder(idParam, { ...dto, romoId });
   }
 
   @Post(':id/handover/respond')
@@ -196,6 +203,7 @@ export class OrdersController {
       action: 'ACCEPT' | 'REJECT';
     },
   ) {
+    await this.guards.assertHandoverPending(Number(idParam), dto.itemId);
     return await this.ordersService.respondHandover(idParam, {
       ...dto,
       romoId: this.actor(user, dto.romoId) as number,

@@ -21,6 +21,8 @@ import { ChatController } from '../../modules/chat/chat.controller';
 import { NotificationsController } from '../../modules/notifications/notifications.controller';
 import { AssignmentsController } from '../../modules/assignments/assignments.controller';
 import { ActivityLogsController } from '../../modules/activity-logs/activity-logs.controller';
+import { ApprovalsController } from '../../modules/auth/approvals.controller';
+import { ALLOW_INACTIVE_KEY } from '../decorators/allow-inactive.decorator';
 
 const CONTROLLERS = [
   AuthController,
@@ -34,25 +36,29 @@ const CONTROLLERS = [
   NotificationsController,
   AssignmentsController,
   ActivityLogsController,
+  ApprovalsController,
 ];
 
-function publicRoutes(): string[] {
+function routesWith(metadataKey: string): string[] {
   const routes: string[] = [];
   for (const controller of CONTROLLERS) {
     const base = Reflect.getMetadata(PATH_METADATA, controller) as string;
-    const classPublic = Reflect.getMetadata(IS_PUBLIC_KEY, controller) === true;
+    const classPublic = Reflect.getMetadata(metadataKey, controller) === true;
     for (const name of Object.getOwnPropertyNames(controller.prototype)) {
       const handler = controller.prototype[name];
       if (name === 'constructor' || typeof handler !== 'function') continue;
       const method = Reflect.getMetadata(METHOD_METADATA, handler);
       if (method === undefined) continue;
-      if (!classPublic && Reflect.getMetadata(IS_PUBLIC_KEY, handler) !== true) continue;
+      if (!classPublic && Reflect.getMetadata(metadataKey, handler) !== true) continue;
       const sub = ((Reflect.getMetadata(PATH_METADATA, handler) as string) || '').replace(/^\/+$/, '');
       routes.push(`${RequestMethod[method]} /${base}${sub ? '/' + sub : ''}`);
     }
   }
   return routes.sort();
 }
+
+const publicRoutes = () => routesWith(IS_PUBLIC_KEY);
+const inactiveAccountRoutes = () => routesWith(ALLOW_INACTIVE_KEY);
 
 describe('akses publik API (kontrak keamanan)', () => {
   it('JwtAuthGuard dan RolesGuard terpasang global', () => {
@@ -94,6 +100,19 @@ describe('akses publik API (kontrak keamanan)', () => {
       'POST /auth/forgot-password/verify-otp',
       'POST /auth/login',
       'POST /auth/register',
+    ].sort());
+  });
+
+  it('hanya endpoint ini yang boleh dipakai akun belum disetujui / ditolak', () => {
+    // Akun non-APPROVED ditolak di semua endpoint lain oleh JwtAuthGuard. Menambah daftar ini wajib disengaja.
+    expect(inactiveAccountRoutes()).toEqual([
+      'GET /auth/check-status',
+      'GET /auth/profile/:userId',
+      'GET /notifications',
+      'POST /notifications/:id/read',
+      'POST /notifications/read-all',
+      'POST /notifications/register-device',
+      'POST /notifications/unregister-device',
     ].sort());
   });
 });

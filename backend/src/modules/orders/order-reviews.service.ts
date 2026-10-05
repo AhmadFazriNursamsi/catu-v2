@@ -1,10 +1,13 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { FcmService } from '../../fcm.service';
+import { validateReview } from '../order-rules/order-input-rules';
 
 @Injectable()
 export class OrderReviewsService {
+  private readonly logger = new Logger(OrderReviewsService.name);
+
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly fcmService: FcmService,
@@ -24,15 +27,14 @@ export class OrderReviewsService {
       throw new BadRequestException('ID order tidak valid');
     }
 
-    const reviewNotes = dto.reviewNotes?.trim();
-    if (!reviewNotes) {
-      throw new BadRequestException('Ulasan tidak boleh kosong');
-    }
+    const invalid = validateReview(dto);
+    if (invalid) throw new BadRequestException(invalid);
+    const reviewNotes = dto.reviewNotes.trim();
 
     const rating = dto.rating != null ? Math.round(Number(dto.rating)) : null;
 
     const orderRows = await this.dataSource.query(
-      `SELECT id, order_number, user_id, status, scheduled_date, accepted_romo_id FROM orders WHERE id = $1`,
+      `SELECT id, order_number, user_id, status, scheduled_date, accepted_romo_id, reviewed_at FROM orders WHERE id = $1`,
       [orderId],
     );
     if (!orderRows || orderRows.length === 0) {
@@ -48,7 +50,7 @@ export class OrderReviewsService {
 
     if (dto.itemId) {
       const itemRows = await this.dataSource.query(
-        `SELECT id, status, scheduled_date, accepted_romo_id FROM order_items WHERE id = $1 AND order_id = $2`,
+        `SELECT id, status, scheduled_date, accepted_romo_id, reviewed_at FROM order_items WHERE id = $1 AND order_id = $2`,
         [dto.itemId, orderId],
       );
       if (!itemRows || itemRows.length === 0) {
@@ -60,6 +62,7 @@ export class OrderReviewsService {
       if (itemSt !== 'DONE' && itemSt !== 'CLOSE' && orderSt !== 'DONE' && orderSt !== 'CLOSE') {
         throw new BadRequestException('Ulasan hanya dapat diberikan setelah pelayanan selesai atau ditutup');
       }
+      if (item.reviewed_at) throw new ConflictException('Ulasan untuk pelayanan ini sudah pernah diberikan.');
       if (item.accepted_romo_id) {
         targetRomoId = Number(item.accepted_romo_id);
       }
@@ -73,6 +76,7 @@ export class OrderReviewsService {
       if (orderSt !== 'DONE' && orderSt !== 'CLOSE') {
         throw new BadRequestException('Ulasan hanya dapat diberikan setelah pelayanan selesai atau ditutup');
       }
+      if (order.reviewed_at) throw new ConflictException('Ulasan untuk pelayanan ini sudah pernah diberikan.');
     }
 
     await this.dataSource.query(
@@ -83,12 +87,6 @@ export class OrderReviewsService {
     if (targetRomoId) {
       const notifTitle = 'Ulasan Pelayanan Diterima';
       const notifBody = `Umat telah memberikan ulasan untuk pelayanan #${order.order_number}`;
-      const notifData = JSON.stringify({
-        type: 'ORDER_REVIEW',
-        orderId: order.id,
-        orderNumber: order.order_number,
-        reviewNotes,
-      });
 
       await this.fcmService.sendPushToUsers([targetRomoId], {
         title: notifTitle,
@@ -100,11 +98,12 @@ export class OrderReviewsService {
         },
       }).catch(() => {});
 
+      // Kolom type dan order_id wajib agar notifikasi tersimpan dan ketukannya membuka pelayanan yang tepat.
       await this.dataSource.query(
-        `INSERT INTO notifications (user_id, title, body, data, is_read, created_at)
-         VALUES ($1, $2, $3, $4, FALSE, NOW())`,
-        [targetRomoId, notifTitle, notifBody, notifData],
-      ).catch(() => {});
+        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read, created_at)
+         VALUES ($1, $2, $3, $4, 'ORDER_REVIEW', FALSE, NOW())`,
+        [targetRomoId, order.id, notifTitle, notifBody],
+      ).catch((err) => this.logger.error(`Gagal menyimpan notifikasi ulasan: ${err.message}`));
     }
 
     return {

@@ -16,12 +16,17 @@ import { JwtService } from '@nestjs/jwt';
 import { FcmService } from './fcm.service';
 import { AccessService } from './common/access/access.service';
 import { OrderEventsService } from './modules/order-events/order-events.service';
+import { EscalationService } from './modules/escalation/escalation.service';
+import { EscalationSettingsService } from './modules/escalation/escalation-settings.service';
+import { OrderGuardsService } from './modules/order-rules/order-guards.service';
+import { AssignmentWorkflowService } from './modules/assignments/assignment-workflow.service';
 import * as bcrypt from 'bcrypt';
 
 const adminUser = { sub: 1, roleCode: 'ADMIN' };
 
 describe('CATU v2 Controllers & Services (Unit Tests)', () => {
   let authController: AuthController;
+  let authService: AuthService;
   let ordersController: OrdersController;
   let assignmentsController: AssignmentsController;
   let chatController: ChatController;
@@ -82,10 +87,16 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
           provide: FcmService,
           useValue: mockFcmService,
         },
+        { provide: EscalationSettingsService, useValue: { get: jest.fn().mockResolvedValue({ ordoAfterMinutes: 10, koordinatorAfterMinutes: 20 }) } },
+        { provide: EscalationService, useValue: { assertCanAccept: jest.fn().mockResolvedValue(undefined) } },
+        // Penjaga keadaan pelayanan diuji terpisah (order-rules, perminyakan-flow.py); di sini cukup dilewati.
+        { provide: OrderGuardsService, useValue: { assertNewOrderRefs: jest.fn().mockResolvedValue(undefined), assertExists: jest.fn().mockResolvedValue(undefined) } },
+        { provide: AssignmentWorkflowService, useFactory: (svc: AssignmentsService) => ({ respond: (id: number, dto: any, ctx: any) => svc.respondAssignment(String(id), { ...dto, romoId: ctx.romoId }) }), inject: [AssignmentsService] },
       ],
     }).compile();
 
     authController = module.get<AuthController>(AuthController);
+    authService = module.get<AuthService>(AuthService);
     ordersController = module.get<OrdersController>(OrdersController);
     assignmentsController = module.get<AssignmentsController>(AssignmentsController);
     chatController = module.get<ChatController>(ChatController);
@@ -156,7 +167,7 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
         .mockResolvedValueOnce([{ full_name: 'Umat Budi' }]) // SELECT full_name
         .mockResolvedValueOnce([]); // INSERT user_approvals
 
-      const result = await authController.approveRegistration({
+      const result = await authService.approveRegistration({
         targetUserId: 10,
         action: 'APPROVED',
       });
@@ -170,6 +181,7 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
       mockDataSource.query.mockImplementation(async (sql: string) => {
         if (sql.includes('auth_users') && sql.includes('LIMIT 1')) return [{ id: 1 }];
         if (sql.includes('user_profiles') && sql.includes('WHERE user_id')) return [{ keuskupan_id: 1, paroki_id: 10 }];
+        if (sql.includes('order_number_counters')) return [{ last_value: 1 }];
         if (sql.includes('INSERT INTO orders')) return [{ id: 101, order_number: 'ORD-20260811-0001', status: 'PENDING' }];
         if (sql.includes('INSERT INTO chat_groups')) return [{ id: 50 }];
         return [];
@@ -178,7 +190,7 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
       const dto = {
         serviceCategoryId: 2,
         urgencyLevelId: 3,
-        scheduledDate: '2026-08-15',
+        scheduledDate: new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10),
         scheduledTime: '18:00',
         locationName: 'Rumah Duka Carolus Room 101',
         addressDetail: 'Jl. Salemba Raya No. 41',
