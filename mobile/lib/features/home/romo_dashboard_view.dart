@@ -250,7 +250,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     final int? endYear = widget.user['jabatanEndYear'] ?? widget.user['jabatan_end_year'];
     final String accountStatus = (widget.user['accountStatus'] ?? widget.user['account_status'] ?? '').toString().toUpperCase();
     final bool isApproved = accountStatus == 'APPROVED' || widget.user['isApproved'] == true || widget.user['is_approved'] == true;
-    final String positionTitle = _isKetuaRomo ? 'Pastor Kepala' : 'Pastor Rekan';
+    final String positionTitle = homeRoleTitle(widget.user);
 
     final String periodeText = (startDate != null && endDate != null && startDate.isNotEmpty && endDate.isNotEmpty)
         ? '$startDate - $endDate'

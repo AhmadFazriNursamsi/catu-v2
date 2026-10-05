@@ -471,8 +471,8 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       ),
       child: Column(
         children: [
-          // ── Pengurus Lingkungan Approval Tile ──
-          if (_isPengurus) ...[
+          // ── Pengurus Lingkungan Approval Tile (hanya tampil bila ada umat baru menunggu) ──
+          if (_isPengurus && _pendingPengurusCount > 0) ...[
             _buildMenuItem(
               icon: Icons.how_to_reg_rounded,
               title: 'Persetujuan Umat Lingkungan',

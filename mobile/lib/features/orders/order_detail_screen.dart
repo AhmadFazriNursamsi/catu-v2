@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
+import '../../core/services/api_result.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import '../chat/chat_screen.dart';
 import 'widgets/accept_service_dialog.dart';
 import 'widgets/handover_romo_sheet.dart';
+import 'widgets/koordinator_assign_card.dart';
 import 'widgets/reschedule_sheet.dart';
 import 'widgets/reschedule_validation.dart';
 import 'widgets/order_review_sheet.dart';
@@ -535,37 +537,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                         ),
                       ),
                         actions: [
-                        if (isAssignedToCurrentRomo &&
-                            (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS') &&
-                            !isReceivedFromHandover &&
-                            (order.items.isNotEmpty
-                                ? (!displayItem.hasPendingHandover && !displayItem.isHandoverCompleted)
-                                : (!order.hasPendingHandover && !order.isHandoverCompleted)))
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: GestureDetector(
-                              onTap: () => _showHandoverBottomSheet(order, targetItem: displayItem),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(color: const Color(0xFF0284C7).withValues(alpha: 0.85), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withValues(alpha: 0.3))),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 15),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Ganti Romo',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
                         Padding(
                           padding: const EdgeInsets.only(right: 16),
                           child: Center(
@@ -582,7 +553,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             _buildHeroBackground(order, isKedukaan, urgencyColor),
                       ),
                     ),
-
                     // ── Body ──
                     SliverToBoxAdapter(
                       child: Padding(
@@ -593,9 +563,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             // ── Title + Status Chip ──
                             _buildTitleCard(
                                 displayItem, order, statusColor, statusLabel, statusIcon),
-
                             const SizedBox(height: 12),
-
+                            KoordinatorAssignCard(orderId: order.id, onAssigned: () => Navigator.pop(context, true)),
                             // ── Service Review Card (DONE or CLOSE) ──
                             if (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE') ...[
                               OrderReviewCard(
@@ -606,13 +575,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               ),
                               const SizedBox(height: 12),
                             ],
-
                             // ── Reschedule Proposal Card for Umat ──
                             if (!widget.isRomo && (order.items.isNotEmpty ? displayItem.hasPendingReschedule : order.hasPendingReschedule)) ...[
                               _buildRescheduleProposalCard(order, displayItem),
                               const SizedBox(height: 12),
                             ],
-
                             // ── Handover Proposal Card for Target Romo (Romo Baru) ──
                             if (widget.isRomo &&
                                 widget.romoId != null &&
@@ -622,7 +589,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               _buildHandoverProposalCardForTargetRomo(order, displayItem),
                               const SizedBox(height: 12),
                             ],
-
                             // ── Handover Pending Banner for Proposer Romo (Romo Lama) ──
                             if (widget.isRomo &&
                                 widget.romoId != null &&
@@ -632,7 +598,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               _buildHandoverPendingBannerForProposer(order, displayItem),
                               const SizedBox(height: 12),
                             ],
-
                             // ── Handover Rejected Banner for Proposer Romo (Romo Lama) ──
                             if (widget.isRomo &&
                                 widget.romoId != null &&
@@ -642,7 +607,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               _buildHandoverRejectedBannerForProposer(order, displayItem),
                               const SizedBox(height: 12),
                             ],
-
                             // ── Handover Info for Umat ──
                             if (!widget.isRomo &&
                                 (order.items.isNotEmpty
@@ -651,7 +615,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               _buildHandoverInfoCardForUmat(order, displayItem),
                               const SizedBox(height: 12),
                             ],
-
                               // ── Romo yang Bertugas Info Card ──
                               if (isItemAccepted) ...[
                                 _buildInfoCard(
@@ -714,7 +677,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               ),
                               const SizedBox(height: 12),
                             ],
-
                             // ── Schedule & Location Card ──
                             _buildInfoCard(
                               icon: Icons.event_rounded,
@@ -726,7 +688,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                 _buildInfoTile(icon: Icons.place_rounded, label: 'Lokasi', value: displayItem.locationName.isNotEmpty ? displayItem.locationName : order.displayAddress, isLast: true),
                               ],
                             ),
-
                             const SizedBox(height: 12),
 
                             // ── Data Almarhum / Almarhumah (if kedukaan) ──
@@ -926,6 +887,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         romoId: widget.romoId,
         itemId: targetItem?.id,
       );
+      if (mounted && apiFailed(res)) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiMessage(res, 'Pelayanan tidak dapat diselesaikan.')), backgroundColor: Colors.red.shade700));
+        await _fetchFreshOrder();
+        return;
+      }
       if (mounted) {
         if (targetItem != null) {
           targetItem.status = 'DONE';
@@ -2131,6 +2097,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     setState(() => _isSubmitting = true);
     try {
       final res = await ApiService.respondAssignment(order.id, 'CONFIRMED', romoId: widget.romoId, itemId: targetItem?.id);
+      if (mounted && apiFailed(res)) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiMessage(res, 'Pelayanan tidak dapat diterima.')), backgroundColor: Colors.red.shade700));
+        await _fetchFreshOrder();
+        return;
+      }
       if (mounted) {
         if (targetItem != null && widget.romoId != null) {
           targetItem.status = 'CONFIRMED';
@@ -2898,7 +2869,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     try {
       final res = await ApiService.handoverServiceOrder(order.id, romoId: romoId, itemId: targetItem?.id, targetRomoId: targetRomoId, externalRomoName: externalRomoName, reason: reason);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? 'Pengajuan pelimpahan tugas berhasil diproses.'), backgroundColor: const Color(0xFF0284C7)));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiMessage(res, 'Pengajuan pelimpahan tugas berhasil diproses.')), backgroundColor: apiFailed(res) ? Colors.red.shade700 : const Color(0xFF0284C7)));
         await _fetchFreshOrder();
       }
     } catch (e) {

@@ -10,7 +10,7 @@
     "mobile/lib/core/services/notification_service.dart": 965,
     "mobile/lib/core/services/api_service.dart": 1118,
     "mobile/lib/core/services/language_service.dart": 539,
-    "mobile/lib/features/home/umat_dashboard_view.dart": 1220,
+    "mobile/lib/features/home/umat_dashboard_view.dart": 1210,
     "mobile/lib/features/home/romo_dashboard_view.dart": 1410,
     "mobile/lib/features/chat/chat_screen.dart": 1215,
     "mobile/lib/features/chat/chat_list_screen.dart": 923,
@@ -29,8 +29,8 @@
     "mobile/lib/features/orders/create_perminyakan_screen.dart": 1219,
     "mobile/lib/features/orders/histori_screen.dart": 1009,
     "mobile/lib/features/orders/create_kedukaan_screen.dart": 1574,
-    "mobile/lib/features/orders/order_detail_screen.dart": 2931,
-    "mobile/lib/features/notifications/notification_screen.dart": 1049
+    "mobile/lib/features/orders/order_detail_screen.dart": 2902,
+    "mobile/lib/features/notifications/notification_screen.dart": 1043
   },
   "functions": {
     "mobile/lib/features/home/umat_dashboard_view.dart": [

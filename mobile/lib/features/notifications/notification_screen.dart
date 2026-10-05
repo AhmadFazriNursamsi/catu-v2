@@ -281,13 +281,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
           children: [
             // ── Header ──
             _buildHeader(unread),
-
             // ── Search Bar ──
             _buildSearchBar(),
-
             // ── Filter Row ──
             _buildFilterRow(),
-
             // ── List ──
             Expanded(
               child: _isLoading
@@ -613,7 +610,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
               setState(() => item.isRead = true);
               final remaining = _allItems.where((n) => !n.isRead).length;
               NotificationService.updateBadgeCount(remaining);
-
               // 0. Check if chat message notification
               if (item.type == 'CHAT_MESSAGE') {
                 int? orderId;
@@ -622,7 +618,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 }
                 final uName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'User';
                 final isRomo = widget.role.toUpperCase().contains('ROMO');
-
                 if (orderId != null && orderId > 0) {
                   try {
                     final gId = item.groupId ?? await ApiService.getChatGroupIdForOrder(orderId);
@@ -668,7 +663,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 }
                 return;
               }
-
               // 0. Account Approval / Rejection Result Notification -> ONLY show Alert Dialog, DO NOT redirect!
               final titleLower = item.title.toLowerCase();
               final bodyLower = item.body.toLowerCase();

@@ -18,6 +18,31 @@ void main() {
     });
   });
 
+  group('homeRoleTitle', () {
+    test('Romo: jabatan Romo Paroki / Ordo, bukan sebutan umat', () {
+      expect(homeRoleTitle({'roleCode': 'ROMO_PAROKI', 'romoPosition': 'ROMO_BIASA'}), 'Romo Paroki');
+      expect(homeRoleTitle({'roleCode': 'ROMO_PAROKI', 'romoPosition': 'Kepala Romo Paroki'}), 'Kepala Romo Paroki');
+      expect(homeRoleTitle({'roleCode': 'ROMO_PAROKI', 'romoPosition': 'KETUA_ROMO'}), 'Kepala Romo Paroki');
+      expect(homeRoleTitle({'roleCode': 'ROMO_ORDO', 'romoPosition': 'ROMO_BIASA'}), 'Romo Ordo');
+      expect(homeRoleTitle({'roleCode': 'ROMO_ORDO', 'romo_position': 'Ketua Romo Ordo'}), 'Ketua Romo Ordo');
+    });
+
+    test('pengurus: menampilkan jabatan, bukan "Umat"', () {
+      expect(homeRoleTitle({'roleCode': 'PENGURUS_LINGKUNGAN', 'pengurusPosition': 'Ketua Lingkungan'}), 'Ketua Lingkungan');
+      expect(homeRoleTitle({'roleCode': 'PENGURUS_LINGKUNGAN', 'pengurusPosition': 'Sekretaris'}), 'Sekretaris Lingkungan');
+      expect(homeRoleTitle({'roleCode': 'PENGURUS_LINGKUNGAN', 'pengurus_position': 'bendahara'}), 'Bendahara Lingkungan');
+      expect(homeRoleTitle({'roleCode': 'PENGURUS_LINGKUNGAN', 'pengurusPosition': 'WAKIL'}), 'Wakil Ketua Lingkungan');
+      expect(homeRoleTitle({'roleCode': 'PENGURUS_LINGKUNGAN', 'pengurusPosition': 'KETUA'}), 'Ketua Lingkungan');
+      expect(homeRoleTitle({'roleCode': 'PENGURUS_LINGKUNGAN'}), 'Pengurus Lingkungan');
+    });
+
+    test('koordinator dan umat', () {
+      expect(homeRoleTitle({'roleCode': 'KOORDINATOR_KEUSKUPAN', 'pengurusPosition': 'Koordinator'}), 'Koordinator Keuskupan');
+      expect(homeRoleTitle({'roleCode': 'UMAT'}), 'Umat');
+      expect(homeRoleTitle({'roleCode': 'UMAT_PENDATANG'}), 'Umat Pendatang');
+    });
+  });
+
   group('GenderFormField', () {
     testWidgets('wajib dipilih: pesan merah, lalu valid setelah memilih', (tester) async {
       final key = GlobalKey<FormState>();

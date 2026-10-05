@@ -215,7 +215,6 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
   @override
   Widget build(BuildContext context) {
     final String userName = widget.user['fullName'] ?? widget.user['full_name'] ?? 'Umat';
-    final String pengurusPos = widget.user['pengurusPosition'] ?? widget.user['pengurus_position'] ?? '';
     final String? startDate = widget.user['jabatanStartDate'] ?? widget.user['jabatan_start_date'];
     final String? endDate = widget.user['jabatanEndDate'] ?? widget.user['jabatan_end_date'];
     final int? startYear = widget.user['jabatanStartYear'] ?? widget.user['jabatan_start_year'];
@@ -224,16 +223,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     final bool isApproved = accountStatus == 'APPROVED' || widget.user['isApproved'] == true || widget.user['is_approved'] == true;
     final role = (widget.user['role'] ?? widget.user['role_code'] ?? widget.user['roleCode'] ?? '').toString().toUpperCase();
     final bool isPendatang = role == 'UMAT_PENDATANG' || widget.user['kunjungan'] != null;
-    String positionTitle = isPendatang ? 'Umat Pendatang' : 'Umat (Anggota)';
-    if (_isKoordinator) {
-      positionTitle = 'Koordinator Keuskupan';
-    } else if (pengurusPos == 'KETUA') {
-      positionTitle = 'Umat — Ketua Lingkungan';
-    } else if (pengurusPos == 'WAKIL') {
-      positionTitle = 'Umat — Wakil Ketua';
-    } else if (pengurusPos == 'SEKRETARIS') {
-      positionTitle = 'Umat — Sekretaris';
-    }
+    final String positionTitle = homeRoleTitle(widget.user);
     final String periodeText = (startDate != null && endDate != null && startDate.isNotEmpty && endDate.isNotEmpty)
         ? '$startDate - $endDate'
         : (startYear != null && endYear != null ? '$startYear - $endYear' : '');
