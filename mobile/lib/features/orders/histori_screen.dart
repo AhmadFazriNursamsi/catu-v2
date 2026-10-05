@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
-import '../../core/widgets/urgency_flag.dart';
+import '../../core/widgets/urgency_label.dart';
 import '../../core/services/language_service.dart';
 import '../orders/order_detail_screen.dart';
 
@@ -144,7 +144,7 @@ class _HistoriScreenState extends State<HistoriScreen>
       case 'CLOSE':
         return 'Ditutup Otomatis';
       case 'FAIL':
-        return 'Gagal / Kadaluarsa';
+        return 'Gagal';
       case 'DECLINED':
       case 'REJECTED':
         return 'Ditolak';
@@ -839,7 +839,7 @@ class _HistoriScreenState extends State<HistoriScreen>
                               ),
                               if (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE')
                                 _buildReviewBadge(displayItem?.hasReview ?? order.hasReview),
-                              UrgencyFlag(urgencyName: order.urgencyName),
+                              UrgencyLabel(urgencyName: order.urgencyName),
                             ],
                           ),
                         ],

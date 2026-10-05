@@ -11,6 +11,7 @@ import '../../core/services/auth_service.dart';
 import '../news/public_news_screen.dart';
 import 'romo_dashboard_view.dart';
 import 'umat_dashboard_view.dart';
+import 'widgets/logout_back_guard.dart';
 import 'umat_pendatang_dashboard_view.dart';
 import '../admin/admin_dashboard_view.dart';
 
@@ -168,7 +169,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => LogoutBackGuard(onLogout: _executeLogout, child: _buildForRole(context));
+
+  Widget _buildForRole(BuildContext context) {
     final String roleCode = _currentUserMap['roleCode'] ??
         _currentUserMap['role_code'] ??
         _currentUserMap['role'] ??

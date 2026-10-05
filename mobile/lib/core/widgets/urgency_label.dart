@@ -17,25 +17,30 @@ Color urgencyColorOf(String? name) => switch (urgencyLevelOf(name)) {
       UrgencyLevel.sangatPenting => const Color(0xFFDC2626),
     };
 
-/// Ikon bendera berwarna sebagai pengganti teks urgensi di kartu. Nama urgensi tetap tersedia
-/// sebagai tooltip dan label aksesibilitas.
-class UrgencyFlag extends StatelessWidget {
+/// Label singkat yang seragam di semua kartu, apa pun nama yang tersimpan di server.
+String urgencyLabelOf(String? name) => switch (urgencyLevelOf(name)) {
+      UrgencyLevel.standar => 'Standar',
+      UrgencyLevel.penting => 'Penting',
+      UrgencyLevel.sangatPenting => 'Sangat Penting',
+    };
+
+/// Label urgensi berwarna untuk kartu (Standar biru, Penting oranye, Sangat Penting merah).
+class UrgencyLabel extends StatelessWidget {
   final String urgencyName;
-  final double size;
-  const UrgencyFlag({super.key, required this.urgencyName, this.size = 15});
+  final double fontSize;
+  const UrgencyLabel({super.key, required this.urgencyName, this.fontSize = 10});
 
   @override
   Widget build(BuildContext context) {
     final color = urgencyColorOf(urgencyName);
-    return Tooltip(
-      message: urgencyName,
-      child: Semantics(
-        label: 'Urgensi: $urgencyName',
-        child: Container(
-          padding: EdgeInsets.all(size * 0.38),
-          decoration: BoxDecoration(color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
-          child: Icon(Icons.flag_rounded, size: size, color: color),
-        ),
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: fontSize * 0.7, vertical: fontSize * 0.25),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+      child: Text(
+        urgencyLabelOf(urgencyName),
+        maxLines: 1,
+        softWrap: false,
+        style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w700, color: color),
       ),
     );
   }

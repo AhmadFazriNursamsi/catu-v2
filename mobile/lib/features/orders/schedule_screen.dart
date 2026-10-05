@@ -2,7 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
-import '../../core/widgets/urgency_flag.dart';
+import '../../core/widgets/urgency_label.dart';
+import 'widgets/schedule_parts.dart';
 import 'order_detail_screen.dart';
 import '../../core/services/language_service.dart';
 import '../../core/services/api_service.dart';
@@ -93,6 +94,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   String _searchQuery = '';
 
   late List<Order> _localOrders;
+  final ScrollController _dayScroll = ScrollController();
 
   late AnimationController _animController;
   late Animation<double> _fadeIn;
@@ -107,6 +109,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     // Default select TODAY for crisp, intuitive schedule viewing
     _selectedDateFilter = DateTime(now.year, now.month, now.day);
     _isMonthFilterActive = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelectedDay(animate: false));
 
     _animController = AnimationController(
       vsync: this,
@@ -114,6 +117,19 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     );
     _fadeIn = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
+  }
+
+  /// Menggulir deretan tanggal agar tanggal terpilih (atau hari ini) terlihat di tengah.
+  void _scrollToSelectedDay({bool animate = true}) {
+    if (!_dayScroll.hasClients) return;
+    final now = DateTime.now();
+    final sel = _selectedDateFilter;
+    final day = (sel != null && sel.year == _selectedMonth.year && sel.month == _selectedMonth.month)
+        ? sel.day
+        : (_selectedMonth.year == now.year && _selectedMonth.month == now.month ? now.day : 1);
+    final pos = _dayScroll.position;
+    final target = dayStripOffset(day: day, viewport: pos.viewportDimension, maxExtent: pos.maxScrollExtent);
+    animate ? _dayScroll.animateTo(target, duration: const Duration(milliseconds: 300), curve: Curves.easeOut) : _dayScroll.jumpTo(target);
   }
 
   @override
@@ -153,6 +169,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
   @override
   void dispose() {
+    _dayScroll.dispose();
     LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     _animController.dispose();
     super.dispose();
@@ -464,6 +481,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   @override
   Widget build(BuildContext context) {
     final grouped = _groupedEntries;
+    final totalCount = grouped.values.fold<int>(0, (sum, list) => sum + list.length);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
@@ -489,19 +507,28 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                   child: Row(
                     children: [
-                      Text(
-                        _selectedDateFilter != null
-                            ? 'Jadwal ${_formatDateHeader(_selectedDateFilter!)}'
-                            : (_isMonthFilterActive
-                                ? 'Jadwal ${_formatMonthYear(_selectedMonth)}'
-                                : 'Jadwal Mendatang (${_filteredEntries.length} Pelayanan)'),
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF1E293B),
+                      Expanded(
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              _selectedDateFilter != null
+                                  ? 'Jadwal ${_formatDateHeader(_selectedDateFilter!)}'
+                                  : (_isMonthFilterActive
+                                      ? 'Jadwal ${_formatMonthYear(_selectedMonth)}'
+                                      : 'Jadwal Mendatang'),
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF1E293B),
+                              ),
+                            ),
+                            ScheduleCountChip(count: totalCount),
+                          ],
                         ),
                       ),
-                      const Spacer(),
                       if (_selectedDateFilter != null)
                         GestureDetector(
                           onTap: () => setState(() {
@@ -699,13 +726,17 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
               children: [
-                Text(
-                  '${monthNames[_selectedMonth.month - 1]} ${_selectedMonth.year}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
-                    letterSpacing: -0.2,
+                Flexible(
+                  child: Text(
+                    '${monthNames[_selectedMonth.month - 1]} ${_selectedMonth.year}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.2,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -720,6 +751,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                           DateTime(now.year, now.month, now.day);
                       _isMonthFilterActive = true;
                     });
+                    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelectedDay());
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -751,6 +783,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                       _selectedDateFilter = null;
                       _isMonthFilterActive = true;
                     });
+                    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelectedDay());
                   },
                   child: Container(
                     padding: const EdgeInsets.all(6),
@@ -772,6 +805,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                       _selectedDateFilter = null;
                       _isMonthFilterActive = true;
                     });
+                    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelectedDay());
                   },
                   child: Container(
                     padding: const EdgeInsets.all(6),
@@ -793,6 +827,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           SizedBox(
             height: 68,
             child: ListView.builder(
+              controller: _dayScroll,
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               itemCount: daysInMonth,
@@ -1008,13 +1043,17 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                       color: Color(0xFF1D4ED8),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      _sortBy == 'TERDEKAT' ? 'Sort: Terdekat' : 'Sort: Terjauh',
+                    Flexible(
+                      child: Text(
+                      _sortBy == 'TERDEKAT' ? 'Urutkan: Terdekat' : 'Urutkan: Terjauh',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF1D4ED8),
                       ),
+                    ),
                     ),
                   ],
                 ),
@@ -1224,8 +1263,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: IntrinsicHeight(
+        child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Left Timeline Node Track
           Column(
@@ -1251,12 +1291,13 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                 ),
               ),
               const SizedBox(height: 6),
-              Container(
-                width: 2,
-                height: entries.length * 280.0,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
-                  borderRadius: BorderRadius.circular(1),
+              Expanded(
+                child: Container(
+                  width: 2,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(1),
+                  ),
                 ),
               ),
             ],
@@ -1327,6 +1368,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -1342,7 +1384,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
     final bool isKedukaan = entry.categoryName.toLowerCase().contains('kedukaan');
     final String cardTitle = entry.title;
-    final String cardSubtitle = isKedukaan ? 'Alm. ${order.penerimaName}' : 'Penerima: ${order.penerimaName}';
+    final String cardSubtitle = '${isKedukaan ? 'Alm. ${order.penerimaName}' : 'Penerima: ${order.penerimaName}'} · #${order.orderNumber}';
     final String romoName = entry.item != null
         ? (entry.item!.acceptedRomoName ?? '')
         : (order.acceptedRomoName ?? '');
@@ -1408,7 +1450,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                     children: [
                       Positioned.fill(
                         child: Image.asset(
-                          'assets/images/church_1.jpg',
+                          'assets/images/katedral_jakarta.jpg',
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -1536,16 +1578,23 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        cardTitle,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                          letterSpacing: -0.2,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              cardTitle,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF0F172A),
+                                letterSpacing: -0.2,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFFCBD5E1)),
+                        ],
                       ),
                       const SizedBox(height: 3),
 
@@ -1649,48 +1698,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                             ),
                           ),
                           const SizedBox(width: 4),
-                          UrgencyFlag(urgencyName: order.urgencyName, size: 13),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Container(height: 1, color: const Color(0xFFF1F5F9)),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text(
-                            '#${order.orderNumber}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF94A3B8),
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1D4ED8),
-                              borderRadius: BorderRadius.circular(9),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.visibility_rounded,
-                                    size: 12, color: Colors.white),
-                                const SizedBox(width: 5),
-                                Text(
-                                  LanguageService.tr('view_detail'),
-                                  style: const TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          UrgencyLabel(urgencyName: order.urgencyName, fontSize: 9),
                         ],
                       ),
                     ],
@@ -1738,73 +1746,29 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   // ── Empty State ──────────────────────────────────────────────────────────────
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Icon(
-                Icons.event_busy_rounded,
-                size: 38,
-                color: Color(0xFFCBD5E1),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Tidak Ada Pelayanan Aktif',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF334155),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _selectedDateFilter != null
-                  ? 'Tidak ada pelayanan aktif pada tanggal\n${_formatDateHeader(_selectedDateFilter!)}.'
-                  : (_activeFilterCount > 0
-                      ? 'Tidak ditemukan pelayanan dengan filter terpilih.'
-                      : 'Belum ada jadwal pelayanan aktif mendatang.'),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13.5,
-                color: Color(0xFF94A3B8),
-                height: 1.5,
-              ),
-            ),
-            if (_activeFilterCount > 0) ...[
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: _resetAllFilters,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1D4ED8).withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'Reset Semua Filter',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1D4ED8),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+    final now = DateTime.now();
+    final from = _selectedDateFilter != null ? _selectedDateFilter!.add(const Duration(days: 1)) : now;
+    final nearest = nearestDateFrom(_allRawEntries.map((e) => e.parsedDate), from.isBefore(now) ? now : from);
+    int countOn(DateTime day) => _allRawEntries.where((e) => e.parsedDate != null && DateUtils.isSameDay(e.parsedDate, day)).length;
+    return ScheduleEmptyState(
+      selectedDate: _selectedDateFilter,
+      hasOtherFilters: _selectedCategory != 'SEMUA' || _selectedStatus != 'SEMUA',
+      nearestDate: nearest,
+      nearestCount: nearest == null ? 0 : countOn(nearest),
+      formatDate: _formatDateHeader,
+      onShowAll: () => setState(() {
+        _selectedDateFilter = null;
+        _isMonthFilterActive = false;
+      }),
+      onResetFilters: _resetAllFilters,
+      onJumpToNearest: () {
+        setState(() {
+          _selectedDateFilter = nearest;
+          _selectedMonth = DateTime(nearest!.year, nearest.month, 1);
+          _isMonthFilterActive = true;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelectedDay());
+      },
     );
   }
 }

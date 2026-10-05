@@ -5,7 +5,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/widgets/liquid_bottom_nav_bar.dart';
-import '../../core/widgets/urgency_flag.dart';
+import '../../core/widgets/urgency_label.dart';
 import '../chat/chat_list_screen.dart';
 import '../orders/histori_screen.dart';
 import '../orders/order_detail_screen.dart';
@@ -14,6 +14,7 @@ import '../profile/main_menu_screen.dart';
 import '../notifications/notification_screen.dart';
 import '../admin/romo_approval_screen.dart';
 import '../../core/services/api_service.dart';
+import 'widgets/home_greeting.dart';
 
 class RomoDashboardCardItem {
   final Order parentOrder;
@@ -98,7 +99,6 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
       final int? parokiId = rawParoki != null ? int.tryParse(rawParoki.toString()) : null;
       final rawOrdo = widget.user['ordoId'] ?? widget.user['ordo_id'];
       final int? ordoId = rawOrdo != null ? int.tryParse(rawOrdo.toString()) : null;
-
       final list = await ApiService.getPendingRomoList(
         romoUserId: romoUserId,
         parokiId: parokiId,
@@ -338,7 +338,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Hi, $userName',
+                          homeGreeting(widget.user, userName),
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -833,15 +833,15 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
       if (order.items.isNotEmpty) {
         for (final item in order.items) {
-          final isIncomingHandover = romoId != null &&
-              (item.handoverTargetRomoId == romoId && item.hasPendingHandover);
+          // Pelimpahan masuk sudah diterima lewat notifikasi, tidak ditampilkan di daftar ini.
+          if (romoId != null && item.handoverTargetRomoId == romoId && item.hasPendingHandover) continue;
 
-          if (!isIncomingHandover && ((isOrdo && order.kabupatenKotaId != null && romoKabKotaId != null && order.kabupatenKotaId != romoKabKotaId) || (!isOrdo && order.parokiId != null && romoParokiId != null && order.parokiId != romoParokiId))) continue;
+          if (((isOrdo && order.kabupatenKotaId != null && romoKabKotaId != null && order.kabupatenKotaId != romoKabKotaId) || (!isOrdo && order.parokiId != null && romoParokiId != null && order.parokiId != romoParokiId))) continue;
 
-          // EXCLUDE items that are already accepted by ANY Romo, unless it's an incoming handover to this Romo!
-          if (item.acceptedRomoId != null && !isIncomingHandover) continue;
+          // EXCLUDE items that are already accepted by ANY Romo.
+          if (item.acceptedRomoId != null) continue;
           final itemSt = item.status.toUpperCase();
-          if ((itemSt == 'CONFIRMED' || itemSt == 'DONE' || itemSt == 'IN_PROGRESS' || itemSt == 'ACCEPTED') && !isIncomingHandover) continue;
+          if ((itemSt == 'CONFIRMED' || itemSt == 'DONE' || itemSt == 'IN_PROGRESS' || itemSt == 'ACCEPTED')) continue;
           if (_isDateBeforeToday(item.scheduledDate)) continue;
 
           String rawDate = item.scheduledDate;
@@ -854,7 +854,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           cardList.add(
             RomoDashboardCardItem(
               parentOrder: order,
-              title: isIncomingHandover ? '🔄 [Pelimpahan] ${item.itemName}' : item.itemName,
+              title: item.itemName,
               dateSchedule: scheduleStr,
               location: item.locationName.isNotEmpty ? item.locationName : order.displayAddress,
               penerimaName: order.penerimaName,
@@ -863,18 +863,17 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
           );
         }
       } else {
-        final isIncomingHandover = romoId != null &&
-            (order.handoverTargetRomoId == romoId && order.hasPendingHandover);
+        if (romoId != null && order.handoverTargetRomoId == romoId && order.hasPendingHandover) continue;
 
-        if (!isIncomingHandover && ((isOrdo && order.kabupatenKotaId != null && romoKabKotaId != null && order.kabupatenKotaId != romoKabKotaId) || (!isOrdo && order.parokiId != null && romoParokiId != null && order.parokiId != romoParokiId))) continue;
+        if (((isOrdo && order.kabupatenKotaId != null && romoKabKotaId != null && order.kabupatenKotaId != romoKabKotaId) || (!isOrdo && order.parokiId != null && romoParokiId != null && order.parokiId != romoParokiId))) continue;
 
-        if ((st != 'PENDING' || order.acceptedRomoId != null) && !isIncomingHandover) continue;
+        if (st != 'PENDING' || order.acceptedRomoId != null) continue;
         if (_isDateBeforeToday(order.scheduledDate)) continue;
 
         cardList.add(
           RomoDashboardCardItem(
             parentOrder: order,
-            title: isIncomingHandover ? '🔄 [Pelimpahan] ${order.categoryName}' : order.categoryName,
+            title: order.categoryName,
             dateSchedule: order.fullScheduleLabel,
             location: order.displayAddress,
             penerimaName: order.penerimaName,
@@ -1396,7 +1395,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        UrgencyFlag(urgencyName: order.urgencyName, size: 13),
+                        UrgencyLabel(urgencyName: order.urgencyName, fontSize: 9),
                       ],
                     ),
                   ],

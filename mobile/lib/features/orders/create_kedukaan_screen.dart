@@ -1169,7 +1169,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                                       children: [
                                         const Text('Paroki yang sama?', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
                                         const SizedBox(height: 2),
-                                        Text(_isSameParish ? 'Aktif: Menggunakan Keuskupan & Paroki domisili profil Anda (Read Only)' : 'Tidak Aktif: Pilih Keuskupan & Paroki tujuan secara manual', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.2)),
+                                        Text(_isSameParish ? 'Aktif: Menggunakan Keuskupan & Paroki domisili profil Anda' : 'Tidak Aktif: Pilih Keuskupan & Paroki tujuan secara manual', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.2)),
                                       ],
                                     ),
                                   ),
@@ -1316,7 +1316,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                 children: [
                   Positioned.fill(
                     child: Image.asset(
-                      'assets/images/church_1.jpg',
+                      'assets/images/katedral_jakarta.jpg',
                       fit: BoxFit.cover,
                     ),
                   ),

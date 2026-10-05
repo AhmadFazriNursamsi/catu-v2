@@ -73,8 +73,8 @@ void main() {
   });
 
   group('label tombol di beranda', () {
-    test('label tombol adalah "Permintaan Pelayanan"', () {
-      expect(LanguageService.tr('quick_services'), 'Permintaan Pelayanan');
+    test('label tombol adalah "Layanan Baru"', () {
+      expect(LanguageService.tr('quick_services'), 'Layanan Baru');
     });
 
     testWidgets('beranda Umat menampilkan label baru tanpa overflow', (tester) async {
@@ -87,11 +87,11 @@ void main() {
       ));
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
-      expect(find.text('Permintaan Pelayanan'), findsOneWidget);
+      expect(find.text('Layanan Baru'), findsOneWidget);
       expect(find.text('Buat Permintaan Pelayanan'), findsNothing);
       expect(find.text('Layanan Cepat'), findsNothing);
       // tombol memakai ikon "+"
-      final button = find.ancestor(of: find.text('Permintaan Pelayanan'), matching: find.byType(ElevatedButton));
+      final button = find.ancestor(of: find.text('Layanan Baru'), matching: find.byType(ElevatedButton));
       expect(button, findsOneWidget);
       expect(find.descendant(of: button, matching: find.byIcon(Icons.add_rounded)), findsOneWidget);
       await tester.pumpWidget(const SizedBox()); // hentikan timer polling

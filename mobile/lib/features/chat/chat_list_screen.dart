@@ -780,7 +780,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 CircleAvatar(
                   radius: 26,
                   backgroundColor: const Color(0xFF1E5399).withValues(alpha: 0.1),
-                  backgroundImage: const AssetImage('assets/images/church_1.jpg'),
+                  backgroundImage: const AssetImage('assets/images/katedral_jakarta.jpg'),
                 ),
                 Positioned(
                   bottom: 0,

@@ -495,7 +495,7 @@ class NotificationService {
         }
       } catch (_) {}
     } else {
-      final match = RegExp(r'ORD-\d+-\d+').firstMatch(body);
+      final match = RegExp(r'(?:ORD|SM|MD|PL)-\d+-\d+').firstMatch(body);
       if (match != null) {
         notifKey = 'order_${match.group(0)}';
       }

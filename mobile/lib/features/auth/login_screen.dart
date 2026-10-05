@@ -306,7 +306,7 @@ class _LoginScreenState extends State<LoginScreen>
               padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
               decoration: const BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage('assets/images/church_1.jpg'),
+                  image: AssetImage('assets/images/katedral_jakarta.jpg'),
                   fit: BoxFit.cover,
                   colorFilter: ColorFilter.mode(
                     Color(0xE60A1128),

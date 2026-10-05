@@ -7,6 +7,7 @@ import '../../core/utils/fade_slide_route.dart';
 import '../../widgets/searchable_select_field.dart';
 import 'login_screen.dart';
 import 'pending_approval_screen.dart';
+import 'widgets/gender_form_field.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -29,6 +30,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   final _confirmPasswordController = TextEditingController();
 
   String _selectedRole = 'UMAT';
+  String? _gender;
   String? _selectedUmatPosition;
   String _selectedRomoOrdoPosition = 'ROMO_BIASA';
   String _selectedRomoParokiPosition = 'ROMO_BIASA';
@@ -211,7 +213,6 @@ class _RegisterScreenState extends State<RegisterScreen>
         _ordoList = _sortByName(ordos);
         _dynamicProvinsiList = _sortByName(provs);
         _isLoadingRoles = false;
-
         if (_keuskupanList.isNotEmpty) {
           _selectedKeuskupanId =
               int.tryParse(_keuskupanList.first['id'].toString());
@@ -219,14 +220,12 @@ class _RegisterScreenState extends State<RegisterScreen>
             _onKeuskupanChanged(_selectedKeuskupanId!);
           }
         }
-
         if (_ordoList.isNotEmpty) {
           _selectedOrdoId = int.tryParse(_ordoList.first['id'].toString());
           if (_ordoList.first['has_ketua'] == true || _ordoList.first['hasKetua'] == true) {
             _selectedRomoOrdoPosition = 'ROMO_BIASA';
           }
         }
-
         if (_dynamicProvinsiList.isNotEmpty) {
           _selectedProvinsiId =
               int.tryParse(_dynamicProvinsiList.first['id'].toString());
@@ -283,7 +282,6 @@ class _RegisterScreenState extends State<RegisterScreen>
           final bool hasWak = selectedLingkungan['has_wakil'] == true || selectedLingkungan['hasWakil'] == true || selectedLingkungan['has_wakil'] == 'true';
           final bool hasSek = selectedLingkungan['has_sekretaris'] == true || selectedLingkungan['hasSekretaris'] == true || selectedLingkungan['has_sekretaris'] == 'true';
           final bool hasBen = selectedLingkungan['has_bendahara'] == true || selectedLingkungan['hasBendahara'] == true || selectedLingkungan['has_bendahara'] == 'true';
-
           bool isTaken = false;
           String posLabel = '';
           if (_selectedUmatPosition == 'KETUA' && hasKet) {
@@ -385,6 +383,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       roleCode: finalRoleCode,
       email: email.isNotEmpty ? email : null,
       birthDate: null,
+      gender: _selectedRole.startsWith('ROMO') ? null : _gender,
       address: address.isNotEmpty ? address : null,
       keuskupanId: _selectedKeuskupanId,
       parokiId: _selectedParokiId,
@@ -426,7 +425,6 @@ class _RegisterScreenState extends State<RegisterScreen>
               'roleCode': finalRoleCode,
               'accountStatus': 'PENDING_APPROVAL',
             };
-
       if (finalRoleCode == 'ROMO_ORDO' && _selectedOrdoId != null) {
         registeredUser['ordoId'] = _selectedOrdoId;
         final selectedOrdo = _ordoList.firstWhere(
@@ -437,7 +435,6 @@ class _RegisterScreenState extends State<RegisterScreen>
           registeredUser['ordoName'] = selectedOrdo['name'];
         }
       }
-
       if (registeredUser['accountStatus'] == 'APPROVED' ||
           registeredUser['account_status'] == 'APPROVED') {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1353,7 +1350,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                                     ],
                                   ),
                                   const SizedBox(height: 14),
-
+                                  if (!_selectedRole.startsWith('ROMO')) ...[
+                                    GenderFormField(value: _gender, onChanged: (g) => setState(() => _gender = g)),
+                                    const SizedBox(height: 14),
+                                  ],
                                   TextFormField(
                                     controller: _emailController,
                                     keyboardType: TextInputType.emailAddress,

@@ -7,6 +7,7 @@ import '../../core/services/auth_http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
+import '../auth/widgets/gender_form_field.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -28,6 +29,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _phoneController;
   late TextEditingController _emailController;
   late TextEditingController _addressController;
+  String? _gender;
 
   String? _avatarUrl;
   String _selectedRole = 'Umat';
@@ -153,10 +155,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() {
         _dynamicProvinsiList = provs;
       });
-
       final currentProvId = _selectedProvinsiId ??
           (provs.isNotEmpty ? int.tryParse(provs.first['id'].toString()) : null);
-
       if (currentProvId != null) {
         _selectedProvinsiId = currentProvId;
         final kotas = await ApiService.getKabupatenKotaList(provinsiId: currentProvId);
@@ -222,6 +222,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         data['phoneNumber'] ?? data['phone_number'] ?? '';
     _emailController.text = data['email'] ?? '';
     _addressController.text = data['address'] ?? '';
+    final g = (data['gender'] ?? '').toString().toUpperCase();
+    _gender = (g == 'L' || g == 'P') ? g : null;
 
     final avatar = data['avatarUrl'] ?? data['avatar_url'];
     if (avatar != null && avatar.toString().isNotEmpty) {
@@ -297,7 +299,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final response = await http.get(
         Uri.parse('${ApiService.baseUrl}/auth/profile/$userId'),
       );
-
       if (response.statusCode == 200) {
         final resData = jsonDecode(response.body);
         if (resData['user'] != null) {
@@ -326,17 +327,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         maxHeight: 1024,
         imageQuality: 85,
       );
-
       if (file != null) {
         final bytes = await file.readAsBytes();
         if (bytes.isNotEmpty) {
           final base64Str = base64Encode(bytes);
           final finalUrl = 'data:image/png;base64,$base64Str';
-
           setState(() {
             _avatarUrl = finalUrl;
           });
-
           if (mounted) {
             ScaffoldMessenger.of(context).clearSnackBars();
             ScaffoldMessenger.of(context).showSnackBar(
@@ -390,7 +388,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         allowMultiple: false,
         withData: true,
       );
-
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
         Uint8List? fileBytes = file.bytes;
@@ -645,6 +642,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'phoneNumber': _phoneController.text.trim(),
         'email': _emailController.text.trim(),
         'address': _addressController.text.trim(),
+        if (_gender != null && !_isRomo) 'gender': _gender,
         'avatarUrl': _avatarUrl,
         'roleCode': roleCode,
         'kabupatenKotaId': _selectedKabupatenKotaId,
@@ -695,7 +693,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   ImageProvider _getAvatarImageProvider() {
     if (_avatarUrl == null || _avatarUrl!.isEmpty) {
-      return const AssetImage('assets/images/church_1.jpg');
+      return const AssetImage('assets/images/katedral_jakarta.jpg');
     }
     if (_avatarUrl!.startsWith('data:image')) {
       if (_avatarMemoryCache.containsKey(_avatarUrl!)) {
@@ -709,7 +707,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _avatarMemoryCache[_avatarUrl!] = provider;
         return provider;
       } catch (_) {
-        return const AssetImage('assets/images/church_1.jpg');
+        return const AssetImage('assets/images/katedral_jakarta.jpg');
       }
     }
     if (_avatarUrl!.startsWith('http://') || _avatarUrl!.startsWith('https://')) {
@@ -718,7 +716,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (File(_avatarUrl!).existsSync()) {
       return FileImage(File(_avatarUrl!));
     }
-    return const AssetImage('assets/images/church_1.jpg');
+    return const AssetImage('assets/images/katedral_jakarta.jpg');
   }
 
   @override
@@ -779,8 +777,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ],
               ),
               const SizedBox(height: 14),
-
-
+              if (!_isRomo) ...[
+                GenderFormField(value: _gender, onChanged: (g) => setState(() => _gender = g)),
+                const SizedBox(height: 14),
+              ],
               _buildTextField(
                 controller: _phoneController,
                 label: LanguageService.tr('phone_number'),

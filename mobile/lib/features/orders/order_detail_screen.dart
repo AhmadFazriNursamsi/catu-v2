@@ -266,7 +266,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.asset('assets/images/church_1.jpg', fit: BoxFit.cover),
+        Image.asset('assets/images/katedral_jakarta.jpg', fit: BoxFit.cover),
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

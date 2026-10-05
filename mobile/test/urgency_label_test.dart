@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:catu_mobile/core/models/models.dart';
-import 'package:catu_mobile/core/widgets/urgency_flag.dart';
+import 'package:catu_mobile/core/widgets/urgency_label.dart';
 import 'package:catu_mobile/features/home/umat_dashboard_view.dart';
 import 'package:catu_mobile/features/orders/create_kedukaan_screen.dart';
 
@@ -14,34 +14,39 @@ void main() {
       for (final n in ['Standar', 'Biasa', '', 'apa saja']) {
         expect(urgencyLevelOf(n), UrgencyLevel.standar, reason: n);
         expect(urgencyColorOf(n), blue, reason: n);
+        expect(urgencyLabelOf(n), 'Standar', reason: n);
       }
       expect(urgencyColorOf('Penting'), orange);
+      expect(urgencyLabelOf('Penting'), 'Penting');
       for (final n in ['Sangat Penting / Butuh Segera', 'Darurat / Kritis', 'darurat', 'SANGAT PENTING']) {
         expect(urgencyLevelOf(n), UrgencyLevel.sangatPenting, reason: n);
         expect(urgencyColorOf(n), red, reason: n);
+        expect(urgencyLabelOf(n), 'Sangat Penting', reason: n);
       }
       expect(urgencyLevelOf(null), UrgencyLevel.standar);
     });
   });
 
-  group('UrgencyFlag', () {
-    testWidgets('menampilkan ikon bendera berwarna, bukan teks, dengan tooltip nama urgensi', (tester) async {
+  group('UrgencyLabel', () {
+    testWidgets('menampilkan label teks berwarna, bukan ikon bendera', (tester) async {
       await tester.pumpWidget(const MaterialApp(
         home: Scaffold(body: Column(children: [
-          UrgencyFlag(urgencyName: 'Standar'),
-          UrgencyFlag(urgencyName: 'Penting'),
-          UrgencyFlag(urgencyName: 'Sangat Penting / Butuh Segera'),
+          UrgencyLabel(urgencyName: 'Biasa'),
+          UrgencyLabel(urgencyName: 'Penting'),
+          UrgencyLabel(urgencyName: 'Sangat Penting / Butuh Segera'),
         ])),
       ));
-      final icons = tester.widgetList<Icon>(find.byIcon(Icons.flag_rounded)).toList();
-      expect(icons.map((i) => i.color), [blue, orange, red]);
-      expect(find.text('Penting'), findsNothing);
-      expect(find.byTooltip('Sangat Penting / Butuh Segera'), findsOneWidget);
+      Color? colorOf(String text) => tester.widget<Text>(find.text(text)).style?.color;
+      expect(colorOf('Standar'), blue);
+      expect(colorOf('Penting'), orange);
+      expect(colorOf('Sangat Penting'), red);
+      expect(find.byIcon(Icons.flag_rounded), findsNothing);
+      expect(find.text('Sangat Penting / Butuh Segera'), findsNothing, reason: 'nama panjang diringkas');
     });
   });
 
   group('kartu beranda', () {
-    Future<Set<Color?>> flagColors(WidgetTester tester, List<String> urgencies) async {
+    Future<void> pumpHome(WidgetTester tester, List<String> urgencies) async {
       SharedPreferences.setMockInitialValues({});
       tester.view.physicalSize = const Size(1080, 3000);
       tester.view.devicePixelRatio = 3;
@@ -59,20 +64,20 @@ void main() {
       ));
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
-      final colors = tester.widgetList<Icon>(find.byIcon(Icons.flag_rounded)).map((i) => i.color).toSet();
-      for (final u in urgencies) {
-        expect(find.text(u), findsNothing, reason: 'urgensi "$u" tidak boleh tampil sebagai teks di kartu');
-      }
-      await tester.pumpWidget(const SizedBox()); // hentikan timer polling
-      return colors;
     }
 
-    testWidgets('standar biru dan penting oranye', (tester) async {
-      expect(await flagColors(tester, ['Standar', 'Penting']), {blue, orange});
+    testWidgets('standar biru dan penting oranye sebagai label', (tester) async {
+      await pumpHome(tester, ['Standar', 'Penting']);
+      expect(tester.widget<Text>(find.text('Standar')).style?.color, blue);
+      expect(tester.widget<Text>(find.text('Penting')).style?.color, orange);
+      expect(find.byIcon(Icons.flag_rounded), findsNothing);
+      await tester.pumpWidget(const SizedBox()); // hentikan timer polling
     });
 
-    testWidgets('sangat penting merah', (tester) async {
-      expect(await flagColors(tester, ['Sangat Penting / Butuh Segera']), {red});
+    testWidgets('sangat penting merah sebagai label', (tester) async {
+      await pumpHome(tester, ['Sangat Penting / Butuh Segera']);
+      expect(tester.widget<Text>(find.text('Sangat Penting')).style?.color, red);
+      await tester.pumpWidget(const SizedBox());
     });
   });
 
@@ -83,7 +88,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(const MaterialApp(home: CreateKedukaanScreen(userId: 1, user: {'id': 1, 'roleCode': 'UMAT'})));
     await tester.pump(const Duration(milliseconds: 300));
-    final dropdown = find.byType(DropdownButtonFormField<String>).at(1); // urgensi (setelah hubungan)
+    final dropdown = find.byType(DropdownButtonFormField<String>).at(1);
     await tester.ensureVisible(dropdown);
     await tester.tap(dropdown);
     await tester.pumpAndSettle();

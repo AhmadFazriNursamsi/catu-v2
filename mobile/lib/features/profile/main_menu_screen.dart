@@ -426,7 +426,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   ImageProvider _getAvatarImageProvider() {
     final avatar = _userData['avatarUrl'] ?? _userData['avatar_url'];
     if (avatar == null || avatar.toString().isEmpty) {
-      return const AssetImage('assets/images/church_1.jpg');
+      return const AssetImage('assets/images/katedral_jakarta.jpg');
     }
     final urlStr = avatar.toString();
     if (urlStr.startsWith('data:image')) {
@@ -441,7 +441,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
         _avatarMemoryCache[urlStr] = provider;
         return provider;
       } catch (_) {
-        return const AssetImage('assets/images/church_1.jpg');
+        return const AssetImage('assets/images/katedral_jakarta.jpg');
       }
     }
     if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) {
@@ -450,7 +450,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     if (File(urlStr).existsSync()) {
       return FileImage(File(urlStr));
     }
-    return const AssetImage('assets/images/church_1.jpg');
+    return const AssetImage('assets/images/katedral_jakarta.jpg');
   }
 
   // ── Menu List Section ──────────────────────────────────────────────────────

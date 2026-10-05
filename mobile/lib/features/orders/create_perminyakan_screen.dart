@@ -685,9 +685,9 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                         const SizedBox(height: 14),
                         _buildInputField(
                           controller: _catatanController,
-                          label: 'Catatan / Kondisi Kesehatan (Opsional)',
+                          label: 'Catatan',
                           hint:
-                              'Tuliskan kondisi pasien, misal: Dirawat di ICU, butuh minyak suci segera',
+                              'Catatan tambahan (misal: dirawat di ICU, butuh minyak suci segera)',
                           prefixIcon: Icons.notes_rounded,
                           maxLines: 3,
                         ),
@@ -807,7 +807,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                                       children: [
                                         Text(LanguageService.tr('same_parish'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
                                         const SizedBox(height: 2),
-                                        Text(_isSameParish ? 'Aktif: Menggunakan Keuskupan & Paroki domisili profil Anda (Read Only)' : 'Tidak Aktif: Pilih Keuskupan & Paroki tujuan secara manual', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.2)),
+                                        Text(_isSameParish ? 'Aktif: Menggunakan Keuskupan & Paroki domisili profil Anda' : 'Tidak Aktif: Pilih Keuskupan & Paroki tujuan secara manual', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.2)),
                                       ],
                                     ),
                                   ),

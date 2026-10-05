@@ -57,7 +57,7 @@ void main() {
     expect(find.text('Semua'), findsOneWidget);
     expect(find.text('4'), findsOneWidget); // total entri: 1 + 2 misa + 1
     expect(find.text('Ditutup'), findsOneWidget);
-    expect(find.text('Gagal'), findsOneWidget);
+    expect(find.text('Gagal'), findsWidgets); // chip filter + chip status
     expect(find.text(LanguageService.tr('status_in_progress')), findsNothing, reason: 'tidak ada entri berlangsung, chip disembunyikan');
   });
 
@@ -69,9 +69,10 @@ void main() {
   testWidgets('mengetuk chip menyaring daftar', (tester) async {
     await pump(tester);
     expect(find.text('4 Permintaan'), findsOneWidget);
-    await tester.ensureVisible(find.text('Gagal'));
+    final failChip = find.widgetWithText(AnimatedContainer, 'Gagal');
+    await tester.ensureVisible(failChip);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Gagal'));
+    await tester.tap(failChip);
     await tester.pumpAndSettle();
     expect(find.text('1 Permintaan'), findsOneWidget);
     expect(find.text('Sakramen Perminyakan'), findsOneWidget);
@@ -93,12 +94,12 @@ void main() {
     expect(find.textContaining('Alm. Yohanes · #ORD-2'), findsWidgets);
   });
 
-  testWidgets('urgensi tampil sebagai ikon bendera berwarna, bukan teks', (tester) async {
+  testWidgets('urgensi tampil sebagai label berwarna yang diringkas', (tester) async {
     await pump(tester);
+    expect(tester.widget<Text>(find.text('Sangat Penting')).style?.color, const Color(0xFFDC2626));
+    expect(tester.widget<Text>(find.text('Standar').first).style?.color, const Color(0xFF1D4ED8));
     expect(find.text('Sangat Penting / Butuh Segera'), findsNothing);
-    expect(find.text('Biasa'), findsNothing);
-    final colors = tester.widgetList<Icon>(find.byIcon(Icons.flag_rounded)).map((i) => i.color).toSet();
-    expect(colors, {const Color(0xFFDC2626), const Color(0xFF1D4ED8)}, reason: 'sangat penting merah, biasa/standar biru');
+    expect(find.byIcon(Icons.flag_rounded), findsNothing);
   });
 
   testWidgets('pencarian tanpa hasil menampilkan keadaan kosong dan bisa direset', (tester) async {
@@ -138,7 +139,8 @@ void main() {
     const green = Color(0xFF059669), grey = Color(0xFF64748B), red = Color(0xFFDC2626);
     expect(textColors(tester, 'Telah Selesai'), contains(green), reason: 'chip status "Telah Selesai" harus hijau');
     expect(textColors(tester, 'Ditutup Otomatis'), contains(grey), reason: 'chip status "Ditutup Otomatis" harus abu-abu');
-    expect(textColors(tester, 'Gagal / Kadaluarsa'), contains(red));
+    expect(textColors(tester, 'Gagal'), contains(red));
+    expect(find.textContaining('Kadaluarsa'), findsNothing, reason: 'status gagal cukup "Gagal"');
     expect(textColors(tester, 'Telah Selesai'), isNot(contains(const Color(0xFF2563EB))), reason: 'biru lama sudah diganti');
   });
 

@@ -78,7 +78,6 @@ class ApiService {
             'password': password,
           }),
         ).timeout(const Duration(seconds: 4));
-
         if (response.statusCode == 200 || response.statusCode == 201) {
           _activeBaseUrl = hostUrl;
           return jsonDecode(response.body);
@@ -321,7 +320,7 @@ class ApiService {
     required String password,
     required String roleCode,
     String? email,
-    String? birthDate,
+    String? birthDate, String? gender,
     String? address,
     int? keuskupanId,
     int? parokiId,
@@ -347,6 +346,7 @@ class ApiService {
 
       if (email != null && email.isNotEmpty) payload['email'] = email;
       if (birthDate != null && birthDate.isNotEmpty) payload['birthDate'] = birthDate;
+      if (gender != null) payload['gender'] = gender;
       if (address != null && address.isNotEmpty) payload['address'] = address;
       if (keuskupanId != null) payload['keuskupanId'] = keuskupanId;
       if (parokiId != null) payload['parokiId'] = parokiId;

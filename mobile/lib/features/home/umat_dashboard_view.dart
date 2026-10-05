@@ -12,7 +12,7 @@ import '../orders/create_kedukaan_screen.dart';
 import '../orders/create_order_screen.dart';
 import '../orders/order_detail_screen.dart';
 import '../orders/widgets/service_type_sheet.dart';
-import '../../core/widgets/urgency_flag.dart';
+import '../../core/widgets/urgency_label.dart';
 import '../orders/histori_screen.dart';
 import '../orders/schedule_screen.dart';
 import '../profile/main_menu_screen.dart';
@@ -20,6 +20,7 @@ import '../chat/chat_list_screen.dart';
 import '../notifications/notification_screen.dart';
 import '../admin/pengurus_approval_screen.dart';
 import '../../core/services/api_service.dart';
+import 'widgets/home_greeting.dart';
 
 List<LiquidNavItem> _buildNavItems() => [
       LiquidNavItem(
@@ -126,7 +127,6 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
       final rawLingkungan = widget.user['lingkunganId'] ?? widget.user['lingkungan_id'];
       final int? lingkunganId = rawLingkungan != null ? int.tryParse(rawLingkungan.toString()) : null;
       final int? pengurusUserId = _userId;
-
       final list = await ApiService.getPengurusPendingUmat(
         lingkunganId: lingkunganId,
         pengurusUserId: pengurusUserId,
@@ -317,7 +317,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Hi, $userName',
+                          homeGreeting(widget.user, userName),
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -1188,7 +1188,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      UrgencyFlag(urgencyName: order.urgencyName, size: 13),
+                      UrgencyLabel(urgencyName: order.urgencyName, fontSize: 9),
                     ],
                   ),
                 ],
