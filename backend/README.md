@@ -57,6 +57,22 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+### Integration tests (PostgreSQL sungguhan)
+
+Menguji aturan pelayanan di atas database nyata: penerimaan atomik (dua Romo bersamaan), pembatasan paroki/kota,
+urutan status, pelimpahan, ubah jam, nomor pelayanan, dan ulasan. Tanpa `TEST_DATABASE_URL`, seluruhnya dilewati;
+di CI selalu dijalankan (lihat `.github/workflows/ci.yml`).
+
+```bash
+# database KOSONG yang namanya memuat "test" (tes menolak database lain)
+$ createdb catu_test && psql -d catu_test -f backend/init.sql
+$ TEST_DATABASE_URL=postgres://postgres:***@localhost:5432/catu_test npm run test:integration
+```
+
+Skema dilengkapi persis seperti saat aplikasi start; setiap spesifikasi menghapus data yang dibuatnya.
+Skrip uji menyeluruh lewat API (butuh backend + seed pengembangan): `scripts/backend/perminyakan-flow.py` dan
+`scripts/backend/registration-approval-flow.py`.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

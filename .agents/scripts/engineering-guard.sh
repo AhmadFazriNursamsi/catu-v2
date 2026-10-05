@@ -82,6 +82,12 @@ case "$CB_KIND" in
       (cd "${CB_DIR}" && npm run build)
     fi
     echo "==> [full] NestJS build verified."
+    if [ -n "${TEST_DATABASE_URL:-}" ]; then
+      echo "==> [full] Running integration tests against TEST_DATABASE_URL..."
+      (cd "${CB_DIR}" && npm run test:integration)
+    else
+      echo "Notice: TEST_DATABASE_URL belum diisi, tes integrasi PostgreSQL dilewati (selalu dijalankan di CI)."
+    fi
     ;;
 
   flutter)
