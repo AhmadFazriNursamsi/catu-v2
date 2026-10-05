@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEnum, IsIn, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 
 export enum RoleCodeEnum {
   UMAT = 'UMAT',
@@ -40,6 +40,11 @@ export class RegisterUserDto {
   @IsString()
   @IsOptional()
   birthDate?: string;
+
+  @ApiPropertyOptional({ example: 'L', description: 'Jenis kelamin: L (laki-laki) atau P (perempuan)' })
+  @IsIn(['L', 'P'])
+  @IsOptional()
+  gender?: 'L' | 'P';
 
   @ApiPropertyOptional({ example: 'Jl. Sutera Utama No. 18', description: 'Alamat tempat tinggal' })
   @IsString()

@@ -3,7 +3,7 @@ import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 import { CreateOrderDto } from "../../orders.dto";
 import { FcmService } from "../../fcm.service";
-
+import { generateOrderNumber } from './order-number';
 @Injectable()
 export class OrdersService {
   constructor(@InjectDataSource() private readonly dataSource: DataSource, private readonly fcmService: FcmService) {}
@@ -85,7 +85,7 @@ export class OrdersService {
   }
 
   async createOrder(dto: CreateOrderDto) {
-    const orderNum = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const orderNum = await generateOrderNumber(this.dataSource, dto.serviceCategoryId);
     let userId = dto.userId && dto.userId > 0 ? dto.userId : null;
     if (userId && (await this.dataSource.query('SELECT id FROM auth_users WHERE id = $1', [userId])).length === 0) userId = null;
     if (!userId) userId = (await this.dataSource.query('SELECT id FROM auth_users ORDER BY id ASC LIMIT 1'))[0]?.id || null;

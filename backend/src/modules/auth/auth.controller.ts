@@ -37,7 +37,7 @@ import {
   ResetPasswordDto,
   ChangePasswordDto,
 } from '../../auth.dto';
-import { UpdateUserProfileDto } from '../../orders.dto';
+import { UpdateProfileDto } from './update-profile.dto';
 import { AuthService } from './auth.service';
 import { PasswordService } from './password.service';
 
@@ -266,7 +266,7 @@ export class AuthController {
   async updateProfile(
     @CurrentUser() user: AuthUser,
     @Param('userId') userIdParam: string,
-    @Body() dto: UpdateUserProfileDto,
+    @Body() dto: UpdateProfileDto,
   ) {
     this.access.assertSelf(user, userIdParam);
     return await this.authService.updateProfile(userIdParam, dto);

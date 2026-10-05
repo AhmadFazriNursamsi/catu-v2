@@ -20,6 +20,7 @@ export class DatabaseInitService implements OnModuleInit {
         ADD COLUMN IF NOT EXISTS jabatan_end_date VARCHAR(20),
         ADD COLUMN IF NOT EXISTS is_jabatan_active BOOLEAN DEFAULT FALSE,
         ADD COLUMN IF NOT EXISTS birth_date VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS gender VARCHAR(1),
         ADD COLUMN IF NOT EXISTS address TEXT,
         ADD COLUMN IF NOT EXISTS avatar_url TEXT;
         ALTER TABLE user_profiles ALTER COLUMN pengurus_position TYPE VARCHAR(100) USING pengurus_position::text;

@@ -240,10 +240,9 @@ export class AuthService {
     if (cleanPhone.startsWith('+62')) cleanPhone = cleanPhone.substring(3);
     if (cleanPhone.startsWith('62')) cleanPhone = cleanPhone.substring(2);
     const fullPhone = `62${cleanPhone}`;
-
     const users = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.account_status, r.code as role_code,
-              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.ordo_id, p.kabupaten_kota_id, kk.provinsi_id,
+              p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.ordo_id, p.kabupaten_kota_id, kk.provinsi_id,
               k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, ord.name as ordo_name, kk.name as kota_name,
               p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
        FROM auth_users u
@@ -273,7 +272,7 @@ export class AuthService {
         fullName: user.full_name,
         phoneNumber: user.phone_number,
         email: user.email,
-        birthDate: user.birth_date,
+        birthDate: user.birth_date, gender: user.gender ?? null,
         address: user.address,
         avatarUrl: user.avatar_url,
         roleCode: user.role_code,
@@ -330,7 +329,7 @@ export class AuthService {
       const targetKeuskupan = resolvedKeuskupanId || 1;
       const rows = await this.dataSource.query(
         `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.created_at,
-                p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+                p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url,
                 k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name,
                 kk.name as kota_name
          FROM auth_users u
@@ -354,7 +353,7 @@ export class AuthService {
     if (!resolvedLingkunganId) {
       const rows = await this.dataSource.query(
         `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.created_at,
-                p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+                p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url,
                 k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name,
                 kk.name as kota_name
          FROM auth_users u
@@ -375,7 +374,7 @@ export class AuthService {
 
     const rows = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.created_at,
-              p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+              p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url,
               k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name,
               kk.name as kota_name
        FROM auth_users u
@@ -518,7 +517,7 @@ export class AuthService {
     if (isOrdo || resolvedOrdoId) {
       const rows = await this.dataSource.query(
         `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.created_at,
-                p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+                p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url,
                 p.romo_position, o.name as ordo_name, o.code as ordo_code,
                 k.name as keuskupan_name, par.name as paroki_name,
                 kk.name as kota_name
@@ -539,7 +538,7 @@ export class AuthService {
     } else {
       const rows = await this.dataSource.query(
         `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.created_at,
-                p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+                p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url,
                 p.romo_position,
                 k.name as keuskupan_name, par.name as paroki_name,
                 kk.name as kota_name
@@ -850,8 +849,8 @@ export class AuthService {
 
       // 2. Insert ke user_profiles
       await queryRunner.query(
-        `INSERT INTO user_profiles (user_id, full_name, email, birth_date, address, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, pengurus_position, romo_position, jabatan_start_year, jabatan_end_year, jabatan_start_date, jabatan_end_date, is_jabatan_active, ordo_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+        `INSERT INTO user_profiles (user_id, full_name, email, birth_date, address, keuskupan_id, paroki_id, wilayah_id, lingkungan_id, kabupaten_kota_id, pengurus_position, romo_position, jabatan_start_year, jabatan_end_year, jabatan_start_date, jabatan_end_date, is_jabatan_active, ordo_id, gender)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
         [
           authUser.id,
           dto.fullName,
@@ -870,7 +869,7 @@ export class AuthService {
           dto.jabatanStartDate || null,
           dto.jabatanEndDate || null,
           initialActiveFlag,
-          dto.ordoId || null,
+          dto.ordoId || null, dto.gender || null,
         ],
       );
 
@@ -1050,7 +1049,7 @@ export class AuthService {
 
     const users = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.password_hash, u.account_status, r.code as role_code,
-              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.ordo_id, p.kabupaten_kota_id, kk.provinsi_id,
+              p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.ordo_id, p.kabupaten_kota_id, kk.provinsi_id,
               k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, ord.name as ordo_name, kk.name as kota_name, prov.name as provinsi_name,
               p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
        FROM auth_users u
@@ -1104,7 +1103,7 @@ export class AuthService {
         fullName: user.full_name,
         phoneNumber: user.phone_number,
         email: user.email,
-        birthDate: user.birth_date,
+        birthDate: user.birth_date, gender: user.gender ?? null,
         address: user.address,
         avatarUrl: user.avatar_url,
         roleCode: user.role_code,
@@ -1140,7 +1139,7 @@ export class AuthService {
 
     const users = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.password_hash, u.account_status, r.code as role_code,
-              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id, kk.provinsi_id,
+              p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id, kk.provinsi_id,
               k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, kk.name as kota_name,
               p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
        FROM auth_users u
@@ -1304,7 +1303,7 @@ export class AuthService {
 
     const users = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.role_id, r.code as role_code,
-              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.ordo_id, ord.name as ordo_name,
+              p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url, p.ordo_id, ord.name as ordo_name,
               p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id,
               p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year,
               p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active,
@@ -1337,7 +1336,7 @@ export class AuthService {
         fullName: user.full_name,
         phoneNumber: user.phone_number,
         email: user.email || '',
-        birthDate: user.birth_date || '',
+        birthDate: user.birth_date || '', gender: user.gender ?? null,
         address: user.address || '',
         avatarUrl: user.avatar_url || '',
         roleCode: user.role_code,
@@ -1368,7 +1367,7 @@ export class AuthService {
   }
   async updateProfile(
     userId: string,
-    dto: UpdateUserProfileDto,
+    dto: UpdateUserProfileDto & { gender?: 'L' | 'P' },
   ) {
     const uid = parseInt(userId);
     if (isNaN(uid)) throw new BadRequestException('User ID tidak valid');
@@ -1550,6 +1549,7 @@ export class AuthService {
       fields.push(`birth_date = $${idx++}`);
       values.push(bDate);
     }
+    if (dto.gender !== undefined) { fields.push(`gender = $${idx++}`); values.push(dto.gender); }
     if (dto.address !== undefined) {
       fields.push(`address = $${idx++}`);
       values.push(dto.address);
@@ -1629,7 +1629,7 @@ export class AuthService {
 
     const updated = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.role_id, r.code as role_code,
-              p.full_name, p.email, p.birth_date, p.address, p.avatar_url, p.ordo_id, ord.name as ordo_name,
+              p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url, p.ordo_id, ord.name as ordo_name,
               p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.kabupaten_kota_id,
               p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year,
               p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active,
@@ -1655,7 +1655,7 @@ export class AuthService {
       fullName: updated[0].full_name,
       phoneNumber: updated[0].phone_number,
       email: updated[0].email || '',
-      birthDate: updated[0].birth_date || '',
+      birthDate: updated[0].birth_date || '', gender: updated[0].gender ?? null,
       address: updated[0].address || '',
       avatarUrl: updated[0].avatar_url || '',
       roleCode: updated[0].role_code,
@@ -1889,7 +1889,7 @@ export class AuthService {
     let query = `
       SELECT u.id, u.uuid, u.phone_number, u.account_status, u.is_active, u.created_at,
              r.id as role_id, r.code as role_code, r.name as role_name,
-             p.full_name, p.email, p.birth_date, p.address, p.avatar_url,
+             p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url,
              p.keuskupan_id, k.name as keuskupan_name,
              p.paroki_id, par.name as paroki_name,
              p.wilayah_id, w.name as wilayah_name,
