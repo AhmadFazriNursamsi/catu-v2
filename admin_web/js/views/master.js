@@ -9,7 +9,8 @@
       { id: 'kabupaten_kota', icon: 'building-2', label: 'Kabupaten / Kota' },
       { id: 'services', icon: 'clipboard-list', label: 'Kategori Pelayanan' },
       { id: 'roles', icon: 'shield-check', label: 'Jenis User / Role' },
-      { id: 'positions', icon: 'award', label: 'Jabatan & Struktur' }
+      { id: 'positions', icon: 'award', label: 'Jabatan & Struktur' },
+      { id: 'escalation', icon: 'timer', label: 'Parameter Pelayanan' }
     ];
 
     function scrollMasterTabs(amount) {
@@ -83,6 +84,7 @@
       if (s === 'services') return 'Kategori Pelayanan';
       if (s === 'roles') return 'Jenis User / Peran Pengguna';
       if (s === 'positions') return 'Jabatan & Struktur Pengurus / Romo';
+      if (s === 'escalation') return 'Parameter Pelayanan';
       return s;
     };
 
@@ -180,6 +182,7 @@
             </button>
           </div>
 
+          ${sub === 'escalation' ? renderEscalationParamsCard() : `
           <!-- Main Table Card -->
           <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden" id="master-table-card">
             
@@ -271,7 +274,7 @@
               </div>
               ${renderMasterPagination(filtered.length, page, pageSize, totalPages)}
             `}
-          </div>
+          </div>`}
         </div>
       `;
     }

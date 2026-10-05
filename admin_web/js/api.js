@@ -94,6 +94,8 @@
           url = `${API_BASE}/master/positions?_t=${t}`;
         } else if (tab === 'provinsi') {
           url = `${API_BASE}/master/provinsi?_t=${t}`;
+        } else if (tab === 'escalation') {
+          url = `${API_BASE}/master/escalation-settings`;
         } else if (tab === 'kabupaten_kota') {
           const provFilter = state.masterFilterProvinsiId ? `&provinsiId=${state.masterFilterProvinsiId}` : '';
           url = `${API_BASE}/master/kabupaten-kota?_t=${t}${provFilter}`;
@@ -104,6 +106,7 @@
           headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
         });
         const data = await res.json();
+        if (tab === 'escalation') { state.escalationSettings = data; state.escalationDraft = null; }
         state.masterDataList = Array.isArray(data) ? data : [];
 
         // Update lookup state
