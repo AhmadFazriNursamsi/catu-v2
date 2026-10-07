@@ -6,12 +6,12 @@ import 'package:catu_mobile/features/orders/widgets/reschedule_validation.dart';
 void main() {
   final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
   final currentDate = today.add(const Duration(days: 5));
-  final tomorrow = today.add(const Duration(days: 1));
 
   Future<List<RescheduleRequest>> openSheet(
     WidgetTester tester, {
     Future<String?> Function(RescheduleRequest r)? answer,
     int rejectedCount = 0,
+    bool withCurrentStart = true,
   }) async {
     tester.view.physicalSize = const Size(1080, 2600);
     tester.view.devicePixelRatio = 3;
@@ -27,7 +27,7 @@ void main() {
                 context: context,
                 itemName: 'Misa Pelepasan',
                 currentDate: currentDate,
-                currentStart: const TimeOfDay(hour: 18, minute: 0),
+                currentStart: withCurrentStart ? const TimeOfDay(hour: 18, minute: 0) : null,
                 currentEnd: const TimeOfDay(hour: 19, minute: 30),
                 rejectedCount: rejectedCount,
                 onSubmit: (r) async {
@@ -56,9 +56,17 @@ void main() {
 
   testWidgets('menampilkan jadwal saat ini dengan format yang mudah dibaca', (tester) async {
     await openSheet(tester);
-    expect(find.text('Ajukan Perubahan Jadwal'), findsOneWidget);
+    expect(find.text('Ajukan Ubah Jam'), findsOneWidget);
     expect(find.text('Misa Pelepasan'), findsOneWidget);
-    expect(find.text('Jadwal saat ini'), findsOneWidget);
+    expect(find.text('Jadwal saat ini (tanggal tetap)'), findsOneWidget);
+    // Ubah jam tidak mengubah tanggal: tidak ada kolom maupun pilihan tanggal.
+    expect(find.text('Tanggal baru'), findsNothing);
+    for (final chip in ['Hari ini', 'Besok', 'Lusa']) {
+      expect(find.text(chip), findsNothing);
+    }
+    expect(find.byIcon(Icons.calendar_today_rounded), findsNothing);
+    expect(find.text('Jam mulai'), findsOneWidget);
+    expect(find.text('Jam selesai (opsional)'), findsOneWidget);
     expect(find.textContaining('18:00 – 19:30 WIB'), findsOneWidget);
     expect(find.textContaining(formatLongDate(currentDate)), findsWidgets);
   });
@@ -72,32 +80,30 @@ void main() {
     expect(sent, isEmpty);
   });
 
-  testWidgets('jadwal sama dengan yang berlaku ditolak dengan pesan umum', (tester) async {
+  testWidgets('jam sama dengan yang berlaku ditolak dengan pesan umum', (tester) async {
     final sent = await openSheet(tester);
     await tapText(tester, 'Kendala perjalanan / transportasi');
     await tapText(tester, 'Kirim Pengajuan ke Umat');
-    expect(find.textContaining('sama dengan jadwal saat ini'), findsOneWidget);
+    expect(find.textContaining('sama dengan jam saat ini'), findsOneWidget);
     expect(sent, isEmpty);
   });
 
   testWidgets('pengajuan valid dikirim lalu form tertutup', (tester) async {
-    final sent = await openSheet(tester);
-    await tapText(tester, 'Besok');
+    final sent = await openSheet(tester, withCurrentStart: false);
     await tapText(tester, 'Ada keperluan pastoral mendadak');
-    expect(find.text('Yang akan diajukan ke Umat'), findsOneWidget);
+    expect(find.text('Jam baru yang diajukan ke Umat'), findsOneWidget);
+    expect(find.text('18:00 – 19:30 WIB'), findsOneWidget);
     await tapText(tester, 'Kirim Pengajuan ke Umat');
 
     expect(sent, hasLength(1));
-    expect(sent.single.newDate, formatIsoDate(tomorrow));
     expect(sent.single.newTimeStart, '18:00');
     expect(sent.single.newTimeEnd, '19:30');
     expect(sent.single.reason, 'Ada keperluan pastoral mendadak');
-    expect(find.text('Ajukan Perubahan Jadwal'), findsNothing);
+    expect(find.text('Ajukan Ubah Jam'), findsNothing);
   });
 
   testWidgets('jam selesai bisa dikosongkan lewat tombol hapus', (tester) async {
-    final sent = await openSheet(tester);
-    await tapText(tester, 'Besok');
+    final sent = await openSheet(tester, withCurrentStart: false);
     await tapText(tester, 'Ada keperluan pastoral mendadak');
     final clear = find.byIcon(Icons.close_rounded);
     await tester.ensureVisible(clear);
@@ -109,14 +115,13 @@ void main() {
   });
 
   testWidgets('penolakan server: pesan tampil dan isian tidak hilang', (tester) async {
-    final sent = await openSheet(tester, answer: (_) async => 'Hanya Romo yang bertugas yang dapat mengajukan.');
-    await tapText(tester, 'Besok');
+    final sent = await openSheet(tester, withCurrentStart: false, answer: (_) async => 'Hanya Romo yang bertugas yang dapat mengajukan.');
     await tapText(tester, 'Kondisi kesehatan kurang baik');
     await tapText(tester, 'Kirim Pengajuan ke Umat');
 
     expect(sent, hasLength(1));
     expect(find.text('Hanya Romo yang bertugas yang dapat mengajukan.'), findsOneWidget);
-    expect(find.text('Ajukan Perubahan Jadwal'), findsOneWidget);
+    expect(find.text('Ajukan Ubah Jam'), findsOneWidget);
     expect(find.text('Kondisi kesehatan kurang baik'), findsWidgets); // alasan tetap terisi
   });
 

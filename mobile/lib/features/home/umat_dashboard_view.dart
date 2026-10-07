@@ -12,6 +12,7 @@ import '../orders/create_kedukaan_screen.dart';
 import '../orders/create_order_screen.dart';
 import '../orders/order_detail_screen.dart';
 import '../orders/widgets/service_type_sheet.dart';
+import '../orders/widgets/reschedule_widgets.dart' show ServiceStatusPill;
 import '../../core/widgets/urgency_label.dart';
 import '../orders/histori_screen.dart';
 import '../orders/schedule_screen.dart';
@@ -1024,34 +1025,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: statusColor,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(statusIcon, color: Colors.white, size: 10),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    statusLabel,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        Flexible(child: ServiceStatusPill(color: statusColor, icon: statusIcon, label: statusLabel, rescheduleStatus: item.subItem?.rescheduleStatus ?? order.rescheduleStatus, serviceStatus: st)),
                       ],
                     ),
                   ),

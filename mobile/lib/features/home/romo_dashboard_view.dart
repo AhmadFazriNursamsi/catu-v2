@@ -15,6 +15,7 @@ import '../notifications/notification_screen.dart';
 import '../admin/romo_approval_screen.dart';
 import '../../core/services/api_service.dart';
 import 'widgets/home_greeting.dart';
+import '../orders/widgets/reschedule_widgets.dart' show ServiceStatusPill;
 
 class RomoDashboardCardItem {
   final Order parentOrder;
@@ -1247,34 +1248,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: statusColor,
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(statusIcon, color: Colors.white, size: 10),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      statusLabel,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                          Flexible(child: ServiceStatusPill(color: statusColor, icon: statusIcon, label: statusLabel, rescheduleStatus: item.subItem?.rescheduleStatus ?? order.rescheduleStatus, serviceStatus: effectiveStatus)),
                         ],
                       ),
                     ),

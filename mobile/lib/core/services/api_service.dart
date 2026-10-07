@@ -657,7 +657,6 @@ class ApiService {
     int orderId, {
     required int romoId,
     int? itemId,
-    String? newDate,
     required String newTimeStart,
     String? newTimeEnd,
     required String reason,
@@ -669,7 +668,6 @@ class ApiService {
         'reason': reason,
       };
       if (itemId != null) body['itemId'] = itemId;
-      if (newDate != null && newDate.isNotEmpty) body['newDate'] = newDate;
       if (newTimeEnd != null && newTimeEnd.isNotEmpty) body['newTimeEnd'] = newTimeEnd;
 
       final response = await http.post(

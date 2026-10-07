@@ -2,16 +2,17 @@ import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:catu_mobile/core/models/models.dart' show OrderRescheduleLog;
 import 'package:catu_mobile/features/orders/widgets/reschedule_validation.dart';
+import 'package:catu_mobile/features/orders/widgets/reschedule_widgets.dart' show rescheduleTimeText;
 
 void main() {
   final now = DateTime(2026, 10, 3, 10, 0);
   final tomorrow = DateTime(2026, 10, 4);
+  final today = DateTime(2026, 10, 3);
   const start = TimeOfDay(hour: 18, minute: 0);
   const end = TimeOfDay(hour: 19, minute: 30);
   const reason = 'Ada misa konselebrasi mendadak';
 
   RescheduleErrors run({
-    DateTime? date,
     TimeOfDay s = start,
     TimeOfDay? e = end,
     String r = reason,
@@ -20,7 +21,6 @@ void main() {
     TimeOfDay? curEnd,
   }) =>
       validateReschedule(
-        date: date ?? tomorrow,
         start: s,
         end: e,
         reason: r,
@@ -35,17 +35,15 @@ void main() {
     expect(run(e: null).hasAny, isFalse);
   });
 
-  test('tanggal lampau dan terlalu jauh ditolak', () {
-    expect(run(date: DateTime(2026, 10, 2)).date, contains('lewat'));
-    expect(run(date: DateTime(2026, 12, 31)).date, contains('Maksimal'));
-    expect(run(date: DateTime(2026, 12, 2)).date, isNull); // tepat 60 hari
+  test('hari ini (tanggal pelayanan = hari ini): jam mulai harus setelah jam sekarang', () {
+    expect(run(curDate: today, s: const TimeOfDay(hour: 9, minute: 59)).start, isNotNull);
+    expect(run(curDate: today, s: const TimeOfDay(hour: 10, minute: 0)).start, isNotNull);
+    expect(run(curDate: today, s: const TimeOfDay(hour: 10, minute: 1)).start, isNull);
   });
 
-  test('hari ini: jam mulai harus setelah jam sekarang', () {
-    final today = DateTime(2026, 10, 3);
-    expect(run(date: today, s: const TimeOfDay(hour: 9, minute: 59)).start, isNotNull);
-    expect(run(date: today, s: const TimeOfDay(hour: 10, minute: 0)).start, isNotNull);
-    expect(run(date: today, s: const TimeOfDay(hour: 10, minute: 1)).start, isNull);
+  test('pelayanan di hari lain: jam pagi pun boleh (tanggal tidak diubah)', () {
+    expect(run(curDate: tomorrow, s: const TimeOfDay(hour: 6, minute: 0)).start, isNull);
+    expect(run(s: const TimeOfDay(hour: 6, minute: 0)).start, isNull); // tanggal tidak diketahui
   });
 
   test('jam selesai harus setelah jam mulai', () {
@@ -62,12 +60,11 @@ void main() {
     expect(run(r: 'x' * 301).reason, contains('maksimal'));
   });
 
-  test('jadwal yang sama dengan jadwal saat ini ditolak, perubahan sekecil apa pun lolos', () {
+  test('jam yang sama dengan jam saat ini ditolak, perubahan sekecil apa pun lolos', () {
     final same = run(curDate: tomorrow, curStart: start, curEnd: end);
-    expect(same.general, isNotNull);
+    expect(same.general, contains('Jam baru sama'));
     expect(run(curDate: tomorrow, curStart: start, curEnd: null).general, isNull);
     expect(run(curDate: tomorrow, curStart: const TimeOfDay(hour: 17, minute: 59), curEnd: end).general, isNull);
-    expect(run(curDate: DateTime(2026, 10, 5), curStart: start, curEnd: end).general, isNull);
   });
 
   test('parseTimeOfDay dan parseDateOnly menerima format dari backend dan menolak sisanya', () {
@@ -83,6 +80,8 @@ void main() {
   test('format tanggal Indonesia', () {
     expect(formatLongDate(DateTime(2026, 10, 3)), 'Sabtu, 3 Oktober 2026');
     expect(formatIsoDate(DateTime(2026, 1, 5)), '2026-01-05');
+    expect(rescheduleTimeText(const TimeOfDay(hour: 19, minute: 0), const TimeOfDay(hour: 20, minute: 0)), '19:00 – 20:00 WIB');
+    expect(rescheduleTimeText(const TimeOfDay(hour: 19, minute: 0), null), '19:00 WIB');
     expect(formatHm(const TimeOfDay(hour: 7, minute: 5)), '07:05');
   });
 

@@ -50,7 +50,7 @@ class _KoordinatorAssignCardState extends State<KoordinatorAssignCard> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           icon: const Icon(Icons.schedule_rounded, color: _amber, size: 32),
           title: const Text('Belum Saatnya', style: TextStyle(fontWeight: FontWeight.w800)),
-          content: Text('${_data?.reason ?? 'Pelayanan ini belum dapat dicarikan Romo.'}\n\nRomo Paroki dan Romo Ordo masih diberi kesempatan menerima terlebih dahulu.', style: const TextStyle(height: 1.4)),
+          content: Text(_data?.reason ?? 'Pelayanan ini belum dapat dicarikan Romo.', style: const TextStyle(height: 1.4)),
           actions: [ElevatedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Mengerti'))],
         ),
       );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/models/models.dart' show OrderItem;
 import 'reschedule_validation.dart' show formatLongDate;
 
 /// Kolom pilihan jam: berpartisipasi dalam Form (border + pesan merah saat tidak valid).
@@ -103,3 +104,27 @@ Widget dateHint(String ddmmyyyy) {
     ),
   );
 }
+
+/// Kumpulan FocusNode kolom ketik pada sebuah form, agar tombol "Next" di keyboard memindahkan kursor ke kolom
+/// ketik berikutnya (bukan ke dropdown atau kolom tanggal yang tidak bisa diketik). Setelah fokus pindah,
+/// EditableText menggulirkan kolom itu ke area yang terlihat di atas keyboard.
+class FormFocus {
+  final Map<String, FocusNode> _nodes = {};
+
+  /// FocusNode bernama; dibuat sekali dan dipakai ulang.
+  FocusNode node(String key) => _nodes.putIfAbsent(key, () => FocusNode(debugLabel: key));
+
+  /// Memindahkan fokus ke kolom [key] (mis. "Next" di keyboard, atau kembali ke "Pilih Misa" setelah tambah/hapus misa),
+  /// dan menggulirkannya ke area yang terlihat.
+  void goTo(String key) => FocusTraversalPolicy.defaultTraversalRequestFocusCallback(node(key), alignment: 0.2, alignmentPolicy: ScrollPositionAlignmentPolicy.explicit);
+
+  void dispose() {
+    for (final n in _nodes.values) {
+      n.dispose();
+    }
+    _nodes.clear();
+  }
+}
+
+/// Urutan daftar misa: tanggal lalu jam mulai (format yyyy-MM-dd dan HH:mm, sehingga cukup dibandingkan sebagai teks).
+int compareMisaSchedule(OrderItem a, OrderItem b) => '${a.scheduledDate} ${a.scheduledTimeStart}'.compareTo('${b.scheduledDate} ${b.scheduledTimeStart}');

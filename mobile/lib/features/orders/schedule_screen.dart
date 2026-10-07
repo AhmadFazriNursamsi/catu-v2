@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
 import '../../core/widgets/urgency_label.dart';
 import 'widgets/schedule_parts.dart';
+import 'widgets/reschedule_widgets.dart' show ServiceStatusPill;
 import 'order_detail_screen.dart';
 import '../../core/services/language_service.dart';
 import '../../core/services/api_service.dart';
@@ -1506,34 +1507,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Flexible(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: statusColor,
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(statusIcon, color: Colors.white, size: 10),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        statusLabel,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                            Flexible(child: ServiceStatusPill(color: statusColor, icon: statusIcon, label: statusLabel, rescheduleStatus: entry.item?.rescheduleStatus ?? order.rescheduleStatus, serviceStatus: effectiveStatus)),
                           ],
                         ),
                       ),

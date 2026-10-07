@@ -8,7 +8,8 @@ plugins {
 }
 
 // Signing release: isi android/key.properties (storeFile, storePassword, keyAlias, keyPassword).
-// File ini dan keystore diabaikan git. Tanpa file ini, build memakai debug key (hanya untuk uji lokal).
+// File ini dan keystore diabaikan git. Build RILIS tanpa keystore GAGAL (tidak pernah memakai kunci debug), karena APK
+// yang dikirim ke pengguna hanya bisa diperbarui bila selalu ditandatangani kunci yang sama. Lihat mobile/RELEASE.md.
 val keystoreProperties = Properties().apply {
     val file = rootProject.file("key.properties")
     if (file.exists()) file.inputStream().use { load(it) }
@@ -45,20 +46,27 @@ android {
                 storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
+                // v2 + v3: v3 memungkinkan penggantian kunci di masa depan tanpa memaksa pengguna memasang ulang.
+                enableV2Signing = true
+                enableV3Signing = true
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = if (hasReleaseKeystore) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            if (hasReleaseKeystore) signingConfig = signingConfigs.getByName("release")
             isShrinkResources = false
             isMinifyEnabled = false
         }
+    }
+}
+
+// Gagal lebih awal dan jelas bila build rilis diminta tanpa keystore.
+gradle.taskGraph.whenReady {
+    val buildsRelease = allTasks.any { t -> t.name.contains("Release") && (t.name.startsWith("assemble") || t.name.startsWith("bundle") || t.name.startsWith("package")) }
+    if (buildsRelease && !hasReleaseKeystore) {
+        throw GradleException("Build rilis dibatalkan: android/key.properties (keystore rilis) belum ada. APK rilis tidak boleh memakai kunci debug. Lihat mobile/RELEASE.md.")
     }
 }
 

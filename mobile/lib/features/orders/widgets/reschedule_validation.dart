@@ -3,7 +3,6 @@ import '../../../core/models/models.dart' show OrderRescheduleLog;
 
 const int kRescheduleReasonMin = 10;
 const int kRescheduleReasonMax = 300;
-const int kRescheduleMaxDaysAhead = 60;
 
 /// Pengajuan ubah jam ditutup setelah ditolak sebanyak ini (harus sama dengan backend).
 const int kRescheduleMaxRejections = 2;
@@ -20,16 +19,16 @@ const _months = [
 
 /// Hasil validasi per kolom; `null` berarti kolom itu valid.
 class RescheduleErrors {
-  final String? date, start, end, reason, general;
-  const RescheduleErrors({this.date, this.start, this.end, this.reason, this.general});
-  bool get hasAny => [date, start, end, reason, general].any((e) => e != null);
+  final String? start, end, reason, general;
+  const RescheduleErrors({this.start, this.end, this.reason, this.general});
+  bool get hasAny => [start, end, reason, general].any((e) => e != null);
 }
 
-/// Data pengajuan yang siap dikirim ke backend.
+/// Data pengajuan ubah jam yang siap dikirim ke backend. Hanya jam: tanggal pelayanan tetap.
 class RescheduleRequest {
-  final String newDate, newTimeStart, reason;
+  final String newTimeStart, reason;
   final String? newTimeEnd;
-  const RescheduleRequest({required this.newDate, required this.newTimeStart, this.newTimeEnd, required this.reason});
+  const RescheduleRequest({required this.newTimeStart, this.newTimeEnd, required this.reason});
 }
 
 int minutesOf(TimeOfDay t) => t.hour * 60 + t.minute;
@@ -57,8 +56,9 @@ DateTime? parseDateOnly(String? raw) {
   return DateTime(int.parse(m.group(1)!), int.parse(m.group(2)!), int.parse(m.group(3)!));
 }
 
+/// Ubah jam tidak mengubah tanggal: [currentDate] (tanggal pelayanan/misa) hanya dipakai untuk menentukan
+/// apakah jam mulai baru sudah lewat bila pelayanan berlangsung hari ini.
 RescheduleErrors validateReschedule({
-  required DateTime date,
   required TimeOfDay start,
   TimeOfDay? end,
   required String reason,
@@ -68,14 +68,10 @@ RescheduleErrors validateReschedule({
   TimeOfDay? currentEnd,
 }) {
   final today = DateTime(now.year, now.month, now.day);
-  final day = DateTime(date.year, date.month, date.day);
+  final isToday = currentDate != null && DateTime(currentDate.year, currentDate.month, currentDate.day) == today;
 
-  String? dateErr, startErr, endErr, reasonErr, general;
-  if (day.isBefore(today)) {
-    dateErr = 'Tanggal tidak boleh sudah lewat.';
-  } else if (day.difference(today).inDays > kRescheduleMaxDaysAhead) {
-    dateErr = 'Maksimal $kRescheduleMaxDaysAhead hari ke depan.';
-  } else if (day == today && minutesOf(start) <= now.hour * 60 + now.minute) {
+  String? startErr, endErr, reasonErr, general;
+  if (isToday && minutesOf(start) <= now.hour * 60 + now.minute) {
     startErr = 'Jam ini sudah lewat. Pilih jam setelah ${formatHm(TimeOfDay.fromDateTime(now))}.';
   }
   if (end != null && minutesOf(end) <= minutesOf(start)) {
@@ -91,15 +87,13 @@ RescheduleErrors validateReschedule({
     reasonErr = 'Alasan maksimal $kRescheduleReasonMax karakter.';
   }
 
-  final noFieldError = dateErr == null && startErr == null && endErr == null && reasonErr == null;
-  if (noFieldError && currentDate != null && currentStart != null) {
-    final sameDay = DateTime(currentDate.year, currentDate.month, currentDate.day) == day;
+  if (startErr == null && endErr == null && reasonErr == null && currentStart != null) {
     final sameEnd = (end == null && currentEnd == null) ||
         (end != null && currentEnd != null && minutesOf(end) == minutesOf(currentEnd));
-    if (sameDay && minutesOf(currentStart) == minutesOf(start) && sameEnd) {
-      general = 'Jadwal baru sama dengan jadwal saat ini. Ubah tanggal atau jam terlebih dahulu.';
+    if (minutesOf(currentStart) == minutesOf(start) && sameEnd) {
+      general = 'Jam baru sama dengan jam saat ini. Ubah jam mulai atau jam selesai terlebih dahulu.';
     }
   }
 
-  return RescheduleErrors(date: dateErr, start: startErr, end: endErr, reason: reasonErr, general: general);
+  return RescheduleErrors(start: startErr, end: endErr, reason: reasonErr, general: general);
 }

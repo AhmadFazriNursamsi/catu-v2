@@ -13,6 +13,7 @@ import 'widgets/accept_service_dialog.dart';
 import 'widgets/handover_romo_sheet.dart';
 import 'widgets/koordinator_assign_card.dart';
 import 'widgets/reschedule_sheet.dart';
+import 'widgets/reschedule_widgets.dart' show RescheduleStatusChip, rescheduleStatusOf;
 import 'widgets/reschedule_validation.dart';
 import 'widgets/order_review_sheet.dart';
 import 'widgets/order_review_card.dart';
@@ -562,7 +563,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                           children: [
                             // ── Title + Status Chip ──
                             _buildTitleCard(
-                                displayItem, order, statusColor, statusLabel, statusIcon),
+                                displayItem, order, statusColor, statusLabel, statusIcon, effectiveStatus),
                             const SizedBox(height: 12),
                             KoordinatorAssignCard(orderId: order.id, onAssigned: () => Navigator.pop(context, true)),
                             // ── Service Review Card (DONE or CLOSE) ──
@@ -927,7 +928,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   }
 
   Widget _buildRescheduleProposalCard(Order order, OrderItem displayItem) {
-    final String proposedDate = displayItem.rescheduleNewDate ?? order.rescheduleNewDate ?? order.scheduledDate;
     final String proposedTimeStart = displayItem.rescheduleNewTimeStart ?? order.rescheduleNewTime ?? order.scheduledTime;
     final String? proposedTimeEnd = displayItem.rescheduleNewTimeEnd ?? order.rescheduleNewTimeEnd;
     final String reason = displayItem.rescheduleReason.isNotEmpty ? displayItem.rescheduleReason : (order.rescheduleReason ?? '');
@@ -990,20 +990,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.event_rounded, size: 16, color: Color(0xFFD97706)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        formatServiceDate(proposedDate),
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
                 Row(
                   children: [
                     const Icon(Icons.access_time_rounded, size: 16, color: Color(0xFFD97706)),
@@ -1092,11 +1078,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
 
       if (mounted) {
         if (accept) {
-          final newDate = displayItem.rescheduleNewDate ?? order.rescheduleNewDate;
           final newTime = displayItem.rescheduleNewTimeStart ?? order.rescheduleNewTime;
-          if (newDate != null && newDate.isNotEmpty) {
-            order.scheduledDate = newDate;
-          }
           if (newTime != null && newTime.isNotEmpty) {
             order.scheduledTime = newTime;
           }
@@ -2050,7 +2032,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         order.id,
         romoId: romoId,
         itemId: targetItem?.id,
-        newDate: request.newDate,
         newTimeStart: request.newTimeStart,
         newTimeEnd: request.newTimeEnd,
         reason: request.reason,
@@ -2063,13 +2044,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       if (!mounted) return null;
 
       order.rescheduleStatus = 'PENDING_UMAT';
-      order.rescheduleNewDate = request.newDate;
       order.rescheduleNewTime = request.newTimeStart;
       order.rescheduleNewTimeEnd = request.newTimeEnd;
       order.rescheduleReason = request.reason;
       if (targetItem != null) {
         targetItem.rescheduleStatus = 'PENDING_UMAT';
-        targetItem.rescheduleNewDate = request.newDate;
         targetItem.rescheduleNewTimeStart = request.newTimeStart;
         targetItem.rescheduleNewTimeEnd = request.newTimeEnd;
         targetItem.rescheduleReason = request.reason;
@@ -2219,7 +2198,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   // ── Title Card ──────────────────────────────────────────────────────────────
 
   Widget _buildTitleCard(OrderItem displayItem, Order order, Color statusColor,
-      String statusLabel, IconData statusIcon) {
+      String statusLabel, IconData statusIcon, String effectiveStatus) {
     final bool isKedukaan = order.categoryName.toLowerCase().contains('kedukaan');
 
     if (isKedukaan) {
@@ -2324,6 +2303,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                 height: 1.2,
               ),
             ),
+            RescheduleStatusChip(rescheduleStatus: rescheduleStatusOf(order, displayItem), serviceStatus: effectiveStatus, topGap: 8),
 
             const SizedBox(height: 6),
 
@@ -2445,6 +2425,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               height: 1.25,
             ),
           ),
+          RescheduleStatusChip(rescheduleStatus: rescheduleStatusOf(order, displayItem), serviceStatus: effectiveStatus, topGap: 8),
         ],
       ),
     );

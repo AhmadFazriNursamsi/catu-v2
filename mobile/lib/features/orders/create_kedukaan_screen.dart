@@ -32,15 +32,15 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
   final _namaMeninggalController = TextEditingController();
   final _tanggalMeninggalController = TextEditingController();
   final _catatanController = TextEditingController();
-
+  final _focus = FormFocus();
   // Controllers Config Misa Item
   final _tanggalMisaController = TextEditingController();
   final _alamatMisaController = TextEditingController();
 
   // Selections
   String _selectedHubungan = 'Anak';
-  String? _selectedUrgensi; // Tanpa default, wajib dipilih pengguna
-  String _selectedJenisMisa = 'Misa Malam Kembang';
+  String? _selectedUrgensi = 'Standar'; // Sama dengan Perminyakan
+  String _selectedJenisMisa = 'Misa Requiem / Misa Arwah';
   String _waktuMeninggal = '14:00';
   String _jamMulaiMisa = '18:00';
   String _jamAkhirMisa = '19:30';
@@ -343,8 +343,8 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     _namaMeninggalController.dispose();
     _tanggalMeninggalController.dispose();
     _catatanController.dispose();
-    _tanggalMisaController.dispose();
-    _alamatMisaController.dispose();
+    _tanggalMisaController.dispose(); _alamatMisaController.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -500,7 +500,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     );
 
     setState(() {
-      _misaList.add(item);
+      _misaList..add(item)..sort(compareMisaSchedule);
       _alamatMisaController.clear();
 
       // Auto-switch dropdown to next available unselected mass option if possible
@@ -512,6 +512,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
       }
     });
 
+    _focus.goTo('jenisMisa');
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -725,9 +726,9 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                       children: [
                         // 1. Nama Yang Meninggal
                         _buildInputField(
-                          controller: _namaMeninggalController,
+                          controller: _namaMeninggalController, focusKey: 'nama', nextKey: 'catatan',
                           label: LanguageService.tr('deceased_name'),
-                          hint: 'Contoh: Alm. Bapak Fransiskus Subagyo',
+                          hint: 'Nama',
                           prefixIcon: Icons.person_outline_rounded,
                           validator: (v) =>
                               v == null || v.isEmpty ? 'Nama wajib diisi' : null,
@@ -753,7 +754,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                           onTap: () => _pickDate(_tanggalMeninggalController),
                           child: AbsorbPointer(
                             child: _buildInputField(
-                              controller: _tanggalMeninggalController,
+                              controller: _tanggalMeninggalController, focusable: false,
                               label: LanguageService.tr('date_of_death'),
                               hint: LanguageService.tr('date_of_death'),
                               prefixIcon: Icons.event_available_rounded,
@@ -785,9 +786,9 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
                         // 5. Catatan
                         _buildInputField(
-                          controller: _catatanController,
+                          controller: _catatanController, focusKey: 'catatan',
                           label: 'Catatan',
-                          hint: 'Catatan tambahan (misal: penyebab meninggal, lokasi duka)',
+                          hint: 'Catatan',
                           prefixIcon: Icons.notes_rounded,
                           maxLines: 3,
                         ),
@@ -904,7 +905,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                                       ),
                                       SizedBox(height: 2),
                                       Text(
-                                        'Ketuk di sini untuk upload foto duka / banner (Opsional)',
+                                        'Ketuk di sini untuk upload foto duka (Opsional)',
                                         style: TextStyle(
                                           fontSize: 11,
                                           color: Color(0xFF64748B),
@@ -927,7 +928,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                       children: [
                         // 1. Pilih Misa
                         _buildDropdownField<String>(
-                          value: _selectedJenisMisa,
+                          value: _selectedJenisMisa, focusKey: 'jenisMisa',
                           label: LanguageService.tr('select_mass'),
                           hint: LanguageService.tr('select_mass'),
                           prefixIcon: Icons.sanitizer_rounded,
@@ -946,7 +947,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                           onTap: () => _pickDate(_tanggalMisaController, futureOnly: true),
                           child: AbsorbPointer(
                             child: _buildInputField(
-                              controller: _tanggalMisaController,
+                              controller: _tanggalMisaController, focusable: false,
                               label: 'Tanggal',
                               hint: 'Tanggal Misa',
                               prefixIcon: Icons.event_note_rounded,
@@ -998,9 +999,9 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
                         // 4. Alamat Lokasi Misa
                         _buildInputField(
-                          controller: _alamatMisaController,
+                          controller: _alamatMisaController, focusKey: 'alamatMisa',
                           label: 'Alamat',
-                          hint: 'Contoh: Rumah Duka Grand Heaven R. 102 / Gereja Katedral',
+                          hint: 'Contoh: Rumah Duka Grand Heaven, Jl. Pluit Raya, Penjaringan, Jkt Utara',
                           prefixIcon: Icons.location_on_outlined,
                           maxLines: 2,
                           validator: (v) => _misaList.isEmpty && (v == null || v.trim().isEmpty) ? 'Alamat lokasi misa wajib diisi' : null,
@@ -1102,7 +1103,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            '📅 ${formatServiceDate(item.scheduledDate)} (${item.scheduledTimeStart} - ${item.scheduledTimeEnd} WIB)',
+                                            '${formatServiceDate(item.scheduledDate)} (${item.scheduledTimeStart} - ${item.scheduledTimeEnd} WIB)',
                                             style: const TextStyle(
                                               fontSize: 11.5,
                                               color: Color(0xFF64748B),
@@ -1127,9 +1128,8 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                                         color: Colors.redAccent,
                                       ),
                                       onPressed: () {
-                                        setState(() {
-                                          _misaList.removeAt(index);
-                                        });
+                                        setState(() => _misaList.removeAt(index));
+                                        _focus.goTo('jenisMisa');
                                       },
                                     ),
                                   ],
@@ -1363,7 +1363,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
           const Padding(
             padding: EdgeInsets.all(14.0),
             child: Text(
-              'Isi form dibawah ini sesuai permintaan pelayanan yang dibutuhkan',
+              'Lengkapi Form Kedukaan berikut ini',
               style: TextStyle(
                 fontSize: 12.5,
                 color: Color(0xFF64748B),
@@ -1439,7 +1439,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters,
     int maxLines = 1,
-    String? Function(String?)? validator,
+    String? Function(String?)? validator, String? focusKey, String? nextKey, bool focusable = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1456,7 +1456,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
           const SizedBox(height: 6),
         ],
         TextFormField(
-          controller: controller,
+          controller: controller, focusNode: focusKey == null ? null : _focus.node(focusKey), canRequestFocus: focusable, onFieldSubmitted: nextKey == null ? null : (_) => _focus.goTo(nextKey),
           keyboardType: keyboardType,
           textCapitalization: maxLines == 1 && keyboardType == TextInputType.text ? TextCapitalization.words : TextCapitalization.sentences,
           textInputAction: maxLines == 1 ? TextInputAction.next : null,
@@ -1506,7 +1506,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     required List<T> items,
     required String Function(T) itemLabel,
     required ValueChanged<T?>? onChanged,
-    String? Function(T?)? validator,
+    String? Function(T?)? validator, String? focusKey,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1522,7 +1522,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
         const SizedBox(height: 6),
         DropdownButtonFormField<T>(
           key: ValueKey('${label}_${value}_${items.length}'),
-          initialValue: value,
+          initialValue: value, focusNode: focusKey == null ? null : _focus.node(focusKey),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle:

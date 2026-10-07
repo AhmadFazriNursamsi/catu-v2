@@ -58,19 +58,14 @@ class RescheduleSheet extends StatefulWidget {
 
 class _RescheduleSheetState extends State<RescheduleSheet> {
   final _reasonCtrl = TextEditingController();
-  late DateTime _date;
   late TimeOfDay _start;
   TimeOfDay? _end;
   bool _attempted = false, _submitting = false;
   String? _serverError;
 
-  DateTime get _today => DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-
   @override
   void initState() {
     super.initState();
-    final cur = widget.currentDate;
-    _date = (cur == null || cur.isBefore(_today)) ? _today : cur;
     _start = widget.currentStart ?? const TimeOfDay(hour: 18, minute: 0);
     _end = widget.currentEnd;
   }
@@ -84,7 +79,6 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
   RescheduleErrors get _errors => !_attempted
       ? const RescheduleErrors()
       : validateReschedule(
-          date: _date,
           start: _start,
           end: _end,
           reason: _reasonCtrl.text,
@@ -93,16 +87,6 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
           currentStart: widget.currentStart,
           currentEnd: widget.currentEnd,
         );
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _date.isBefore(_today) ? _today : _date,
-      firstDate: _today,
-      lastDate: _today.add(const Duration(days: kRescheduleMaxDaysAhead)),
-    );
-    if (picked != null) setState(() => _date = picked);
-  }
 
   Future<TimeOfDay?> _pickTime(TimeOfDay initial) => showTimePicker(
         context: context,
@@ -140,7 +124,6 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
     if (_errors.hasAny) return;
     setState(() => _submitting = true);
     final error = await widget.onSubmit(RescheduleRequest(
-      newDate: formatIsoDate(_date),
       newTimeStart: formatHm(_start),
       newTimeEnd: _end == null ? null : formatHm(_end!),
       reason: _reasonCtrl.text.trim(),
@@ -175,7 +158,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
             const SizedBox(height: 14),
             _header(),
             const SizedBox(height: 14),
-            RescheduleInfoCard(title: 'Jadwal saat ini', text: rescheduleScheduleText(widget.currentDate, widget.currentStart, widget.currentEnd)),
+            RescheduleInfoCard(title: 'Jadwal saat ini (tanggal tetap)', text: rescheduleScheduleText(widget.currentDate, widget.currentStart, widget.currentEnd)),
             if (widget.rejectedCount > 0) ...[
               const SizedBox(height: 10),
               RescheduleInfoCard(
@@ -185,16 +168,11 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
               ),
             ],
             const SizedBox(height: 18),
-            rescheduleLabel('Tanggal baru'),
-            _dateChips(),
-            const SizedBox(height: 8),
-            ReschedulePickerField(icon: Icons.calendar_today_rounded, text: formatLongDate(_date), error: e.date, onTap: _pickDate),
-            const SizedBox(height: 16),
             _timeRow(e),
             const SizedBox(height: 16),
             rescheduleLabel('Alasan perubahan'),
             _reasonSection(e.reason),
-            if (_changed) ...[const SizedBox(height: 14), RescheduleInfoCard(highlight: true, title: 'Yang akan diajukan ke Umat', text: rescheduleScheduleText(_date, _start, _end))],
+            if (_changed) ...[const SizedBox(height: 14), RescheduleInfoCard(highlight: true, title: 'Jam baru yang diajukan ke Umat', text: rescheduleTimeText(_start, _end))],
             const SizedBox(height: 16),
             rescheduleBanner(e.general ?? _serverError),
             if (_attempted && e.hasAny && e.general == null) rescheduleBanner('Periksa kembali isian yang ditandai merah.'),
@@ -242,7 +220,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Ajukan Perubahan Jadwal', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: kRescheduleInk)),
+                const Text('Ajukan Ubah Jam', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: kRescheduleInk)),
                 if (widget.itemName.isNotEmpty)
                   Text(widget.itemName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5, color: kRescheduleMuted)),
               ],
@@ -250,17 +228,6 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
           ),
         ],
       );
-
-  Widget _dateChips() {
-    final options = {'Hari ini': 0, 'Besok': 1, 'Lusa': 2};
-    return Wrap(
-      spacing: 8,
-      children: options.entries.map((o) {
-        final target = _today.add(Duration(days: o.value));
-        return rescheduleChip(o.key, selected: _date == target, onTap: () => setState(() => _date = target));
-      }).toList(),
-    );
-  }
 
   Widget _timeRow(RescheduleErrors e) => Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,8 +280,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
       );
 
   bool get _changed {
-    final c = widget.currentDate;
-    return c == null || c != _date || widget.currentStart != _start || widget.currentEnd != _end;
+    return widget.currentStart != _start || widget.currentEnd != _end;
   }
 
   Widget _actions() => Column(

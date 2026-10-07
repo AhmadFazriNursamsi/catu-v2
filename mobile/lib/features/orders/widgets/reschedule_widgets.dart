@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/models/models.dart' show Order, OrderItem;
 import 'reschedule_validation.dart';
 
 const kRescheduleAmber = Color(0xFFD97706);
@@ -113,4 +114,95 @@ class ReschedulePickerField extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Jam saja ("19:00 – 20:00 WIB"): ubah jam tidak mengubah tanggal.
+String rescheduleTimeText(TimeOfDay start, TimeOfDay? end) => '${formatHm(start)}${end != null ? ' – ${formatHm(end)}' : ''} WIB';
+
+/// Status ubah jam sebuah misa (atau order tanpa misa). Pada order bermisa, hanya status misa itu yang berlaku.
+String rescheduleStatusOf(Order order, OrderItem? item) => (order.items.isNotEmpty && item != null) ? item.rescheduleStatus : order.rescheduleStatus;
+
+const _finishedStatuses = {'DONE', 'COMPLETED', 'CLOSE', 'CLOSED', 'FAIL'};
+
+/// Label status ubah jam; null bila tidak ada pengajuan atau pelayanan sudah selesai/ditutup/gagal
+/// (status ubah jam tidak berlaku lagi setelah itu).
+String? rescheduleStatusLabel(String rescheduleStatus, String serviceStatus) {
+  if (_finishedStatuses.contains(serviceStatus.toUpperCase())) return null;
+  switch (rescheduleStatus.toUpperCase()) {
+    case 'PENDING_UMAT':
+      return 'Ubah Jam Diajukan';
+    case 'REJECTED':
+      return 'Ubah Jam Ditolak';
+    case 'ACCEPTED':
+      return 'Ubah Jam Diterima';
+  }
+  return null;
+}
+
+/// Chip status ubah jam (kosong bila tidak berlaku, lihat [rescheduleStatusLabel]).
+class RescheduleStatusChip extends StatelessWidget {
+  final String rescheduleStatus, serviceStatus;
+  final double topGap; // jarak di atas chip; hanya terpakai bila chip tampil (rata kiri)
+  const RescheduleStatusChip({super.key, required this.rescheduleStatus, required this.serviceStatus, this.topGap = 0});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = rescheduleStatusLabel(rescheduleStatus, serviceStatus);
+    if (label == null) return const SizedBox.shrink();
+    final (color, icon) = switch (rescheduleStatus.toUpperCase()) {
+      'REJECTED' => (const Color(0xFFDC2626), Icons.cancel_rounded),
+      'ACCEPTED' => (const Color(0xFF0D9488), Icons.check_circle_rounded),
+      _ => (kRescheduleAmber, Icons.schedule_send_rounded),
+    };
+    return Padding(
+      padding: EdgeInsets.only(top: topGap),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(14)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.white, size: 10),
+              const SizedBox(width: 4),
+              Flexible(child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Pil status pelayanan pada kartu; status ubah jam (bila berlaku) tampil sebagai chip tersendiri di bawahnya.
+class ServiceStatusPill extends StatelessWidget {
+  final Color color;
+  final IconData icon;
+  final String label, rescheduleStatus, serviceStatus;
+  const ServiceStatusPill({super.key, required this.color, required this.icon, required this.label, required this.rescheduleStatus, required this.serviceStatus});
+
+  @override
+  Widget build(BuildContext context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(14)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: Colors.white, size: 10),
+                const SizedBox(width: 4),
+                Flexible(child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              ],
+            ),
+          ),
+          if (rescheduleStatusLabel(rescheduleStatus, serviceStatus) != null) ...[
+            const SizedBox(height: 4),
+            RescheduleStatusChip(rescheduleStatus: rescheduleStatus, serviceStatus: serviceStatus),
+          ],
+        ],
+      );
 }
