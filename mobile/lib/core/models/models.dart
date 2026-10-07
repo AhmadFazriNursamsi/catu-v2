@@ -459,7 +459,7 @@ class Order {
         }
       }
     }
-    return 'Kerabat';
+    return '';
   }
 
   /// Parse "Tgl Meninggal" from notes
@@ -475,7 +475,7 @@ class Order {
         }
       }
     }
-    return scheduledDate;
+    return '';
   }
 
   /// Parse "Waktu Meninggal" from notes
@@ -490,7 +490,7 @@ class Order {
         }
       }
     }
-    return jamMulaiLabel.isNotEmpty ? jamMulaiLabel : '06:26';
+    return '';
   }
 
   /// Format address for display
