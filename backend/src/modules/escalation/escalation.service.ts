@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { OrderEventsService } from '../order-events/order-events.service';
 import { EscalationSettingsService } from './escalation-settings.service';
 import { isOpenForOrdo, opensAt } from './escalation-rules';
+import { orderKeuskupanSql } from '../order-rules/lintas-paroki';
 
 const TICK_MS = 15_000;
 /** Pelayanan lebih tua dari ini tidak lagi dieskalasi (mencegah banjir notifikasi untuk data lama). */
@@ -55,13 +56,14 @@ export class EscalationService implements OnModuleInit, OnModuleDestroy {
   async assertCanAccept(user: { sub: number; roleCode: string }, orderId: number, status: string): Promise<void> {
     if (user.roleCode !== 'ROMO_ORDO' || !['ACCEPTED', 'CONFIRMED'].includes(status)) return;
     const rows = await this.dataSource.query(
-      `SELECT o.created_at, o.accepted_romo_id, COALESCE(o.paroki_id, p.paroki_id) AS paroki_id
+      `SELECT o.created_at, o.accepted_romo_id, COALESCE(o.paroki_id, p.paroki_id) AS paroki_id, o.lintas_paroki
        FROM orders o LEFT JOIN user_profiles p ON p.user_id = o.user_id WHERE o.id = $1`,
       [orderId],
     );
     if (rows.length === 0 || Number(rows[0].accepted_romo_id) === Number(user.sub)) return;
     const { ordoAfterMinutes } = await this.settings.get();
-    const order = { createdAt: new Date(rows[0].created_at), hasParoki: !!rows[0].paroki_id };
+    // Pelayanan lintas paroki tidak punya Romo Paroki yang perlu ditunggu: langsung terbuka untuk Romo Ordo tujuan.
+    const order = { createdAt: new Date(rows[0].created_at), hasParoki: !!rows[0].paroki_id && !rows[0].lintas_paroki };
     if (isOpenForOrdo(order, ordoAfterMinutes, new Date())) return;
     const time = opensAt(order.createdAt, ordoAfterMinutes)
       .toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' })
@@ -91,7 +93,7 @@ export class EscalationService implements OnModuleInit, OnModuleDestroy {
          SELECT o.id FROM orders o
          WHERE o.${column} IS NULL
            AND o.created_at > NOW() - ${ESCALATION_WINDOW}
-           AND (o.created_at <= NOW() - ($1 * INTERVAL '1 minute') ${openWithoutParoki ? `OR ${noParoki}` : ''})
+           AND (o.created_at <= NOW() - ($1 * INTERVAL '1 minute') ${openWithoutParoki ? `OR ${noParoki} OR o.lintas_paroki` : ''})
            AND ${UNACCEPTED}
          FOR UPDATE SKIP LOCKED
        )
@@ -117,12 +119,11 @@ export class EscalationService implements OnModuleInit, OnModuleDestroy {
           )
         : [];
       await this.postToGroups(o.id, 'Belum ada Romo Paroki yang menerima pelayanan ini. Kini terbuka untuk Romo Ordo.');
-      await this.events.notify(romo.map((r: any) => r.id).filter((id: number) => id !== o.user_id), {
-        orderId: o.id,
+      await this.events.notifyPerItem(romo.map((r: any) => r.id).filter((id: number) => id !== o.user_id), o.id, (item) => ({
         type: 'NEW_ORDER_ROMO',
-        title: `Permintaan Pelayanan ${o.category_name}`,
-        body: `Pelayanan ${o.category_name} (${o.order_number}) di kota Anda belum diterima Romo Paroki dan kini terbuka untuk Anda terima.`,
-      });
+        title: `Permintaan Pelayanan ${item?.name || o.category_name}`,
+        body: `Pelayanan ${item ? `${o.category_name} - ${item.name}` : o.category_name} (${o.order_number}) di kota Anda belum diterima Romo Paroki dan kini terbuka untuk Anda terima.`,
+      }), true);
     } catch (err) {
       this.logger.error(`Eskalasi ke Romo Ordo gagal untuk order ${o.id}: ${(err as Error).message}`);
     }
@@ -130,12 +131,14 @@ export class EscalationService implements OnModuleInit, OnModuleDestroy {
 
   private async escalateToKoordinator(o: DueOrder) {
     try {
+      // Keuskupan pemohon, ditambah keuskupan tujuan bila pelayanan lintas paroki.
+      const keuskupan = (await this.dataSource.query(orderKeuskupanSql('$1'), [o.id])).map((r: any) => Number(r.keuskupan_id)).filter(Boolean);
       const koordinator = await this.dataSource.query(
         `SELECT u.id FROM auth_users u JOIN user_profiles p ON u.id = p.user_id JOIN roles r ON u.role_id = r.id
          WHERE u.account_status = 'APPROVED'
            AND (r.code LIKE '%KOORDINATOR%' OR LOWER(COALESCE(p.pengurus_position, '')) LIKE '%koordinator%')
-           AND $1::int IS NOT NULL AND p.keuskupan_id = $1::int`,
-        [o.keuskupan_id],
+           AND p.keuskupan_id = ANY($1::int[])`,
+        [keuskupan],
       );
       const ids: number[] = koordinator.map((k: any) => Number(k.id));
       for (const id of ids) {
@@ -147,12 +150,11 @@ export class EscalationService implements OnModuleInit, OnModuleDestroy {
         );
       }
       await this.postToGroups(o.id, 'Belum ada Romo yang menerima pelayanan ini. Koordinator membantu mencarikan Romo.');
-      await this.events.notify(ids, {
-        orderId: o.id,
+      await this.events.notifyPerItem(ids, o.id, (item) => ({
         type: 'NEW_ORDER_KOORDINATOR',
-        title: `Perlu Romo: ${o.category_name}`,
-        body: `Pelayanan ${o.category_name} (${o.order_number}) belum diterima Romo Paroki maupun Romo Ordo. Mohon bantu mencarikan Romo.`,
-      });
+        title: `Perlu Romo: ${item?.name || o.category_name}`,
+        body: `Pelayanan ${item ? `${o.category_name} - ${item.name}` : o.category_name} (${o.order_number}) belum diterima Romo Paroki maupun Romo Ordo. Mohon bantu mencarikan Romo.`,
+      }), true);
     } catch (err) {
       this.logger.error(`Eskalasi ke Koordinator gagal untuk order ${o.id}: ${(err as Error).message}`);
     }

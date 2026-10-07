@@ -17,12 +17,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
+    const clientError = this.bodyParserError(exception);
     const status =
       exception instanceof HttpException
         ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+        : clientError?.status ?? HttpStatus.INTERNAL_SERVER_ERROR;
 
-    let message = 'Terjadi kesalahan pada server internal';
+    let message = clientError?.message ?? 'Terjadi kesalahan pada server internal';
     let errors: any = undefined;
 
     if (exception instanceof HttpException) {
@@ -33,6 +34,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       } else {
         message = exception.message;
       }
+    } else if (clientError) {
+      this.logger.warn(`Permintaan ditolak [${request.method}] ${request.url}: ${clientError.status} ${clientError.message}`);
     } else if (exception instanceof Error) {
       this.logger.error(
         `Unhandled Exception on [${request.method}] ${request.url}: ${exception.message}`,
@@ -49,5 +52,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message,
       ...(errors ? { errors } : {}),
     });
+  }
+
+  /** Galat pembaca body Express (terlalu besar, JSON rusak) adalah salah klien, bukan galat server. */
+  private bodyParserError(exception: unknown): { status: number; message: string } | null {
+    const e = exception as { type?: string; status?: number } | null;
+    if (e?.type === 'entity.too.large') return { status: HttpStatus.PAYLOAD_TOO_LARGE, message: 'Ukuran data yang dikirim terlalu besar.' };
+    if (e?.type === 'entity.parse.failed') return { status: HttpStatus.BAD_REQUEST, message: 'Format data yang dikirim tidak valid.' };
+    return null;
   }
 }

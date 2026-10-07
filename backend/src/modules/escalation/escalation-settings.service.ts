@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import {
@@ -11,37 +11,10 @@ import {
   validateSettings,
 } from './escalation-rules';
 
-/** Parameter eskalasi pelayanan (tabel app_settings) dan kolom penanda notifikasi eskalasi di orders. */
+/** Parameter eskalasi pelayanan (tabel app_settings; tabel dan nilai awal dibuat migrasi). */
 @Injectable()
-export class EscalationSettingsService implements OnModuleInit {
-  private readonly logger = new Logger(EscalationSettingsService.name);
-
+export class EscalationSettingsService {
   constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
-
-  async onModuleInit() {
-    try {
-      await this.dataSource.query(`
-        CREATE TABLE IF NOT EXISTS app_settings (
-          key VARCHAR(100) PRIMARY KEY,
-          value TEXT NOT NULL,
-          description TEXT,
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-        ALTER TABLE orders
-          ADD COLUMN IF NOT EXISTS ordo_notified_at TIMESTAMPTZ,
-          ADD COLUMN IF NOT EXISTS koordinator_notified_at TIMESTAMPTZ;
-      `);
-      await this.dataSource.query(
-        `INSERT INTO app_settings (key, value, description) VALUES
-           ($1, $2, 'Menit sejak pelayanan dibuat sampai terbuka untuk Romo Ordo'),
-           ($3, $4, 'Menit sejak pelayanan dibuat sampai Koordinator diberi tahu untuk mencarikan Romo')
-         ON CONFLICT (key) DO NOTHING`,
-        [SETTING_ORDO_AFTER, String(DEFAULT_ORDO_AFTER_MINUTES), SETTING_KOORDINATOR_AFTER, String(DEFAULT_KOORDINATOR_AFTER_MINUTES)],
-      );
-    } catch (err) {
-      this.logger.error(`Gagal menyiapkan parameter eskalasi: ${(err as Error).message}`);
-    }
-  }
 
   async get(): Promise<EscalationSettings> {
     const rows = await this.dataSource.query('SELECT key, value FROM app_settings WHERE key = ANY($1)', [[SETTING_ORDO_AFTER, SETTING_KOORDINATOR_AFTER]]);

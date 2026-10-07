@@ -19,6 +19,7 @@ import { OrderEventsService } from './modules/order-events/order-events.service'
 import { EscalationService } from './modules/escalation/escalation.service';
 import { EscalationSettingsService } from './modules/escalation/escalation-settings.service';
 import { OrderGuardsService } from './modules/order-rules/order-guards.service';
+import { LintasParokiService } from './modules/order-rules/lintas-paroki.service';
 import { AssignmentWorkflowService } from './modules/assignments/assignment-workflow.service';
 import * as bcrypt from 'bcrypt';
 
@@ -91,6 +92,7 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
         { provide: EscalationService, useValue: { assertCanAccept: jest.fn().mockResolvedValue(undefined) } },
         // Penjaga keadaan pelayanan diuji terpisah (order-rules, perminyakan-flow.py); di sini cukup dilewati.
         { provide: OrderGuardsService, useValue: { assertNewOrderRefs: jest.fn().mockResolvedValue(undefined), assertExists: jest.fn().mockResolvedValue(undefined) } },
+        { provide: LintasParokiService, useValue: { afterCreate: jest.fn().mockResolvedValue(false) } },
         { provide: AssignmentWorkflowService, useFactory: (svc: AssignmentsService) => ({ respond: (id: number, dto: any, ctx: any) => svc.respondAssignment(String(id), { ...dto, romoId: ctx.romoId }) }), inject: [AssignmentsService] },
       ],
     }).compile();
@@ -183,6 +185,7 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
         if (sql.includes('user_profiles') && sql.includes('WHERE user_id')) return [{ keuskupan_id: 1, paroki_id: 10 }];
         if (sql.includes('order_number_counters')) return [{ last_value: 1 }];
         if (sql.includes('INSERT INTO orders')) return [{ id: 101, order_number: 'ORD-20260811-0001', status: 'PENDING' }];
+        if (sql.includes('INSERT INTO order_items')) return [{ id: 201 }];
         if (sql.includes('INSERT INTO chat_groups')) return [{ id: 50 }];
         return [];
       });
@@ -194,6 +197,7 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
         scheduledTime: '18:00',
         locationName: 'Rumah Duka Carolus Room 101',
         addressDetail: 'Jl. Salemba Raya No. 41',
+        items: [{ itemName: 'Misa Penutupan Peti', locationName: 'Rumah Duka Carolus', scheduledDate: new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10), scheduledTimeStart: '18:00', scheduledTimeEnd: '19:30' }],
       };
 
       const result = await ordersController.createOrder(adminUser, dto);

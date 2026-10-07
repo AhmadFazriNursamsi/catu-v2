@@ -1,13 +1,13 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { DatabaseInitService } from '../../src/database/database-init.service';
-import { EscalationSettingsService } from '../../src/modules/escalation/escalation-settings.service';
-import { OrderNumberCounterSetup } from '../../src/modules/order-rules/order-rules.module';
+import { runMigrations } from '../../src/database/migrate';
 
 /**
  * Tes integrasi memakai PostgreSQL sungguhan (bukan mock): isi TEST_DATABASE_URL dengan basis data KOSONG yang
- * sudah dimuat backend/init.sql dan namanya memuat "test". Tanpa variabel itu, seluruh tes integrasi dilewati.
- *   createdb catu_test && psql -d catu_test -f backend/init.sql
+ * namanya memuat "test". Skema dibangun oleh migrasi (backend/drizzle), persis seperti produksi. Tanpa variabel itu,
+ * seluruh tes integrasi dilewati.
+ *   createdb catu_test
  *   TEST_DATABASE_URL=postgres://postgres:***@localhost:5432/catu_test npm run test:integration
  */
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
@@ -15,16 +15,15 @@ export const describeDb: typeof describe = TEST_DATABASE_URL ? describe : descri
 
 let shared: DataSource | null = null;
 
-/** Koneksi bersama; skema dilengkapi persis seperti saat aplikasi start (DatabaseInitService dan penyiap tabel lain). */
+/** Koneksi bersama; skema dibangun oleh migrasi, data master wilayah diisi seperti saat aplikasi start. */
 export async function connect(): Promise<DataSource> {
   if (shared) return shared;
   const url = TEST_DATABASE_URL as string;
   if (!/test/i.test(new URL(url).pathname)) throw new Error('TEST_DATABASE_URL harus menunjuk basis data uji (nama memuat "test"), bukan basis data pengembangan.');
+  await runMigrations({ connectionString: url, max: 1 });
   const ds = new DataSource({ type: 'postgres', url });
   await ds.initialize();
   await new DatabaseInitService(ds).onModuleInit();
-  await new EscalationSettingsService(ds).onModuleInit();
-  await new OrderNumberCounterSetup(ds).onModuleInit();
   shared = ds;
   return ds;
 }
@@ -52,8 +51,9 @@ export class Fixture {
   async territory() {
     const paroki = await this.ds.query('SELECT id, keuskupan_id FROM paroki ORDER BY id LIMIT 2');
     const kota = await this.ds.query('SELECT id FROM kabupaten_kota ORDER BY id LIMIT 2');
-    if (paroki.length < 2 || kota.length < 2) throw new Error('Data master paroki/kota belum dimuat (jalankan init.sql).');
-    return { paroki1: Number(paroki[0].id), paroki2: Number(paroki[1].id), keuskupan: Number(paroki[0].keuskupan_id), kota1: Number(kota[0].id), kota2: Number(kota[1].id) };
+    if (paroki.length < 2 || kota.length < 2) throw new Error('Data master paroki/kota belum dimuat (basis data uji harus melewati migrasi dan pengisian data master).');
+    const lain = await this.ds.query('SELECT id, keuskupan_id FROM paroki WHERE keuskupan_id <> $1 ORDER BY id LIMIT 1', [paroki[0].keuskupan_id]);
+    return { paroki1: Number(paroki[0].id), paroki2: Number(paroki[1].id), keuskupan: Number(paroki[0].keuskupan_id), kota1: Number(kota[0].id), kota2: Number(kota[1].id), parokiLain: lain.length ? Number(lain[0].id) : null, keuskupanLain: lain.length ? Number(lain[0].keuskupan_id) : null };
   }
 
   async user(roleCode: string, profile: { parokiId?: number; kotaId?: number; keuskupanId?: number; status?: string } = {}): Promise<FixtureUser> {
@@ -72,22 +72,28 @@ export class Fixture {
     return { id, roleCode };
   }
 
-  async order(over: { userId: number; parokiId?: number; kotaId?: number; status?: string; scheduledDate?: string; categoryId?: number } ): Promise<number> {
+  async order(over: { userId: number; parokiId?: number; kotaId?: number; keuskupanId?: number; lintas?: boolean; status?: string; scheduledDate?: string; categoryId?: number }): Promise<number> {
     const r = await this.ds.query(
-      `INSERT INTO orders (order_number, user_id, service_category_id, urgency_level_id, paroki_id, kabupaten_kota_id, status, scheduled_date, scheduled_time, location_name, address_detail, notes)
-       VALUES ($1, $2, $3, 1, $4, $5, $6::order_status_enum, COALESCE($7::date, CURRENT_DATE + 5), '18:00', 'RS Uji', 'Kamar 1', $8) RETURNING id`,
-      [`IT-${this.tag}-${++this.seq}`, over.userId, over.categoryId ?? 1, over.parokiId ?? null, over.kotaId ?? null, over.status ?? 'PENDING', over.scheduledDate ?? null, `integration-test ${this.tag}`],
+      `INSERT INTO orders (order_number, user_id, service_category_id, urgency_level_id, paroki_id, kabupaten_kota_id, keuskupan_id, lintas_paroki, status, scheduled_date, scheduled_time, location_name, address_detail, notes)
+       VALUES ($1, $2, $3, 1, $4, $5, $6, $7, $8::order_status_enum, COALESCE($9::date, CURRENT_DATE + 5), '18:00', 'RS Uji', 'Kamar 1', $10) RETURNING id`,
+      [`IT-${this.tag}-${++this.seq}`, over.userId, over.categoryId ?? 1, over.parokiId ?? null, over.kotaId ?? null, over.keuskupanId ?? null, over.lintas ?? false, over.status ?? 'PENDING', over.scheduledDate ?? null, `integration-test ${this.tag}`],
     );
     const id = Number(r[0].id);
     this.orders.push(id);
     return id;
   }
 
-  async item(orderId: number, status = 'PENDING'): Promise<number> {
+  /** Daftarkan order yang dibuat lewat layanan (bukan Fixture.order) agar ikut dibersihkan. */
+  track(orderId: number): void {
+    this.orders.push(orderId);
+  }
+
+  /** Misa uji; [dayOffset] hari dari hari ini (negatif = sudah lewat), [romoId] bila sudah diterima. */
+  async item(orderId: number, status = 'PENDING', dayOffset = 5, romoId: number | null = null): Promise<number> {
     const r = await this.ds.query(
-      `INSERT INTO order_items (order_id, item_name, scheduled_date, scheduled_time_start, scheduled_time_end, location_name, status)
-       VALUES ($1, 'Misa Uji', CURRENT_DATE + 5, '09:00', '10:00', 'Gereja', $2::order_status_enum) RETURNING id`,
-      [orderId, status],
+      `INSERT INTO order_items (order_id, item_name, scheduled_date, scheduled_time_start, scheduled_time_end, location_name, status, accepted_romo_id)
+       VALUES ($1, 'Misa Uji', CURRENT_DATE + $3::int, '09:00', '10:00', 'Gereja', $2::order_status_enum, $4) RETURNING id`,
+      [orderId, status, dayOffset, romoId],
     );
     return Number(r[0].id);
   }

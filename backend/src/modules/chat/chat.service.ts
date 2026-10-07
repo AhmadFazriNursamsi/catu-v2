@@ -8,6 +8,7 @@ import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 import { SendChatMessageDto } from "../../orders.dto";
 import { FcmService } from "../../fcm.service";
+import { orderKeuskupanSql } from '../order-rules/lintas-paroki';
 
 @Injectable()
 export class ChatService {
@@ -445,11 +446,9 @@ private async resolveGroupId(idParam: string): Promise<number> {
     }
 
     // 2b. Koordinator Keuskupan
-    const keuskupanId = order.keuskupan_id || (
-      await this.dataSource.query('SELECT keuskupan_id FROM user_profiles WHERE user_id = $1', [order.pemohon_id])
-    )[0]?.keuskupan_id;
+    const keuskupanIds = (await this.dataSource.query(orderKeuskupanSql('$1'), [order.order_id])).map((r: any) => Number(r.keuskupan_id)).filter(Boolean);
 
-    if (keuskupanId) {
+    if (keuskupanIds.length > 0) {
       const koordinator = await this.dataSource.query(
         `SELECT u.id as user_id, 'KOORDINATOR' as role_in_group, p.full_name, u.phone_number,
                 COALESCE(k.name, 'Keuskupan') as keuskupan_name
@@ -461,9 +460,9 @@ private async resolveGroupId(idParam: string): Promise<number> {
            r.code IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
            OR r.code LIKE '%KOORDINATOR%'
            OR LOWER(COALESCE(p.pengurus_position, '')) LIKE '%koordinator%'
-         ) AND p.keuskupan_id = $1::int
+         ) AND p.keuskupan_id = ANY($1::int[])
          ORDER BY u.id ASC`,
-        [keuskupanId],
+        [keuskupanIds],
       );
 
       for (const k of koordinator) {
@@ -533,7 +532,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
         whereClause = `WHERE (
           o.user_id = $1
           OR EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1)
-          OR COALESCE(o.keuskupan_id, p.keuskupan_id) = (SELECT keuskupan_id FROM user_profiles WHERE user_id = $1)
+          OR (SELECT keuskupan_id FROM user_profiles WHERE user_id = $1) IN (${orderKeuskupanSql('o.id')})
         )`;
       } else {
         whereClause = `WHERE (o.user_id = $1 OR EXISTS (SELECT 1 FROM chat_group_members cgm WHERE cgm.chat_group_id = g.id AND cgm.user_id = $1))`;

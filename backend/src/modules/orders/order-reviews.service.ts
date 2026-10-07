@@ -58,8 +58,8 @@ export class OrderReviewsService {
       }
       const item = itemRows[0];
       const itemSt = (item.status || '').toUpperCase();
-      const orderSt = (order.status || '').toUpperCase();
-      if (itemSt !== 'DONE' && itemSt !== 'CLOSE' && orderSt !== 'DONE' && orderSt !== 'CLOSE') {
+      // Ulasan sebuah misa hanya setelah misa itu sendiri selesai/ditutup; status induk tidak cukup.
+      if (itemSt !== 'DONE' && itemSt !== 'CLOSE') {
         throw new BadRequestException('Ulasan hanya dapat diberikan setelah pelayanan selesai atau ditutup');
       }
       if (item.reviewed_at) throw new ConflictException('Ulasan untuk pelayanan ini sudah pernah diberikan.');

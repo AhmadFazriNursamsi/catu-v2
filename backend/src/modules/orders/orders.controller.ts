@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Controller,
+  Logger,
   Post,
   Body,
   Get,
@@ -18,6 +19,7 @@ import { OrderReviewsService } from './order-reviews.service';
 import { validateRescheduleProposal } from './reschedule-validation';
 import { validateNewOrder } from '../order-rules/order-input-rules';
 import { OrderGuardsService } from '../order-rules/order-guards.service';
+import { LintasParokiService } from '../order-rules/lintas-paroki.service';
 import { MAX_RESCHEDULE_REJECTIONS, OrderEventsService } from '../order-events/order-events.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -33,7 +35,10 @@ export class OrdersController {
     private readonly access: AccessService,
     private readonly events: OrderEventsService,
     private readonly guards: OrderGuardsService,
+    private readonly lintas: LintasParokiService,
   ) {}
+
+  private readonly logger = new Logger(OrdersController.name);
 
   /** Identitas aktor selalu dari token; admin boleh bertindak atas nama pengguna lain. */
   private actor(user: AuthUser, requested?: number): number | undefined {
@@ -74,7 +79,10 @@ export class OrdersController {
     const invalid = validateNewOrder(dto);
     if (invalid) throw new BadRequestException(invalid);
     await this.guards.assertNewOrderRefs(dto);
-    return await this.ordersService.createOrder({ ...dto, userId: this.actor(user, dto.userId) });
+    const result = await this.ordersService.createOrder({ ...dto, userId: this.actor(user, dto.userId) });
+    // Pelayanan lintas paroki: teruskan ke Romo Ordo tujuan dan libatkan Koordinator (kegagalan di sini tidak membatalkan order).
+    await this.lintas.afterCreate(result.order.id).catch((err) => this.logger.error(`Gagal memproses pelayanan lintas paroki: ${err.message}`));
+    return result;
   }
 
   @Get()
@@ -136,7 +144,7 @@ export class OrdersController {
       reason: string;
     },
   ) {
-    const invalid = validateRescheduleProposal(dto);
+    const invalid = validateRescheduleProposal(dto, new Date(), (await this.guards.scheduledDate(Number(idParam), dto.itemId)) ?? undefined);
     if (invalid) throw new BadRequestException(invalid);
     await this.events.assertRescheduleOpen(Number(idParam), dto.itemId);
     await this.guards.assertRescheduleProposable(Number(idParam), dto.itemId);

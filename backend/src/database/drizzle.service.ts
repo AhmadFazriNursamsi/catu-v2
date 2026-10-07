@@ -1,14 +1,10 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
 import { NodePgDatabase, drizzle } from 'drizzle-orm/node-postgres';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as schema from './schema';
 
 @Injectable()
-export class DrizzleService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(DrizzleService.name);
+export class DrizzleService implements OnModuleDestroy {
   private pool: Pool;
   private _db: NodePgDatabase<typeof schema>;
 
@@ -32,37 +28,6 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
 
   get client(): Pool {
     return this.pool;
-  }
-
-  private resolveMigrationsFolder(): string {
-    const candidates = [
-      path.resolve(process.cwd(), 'drizzle'),
-      path.resolve(process.cwd(), 'backend/drizzle'),
-      path.resolve(__dirname, '../../drizzle'),
-      path.resolve(__dirname, '../../../drizzle'),
-    ];
-
-    for (const candidate of candidates) {
-      const journalFile = path.join(candidate, 'meta/_journal.json');
-      if (fs.existsSync(journalFile)) {
-        return candidate;
-      }
-    }
-
-    return path.resolve(process.cwd(), 'drizzle');
-  }
-
-  async onModuleInit(): Promise<void> {
-    const folder = this.resolveMigrationsFolder();
-    this.logger.log(`Executing Drizzle auto-migration using journal at: ${folder}`);
-
-    try {
-      await migrate(this._db, { migrationsFolder: folder });
-      this.logger.log('Drizzle database migration completed successfully');
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Failed to apply Drizzle migrations: ${message}`);
-    }
   }
 
   async onModuleDestroy(): Promise<void> {

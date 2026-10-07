@@ -82,4 +82,17 @@ describeDb('Ulasan pelayanan (PostgreSQL sungguhan)', () => {
     expect((await fx.row('order_items', itemB)).rating).toBeNull();
     await expect(reviews.submitReview(String(orderId), { userId: umat.id, itemId: itemA, rating: 1, reviewNotes: 'ulang' })).rejects.toBeInstanceOf(ConflictException);
   });
+
+  it('misa yang belum selesai tidak dapat diulas walau status pelayanan induk sudah DONE (override Admin)', async () => {
+    const { umat, orderId } = await doneOrder();
+    const belum = await fx.item(orderId, 'PENDING');
+    const jalan = await fx.item(orderId, 'IN_PROGRESS');
+    for (const itemId of [belum, jalan]) {
+      await expect(reviews.submitReview(String(orderId), { userId: umat.id, itemId, rating: 5, reviewNotes: 'terlalu cepat' })).rejects.toThrow(/setelah pelayanan selesai atau ditutup/);
+      expect((await fx.row('order_items', itemId)).rating).toBeNull();
+    }
+    const ditutup = await fx.item(orderId, 'CLOSE');
+    await reviews.submitReview(String(orderId), { userId: umat.id, itemId: ditutup, rating: 3, reviewNotes: 'misa ditutup tetap dapat diulas' });
+    expect((await fx.row('order_items', ditutup)).rating).toBe(3);
+  });
 });

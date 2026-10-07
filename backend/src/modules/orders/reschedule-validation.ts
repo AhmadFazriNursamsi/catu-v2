@@ -1,12 +1,12 @@
 export const RESCHEDULE_REASON_MIN = 10;
 export const RESCHEDULE_REASON_MAX = 300;
-export const RESCHEDULE_MAX_DAYS_AHEAD = 60;
 
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
-const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})/;
 
 export interface RescheduleProposalInput {
+  /** Hanya diterima bila sama dengan tanggal pelayanan; ubah jam tidak mengubah tanggal. */
   newDate?: string;
   newTimeStart?: string;
   newTimeEnd?: string;
@@ -19,12 +19,14 @@ const toMinutes = (hhmm: string) => {
 };
 
 /**
- * Memvalidasi pengajuan perubahan jadwal. Mengembalikan pesan error pertama, atau null bila valid.
- * Waktu "sekarang" dihitung dalam WIB karena jadwal pelayanan memakai waktu setempat.
+ * Memvalidasi pengajuan ubah jam. Mengembalikan pesan error pertama, atau null bila valid.
+ * Ubah jam tidak mengubah tanggal: [currentDate] (yyyy-MM-dd, tanggal pelayanan/misa) menentukan "hari ini",
+ * dan [dto.newDate] yang berbeda dari tanggal itu ditolak. Waktu "sekarang" dihitung dalam WIB.
  */
 export function validateRescheduleProposal(
   dto: RescheduleProposalInput,
   now: Date = new Date(),
+  currentDate?: string,
 ): string | null {
   const wib = new Date(now.getTime() + WIB_OFFSET_MS);
   const todayMs = Date.UTC(wib.getUTCFullYear(), wib.getUTCMonth(), wib.getUTCDate());
@@ -39,31 +41,12 @@ export function validateRescheduleProposal(
     if (toMinutes(end) <= toMinutes(start)) return 'Jam selesai harus setelah jam mulai.';
   }
 
-  let isToday = false;
-  const date = dto.newDate?.trim();
-  if (date) {
-    const m = DATE_RE.exec(date);
-    const y = m ? Number(m[1]) : 0;
-    const mo = m ? Number(m[2]) : 0;
-    const d = m ? Number(m[3]) : 0;
-    const ms = m ? Date.UTC(y, mo - 1, d) : NaN;
-    const roundTrip = new Date(ms);
-    if (
-      !m ||
-      Number.isNaN(ms) ||
-      roundTrip.getUTCFullYear() !== y ||
-      roundTrip.getUTCMonth() !== mo - 1 ||
-      roundTrip.getUTCDate() !== d
-    ) {
-      return 'Tanggal baru tidak valid. Gunakan format TTTT-BB-HH.';
-    }
-    if (ms < todayMs) return 'Tanggal baru tidak boleh sudah lewat.';
-    if ((ms - todayMs) / 86_400_000 > RESCHEDULE_MAX_DAYS_AHEAD) {
-      return `Tanggal baru maksimal ${RESCHEDULE_MAX_DAYS_AHEAD} hari ke depan.`;
-    }
-    isToday = ms === todayMs;
+  const asked = dto.newDate?.trim().slice(0, 10);
+  const current = DATE_RE.exec(currentDate ?? '');
+  if (asked && current && asked !== current[0]) return 'Ubah jam tidak dapat mengubah tanggal pelayanan. Gunakan jam baru pada tanggal yang sama.';
+  if (current && Date.UTC(Number(current[1]), Number(current[2]) - 1, Number(current[3])) === todayMs && toMinutes(start) <= nowMinutes) {
+    return 'Jam mulai baru sudah lewat untuk hari ini.';
   }
-  if (isToday && toMinutes(start) <= nowMinutes) return 'Jam mulai baru sudah lewat untuk hari ini.';
 
   const reason = (dto.reason ?? '').trim();
   if (!reason) return 'Alasan perubahan jadwal wajib diisi.';

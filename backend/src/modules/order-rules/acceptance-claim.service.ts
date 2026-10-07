@@ -69,7 +69,7 @@ export class AcceptanceClaimService {
   private async assertTerritory(orderId: number, romoId: number): Promise<void> {
     const rows = await this.dataSource.query(
       `SELECT r.code AS role_code, rp.paroki_id AS romo_paroki, rp.kabupaten_kota_id AS romo_kota,
-              COALESCE(o.paroki_id, pem.paroki_id) AS order_paroki, COALESCE(o.kabupaten_kota_id, pem.kabupaten_kota_id) AS order_kota
+              COALESCE(o.paroki_id, pem.paroki_id) AS order_paroki, COALESCE(o.kabupaten_kota_id, pem.kabupaten_kota_id) AS order_kota, o.lintas_paroki
        FROM orders o
        LEFT JOIN user_profiles pem ON pem.user_id = o.user_id
        JOIN auth_users u ON u.id = $2 JOIN roles r ON r.id = u.role_id
@@ -80,6 +80,9 @@ export class AcceptanceClaimService {
     if (rows.length === 0) throw new NotFoundException('Order tidak ditemukan.');
     const x = rows[0];
     const same = (a: unknown, b: unknown) => a != null && b != null && String(a) === String(b);
+    if (x.role_code === 'ROMO_PAROKI' && x.lintas_paroki) {
+      throw new ForbiddenException('Pelayanan lintas paroki hanya untuk Romo Ordo tujuan; Romo Paroki tidak berwenang.');
+    }
     if (x.role_code === 'ROMO_PAROKI' && !same(x.romo_paroki, x.order_paroki)) {
       throw new ForbiddenException('Pelayanan ini berada di luar paroki Anda.');
     }

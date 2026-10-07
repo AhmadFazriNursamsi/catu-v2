@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { autoMigrateEnabled, runMigrations } from './database/migrate';
 
 import { json, urlencoded } from 'express';
 import helmet from 'helmet';
@@ -17,6 +18,8 @@ import {
 
 async function bootstrap() {
   assertSecureEnvironment();
+  // Skema harus siap sebelum modul mana pun berjalan; gagal migrasi = aplikasi tidak start (bukan jalan dengan skema setengah jadi).
+  if (autoMigrateEnabled()) await runMigrations();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.set('trust proxy', trustProxySetting());
@@ -85,4 +88,7 @@ async function bootstrap() {
   console.log(`🚀 Aplikasi CATU v2 Backend berjalan di: http://${host}:${port}`);
   console.log(`📚 Dokumentasi Swagger OpenAPI berjalan di: http://${host}:${port}/api/docs`);
 }
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('Aplikasi gagal start:', err instanceof Error ? err.message : err);
+  process.exit(1);
+});

@@ -93,6 +93,29 @@ export class OrderEventsService {
     }
   }
 
+  /**
+   * Notifikasi per misa: satu notifikasi untuk tiap misa (menaut ke grup misanya), seperti Romo Paroki dan pengurus saat dibuat.
+   * [onlyPending] membatasi ke misa yang belum diterima Romo (eskalasi). Pelayanan tanpa misa: satu notifikasi tingkat order.
+   */
+  async notifyPerItem(
+    userIds: Array<number | null | undefined>,
+    orderId: number,
+    build: (item: { id: number; name: string } | null) => Pick<OrderNotification, 'type' | 'title' | 'body'>,
+    onlyPending = false,
+  ): Promise<void> {
+    const items: Array<{ id: number; item_name: string }> = await this.dataSource.query(
+      `SELECT id, item_name FROM order_items WHERE order_id = $1 ${onlyPending ? `AND COALESCE(status::text, 'PENDING') = 'PENDING' AND accepted_romo_id IS NULL` : ''} ORDER BY id`,
+      [orderId],
+    );
+    if (items.length === 0) {
+      const any = await this.dataSource.query('SELECT 1 FROM order_items WHERE order_id = $1 LIMIT 1', [orderId]);
+      if (any.length > 0) return; // semua misa sudah punya Romo: tidak ada yang perlu dieskalasi
+      await this.notify(userIds, { orderId, ...build(null) });
+      return;
+    }
+    for (const it of items) await this.notify(userIds, { orderId, itemId: Number(it.id), ...build({ id: Number(it.id), name: it.item_name }) });
+  }
+
   async rejectedRescheduleCount(orderId: number, itemId?: number | null): Promise<number> {
     const rows = await this.dataSource.query(
       `SELECT COUNT(*)::int AS total FROM order_reschedules

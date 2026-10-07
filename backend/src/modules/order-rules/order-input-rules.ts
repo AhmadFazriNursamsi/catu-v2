@@ -8,6 +8,9 @@ export const MAX_NOTES = 2000;
 export const MAX_LOCATION = 200;
 export const MAX_ADDRESS = 500;
 export const MAX_REVIEW = 1000;
+export const MAX_ITEM_NAME = 150;
+export const MAX_ITEMS = 20;
+const KEDUKAAN_CATEGORY_ID = 2;
 
 interface ScheduleInput {
   scheduledDate?: string;
@@ -17,10 +20,19 @@ interface ScheduleInput {
 }
 
 export interface NewOrderInput extends ScheduleInput {
+  serviceCategoryId?: number;
   locationName?: string;
   addressDetail?: string;
   notes?: string;
   items?: Array<ScheduleInput & { itemName?: string; locationName?: string }>;
+}
+
+const minutesOf = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+
+/** Jam selesai harus sesudah jam mulai (keduanya sudah berformat sah). */
+function endAfterStart(start: string | undefined, end: string | undefined, label: string): string | null {
+  if (!start?.trim() || !end?.trim()) return null;
+  return minutesOf(end.trim()) > minutesOf(start.trim()) ? null : `Jam selesai ${label} harus sesudah jam mulai.`;
 }
 
 const todayWib = (now: Date) => {
@@ -52,11 +64,29 @@ export function validateNewOrder(dto: NewOrderInput, now: Date = new Date()): st
   if ((dto.notes ?? '').length > MAX_NOTES) return `Catatan maksimal ${MAX_NOTES} karakter.`;
   if ((dto.locationName ?? '').length > MAX_LOCATION) return `Lokasi maksimal ${MAX_LOCATION} karakter.`;
   if ((dto.addressDetail ?? '').length > MAX_ADDRESS) return `Alamat maksimal ${MAX_ADDRESS} karakter.`;
-  for (const [i, item] of (dto.items ?? []).entries()) {
-    const err = scheduleError(item, `misa ke-${i + 1}`, now);
+  const mainRange = endAfterStart(dto.scheduledTimeStart, dto.scheduledTimeEnd, 'pelayanan');
+  if (mainRange) return mainRange;
+  const items = dto.items ?? [];
+  if (dto.serviceCategoryId === KEDUKAAN_CATEGORY_ID && items.length === 0) return 'Misa Kedukaan harus memuat minimal satu misa.';
+  if (items.length > MAX_ITEMS) return `Jumlah misa maksimal ${MAX_ITEMS}.`;
+  for (const [i, item] of items.entries()) {
+    const label = `misa ke-${i + 1}`;
+    const err = scheduleError(item, label, now) ?? itemError(item, label);
     if (err) return err;
   }
   return null;
+}
+
+/** Nama, lokasi, dan rentang jam sebuah misa: wajib diisi, tidak melebihi kolom basis data, selesai sesudah mulai. */
+function itemError(item: ScheduleInput & { itemName?: string; locationName?: string }, label: string): string | null {
+  const name = (item.itemName ?? '').trim();
+  if (!name) return `Nama ${label} wajib diisi.`;
+  if (name.length > MAX_ITEM_NAME) return `Nama ${label} maksimal ${MAX_ITEM_NAME} karakter.`;
+  const place = (item.locationName ?? '').trim();
+  if (!place) return `Lokasi ${label} wajib diisi.`;
+  if (place.length > MAX_LOCATION) return `Lokasi ${label} maksimal ${MAX_LOCATION} karakter.`;
+  if (!item.scheduledTimeStart?.trim() || !item.scheduledTimeEnd?.trim()) return `Jam mulai dan jam selesai ${label} wajib diisi.`;
+  return endAfterStart(item.scheduledTimeStart, item.scheduledTimeEnd, label);
 }
 
 /** Ulasan: nilai bintang bila diisi harus bilangan bulat 1-5; teks wajib dan tidak melebihi batas. */

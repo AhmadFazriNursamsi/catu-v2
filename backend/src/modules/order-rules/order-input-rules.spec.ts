@@ -38,9 +38,36 @@ describe('validateNewOrder', () => {
   });
 
   it('setiap misa pada pelayanan multi-item divalidasi', () => {
-    const items = [{ scheduledDate: '2026-10-11', scheduledTimeStart: '09:00', scheduledTimeEnd: '10:00' }, { scheduledDate: '2026-09-01', scheduledTimeStart: '09:00' }];
-    expect(validateNewOrder({ ...base, items }, NOW)).toMatch(/misa ke-2.*sudah lewat/);
-    expect(validateNewOrder({ ...base, items: [{ scheduledDate: '2026-10-11', scheduledTimeStart: '99:00' }] }, NOW)).toMatch(/Jam mulai misa ke-1/);
+    const ok = { itemName: 'Misa 1', locationName: 'Gereja', scheduledDate: '2026-10-11', scheduledTimeStart: '09:00', scheduledTimeEnd: '10:00' };
+    expect(validateNewOrder({ ...base, items: [ok] }, NOW)).toBeNull();
+    expect(validateNewOrder({ ...base, items: [ok, { ...ok, scheduledDate: '2026-09-01' }] }, NOW)).toMatch(/misa ke-2.*sudah lewat/);
+    expect(validateNewOrder({ ...base, items: [{ ...ok, scheduledTimeStart: '99:00' }] }, NOW)).toMatch(/Jam mulai misa ke-1/);
+  });
+
+  it('misa: nama dan lokasi wajib dan dibatasi sesuai kolom basis data', () => {
+    const ok = { itemName: 'Misa 1', locationName: 'Gereja', scheduledDate: '2026-10-11', scheduledTimeStart: '09:00', scheduledTimeEnd: '10:00' };
+    expect(validateNewOrder({ ...base, items: [{ ...ok, itemName: '  ' }] }, NOW)).toMatch(/Nama misa ke-1 wajib/);
+    expect(validateNewOrder({ ...base, items: [{ ...ok, itemName: 'x'.repeat(151) }] }, NOW)).toMatch(/Nama misa ke-1 maksimal 150/);
+    expect(validateNewOrder({ ...base, items: [{ ...ok, itemName: 'x'.repeat(150) }] }, NOW)).toBeNull();
+    expect(validateNewOrder({ ...base, items: [{ ...ok, locationName: 'x'.repeat(5000) }] }, NOW)).toMatch(/Lokasi misa ke-1 maksimal 200/);
+    expect(validateNewOrder({ ...base, items: [{ ...ok, locationName: '' }] }, NOW)).toMatch(/Lokasi misa ke-1 wajib/);
+  });
+
+  it('jam selesai harus sesudah jam mulai (misa maupun pelayanan)', () => {
+    const ok = { itemName: 'Misa 1', locationName: 'Gereja', scheduledDate: '2026-10-11', scheduledTimeStart: '09:00', scheduledTimeEnd: '10:00' };
+    expect(validateNewOrder({ ...base, items: [{ ...ok, scheduledTimeEnd: '08:00' }] }, NOW)).toMatch(/Jam selesai misa ke-1 harus sesudah/);
+    expect(validateNewOrder({ ...base, items: [{ ...ok, scheduledTimeEnd: '09:00' }] }, NOW)).toMatch(/harus sesudah/);
+    expect(validateNewOrder({ ...base, items: [{ ...ok, scheduledTimeEnd: '' }] }, NOW)).toMatch(/Jam mulai dan jam selesai misa ke-1 wajib/);
+    expect(validateNewOrder({ ...base, scheduledTimeStart: '10:00', scheduledTimeEnd: '09:00' }, NOW)).toMatch(/Jam selesai pelayanan/);
+  });
+
+  it('Misa Kedukaan wajib memuat misa; jumlah misa dibatasi', () => {
+    const ok = { itemName: 'Misa 1', locationName: 'Gereja', scheduledDate: '2026-10-11', scheduledTimeStart: '09:00', scheduledTimeEnd: '10:00' };
+    expect(validateNewOrder({ ...base, serviceCategoryId: 2, items: [] }, NOW)).toMatch(/minimal satu misa/);
+    expect(validateNewOrder({ ...base, serviceCategoryId: 2 }, NOW)).toMatch(/minimal satu misa/);
+    expect(validateNewOrder({ ...base, serviceCategoryId: 1 }, NOW)).toBeNull();
+    expect(validateNewOrder({ ...base, serviceCategoryId: 2, items: Array(21).fill(ok) }, NOW)).toMatch(/maksimal 20/);
+    expect(validateNewOrder({ ...base, serviceCategoryId: 2, items: Array(20).fill(ok) }, NOW)).toBeNull();
   });
 });
 

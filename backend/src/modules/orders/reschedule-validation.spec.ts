@@ -30,24 +30,30 @@ describe('validateRescheduleProposal', () => {
     expect(check({ newTimeEnd: 'abc' })).toMatch(/Jam selesai/);
   });
 
-  it('menolak tanggal tidak valid, lampau, dan terlalu jauh', () => {
-    expect(check({ newDate: '2026-02-30' })).toMatch(/tidak valid/);
-    expect(check({ newDate: '04/10/2026' })).toMatch(/tidak valid/);
-    expect(check({ newDate: '2026-10-02' })).toMatch(/sudah lewat/);
-    expect(check({ newDate: '2026-12-31' })).toMatch(/maksimal/);
-    expect(check({ newDate: '2026-12-02' })).toBeNull(); // tepat 60 hari
+  it('ubah jam tidak mengubah tanggal: tanggal berbeda dari tanggal pelayanan ditolak, yang sama atau kosong diterima', () => {
+    const at = (patch: Record<string, unknown>, current = '2026-10-04') => validateRescheduleProposal({ ...valid, ...patch } as any, NOW, current);
+    expect(at({ newDate: '2026-10-05' })).toMatch(/tidak dapat mengubah tanggal/);
+    expect(at({ newDate: '2026-10-03' })).toMatch(/tidak dapat mengubah tanggal/);
+    expect(at({ newDate: '2026-10-04' })).toBeNull();
+    expect(at({ newDate: '2026-10-04T00:00:00.000Z' })).toBeNull();
+    expect(at({ newDate: undefined })).toBeNull();
+    expect(at({ newDate: '2026-10-05' }, '')).toBeNull(); // tanggal pelayanan tidak diketahui
   });
 
-  it('hari ini: jam mulai harus setelah waktu sekarang (WIB)', () => {
-    expect(check({ newDate: '2026-10-03', newTimeStart: '09:59', newTimeEnd: undefined })).toMatch(/sudah lewat/);
-    expect(check({ newDate: '2026-10-03', newTimeStart: '10:00', newTimeEnd: undefined })).toMatch(/sudah lewat/);
-    expect(check({ newDate: '2026-10-03', newTimeStart: '10:01', newTimeEnd: undefined })).toBeNull();
+  it('hari ini: jam mulai harus setelah waktu sekarang (WIB), diukur dari tanggal pelayanan', () => {
+    const today = (start: string) => validateRescheduleProposal({ ...valid, newDate: undefined, newTimeStart: start, newTimeEnd: undefined } as any, NOW, '2026-10-03');
+    expect(today('09:59')).toMatch(/sudah lewat/);
+    expect(today('10:00')).toMatch(/sudah lewat/);
+    expect(today('10:01')).toBeNull();
+    // pelayanan besok: jam pagi pun boleh
+    expect(validateRescheduleProposal({ ...valid, newDate: undefined, newTimeStart: '06:00', newTimeEnd: undefined } as any, NOW, '2026-10-04')).toBeNull();
   });
 
   it('memakai tanggal WIB, bukan UTC, untuk menentukan "hari ini"', () => {
-    // 2026-10-03 20:00 UTC = 2026-10-04 03:00 WIB, sehingga 2026-10-03 sudah lampau.
+    // 2026-10-03 20:00 UTC = 2026-10-04 03:00 WIB: pelayanan 2026-10-04 adalah hari ini, jam 02:00 sudah lewat.
     const lateUtc = new Date('2026-10-03T20:00:00Z');
-    expect(validateRescheduleProposal({ ...valid, newDate: '2026-10-03' }, lateUtc)).toMatch(/sudah lewat/);
+    expect(validateRescheduleProposal({ ...valid, newDate: undefined, newTimeStart: '02:00', newTimeEnd: undefined } as any, lateUtc, '2026-10-04')).toMatch(/sudah lewat/);
+    expect(validateRescheduleProposal({ ...valid, newDate: undefined, newTimeStart: '02:00', newTimeEnd: undefined } as any, lateUtc, '2026-10-03')).toBeNull(); // 3 Okt bukan hari ini di WIB
   });
 
   it('menolak alasan kosong, terlalu singkat, dan terlalu panjang', () => {

@@ -20,6 +20,8 @@ COPY --from=builder --chown=node:node /app/package*.json ./
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/dist ./dist
 COPY --from=builder --chown=node:node /app/drizzle ./drizzle
+# Skrip role database hak minimal (tanpa folder db/dev-only yang berisi data development).
+COPY --from=builder --chown=node:node /app/db/app-role.sql ./db/app-role.sql
 # Firebase credentials are provided at runtime through a secret or volume.
 # Direktori unggahan APK lokal harus dapat ditulis oleh user non-root.
 RUN mkdir -p /app/public && chown node:node /app/public

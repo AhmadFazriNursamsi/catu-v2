@@ -7,6 +7,7 @@ import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 import { RespondOrderAssignmentDto } from "../../orders.dto";
 import { FcmService } from "../../fcm.service";
+import { orderStatusFromItemsSql } from "../order-rules/order-status-derive";
 
 @Injectable()
 export class AssignmentsService {
@@ -122,30 +123,11 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
         );
       }
 
-      const allItems = await this.dataSource.query(
-        `SELECT status FROM order_items WHERE order_id = $1`,
+      // Status pelayanan induk mengikuti seluruh misanya, bukan hanya misa yang baru berubah.
+      await this.dataSource.query(
+        `UPDATE orders SET status = COALESCE(${orderStatusFromItemsSql('orders.id')}::order_status_enum, status) WHERE id = $1`,
         [orderId],
       );
-
-      const allDone = allItems.length > 0 && allItems.every((i: any) => i.status === 'DONE');
-      const anyActive = allItems.some((i: any) => i.status === 'CONFIRMED' || i.status === 'IN_PROGRESS');
-
-      if (allDone) {
-        await this.dataSource.query(
-          `UPDATE orders SET status = 'DONE' WHERE id = $1`,
-          [orderId],
-        );
-      } else if (anyActive) {
-        await this.dataSource.query(
-          `UPDATE orders SET status = 'CONFIRMED' WHERE id = $1`,
-          [orderId],
-        );
-      } else {
-        await this.dataSource.query(
-          `UPDATE orders SET status = 'PENDING' WHERE id = $1`,
-          [orderId],
-        );
-      }
     } else {
       await this.dataSource.query(
         `UPDATE orders SET status = $1, accepted_romo_id = COALESCE($2::int, accepted_romo_id) WHERE id = $3`,
@@ -236,85 +218,19 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
 
       const pengurusStatusList = await this.getPengurusForOrder(orderId);
 
-      if (newStatus === 'CONFIRMED') {
-        // 🔔 1. Notify Umat
-        if (orderInfo.user_id) {
+      // Notifikasi menaut ke grup chat misa yang berubah (grup pertama order bila tanpa misa), agar ketukan membuka misa yang tepat.
+      const kinds: Record<string, { type: string; titleUmat: string; bodyUmat: string; bodyPengurus: string }> = {
+        CONFIRMED: { type: 'ORDER_CONFIRMED', titleUmat: 'Pelayanan Dikonfirmasi', bodyUmat: `Romo ${romoName} telah mengkonfirmasi kehadiran untuk melayani ${serviceTitle} (${orderInfo.order_number}).`, bodyPengurus: `Romo ${romoName} telah mengkonfirmasi kehadiran untuk melayani ${serviceTitle} (${orderInfo.order_number}) bagi warga lingkungan Anda.` },
+        IN_PROGRESS: { type: 'ORDER_IN_PROGRESS', titleUmat: 'Pelayanan Berlangsung', bodyUmat: `Romo ${romoName} sedang menjalankan pelayanan ${serviceTitle} (${orderInfo.order_number}).`, bodyPengurus: `Romo ${romoName} sedang menjalankan pelayanan ${serviceTitle} (${orderInfo.order_number}) bagi warga lingkungan Anda.` },
+        DONE: { type: 'ORDER_DONE', titleUmat: 'Pelayanan Selesai', bodyUmat: `Pelayanan ${serviceTitle} (${orderInfo.order_number}) telah selesai dilaksanakan oleh Romo ${romoName}. Terima kasih atas partisipasi Anda.`, bodyPengurus: `Pelayanan ${serviceTitle} (${orderInfo.order_number}) telah selesai dilaksanakan oleh Romo ${romoName}.` },
+      };
+      const kind = kinds[newStatus];
+      if (kind) {
+        const recipients = [orderInfo.user_id, ...pengurusStatusList.map((p: any) => p.id)].filter((id: number) => id);
+        for (const userId of recipients) {
           await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-             VALUES ($1, $2, $3, $4, 'ORDER_CONFIRMED', false)`,
-            [
-              orderInfo.user_id,
-              orderId,
-              `Pelayanan Dikonfirmasi: ${serviceTitle}`,
-              `Romo ${romoName} telah mengkonfirmasi kehadiran untuk melayani ${serviceTitle} (${orderInfo.order_number}).`,
-            ],
-          );
-        }
-        // 🔔 2. Notify Pengurus Lingkungan
-        for (const p of pengurusStatusList) {
-          await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-             VALUES ($1, $2, $3, $4, 'ORDER_CONFIRMED', false)`,
-            [
-              p.id,
-              orderId,
-              `Pelayanan Dikonfirmasi: ${serviceTitle}`,
-              `Romo ${romoName} telah mengkonfirmasi kehadiran untuk melayani ${serviceTitle} (${orderInfo.order_number}) bagi warga lingkungan Anda.`,
-            ],
-          );
-        }
-      } else if (newStatus === 'IN_PROGRESS') {
-        // 🔔 1. Notify Umat
-        if (orderInfo.user_id) {
-          await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-             VALUES ($1, $2, $3, $4, 'ORDER_IN_PROGRESS', false)`,
-            [
-              orderInfo.user_id,
-              orderId,
-              `Pelayanan Berlangsung: ${serviceTitle}`,
-              `Romo ${romoName} sedang menjalankan pelayanan ${serviceTitle} (${orderInfo.order_number}).`,
-            ],
-          );
-        }
-        // 🔔 2. Notify Pengurus Lingkungan
-        for (const p of pengurusStatusList) {
-          await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-             VALUES ($1, $2, $3, $4, 'ORDER_IN_PROGRESS', false)`,
-            [
-              p.id,
-              orderId,
-              `Pelayanan Berlangsung: ${serviceTitle}`,
-              `Romo ${romoName} sedang menjalankan pelayanan ${serviceTitle} (${orderInfo.order_number}) bagi warga lingkungan Anda.`,
-            ],
-          );
-        }
-      } else if (newStatus === 'DONE') {
-        // 🔔 1. Notify Umat
-        if (orderInfo.user_id) {
-          await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-             VALUES ($1, $2, $3, $4, 'ORDER_DONE', false)`,
-            [
-              orderInfo.user_id,
-              orderId,
-              `Pelayanan Selesai: ${serviceTitle}`,
-              `Pelayanan ${serviceTitle} (${orderInfo.order_number}) telah selesai dilaksanakan oleh Romo ${romoName}. Terima kasih atas partisipasi Anda.`,
-            ],
-          );
-        }
-        // 🔔 2. Notify Pengurus Lingkungan
-        for (const p of pengurusStatusList) {
-          await this.dataSource.query(
-            `INSERT INTO notifications (user_id, order_id, title, body, type, is_read)
-             VALUES ($1, $2, $3, $4, 'ORDER_DONE', false)`,
-            [
-              p.id,
-              orderId,
-              `Pelayanan Selesai: ${serviceTitle}`,
-              `Pelayanan ${serviceTitle} (${orderInfo.order_number}) telah selesai dilaksanakan oleh Romo ${romoName}.`,
-            ],
+            `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, $5, $6, false)`,
+            [userId, orderId, targetGroups[0]?.id ?? null, `${kind.titleUmat}: ${serviceTitle}`, userId === orderInfo.user_id ? kind.bodyUmat : kind.bodyPengurus, kind.type],
           );
         }
       }
@@ -344,6 +260,7 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
               orderId: orderId.toString(),
               orderNumber: orderInfo.order_number,
               categoryName: orderInfo.category_name,
+              itemId: itemId ? String(itemId) : '',
             },
           });
         }

@@ -11,6 +11,7 @@ interface Target {
   acceptedRomoId: number | null;
   rescheduleStatus: string;
   handoverStatus: string;
+  scheduledDate: string | null;
 }
 
 /** Pemeriksaan keadaan pelayanan sebelum ubah jam, pelimpahan, penetapan status, dan pembuatan pelayanan. */
@@ -22,13 +23,18 @@ export class OrderGuardsService {
   async target(orderId: number, itemId?: number | null): Promise<Target> {
     const rows = await this.dataSource.query(
       itemId
-        ? `SELECT status::text AS status, accepted_romo_id, COALESCE(reschedule_status, 'NONE') AS reschedule_status, COALESCE(handover_status, 'NONE') AS handover_status FROM order_items WHERE id = $1 AND order_id = $2`
-        : `SELECT status::text AS status, accepted_romo_id, COALESCE(reschedule_status, 'NONE') AS reschedule_status, COALESCE(handover_status, 'NONE') AS handover_status FROM orders WHERE id = $1`,
+        ? `SELECT status::text AS status, accepted_romo_id, COALESCE(reschedule_status, 'NONE') AS reschedule_status, COALESCE(handover_status, 'NONE') AS handover_status, scheduled_date::text AS scheduled_date FROM order_items WHERE id = $1 AND order_id = $2`
+        : `SELECT status::text AS status, accepted_romo_id, COALESCE(reschedule_status, 'NONE') AS reschedule_status, COALESCE(handover_status, 'NONE') AS handover_status, scheduled_date::text AS scheduled_date FROM orders WHERE id = $1`,
       itemId ? [itemId, orderId] : [orderId],
     );
     if (rows.length === 0) throw new NotFoundException(itemId ? 'Misa pelayanan tidak ditemukan.' : 'Order tidak ditemukan.');
     const r = rows[0];
-    return { status: r.status, acceptedRomoId: r.accepted_romo_id == null ? null : Number(r.accepted_romo_id), rescheduleStatus: r.reschedule_status, handoverStatus: r.handover_status };
+    return { status: r.status, acceptedRomoId: r.accepted_romo_id == null ? null : Number(r.accepted_romo_id), rescheduleStatus: r.reschedule_status, handoverStatus: r.handover_status, scheduledDate: r.scheduled_date ?? null };
+  }
+
+  /** Tanggal (yyyy-MM-dd) pelayanan atau misa; ubah jam hanya mengubah jam pada tanggal ini. */
+  async scheduledDate(orderId: number, itemId?: number | null): Promise<string | null> {
+    return (await this.target(orderId, itemId)).scheduledDate;
   }
 
   async assertExists(orderId: number): Promise<void> {
@@ -45,6 +51,7 @@ export class OrderGuardsService {
   async assertReschedulePending(orderId: number, itemId?: number | null): Promise<void> {
     const t = await this.target(orderId, itemId);
     if (t.rescheduleStatus !== 'PENDING_UMAT') throw new ConflictException('Tidak ada ajuan ubah jam yang menunggu respons.');
+    if (['DONE', 'CLOSE', 'FAIL'].includes(t.status)) throw new ConflictException('Pelayanan sudah selesai atau ditutup, sehingga ajuan ubah jam tidak berlaku lagi.');
   }
 
   async assertHandoverPending(orderId: number, itemId?: number | null): Promise<void> {

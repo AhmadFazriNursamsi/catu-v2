@@ -5,23 +5,31 @@ import { CreateOrderDto } from "../../orders.dto";
 import { FcmService } from "../../fcm.service";
 import { generateOrderNumber } from './order-number';
 import { EscalationSettingsService } from '../escalation/escalation-settings.service';
+import { orderStatusFromItemsSql } from '../order-rules/order-status-derive';
+import { OrderEventsService } from '../order-events/order-events.service';
 @Injectable()
 export class OrdersService {
-  constructor(@InjectDataSource() private readonly dataSource: DataSource, private readonly fcmService: FcmService, private readonly escalation: EscalationSettingsService) {}
+  constructor(@InjectDataSource() private readonly dataSource: DataSource, private readonly fcmService: FcmService, private readonly escalation: EscalationSettingsService, private readonly events: OrderEventsService) {}
 
   private lastStatusSyncDate = '';
   private async autoSyncOrderStatuses() {
     const today = new Date().toISOString().slice(0, 10);
     if (this.lastStatusSyncDate === today) return;
     this.lastStatusSyncDate = today;
+    // Misa dahulu; status induk pelayanan bermisa mengikuti seluruh misanya (jangan dari tanggal misa pertama saja).
     await this.dataSource.query(`
-      UPDATE orders SET status = 'IN_PROGRESS' WHERE status::text = 'CONFIRMED' AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) = 1;
-      UPDATE orders SET status = 'CLOSE' WHERE status::text IN ('CONFIRMED', 'IN_PROGRESS') AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) >= 2;
-      UPDATE orders SET status = 'FAIL' WHERE status::text = 'PENDING' AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) >= 1;
       UPDATE order_items SET status = 'IN_PROGRESS' WHERE status::text = 'CONFIRMED' AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) = 1;
       UPDATE order_items SET status = 'CLOSE' WHERE status::text IN ('CONFIRMED', 'IN_PROGRESS') AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) >= 2;
       UPDATE order_items SET status = 'FAIL' WHERE status::text = 'PENDING' AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) >= 1;
-    `).catch(() => {});
+      UPDATE orders SET status = COALESCE(${orderStatusFromItemsSql('orders.id')}::order_status_enum, status)
+        WHERE status::text IN ('PENDING', 'CONFIRMED', 'IN_PROGRESS') AND EXISTS (SELECT 1 FROM order_items WHERE order_id = orders.id);
+      UPDATE orders SET status = 'IN_PROGRESS' WHERE status::text = 'CONFIRMED' AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) = 1 AND NOT EXISTS (SELECT 1 FROM order_items WHERE order_id = orders.id);
+      UPDATE orders SET status = 'CLOSE' WHERE status::text IN ('CONFIRMED', 'IN_PROGRESS') AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) >= 2 AND NOT EXISTS (SELECT 1 FROM order_items WHERE order_id = orders.id);
+      UPDATE orders SET status = 'FAIL' WHERE status::text = 'PENDING' AND scheduled_date IS NOT NULL AND (CURRENT_DATE - scheduled_date) >= 1 AND NOT EXISTS (SELECT 1 FROM order_items WHERE order_id = orders.id);
+    `).catch((err) => {
+      this.lastStatusSyncDate = '';
+      console.error('Gagal menyinkronkan status pelayanan otomatis:', err.message);
+    });
   }
 
   private async getPengurusForOrder(orderId: number, excludeUserId?: number): Promise<any[]> {
@@ -158,12 +166,12 @@ export class OrdersService {
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE r.code = 'ROMO_PAROKI' AND p.paroki_id = $1`,
-        [pId],
+         WHERE r.code = 'ROMO_PAROKI' AND p.paroki_id = $1 AND $1::int IS NOT DISTINCT FROM (SELECT paroki_id FROM user_profiles WHERE user_id = $2)`,
+        [pId, userId],
       );
     }
 
-    // Pemohon tidak masuk daftar pemantau. Romo Ordo dan Koordinator baru diberi tahu lewat eskalasi
+    // Pemohon tidak masuk daftar pemantau. Lintas paroki: tanpa Romo Paroki; Romo Ordo/Koordinator lewat eskalasi
     // (EscalationService) bila pelayanan belum diterima setelah batas menit pada master data.
     if (userId) {
       const numUserId = Number(userId);
@@ -172,6 +180,7 @@ export class OrdersService {
     }
 
     let firstGroupId: number | null = null;
+    const createdItems: Array<{ id: number; name: string }> = [];
 
     if (dto.items && dto.items.length > 0) {
       for (const item of dto.items) {
@@ -181,6 +190,7 @@ export class OrdersService {
           [order.id, item.itemName, item.scheduledDate, item.scheduledTimeStart, item.scheduledTimeEnd, item.locationName],
         );
         const itemId = itemResult[0].id;
+        createdItems.push({ id: itemId, name: item.itemName });
 
         const groupResult = await this.dataSource.query(
           `INSERT INTO chat_groups (order_id, order_item_id, title, last_message_text) VALUES ($1, $2, $3, $4) RETURNING id`,
@@ -215,8 +225,8 @@ export class OrdersService {
         for (const p of pengurus) {
           if (p.id && p.id !== userId) {
             await this.dataSource.query(
-              `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'NEW_ORDER_MONITOR', false)`,
-              [ p.id, order.id, `Pemantauan ${item.itemName}`, `Ada permintaan ${item.itemName} (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.` ],
+              `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read) VALUES ($1, $2, $5, $3, $4, 'NEW_ORDER_MONITOR', false)`,
+              [ p.id, order.id, `Pemantauan ${item.itemName}`, `Ada permintaan ${item.itemName} (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.`, gId ],
             );
           }
         }
@@ -225,8 +235,8 @@ export class OrdersService {
         for (const rp of romoParoki) {
           if (rp.id && rp.id !== userId) {
             await this.dataSource.query(
-              `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'NEW_ORDER_ROMO', false)`,
-              [ rp.id, order.id, `Permintaan Pelayanan ${item.itemName}`, `Umat yang berada di paroki anda telah membuat permintaan pelayanan ${item.itemName} (${order.order_number}).` ],
+              `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read) VALUES ($1, $2, $5, $3, $4, 'NEW_ORDER_ROMO', false)`,
+              [ rp.id, order.id, `Permintaan Pelayanan ${item.itemName}`, `Umat yang berada di paroki anda telah membuat permintaan pelayanan ${item.itemName} (${order.order_number}).`, gId ],
             );
           }
         }
@@ -290,32 +300,25 @@ export class OrdersService {
       // Hanya Romo Paroki yang diberi tahu saat dibuat; Romo Ordo lewat eskalasi (EscalationService)
       const allRomoIds = Array.from(new Set(romoParoki.map((r: any) => r.id))).filter((id: number) => id && id !== userId);
 
-      if (allRomoIds.length > 0) {
-        await this.fcmService.sendPushToUsers(allRomoIds, {
-          title: isKedukaan ? `Permintaan Pelayanan Misa Kedukaan` : `Permintaan Sakramen Perminyakan`,
-          body: `Umat telah membuat permohonan ${catName} (${order.order_number}). Ketuk untuk melihat detail dan konfirmasi.`,
-          data: {
-            type: 'NEW_ORDER_ROMO',
-            orderId: order.id.toString(),
-            orderNumber: order.order_number,
-            categoryName: catName,
-          },
-        });
-      }
-
-      // Unique Pengurus IDs (exclude creator)
+      // Pelayanan bermisa: satu push per misa (sama seperti notifikasi dalam aplikasi), membawa itemId misa itu.
       const allPengurusIds = Array.from(new Set(pengurus.map((p: any) => p.id))).filter((id: number) => id && id !== userId);
-      if (allPengurusIds.length > 0) {
-        await this.fcmService.sendPushToUsers(allPengurusIds, {
-          title: `Pemantauan Pelayanan: ${catName}`,
-          body: `Ada permohonan ${catName} (${order.order_number}) dari warga lingkungan Anda.`,
-          data: {
-            type: 'NEW_ORDER_MONITOR',
-            orderId: order.id.toString(),
-            orderNumber: order.order_number,
-            categoryName: catName,
-          },
-        });
+      for (const it of createdItems.length > 0 ? createdItems : [{ id: 0, name: '' }]) {
+        const data = { orderId: order.id.toString(), orderNumber: order.order_number, categoryName: catName, itemId: it.id ? String(it.id) : '' };
+        const what = it.name ? `${catName} - ${it.name}` : catName;
+        if (allRomoIds.length > 0) {
+          await this.fcmService.sendPushToUsers(allRomoIds, {
+            title: it.name ? `Permintaan Pelayanan ${it.name}` : (isKedukaan ? 'Permintaan Pelayanan Misa Kedukaan' : 'Permintaan Sakramen Perminyakan'),
+            body: `Umat telah membuat permohonan ${what} (${order.order_number}). Ketuk untuk melihat detail dan konfirmasi.`,
+            data: { type: 'NEW_ORDER_ROMO', ...data },
+          });
+        }
+        if (allPengurusIds.length > 0) {
+          await this.fcmService.sendPushToUsers(allPengurusIds, {
+            title: `Pemantauan Pelayanan: ${it.name || catName}`,
+            body: `Ada permohonan ${what} (${order.order_number}) dari warga lingkungan Anda.`,
+            data: { type: 'NEW_ORDER_MONITOR', ...data },
+          });
+        }
       }
 
     } catch (fcmErr) {
@@ -389,10 +392,10 @@ export class OrdersService {
 
         if (romo.role_code === 'ROMO_ORDO' && romo.kabupaten_kota_id) {
           // Romo Ordo baru melihat pelayanan setelah batas menit eskalasi (kecuali tanpa paroki atau sudah menjadi tugasnya).
-          whereClauses.push(`((COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++} AND (COALESCE(o.paroki_id, p.paroki_id) IS NULL OR o.created_at <= NOW() - ($${paramIdx++}::int * INTERVAL '1 minute'))) OR ${assignedOrHandoverClause})`);
+          whereClauses.push(`((COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++} AND (COALESCE(o.paroki_id, p.paroki_id) IS NULL OR o.lintas_paroki OR o.created_at <= NOW() - ($${paramIdx++}::int * INTERVAL '1 minute'))) OR ${assignedOrHandoverClause})`);
           queryParams.push(romo.kabupaten_kota_id, (await this.escalation.get()).ordoAfterMinutes);
         } else if (romo.paroki_id) {
-          whereClauses.push(`((o.paroki_id = $${paramIdx} OR (o.paroki_id IS NULL AND o.kabupaten_kota_id IS NULL AND p.paroki_id = $${paramIdx})) OR ${assignedOrHandoverClause})`);
+          whereClauses.push(`(((o.paroki_id = $${paramIdx} AND NOT o.lintas_paroki) OR (o.paroki_id IS NULL AND o.kabupaten_kota_id IS NULL AND p.paroki_id = $${paramIdx})) OR ${assignedOrHandoverClause})`);
           queryParams.push(romo.paroki_id);
           paramIdx++;
         } else if (romo.kabupaten_kota_id) {
@@ -406,38 +409,10 @@ export class OrdersService {
         queryParams.push(parsedRId, parsedRId);
       }
     } else if (userId && !isNaN(parseInt(userId))) {
-      const uId = parseInt(userId);
-      const userRes = await this.dataSource.query(
-        `SELECT u.id, r.code as role_code, p.keuskupan_id, p.paroki_id, p.lingkungan_id, p.pengurus_position
-         FROM auth_users u
-         JOIN roles r ON u.role_id = r.id
-         JOIN user_profiles p ON p.user_id = u.id
-         WHERE u.id = $1`,
-        [uId],
-      );
-      if (userRes.length > 0) {
-        const u = userRes[0];
-        const isKoor = (u.role_code && (u.role_code === 'KOORDINATOR' || u.role_code === 'KOORDINATOR_KEUSKUPAN' || u.role_code.includes('KOORDINATOR'))) ||
-                       (u.pengurus_position && u.pengurus_position.toLowerCase().includes('koordinator'));
-        const isPengurus = !isKoor && (u.role_code === 'PENGURUS_LINGKUNGAN' || (u.pengurus_position && u.pengurus_position.trim().length > 0));
-
-        // Koordinator hanya melihat pelayanan miliknya sendiri (pelayanan lain cukup lewat notifikasi eskalasi).
-        if (isPengurus && u.lingkungan_id) {
-          whereClauses.push(`(
-            o.user_id = $${paramIdx}
-            OR COALESCE(o.lingkungan_id, p.lingkungan_id) = $${paramIdx + 1}
-            OR EXISTS (SELECT 1 FROM chat_group_members cgm JOIN chat_groups cg ON cgm.chat_group_id = cg.id WHERE cg.order_id = o.id AND cgm.user_id = $${paramIdx})
-          )`);
-          queryParams.push(uId, u.lingkungan_id);
-          paramIdx += 2;
-        } else {
-          whereClauses.push(`o.user_id = $${paramIdx++}`);
-          queryParams.push(uId);
-        }
-      } else {
-        whereClauses.push(`o.user_id = $${paramIdx++}`);
-        queryParams.push(uId);
-      }
+      // Beranda hanya memuat pelayanan milik sendiri. Koordinator dan Pengurus Lingkungan memantau pelayanan lain
+      // lewat notifikasi dan grup chat, bukan lewat daftar ini.
+      whereClauses.push(`o.user_id = $${paramIdx++}`);
+      queryParams.push(parseInt(userId));
     } else if (kabupatenKotaId && !isNaN(parseInt(kabupatenKotaId))) {
       whereClauses.push(`COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) = $${paramIdx++}`);
       queryParams.push(parseInt(kabupatenKotaId));
@@ -639,7 +614,7 @@ export class OrdersService {
     },
   ) {
     const orderId = parseInt(idParam, 10) || 0;
-    const { romoId, itemId, newDate, newTimeStart, newTimeEnd, reason } = dto;
+    const { romoId, itemId, newTimeStart, newTimeEnd, reason } = dto;
 
     if (!romoId || !newTimeStart) {
       return { statusCode: 400, message: 'Data pengajuan perubahan jadwal tidak lengkap.' };
@@ -688,7 +663,7 @@ export class OrdersService {
     );
     const romoName = romoProf.length > 0 ? romoProf[0].full_name : 'Romo';
 
-    const proposedDate = newDate || order.scheduled_date;
+    const proposedDate = prevDate; // ubah jam tidak mengubah tanggal
 
     if (itemId) {
       await this.dataSource.query(
@@ -817,8 +792,7 @@ export class OrdersService {
       if (itemId) {
         await this.dataSource.query(
           `UPDATE order_items
-           SET scheduled_date = COALESCE(reschedule_new_date, scheduled_date),
-               scheduled_time_start = COALESCE(reschedule_new_time_start, scheduled_time_start),
+           SET scheduled_time_start = COALESCE(reschedule_new_time_start, scheduled_time_start),
                scheduled_time_end = COALESCE(reschedule_new_time_end, scheduled_time_end),
                reschedule_status = 'ACCEPTED'
            WHERE id = $1 AND order_id = $2`,
@@ -827,8 +801,7 @@ export class OrdersService {
       } else {
         await this.dataSource.query(
           `UPDATE order_items
-           SET scheduled_date = COALESCE(reschedule_new_date, scheduled_date),
-               scheduled_time_start = COALESCE(reschedule_new_time_start, scheduled_time_start),
+           SET scheduled_time_start = COALESCE(reschedule_new_time_start, scheduled_time_start),
                scheduled_time_end = COALESCE(reschedule_new_time_end, scheduled_time_end),
                reschedule_status = 'ACCEPTED'
            WHERE order_id = $1`,
@@ -837,11 +810,10 @@ export class OrdersService {
       }
       await this.dataSource.query(
         `UPDATE orders
-         SET scheduled_date = COALESCE(reschedule_new_date, scheduled_date),
-             scheduled_time = COALESCE(reschedule_new_time, scheduled_time),
+         SET scheduled_time = CASE WHEN $2::bigint IS NULL THEN COALESCE(reschedule_new_time, scheduled_time) ELSE scheduled_time END,
              reschedule_status = 'ACCEPTED'
          WHERE id = $1`,
-        [orderId],
+        [orderId, itemId || null],
       );
 
       // Update order_reschedules log
@@ -1065,59 +1037,10 @@ export class OrdersService {
     const serviceTitle = targetItemName || 'Pelayanan';
     const pengurusHandover = await this.getPengurusForOrder(orderId);
 
-    // Notify Umat
-    await this.dataSource.query(
-      `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-      [order.user_id, orderId, `Pengajuan Ganti Romo: ${serviceTitle}`, `Romo ${prevRomoName} berhalangan ("${effectiveReason}"). Pengalihan tugas pelayanan ${serviceTitle} (${order.order_number}) ke Romo ${newRomoName} sedang menunggu konfirmasi.`],
-    );
-
-    // Notify New Romo
-    await this.dataSource.query(
-      `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-      [targetRomoId, orderId, `Permintaan Pelimpahan Pelayanan: ${serviceTitle}`, `Romo ${prevRomoName} melimpahkan tugas pelayanan ${serviceTitle} (${order.order_number}) kepada Anda. Alasan: "${effectiveReason}". Buka aplikasi untuk menerima atau menolak.`],
-    );
-
-    // Notify Pengurus Lingkungan
-    for (const p of pengurusHandover) {
-      await this.dataSource.query(
-        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-        [p.id, orderId, `Pengajuan Ganti Romo: ${serviceTitle}`, `Romo ${prevRomoName} mengajukan pengalihan pelayanan ${serviceTitle} (${order.order_number}) kepada Romo ${newRomoName} ("${effectiveReason}").`],
-      );
-    }
-
-    // 🔔 Dispatch FCM Push to Target Romo, Umat, and Pengurus
-    try {
-      // 1. Push to Target Romo
-      await this.fcmService.sendPushToUsers(targetRomoId!, {
-        title: `Permintaan Pelimpahan Pelayanan: ${serviceTitle}`,
-        body: `Romo ${prevRomoName} melimpahkan tugas pelayanan ${serviceTitle} (${order.order_number}) kepada Anda. Alasan: "${effectiveReason}".`,
-        data: {
-          type: 'ROMO_HANDOVER',
-          orderId: orderId.toString(),
-          orderNumber: order.order_number,
-        },
-      });
-
-      // 2. Push to Umat & Pengurus
-      const targetHandoverInfoUsers = Array.from(new Set([
-        order.user_id,
-        ...pengurusHandover.map((p: any) => p.id),
-      ])).filter((id: number) => id && id !== romoId && id !== targetRomoId);
-
-      if (targetHandoverInfoUsers.length > 0) {
-        await this.fcmService.sendPushToUsers(targetHandoverInfoUsers, {
-          title: `Pengajuan Ganti Romo: ${serviceTitle}`,
-          body: `Romo ${prevRomoName} mengajukan pengalihan pelayanan ${serviceTitle} (${order.order_number}) kepada Romo ${newRomoName}.`,
-          data: {
-            type: 'ROMO_HANDOVER',
-            orderId: orderId.toString(),
-            orderNumber: order.order_number,
-          },
-        });
-      }
-    } catch (fcmErr) {
-      console.error('Error dispatching FCM in handoverOrder:', fcmErr);
-    }
+    // Notifikasi menaut ke grup misa yang dimaksud dan push membawa itemId (OrderEventsService).
+    const note = { orderId, itemId, type: 'ROMO_HANDOVER' };
+    await this.events.notify([targetRomoId], { ...note, title: `Permintaan Pelimpahan Pelayanan: ${serviceTitle}`, body: `Romo ${prevRomoName} melimpahkan tugas pelayanan ${serviceTitle} (${order.order_number}) kepada Anda. Alasan: "${effectiveReason}". Buka aplikasi untuk menerima atau menolak.` });
+    await this.events.notify([order.user_id, ...pengurusHandover.map((p: any) => p.id)].filter((id: number) => id !== romoId && id !== targetRomoId), { ...note, title: `Pengajuan Ganti Romo: ${serviceTitle}`, body: `Romo ${prevRomoName} mengajukan pengalihan pelayanan ${serviceTitle} (${order.order_number}) kepada Romo ${newRomoName} ("${effectiveReason}"). Menunggu konfirmasi.` });
 
     return {
       statusCode: 200,
@@ -1163,30 +1086,7 @@ export class OrdersService {
     const serviceTitle = targetItemName || 'Pelayanan';
     const pengurus = await this.getPengurusForOrder(orderId);
 
-    await this.dataSource.query(
-      `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-      [order.user_id, orderId, `Pengalihan Romo: ${serviceTitle}`, `Pelayanan ${serviceTitle} (${order.order_number}) telah dialihkan oleh Romo ${prevRomoName} kepada Romo ${extName}. Alasan: "${reason}".`],
-    );
-
-    for (const p of pengurus) {
-      await this.dataSource.query(
-        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-        [p.id, orderId, `Pengalihan Romo: ${serviceTitle}`, `Romo ${prevRomoName} telah mengalihkan pelayanan ${serviceTitle} (${order.order_number}) kepada Romo ${extName} (Romo Eksternal). Alasan: "${reason}".`],
-      );
-    }
-
-    try {
-      const targets = Array.from(new Set([order.user_id, ...pengurus.map((p: any) => p.id)]));
-      if (targets.length > 0) {
-        await this.fcmService.sendPushToUsers(targets, {
-          title: `Pengalihan Romo: ${serviceTitle}`,
-          body: `Pelayanan ${serviceTitle} telah dialihkan kepada Romo ${extName}. Alasan: "${reason}".`,
-          data: { orderId: String(orderId), type: 'ROMO_HANDOVER' },
-        });
-      }
-    } catch (fcmErr) {
-      console.error('Error dispatching FCM in _handoverToExternalRomo:', fcmErr);
-    }
+    await this.events.notify([order.user_id, ...pengurus.map((p: any) => p.id)], { orderId, itemId, type: 'ROMO_HANDOVER', title: `Pengalihan Romo: ${serviceTitle}`, body: `Pelayanan ${serviceTitle} (${order.order_number}) telah dialihkan oleh Romo ${prevRomoName} kepada Romo ${extName} (Romo Eksternal). Alasan: "${reason}".` });
 
     return { statusCode: 200, success: true, message: `Pelayanan berhasil dialihkan kepada Romo ${extName}.` };
   }
@@ -1280,7 +1180,7 @@ export class OrdersService {
               `SELECT id FROM order_items WHERE order_id = $1 AND accepted_romo_id = $2 AND id != $3`,
               [orderId, prevRomoId, itemId || 0],
             );
-            if (otherItems.length === 0 && (!order.accepted_romo_id || Number(order.accepted_romo_id) !== Number(prevRomoId) || Boolean(itemId))) {
+            if (Boolean(itemId) || otherItems.length === 0) { // grup milik misa yang dilimpahkan: Romo lama keluar
               await this.dataSource.query(
                 `DELETE FROM chat_group_members WHERE chat_group_id = $1 AND user_id = $2`,
                 [grp.id, prevRomoId],
@@ -1299,48 +1199,9 @@ export class OrdersService {
         }
       }
 
-      // 🔔 Notify Romo Lama
-      await this.dataSource.query(
-        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-        [ prevRomoId, orderId, `Pelimpahan Disetujui: ${serviceTitle}`, `Romo ${targetRomoName} telah MENYETUJUI pelimpahan tugas ${serviceTitle} (${order.order_number}). Anda resmi tidak lagi bertugas untuk pelayanan ini.`, ],
-      );
-
-      // 🔔 Notify Umat
-      await this.dataSource.query(
-        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-        [ order.user_id, orderId, `Romo Pelayanan Diperbarui: ${serviceTitle}`, `Pelayanan ${serviceTitle} (${order.order_number}) resmi dialihkan ke Romo ${targetRomoName} menggantikan Romo ${prevRomoName}.`, ],
-      );
-
-      // 🔔 Notify Pengurus Lingkungan
-      for (const p of pengurusRespondHandover) {
-        await this.dataSource.query(
-          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-          [ p.id, orderId, `Romo Pelayanan Diperbarui: ${serviceTitle}`, `Pelayanan ${serviceTitle} (${order.order_number}) resmi dialihkan ke Romo ${targetRomoName} menggantikan Romo ${prevRomoName}.`, ],
-        );
-      }
-
-      // 🔔 Dispatch FCM Push to Romo Lama, Umat, and Pengurus (Accept)
-      try {
-        const targetHandoverAcceptUsers = Array.from(new Set([
-          prevRomoId,
-          order.user_id,
-          ...pengurusRespondHandover.map((p: any) => p.id),
-        ])).filter((id: number) => id && id !== romoId);
-
-        if (targetHandoverAcceptUsers.length > 0) {
-          await this.fcmService.sendPushToUsers(targetHandoverAcceptUsers, {
-            title: `Romo Pelayanan Diperbarui: ${serviceTitle}`,
-            body: `Pelayanan ${serviceTitle} (${order.order_number}) resmi dialihkan ke Romo ${targetRomoName} menggantikan Romo ${prevRomoName}.`,
-            data: {
-              type: 'ROMO_HANDOVER',
-              orderId: orderId.toString(),
-              orderNumber: order.order_number,
-            },
-          });
-        }
-      } catch (fcmErr) {
-        console.error('Error dispatching FCM in respondHandover (Accept):', fcmErr);
-      }
+      const note = { orderId, itemId, type: 'ROMO_HANDOVER' };
+      await this.events.notify([prevRomoId], { ...note, title: `Pelimpahan Disetujui: ${serviceTitle}`, body: `Romo ${targetRomoName} telah MENYETUJUI pelimpahan tugas ${serviceTitle} (${order.order_number}). Anda resmi tidak lagi bertugas untuk pelayanan ini.` });
+      await this.events.notify([order.user_id, ...pengurusRespondHandover.map((p: any) => p.id)].filter((id: number) => id !== romoId), { ...note, title: `Romo Pelayanan Diperbarui: ${serviceTitle}`, body: `Pelayanan ${serviceTitle} (${order.order_number}) resmi dialihkan ke Romo ${targetRomoName} menggantikan Romo ${prevRomoName}.` });
 
       return {
         statusCode: 200,
@@ -1369,48 +1230,9 @@ export class OrdersService {
         );
       }
 
-      // 🔔 Notify Romo Lama
-      await this.dataSource.query(
-        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-        [prevRomoId, orderId, `Pelimpahan Ditolak: ${serviceTitle}`, `Romo ${targetRomoName} MENOLAK pelimpahan tugas ${serviceTitle} (${order.order_number}). Anda tetap bertugas melayani atau silakan limpahkan ke Romo lain.`],
-      );
-
-      // 🔔 Notify Umat
-      await this.dataSource.query(
-        `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-        [order.user_id, orderId, `Status Pelimpahan Pelayanan: ${serviceTitle}`, `Pelimpahan ke Romo ${targetRomoName} belum disetujui. Romo ${prevRomoName} tetap bertugas melayani ${serviceTitle}.`],
-      );
-
-      // 🔔 Notify Pengurus Lingkungan
-      for (const p of pengurusRespondHandover) {
-        await this.dataSource.query(
-          `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, $3, $4, 'ROMO_HANDOVER', false)`,
-          [p.id, orderId, `Status Pelimpahan Pelayanan: ${serviceTitle}`, `Pelimpahan tugas ${serviceTitle} (${order.order_number}) kepada Romo ${targetRomoName} ditolak. Pelayanan tetap bersama Romo ${prevRomoName}.`],
-        );
-      }
-
-      // 🔔 Dispatch FCM Push to Romo Lama, Umat, and Pengurus (Reject)
-      try {
-        const targetHandoverRejectUsers = Array.from(new Set([
-          prevRomoId,
-          order.user_id,
-          ...pengurusRespondHandover.map((p: any) => p.id),
-        ])).filter((id: number) => id && id !== romoId);
-
-        if (targetHandoverRejectUsers.length > 0) {
-          await this.fcmService.sendPushToUsers(targetHandoverRejectUsers, {
-            title: `Pelimpahan Tugas Ditolak: ${serviceTitle}`,
-            body: `Romo ${targetRomoName} menolak pelimpahan tugas (${order.order_number}). Pelayanan tetap bersama Romo ${prevRomoName}.`,
-            data: {
-              type: 'ROMO_HANDOVER',
-              orderId: orderId.toString(),
-              orderNumber: order.order_number,
-            },
-          });
-        }
-      } catch (fcmErr) {
-        console.error('Error dispatching FCM in respondHandover (Reject):', fcmErr);
-      }
+      const note = { orderId, itemId, type: 'ROMO_HANDOVER' };
+      await this.events.notify([prevRomoId], { ...note, title: `Pelimpahan Ditolak: ${serviceTitle}`, body: `Romo ${targetRomoName} MENOLAK pelimpahan tugas ${serviceTitle} (${order.order_number}). Anda tetap bertugas melayani atau silakan limpahkan ke Romo lain.` });
+      await this.events.notify([order.user_id, ...pengurusRespondHandover.map((p: any) => p.id)].filter((id: number) => id !== romoId), { ...note, title: `Status Pelimpahan Pelayanan: ${serviceTitle}`, body: `Pelimpahan tugas ${serviceTitle} (${order.order_number}) kepada Romo ${targetRomoName} ditolak. Pelayanan tetap bersama Romo ${prevRomoName}.` });
 
       return {
         statusCode: 200,
