@@ -65,7 +65,7 @@
             <div class="flex items-center space-x-3 w-full sm:flex-1 min-w-0">
               <div class="relative w-full">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-                <input type="text" id="orderSearchInput" placeholder="Cari nomor order, pemohon, paroki..." value="${state.orderSearch}"
+                <input type="text" id="orderSearchInput" placeholder="Cari nomor order, pemohon, paroki..." value="${escapeHtml(state.orderSearch)}"
                   oninput="state.orderSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-950" />
               </div>
@@ -105,10 +105,10 @@
                   </tr>
                 ` : filtered.map(o => `
                   <tr class="hover:bg-slate-50/80 transition">
-                    <td class="px-6 py-4 font-bold text-blue-950">${o.order_number || o.orderNumber}</td>
-                    <td class="px-6 py-4 font-bold text-slate-900">${o.category_name || o.categoryName} ${(o.items && o.items.length > 1) ? `<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">${o.items.length} Misa</span>` : ''}</td>
-                    <td class="px-6 py-4">${o.pemohon_name || o.pemohonName}</td>
-                    <td class="px-6 py-4">${o.paroki_name || o.location_name || '-'}</td>
+                    <td class="px-6 py-4 font-bold text-blue-950">${escapeHtml(o.order_number || o.orderNumber)}</td>
+                    <td class="px-6 py-4 font-bold text-slate-900">${escapeHtml(o.category_name || o.categoryName)} ${(o.items && o.items.length > 1) ? `<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">${o.items.length} Misa</span>` : ''}</td>
+                    <td class="px-6 py-4">${escapeHtml(o.pemohon_name || o.pemohonName)}</td>
+                    <td class="px-6 py-4">${escapeHtml(o.paroki_name || o.location_name || '-')}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${getOrderStatusBadge(o)}</td>
                     <td class="px-6 py-4 text-right">
                       <button onclick="viewOrderDetail('${o.id}')" class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold border border-blue-200 text-xs transition shadow-sm transform hover:-translate-y-0.5">
@@ -150,14 +150,14 @@
               if (colonIdx > 0) {
                 const key = p.substring(0, colonIdx).trim();
                 const val = p.substring(colonIdx + 1).trim();
-                return `<div class="bg-slate-50/70 p-2.5 rounded-lg border border-slate-100"><span class="text-[10px] uppercase font-bold text-slate-400 block">${key}</span><span class="text-xs font-bold text-slate-800">${val || '-'}</span></div>`;
+                return `<div class="bg-slate-50/70 p-2.5 rounded-lg border border-slate-100"><span class="text-[10px] uppercase font-bold text-slate-400 block">${escapeHtml(key)}</span><span class="text-xs font-bold text-slate-800">${escapeHtml(val || '-')}</span></div>`;
               }
-              return `<div class="bg-slate-50/70 p-2.5 rounded-lg border border-slate-100 text-xs font-semibold text-slate-700">${p}</div>`;
+              return `<div class="bg-slate-50/70 p-2.5 rounded-lg border border-slate-100 text-xs font-semibold text-slate-700">${escapeHtml(p)}</div>`;
             }).join('')}
           </div>
         `;
       }
-      return `<div class="bg-slate-50/70 p-3 rounded-lg border border-slate-100 text-xs text-slate-700 font-medium whitespace-pre-wrap">${notes}</div>`;
+      return `<div class="bg-slate-50/70 p-3 rounded-lg border border-slate-100 text-xs text-slate-700 font-medium whitespace-pre-wrap">${escapeHtml(notes)}</div>`;
     }
 
     function renderRomoAssignmentCard(o) {
@@ -177,7 +177,7 @@
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200">Gagal / Kadaluarsa</span>
             </div>
             <p class="text-[11px] text-rose-700 pl-6 leading-relaxed">
-              ${o.cancel_reason || o.cancellationReason || 'Batas jadwal pelayanan telah terlewati tanpa adanya Romo yang bertugas atau mengonfirmasi kehadiran.'}
+              ${escapeHtml(o.cancel_reason || o.cancellationReason || 'Batas jadwal pelayanan telah terlewati tanpa adanya Romo yang bertugas atau mengonfirmasi kehadiran.')}
             </p>
           </div>
         `;
@@ -189,7 +189,7 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-2">
                 <i data-lucide="${(isDone || isClose) ? 'check-circle-2' : 'church'}" class="w-4 h-4 text-emerald-700 flex-shrink-0"></i>
-                <span class="font-bold text-xs">Romo Pelayan: ${o.acceptedRomoName}</span>
+                <span class="font-bold text-xs">Romo Pelayan: ${escapeHtml(o.acceptedRomoName)}</span>
               </div>
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
                 ${isDone ? 'Selesai Dilayani' : (isClose ? 'Ditutup Sistem' : 'Dikonfirmasi')}
@@ -198,7 +198,7 @@
             ${o.rescheduleStatus === 'ACCEPTED' ? `
               <p class="mt-1 text-[11px] text-amber-800 font-medium bg-amber-100/60 p-2 rounded-lg pl-6">
                 <i data-lucide="refresh-cw" class="w-3.5 h-3.5 inline mr-1"></i>
-                Jadwal diubah: ${o.rescheduleNewTime ? o.rescheduleNewTime.substring(0, 5) : ''} (${o.rescheduleReason || 'Penyesuaian waktu'})
+                Jadwal diubah: ${o.rescheduleNewTime ? o.rescheduleNewTime.substring(0, 5) : ''} (${escapeHtml(o.rescheduleReason || 'Penyesuaian waktu')})
               </p>
             ` : ''}
           </div>
@@ -236,11 +236,11 @@
             <div class="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
               <div class="space-y-1.5 min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">${o.order_number || o.orderNumber}</span>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${urgencyCls}">${urgency}</span>
+                  <span class="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">${escapeHtml(o.order_number || o.orderNumber)}</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${urgencyCls}">${escapeHtml(urgency)}</span>
                   ${getOrderStatusBadge(o)}
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 tracking-tight">${o.category_name || o.categoryName}</h3>
+                <h3 class="text-lg font-bold text-slate-900 tracking-tight">${escapeHtml(o.category_name || o.categoryName)}</h3>
               </div>
               <button onclick="state.activeOrderDetail = null; renderApp();" 
                 class="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition flex-shrink-0" title="Tutup">
@@ -264,8 +264,8 @@
                     <i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i>
                     <span>Lokasi & Alamat</span>
                   </div>
-                  <p class="font-bold text-slate-900 text-xs">${o.location_name || '-'}</p>
-                  <p class="text-slate-500 font-medium text-[11px] line-clamp-2">${o.address_detail || '-'}</p>
+                  <p class="font-bold text-slate-900 text-xs">${escapeHtml(o.location_name || '-')}</p>
+                  <p class="text-slate-500 font-medium text-[11px] line-clamp-2">${escapeHtml(o.address_detail || '-')}</p>
                 </div>
               </div>
 
@@ -275,20 +275,20 @@
                     <i data-lucide="user" class="w-3.5 h-3.5 text-indigo-600"></i>
                     <span>Pemohon & Komunitas</span>
                   </span>
-                  <span class="font-bold text-slate-900">${o.pemohon_name || o.pemohonName || '-'}</span>
+                  <span class="font-bold text-slate-900">${escapeHtml(o.pemohon_name || o.pemohonName || '-')}</span>
                 </div>
                 <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200/60 text-slate-600">
                   <div>
                     <span class="text-[10px] text-slate-400 font-medium block">Keuskupan</span>
-                    <span class="font-bold text-slate-800 text-[11px] truncate block">${o.keuskupan_name || '-'}</span>
+                    <span class="font-bold text-slate-800 text-[11px] truncate block">${escapeHtml(o.keuskupan_name || '-')}</span>
                   </div>
                   <div>
                     <span class="text-[10px] text-slate-400 font-medium block">Paroki</span>
-                    <span class="font-bold text-slate-800 text-[11px] truncate block">${o.paroki_name || '-'}</span>
+                    <span class="font-bold text-slate-800 text-[11px] truncate block">${escapeHtml(o.paroki_name || '-')}</span>
                   </div>
                   <div>
                     <span class="text-[10px] text-slate-400 font-medium block">Lingkungan</span>
-                    <span class="font-bold text-slate-800 text-[11px] truncate block">${o.lingkungan_name || '-'}</span>
+                    <span class="font-bold text-slate-800 text-[11px] truncate block">${escapeHtml(o.lingkungan_name || '-')}</span>
                   </div>
                 </div>
               </div>
@@ -305,9 +305,9 @@
                     ${o.items.map(it => `
                       <div class="p-2.5 bg-slate-50/80 rounded-xl border border-slate-200/70 flex items-center justify-between">
                         <div class="min-w-0 pr-2">
-                          <div class="font-bold text-xs text-slate-800">${it.itemName || it.item_name}</div>
+                          <div class="font-bold text-xs text-slate-800">${escapeHtml(it.itemName || it.item_name)}</div>
                           <div class="text-[11px] text-slate-500">${formatOrderDate(it.scheduledDate || it.scheduled_date)} • ${(it.scheduledTimeStart || it.scheduled_time_start || '').substring(0, 5)} - ${(it.scheduledTimeEnd || it.scheduled_time_end || '').substring(0, 5)} WIB</div>
-                          <div class="text-[10px] text-slate-400 truncate"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1 text-rose-500"></i>${it.locationName || it.location_name || '-'}</div>
+                          <div class="text-[10px] text-slate-400 truncate"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1 text-rose-500"></i>${escapeHtml(it.locationName || it.location_name || '-')}</div>
                         </div>
                         <div class="flex-shrink-0">${getOrderStatusBadge(it.status || 'PENDING')}</div>
                       </div>

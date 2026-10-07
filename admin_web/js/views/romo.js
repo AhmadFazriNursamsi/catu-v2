@@ -52,17 +52,17 @@ function renderRomoParokiTable(filtered) {
                   ` : filtered.map(u => `
                     <tr onclick="viewUserProfileModal('${u.id}')" class="hover:bg-slate-50/80 transition duration-150 cursor-pointer group">
                       <td class="px-6 py-4">
-                        <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${u.full_name || 'Romo Paroki'}</p>
-                        <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                        <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${escapeHtml(u.full_name || 'Romo Paroki')}</p>
+                        <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${escapeHtml(u.email || '-')}</p>
                       </td>
                       <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                        <span class="truncate block max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                        <span class="truncate block max-w-[170px]">${escapeHtml(u.kota_name || u.address || '-')}</span>
                       </td>
                       <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                        <span class="truncate block max-w-[180px]">${u.paroki_name || '-'}</span>
+                        <span class="truncate block max-w-[180px]">${escapeHtml(u.paroki_name || '-')}</span>
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
-                        <span>${getRomoParokiPositionLabel(u.romo_position)}</span>
+                        <span>${escapeHtml(getRomoParokiPositionLabel(u.romo_position))}</span>
                       </td>
                       <td class="px-6 py-4 text-center">
                         ${renderRomoStatusBadge(u, (u.romo_position || '').toLowerCase().includes('kepala') || (u.romo_position || '').toUpperCase() === 'KETUA_ROMO')}
@@ -70,7 +70,7 @@ function renderRomoParokiTable(filtered) {
                       <td class="px-6 py-4 font-semibold text-slate-700">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
                           <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
-                          <span>${u.phone_number}</span>
+                          <span>${escapeHtml(u.phone_number)}</span>
                         </span>
                       </td>
                       <td class="px-6 py-4 text-right">
@@ -138,7 +138,7 @@ function renderRomoParokiTable(filtered) {
             <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="romoParokiSearchInput" placeholder="Cari Romo Paroki, nama, kota, email, paroki..." value="${state.romoParokiSearch}"
+                <input type="text" id="romoParokiSearchInput" placeholder="Cari Romo Paroki, nama, kota, email, paroki..." value="${escapeHtml(state.romoParokiSearch)}"
                   oninput="state.romoParokiSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
               </div>
@@ -149,7 +149,7 @@ function renderRomoParokiTable(filtered) {
                     class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm">
                     <option value="">Semua Posisi Pastoral</option>
                     ${positionList.map(pos => `
-                      <option value="${pos}" ${state.romoParokiFilterPosition === pos ? 'selected' : ''}>${pos}</option>
+                      <option value="${escapeHtml(pos)}" ${state.romoParokiFilterPosition === pos ? 'selected' : ''}>${escapeHtml(pos)}</option>
                     `).join('')}
                   </select>
                 </div>
@@ -159,7 +159,7 @@ function renderRomoParokiTable(filtered) {
                     class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-none sm:max-w-[210px] truncate">
                     <option value="">Semua Paroki</option>
                     ${parokiList.map(p => `
-                      <option value="${p.id || p.name}" ${String(state.romoParokiFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>${p.name}</option>
+                      <option value="${escapeHtml(p.id || p.name)}" ${String(state.romoParokiFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>${escapeHtml(p.name)}</option>
                     `).join('')}
                   </select>
                 </div>
@@ -224,7 +224,7 @@ function renderRomoParokiTable(filtered) {
             <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="romoOrdoSearchInput" placeholder="Cari Romo Ordo, nama, kota, email, ordo..." value="${state.romoOrdoSearch}"
+                <input type="text" id="romoOrdoSearchInput" placeholder="Cari Romo Ordo, nama, kota, email, ordo..." value="${escapeHtml(state.romoOrdoSearch)}"
                   oninput="state.romoOrdoSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
               </div>
@@ -235,7 +235,7 @@ function renderRomoParokiTable(filtered) {
                     class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-none sm:max-w-[210px] truncate">
                     <option value="">Semua Ordo Religius</option>
                     ${ordoList.map(o => `
-                      <option value="${o.id || o.name}" ${String(state.romoOrdoFilterOrdo) === String(o.id || o.name) ? 'selected' : ''}>${o.name}</option>
+                      <option value="${escapeHtml(o.id || o.name)}" ${String(state.romoOrdoFilterOrdo) === String(o.id || o.name) ? 'selected' : ''}>${escapeHtml(o.name)}</option>
                     `).join('')}
                   </select>
                 </div>
@@ -245,7 +245,7 @@ function renderRomoParokiTable(filtered) {
                     class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm">
                     <option value="">Semua Jabatan Ordo</option>
                     ${positionList.map(pos => `
-                      <option value="${pos}" ${state.romoOrdoFilterPosition === pos ? 'selected' : ''}>${pos}</option>
+                      <option value="${escapeHtml(pos)}" ${state.romoOrdoFilterPosition === pos ? 'selected' : ''}>${escapeHtml(pos)}</option>
                     `).join('')}
                   </select>
                 </div>
@@ -290,17 +290,17 @@ function renderRomoParokiTable(filtered) {
                   ` : list.map(u => `
                     <tr onclick="viewUserProfileModal('${u.id}')" class="hover:bg-slate-50/80 transition duration-150 cursor-pointer group">
                       <td class="px-6 py-4">
-                        <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${u.full_name || 'Romo Ordo'}</p>
-                        <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                        <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${escapeHtml(u.full_name || 'Romo Ordo')}</p>
+                        <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${escapeHtml(u.email || '-')}</p>
                       </td>
                       <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                        <span class="truncate block max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                        <span class="truncate block max-w-[170px]">${escapeHtml(u.kota_name || u.address || '-')}</span>
                       </td>
                       <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                        <span class="truncate block max-w-[180px]">${u.ordo_name || 'Ordo Religius'}</span>
+                        <span class="truncate block max-w-[180px]">${escapeHtml(u.ordo_name || 'Ordo Religius')}</span>
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
-                        <span>${getRomoOrdoPositionLabel(u.romo_position)}</span>
+                        <span>${escapeHtml(getRomoOrdoPositionLabel(u.romo_position))}</span>
                       </td>
                       <td class="px-6 py-4 text-center">
                         ${renderRomoStatusBadge(u, (u.romo_position || '').toLowerCase().includes('ketua') || (u.romo_position || '').toUpperCase() === 'KETUA_ROMO')}
@@ -308,7 +308,7 @@ function renderRomoParokiTable(filtered) {
                       <td class="px-6 py-4 font-semibold text-slate-700">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
                           <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
-                          <span>${u.phone_number}</span>
+                          <span>${escapeHtml(u.phone_number)}</span>
                         </span>
                       </td>
                       <td class="px-6 py-4 text-right">

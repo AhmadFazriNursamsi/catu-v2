@@ -13,7 +13,7 @@ function renderDeleteConfirmModal() {
           <div class="flex-1">
             <h3 class="text-base font-black text-slate-900">Konfirmasi Hapus Data</h3>
             <p class="text-xs text-slate-500 mt-1">
-              Apakah Anda yakin ingin menghapus <span class="font-bold text-slate-800">${del.name}</span> (#${del.id})? Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus <span class="font-bold text-slate-800">${escapeHtml(del.name)}</span> (#${del.id})? Tindakan ini tidak dapat dibatalkan.
             </p>
           </div>
         </div>
@@ -21,7 +21,7 @@ function renderDeleteConfirmModal() {
         ${del.errorMessage ? `
           <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start space-x-2">
             <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-rose-600 mt-0.5"></i>
-            <span>${del.errorMessage}</span>
+            <span>${escapeHtml(del.errorMessage)}</span>
           </div>
         ` : ''}
 

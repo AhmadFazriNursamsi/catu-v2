@@ -62,7 +62,7 @@
           ${state.loginError ? `
             <div class="mb-5 p-3.5 rounded-xl bg-red-50/90 border border-red-200 text-red-700 text-xs font-semibold flex items-start gap-2.5 animate-fade-in shadow-2xs">
               <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-red-600 mt-0.5"></i>
-              <span class="flex-1 leading-relaxed">${state.loginError}</span>
+              <span class="flex-1 leading-relaxed">${escapeHtml(state.loginError)}</span>
             </div>
           ` : ''}
 

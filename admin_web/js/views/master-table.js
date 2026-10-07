@@ -90,7 +90,7 @@
                 <span class="text-slate-300">·</span>
               ` : ''}
               ${sub === 'paroki' ? `
-                <button onclick='openCreateMasterModal("wilayah", { keuskupan_id: ${item.keuskupan_id || 'null'}, paroki_id: ${item.id} })'
+                <button onclick='openCreateMasterModal("wilayah", { keuskupan_id: ${escapeHtml(item.keuskupan_id || 'null')}, paroki_id: ${item.id} })'
                   class="inline-flex items-center space-x-1 text-xs font-semibold text-blue-700 hover:text-blue-900 transition py-1 px-1.5 rounded hover:bg-blue-50" title="Tambah Wilayah Baru di Paroki Ini">
                   <i data-lucide="plus" class="w-3.5 h-3.5 text-blue-600"></i>
                   <span>Wilayah</span>
@@ -98,7 +98,7 @@
                 <span class="text-slate-300">·</span>
               ` : ''}
               ${sub === 'wilayah' ? `
-                <button onclick='openCreateMasterModal("lingkungan", { paroki_id: ${item.paroki_id || 'null'}, wilayah_id: ${item.id} })'
+                <button onclick='openCreateMasterModal("lingkungan", { paroki_id: ${escapeHtml(item.paroki_id || 'null')}, wilayah_id: ${item.id} })'
                   class="inline-flex items-center space-x-1 text-xs font-semibold text-blue-700 hover:text-blue-900 transition py-1 px-1.5 rounded hover:bg-blue-50" title="Tambah Lingkungan Baru di Wilayah Ini">
                   <i data-lucide="plus" class="w-3.5 h-3.5 text-blue-600"></i>
                   <span>Lingkungan</span>
@@ -126,7 +126,7 @@
                   <span>Edit</span>
                 </button>
                 <span class="text-slate-300">·</span>
-                <button onclick='confirmDeleteMaster("${sub}", ${item.id}, "${(item.name || '').replace(/"/g, '')}")'
+                <button onclick='confirmDeleteMaster(${jsArg(sub)}, ${Number(item.id)}, ${jsArg(item.name || '')})'
                   class="inline-flex items-center space-x-1 text-xs font-semibold text-rose-600 hover:text-rose-800 transition py-1 px-1.5 rounded hover:bg-rose-50" title="Hapus Data">
                   <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
                   <span>Hapus</span>

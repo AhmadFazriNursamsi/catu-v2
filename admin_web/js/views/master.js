@@ -191,7 +191,7 @@
               <!-- Search Input -->
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="masterSearchInput" value="${state.masterSearch || ''}" oninput="state.masterSearch = this.value; state.masterPage = 1; renderApp();"
+                <input type="text" id="masterSearchInput" value="${escapeHtml(state.masterSearch || '')}" oninput="state.masterSearch = this.value; state.masterPage = 1; renderApp();"
                   placeholder="Cari ${getEntityLabel(sub)}..."
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
                 ${state.masterSearch ? `
@@ -210,7 +210,7 @@
                       class="py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400">
                       <option value="">Semua Provinsi</option>
                       ${(state.provinsi || []).map(p => `
-                        <option value="${p.id}" ${String(state.masterFilterProvinsiId) === String(p.id) ? 'selected' : ''}>${p.name}</option>
+                        <option value="${p.id}" ${String(state.masterFilterProvinsiId) === String(p.id) ? 'selected' : ''}>${escapeHtml(p.name)}</option>
                       `).join('')}
                     </select>
                   </div>

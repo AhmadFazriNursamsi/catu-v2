@@ -122,7 +122,7 @@
       layer.innerHTML = currentPins.map((a, idx) => `
         <div class="agentation-pin pointer-events-auto" style="left: ${a.x}px; top: ${a.y}px;"
              onclick="showAgentationPinDetail('${a.id}')"
-             title="${a.category}: ${a.note}">
+             title="${escapeHtml(a.category)}: ${escapeHtml(a.note)}">
           <div class="w-7 h-7 rounded-full bg-red-600 text-white font-black text-xs flex items-center justify-center shadow-2xl border-2 border-white ring-2 ring-black/20">
             ${idx + 1}
           </div>

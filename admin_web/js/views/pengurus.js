@@ -44,21 +44,21 @@ function renderPengurusTable(filteredPengurus) {
                 return `
                   <tr onclick="viewUserProfileModal('${u.id}')" class="hover:bg-slate-50/80 transition duration-150 cursor-pointer group">
                     <td class="px-6 py-4">
-                      <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${u.full_name || 'Pengurus'}</p>
-                      <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                      <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${escapeHtml(u.full_name || 'Pengurus')}</p>
+                      <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${escapeHtml(u.email || '-')}</p>
                     </td>
                     <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
-                      ${u.pengurus_position || 'Ketua Lingkungan'}
+                      ${escapeHtml(u.pengurus_position || 'Ketua Lingkungan')}
                     </td>
                     <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                      <p class="font-semibold text-slate-800 truncate max-w-[180px]">${u.lingkungan_name || '-'}</p>
-                      <p class="text-[11px] text-slate-400 font-medium truncate max-w-[180px] mt-0.5">${u.paroki_name || '-'}</p>
+                      <p class="font-semibold text-slate-800 truncate max-w-[180px]">${escapeHtml(u.lingkungan_name || '-')}</p>
+                      <p class="text-[11px] text-slate-400 font-medium truncate max-w-[180px] mt-0.5">${escapeHtml(u.paroki_name || '-')}</p>
                     </td>
                     <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                      <span class="truncate block max-w-[180px]">${u.keuskupan_name || u.keuskupanName || '-'}</span>
+                      <span class="truncate block max-w-[180px]">${escapeHtml(u.keuskupan_name || u.keuskupanName || '-')}</span>
                     </td>
                     <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                      <span class="truncate block max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                      <span class="truncate block max-w-[170px]">${escapeHtml(u.kota_name || u.address || '-')}</span>
                     </td>
                     <td class="px-6 py-4 text-center">
                       ${isExpired ? `
@@ -76,7 +76,7 @@ function renderPengurusTable(filteredPengurus) {
                     <td class="px-6 py-4 font-semibold text-slate-700">
                       <span class="inline-flex items-center space-x-1.5 text-xs">
                         <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
-                        <span>${u.phone_number}</span>
+                        <span>${escapeHtml(u.phone_number)}</span>
                       </span>
                     </td>
                     <td class="px-6 py-4 text-right">
@@ -136,20 +136,20 @@ function renderKoordinatorTable(filteredKoordinator) {
                 return `
                   <tr onclick="viewUserProfileModal('${u.id}')" class="hover:bg-slate-50/80 transition duration-150 cursor-pointer group">
                     <td class="px-6 py-4">
-                      <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${u.full_name || 'Koordinator'}</p>
-                      <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                      <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${escapeHtml(u.full_name || 'Koordinator')}</p>
+                      <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${escapeHtml(u.email || '-')}</p>
                     </td>
                     <td class="px-6 py-4 font-semibold text-slate-800 text-xs">
                       <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 font-bold border border-indigo-200 text-[11px]">
                         <i data-lucide="award" class="w-3 h-3 text-indigo-600"></i>
-                        <span>${u.pengurus_position || 'Koordinator'}</span>
+                        <span>${escapeHtml(u.pengurus_position || 'Koordinator')}</span>
                       </span>
                     </td>
                     <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                      <span class="font-bold text-slate-900">${u.keuskupan_name || u.keuskupanName || '-'}</span>
+                      <span class="font-bold text-slate-900">${escapeHtml(u.keuskupan_name || u.keuskupanName || '-')}</span>
                     </td>
                     <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                      <span class="truncate block max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                      <span class="truncate block max-w-[170px]">${escapeHtml(u.kota_name || u.address || '-')}</span>
                     </td>
                     <td class="px-6 py-4 text-center">
                       ${isExpired ? `
@@ -167,7 +167,7 @@ function renderKoordinatorTable(filteredKoordinator) {
                     <td class="px-6 py-4 font-semibold text-slate-700">
                       <span class="inline-flex items-center space-x-1.5 text-xs">
                         <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
-                        <span>${u.phone_number}</span>
+                        <span>${escapeHtml(u.phone_number)}</span>
                       </span>
                     </td>
                     <td class="px-6 py-4 text-right">
@@ -255,7 +255,7 @@ function renderPengurusTab() {
           <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
             <div class="relative w-full max-w-md">
               <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input type="text" id="koordinatorSearchInput" placeholder="Cari nama koordinator, keuskupan, kota, email..." value="${state.koordinatorSearch || ''}"
+              <input type="text" id="koordinatorSearchInput" placeholder="Cari nama koordinator, keuskupan, kota, email..." value="${escapeHtml(state.koordinatorSearch || '')}"
                 oninput="state.koordinatorSearch = this.value; renderApp();"
                 class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm transition" />
             </div>
@@ -266,7 +266,7 @@ function renderPengurusTab() {
                   class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm max-w-none sm:max-w-[220px] truncate">
                   <option value="">Semua Keuskupan</option>
                   ${keuskupanList.map(k => `
-                    <option value="${k.id || k.name}" ${String(state.koordinatorFilterKeuskupan) === String(k.id || k.name) ? 'selected' : ''}>${k.name}</option>
+                    <option value="${escapeHtml(k.id || k.name)}" ${String(state.koordinatorFilterKeuskupan) === String(k.id || k.name) ? 'selected' : ''}>${escapeHtml(k.name)}</option>
                   `).join('')}
                 </select>
               </div>
@@ -350,7 +350,7 @@ function renderPengurusTab() {
         <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
           <div class="relative w-full max-w-md">
             <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input type="text" id="pengurusSearchInput" placeholder="Cari nama pengurus, kota, email, jabatan..." value="${state.pengurusSearch || ''}"
+            <input type="text" id="pengurusSearchInput" placeholder="Cari nama pengurus, kota, email, jabatan..." value="${escapeHtml(state.pengurusSearch || '')}"
               oninput="state.pengurusSearch = this.value; renderApp();"
               class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm transition" />
           </div>
@@ -361,7 +361,7 @@ function renderPengurusTab() {
                 class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm">
                 <option value="">Semua Jabatan</option>
                 ${positionList.map(pos => `
-                  <option value="${pos}" ${state.pengurusFilterPosition === pos ? 'selected' : ''}>${pos}</option>
+                  <option value="${escapeHtml(pos)}" ${state.pengurusFilterPosition === pos ? 'selected' : ''}>${escapeHtml(pos)}</option>
                 `).join('')}
               </select>
             </div>
@@ -371,7 +371,7 @@ function renderPengurusTab() {
                 class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm max-w-none sm:max-w-[210px] truncate">
                 <option value="">Semua Paroki</option>
                 ${parokiList.map(p => `
-                  <option value="${p.id || p.name}" ${String(state.pengurusFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>${p.name}</option>
+                  <option value="${escapeHtml(p.id || p.name)}" ${String(state.pengurusFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>${escapeHtml(p.name)}</option>
                 `).join('')}
               </select>
             </div>

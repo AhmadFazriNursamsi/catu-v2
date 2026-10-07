@@ -40,7 +40,7 @@
           ` : ''}
 
           <!-- Hidden Input for Form Submission & ID querying -->
-          <input type="hidden" id="${id}" value="${selectedValue || ''}" />
+          <input type="hidden" id="${id}" value="${escapeHtml(selectedValue || '')}" />
 
           <!-- Combobox Trigger Box -->
           <div class="relative">
@@ -49,7 +49,7 @@
               ${disabled ? 'disabled' : ''}
               class="w-full px-3.5 py-2.5 bg-white border ${activeBorder} rounded-xl font-bold text-xs text-left flex items-center justify-between shadow-2xs transition ${disabled ? 'opacity-60 bg-slate-100 cursor-not-allowed text-slate-400' : 'text-slate-900 cursor-pointer'}">
               <span class="truncate ${selectedItem ? 'text-slate-900 font-bold' : 'text-slate-400 font-normal'}">
-                ${selectedItem ? (selectedItem.name + (selectedItem.code ? ` (${selectedItem.code})` : '')) : placeholder}
+                ${selectedItem ? escapeHtml(selectedItem.name + (selectedItem.code ? ` (${selectedItem.code})` : '')) : escapeHtml(placeholder)}
               </span>
               <div class="flex items-center space-x-1.5 flex-shrink-0 ml-2">
                 ${selectedItem && onClearCallback && !disabled ? `
@@ -82,11 +82,11 @@
                   const isSelected = String(selectedValue) === String(opt.id);
                   return `
                     <button type="button" 
-                      onclick="${onSelectCallback}('${opt.id}')"
+                      onclick="${onSelectCallback}(${jsArg(opt.id)})"
                       class="w-full text-left px-3 py-2 rounded-xl text-xs transition flex items-center justify-between ${isSelected ? 'bg-amber-50 text-amber-950 font-black' : 'text-slate-700 font-semibold hover:bg-slate-100 hover:text-slate-900'}">
                       <div class="truncate">
-                        <span>${opt.name}</span>
-                        ${opt.subtext ? `<span class="text-[10px] text-slate-400 block">${opt.subtext}</span>` : ''}
+                        <span>${escapeHtml(opt.name)}</span>
+                        ${opt.subtext ? `<span class="text-[10px] text-slate-400 block">${escapeHtml(opt.subtext)}</span>` : ''}
                       </div>
                       ${isSelected ? `<i data-lucide="check" class="w-3.5 h-3.5 text-amber-600 flex-shrink-0 ml-1.5"></i>` : ''}
                     </button>

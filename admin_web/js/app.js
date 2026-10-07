@@ -73,7 +73,7 @@
             <i data-lucide="shield-alert" class="w-6 h-6"></i>
           </div>
           <h3 class="text-sm font-extrabold text-slate-900">Akses Terbatas: Super Admin Sahaja</h3>
-          <p class="text-xs text-slate-500">Menu <b>${menuName}</b> hanya dapat diakses oleh akun peran Super Admin.</p>
+          <p class="text-xs text-slate-500">Menu <b>${escapeHtml(menuName)}</b> hanya dapat diakses oleh akun peran Super Admin.</p>
           <button onclick="setTab('overview')" class="mt-2 px-4 py-2 bg-blue-950 hover:bg-blue-900 text-white rounded-xl text-xs font-bold transition">Kembali ke Ringkasan</button>
         </div>
       `;

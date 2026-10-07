@@ -50,7 +50,7 @@ function getActivityRoleBadge(role) {
 }
 
 function getActionBadge(action) {
-  return `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-200 bg-slate-100 text-slate-700 font-mono">${action || '-'}</span>`;
+  return `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-200 bg-slate-100 text-slate-700 font-mono">${escapeHtml(action || '-')}</span>`;
 }
 
 function formatLogTimestamp(dateStr) {
@@ -69,7 +69,7 @@ function renderActivityLogsFilter() {
         <div>
           <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Pencarian</label>
           <input type="text" id="logSearchInput" placeholder="Cari nama, keterangan, ID..."
-            value="${state.activityLogsSearch || ''}"
+            value="${escapeHtml(state.activityLogsSearch || '')}"
             onchange="state.activityLogsSearch = this.value; loadActivityLogs(1);"
             class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500 transition" />
         </div>
@@ -157,15 +157,15 @@ function renderActivityLogsTable() {
             ${logs.map((log) => `
               <tr class="hover:bg-slate-50/80 transition">
                 <td class="p-3.5 whitespace-nowrap text-slate-600">${formatLogTimestamp(log.createdAt || log.created_at)}</td>
-                <td class="p-3.5 whitespace-nowrap text-slate-800 font-semibold">${log.userName || log.user_name || 'System'}</td>
+                <td class="p-3.5 whitespace-nowrap text-slate-800 font-semibold">${escapeHtml(log.userName || log.user_name || 'System')}</td>
                 <td class="p-3.5 whitespace-nowrap">${getActionBadge(log.action)}</td>
                 <td class="p-3.5 whitespace-nowrap">
-                  ${log.targetEntity || log.target_entity ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 font-mono">${log.targetEntity || log.target_entity}</span>` : '<span class="text-slate-400">-</span>'}
+                  ${log.targetEntity || log.target_entity ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 font-mono">${escapeHtml(log.targetEntity || log.target_entity)}</span>` : '<span class="text-slate-400">-</span>'}
                 </td>
-                <td class="p-3.5 text-slate-700 font-medium">${log.description || '-'}</td>
-                <td class="p-3.5 whitespace-nowrap text-slate-600 font-mono text-[10px]">${log.ipAddress || log.ip_address || '-'}</td>
+                <td class="p-3.5 text-slate-700 font-medium">${escapeHtml(log.description || '-')}</td>
+                <td class="p-3.5 whitespace-nowrap text-slate-600 font-mono text-[10px]">${escapeHtml(log.ipAddress || log.ip_address || '-')}</td>
                 <td class="p-3.5 text-center whitespace-nowrap">
-                  <button onclick="openActivityLogDetailModal('${log.id}')"
+                  <button onclick="openActivityLogDetailModal(${jsArg(log.id)})"
                     class="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition" title="Lihat Detail Log & Metadata">
                     <i data-lucide="eye" class="w-3.5 h-3.5"></i>
                   </button>
@@ -235,7 +235,7 @@ function renderActivityLogDetailModal() {
         <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div class="flex items-center space-x-2">
             <i data-lucide="scroll-text" class="w-4 h-4 text-blue-600"></i>
-            <h3 class="text-sm font-extrabold text-slate-800">Detail Log Audit #${log.id}</h3>
+            <h3 class="text-sm font-extrabold text-slate-800">Detail Log Audit #${escapeHtml(log.id)}</h3>
           </div>
           <button onclick="closeActivityLogDetailModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition">
             <i data-lucide="x" class="w-4 h-4"></i>
@@ -244,20 +244,20 @@ function renderActivityLogDetailModal() {
         <div class="p-4 overflow-y-auto space-y-3 custom-scrollbar text-xs">
           <div>
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aksi & Deskripsi</span>
-            <div class="mt-1 font-bold text-slate-800">${log.description}</div>
+            <div class="mt-1 font-bold text-slate-800">${escapeHtml(log.description)}</div>
             <div class="mt-1 flex items-center space-x-2">${getActionBadge(log.action)} ${getActivityRoleBadge(log.userRole || log.user_role)}</div>
           </div>
           <div>
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pelaku & IP</span>
-            <div class="mt-0.5 text-slate-700 font-medium">${log.userName || log.user_name || 'System'} • IP: <span class="font-mono text-slate-500">${log.ipAddress || log.ip_address || '-'}</span></div>
+            <div class="mt-0.5 text-slate-700 font-medium">${escapeHtml(log.userName || log.user_name || 'System')} • IP: <span class="font-mono text-slate-500">${escapeHtml(log.ipAddress || log.ip_address || '-')}</span></div>
           </div>
           <div>
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">User Agent</span>
-            <div class="mt-0.5 text-slate-600 font-mono text-[10px] break-all bg-slate-50 p-2 rounded-lg border border-slate-100">${log.userAgent || log.user_agent || '-'}</div>
+            <div class="mt-0.5 text-slate-600 font-mono text-[10px] break-all bg-slate-50 p-2 rounded-lg border border-slate-100">${escapeHtml(log.userAgent || log.user_agent || '-')}</div>
           </div>
           <div>
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Metadata (JSON Payload)</span>
-            <pre class="mt-1 p-3 rounded-xl bg-slate-900 text-emerald-400 font-mono text-[11px] overflow-x-auto custom-scrollbar">${formattedMetadata}</pre>
+            <pre class="mt-1 p-3 rounded-xl bg-slate-900 text-emerald-400 font-mono text-[11px] overflow-x-auto custom-scrollbar">${escapeHtml(formattedMetadata)}</pre>
           </div>
         </div>
         <div class="p-3 bg-slate-50 border-t border-slate-100 text-right">

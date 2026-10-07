@@ -26,23 +26,23 @@ function renderUmatTable(filteredUmat) {
                   ` : filteredUmat.map(u => `
                     <tr onclick="viewUserProfileModal('${u.id}')" class="hover:bg-slate-50/80 transition duration-150 cursor-pointer group">
                       <td class="px-6 py-4">
-                        <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${u.full_name || 'Umat'}</p>
-                        <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                        <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${escapeHtml(u.full_name || 'Umat')}</p>
+                        <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${escapeHtml(u.email || '-')}</p>
                       </td>
                       <td class="px-6 py-4 font-semibold text-slate-700">
                         <span class="inline-flex items-center space-x-1.5 text-xs">
                           <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
-                          <span>${u.phone_number}</span>
+                          <span>${escapeHtml(u.phone_number)}</span>
                         </span>
                       </td>
                       <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                        <span class="truncate block max-w-[170px]">${u.kota_name || u.address || '-'}</span>
+                        <span class="truncate block max-w-[170px]">${escapeHtml(u.kota_name || u.address || '-')}</span>
                       </td>
                       <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                        <span class="truncate block max-w-[180px]">${u.paroki_name || u.kota_name || '-'}</span>
+                        <span class="truncate block max-w-[180px]">${escapeHtml(u.paroki_name || u.kota_name || '-')}</span>
                       </td>
                       <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                        <span class="truncate block max-w-[180px]">${u.lingkungan_name || u.wilayah_name || '-'}</span>
+                        <span class="truncate block max-w-[180px]">${escapeHtml(u.lingkungan_name || u.wilayah_name || '-')}</span>
                       </td>
                       <td class="px-6 py-4 text-center">
                         <span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10.5px]">
@@ -122,7 +122,7 @@ function renderUmatTable(filteredUmat) {
             <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="umatSearchInput" placeholder="Cari nama umat, kota, no. WhatsApp, paroki..." value="${state.umatSearch}"
+                <input type="text" id="umatSearchInput" placeholder="Cari nama umat, kota, no. WhatsApp, paroki..." value="${escapeHtml(state.umatSearch)}"
                   oninput="state.umatSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
               </div>
@@ -133,7 +133,7 @@ function renderUmatTable(filteredUmat) {
                     class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-none sm:max-w-[210px] truncate">
                     <option value="">Semua Paroki</option>
                     ${parokiList.map(p => `
-                      <option value="${p.id || p.name}" ${String(state.umatFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>${p.name}</option>
+                      <option value="${escapeHtml(p.id || p.name)}" ${String(state.umatFilterParoki) === String(p.id || p.name) ? 'selected' : ''}>${escapeHtml(p.name)}</option>
                     `).join('')}
                   </select>
                 </div>
@@ -143,7 +143,7 @@ function renderUmatTable(filteredUmat) {
                     class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-none sm:max-w-[200px] truncate">
                     <option value="">Semua Lingkungan</option>
                     ${lingList.map(l => `
-                      <option value="${l}" ${state.umatFilterLingkungan === l ? 'selected' : ''}>${l}</option>
+                      <option value="${escapeHtml(l)}" ${state.umatFilterLingkungan === l ? 'selected' : ''}>${escapeHtml(l)}</option>
                     `).join('')}
                   </select>
                 </div>
@@ -195,26 +195,26 @@ function renderUmatTable(filteredUmat) {
             ` : filteredList.map(u => `
               <tr onclick="viewUserProfileModal('${u.id}')" class="hover:bg-slate-50/80 transition duration-150 cursor-pointer group">
                 <td class="px-6 py-4">
-                  <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${u.full_name || 'Umat Pendatang'}</p>
-                  <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${u.email || '-'}</p>
+                  <p class="font-bold text-slate-900 text-sm tracking-tight group-hover:text-blue-900 transition">${escapeHtml(u.full_name || 'Umat Pendatang')}</p>
+                  <p class="text-[11px] text-slate-400 font-medium truncate max-w-xs mt-0.5">${escapeHtml(u.email || '-')}</p>
                 </td>
                 <td class="px-6 py-4 font-semibold text-slate-700">
                   <span class="inline-flex items-center space-x-1.5 text-xs">
                     <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i>
-                    <span>${u.phone_number || '-'}</span>
+                    <span>${escapeHtml(u.phone_number || '-')}</span>
                   </span>
                 </td>
                 <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                  <span class="truncate block max-w-[170px]">${u.keuskupan_name || '-'}</span>
+                  <span class="truncate block max-w-[170px]">${escapeHtml(u.keuskupan_name || '-')}</span>
                 </td>
                 <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                  <span class="truncate block max-w-[170px]">${u.paroki_name || '-'}</span>
+                  <span class="truncate block max-w-[170px]">${escapeHtml(u.paroki_name || '-')}</span>
                 </td>
                 <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                  <span class="truncate block max-w-[180px]">${u.lingkungan_name || u.wilayah_name ? `${u.lingkungan_name || '-'}${u.wilayah_name ? ` (${u.wilayah_name})` : ''}` : '-'}</span>
+                  <span class="truncate block max-w-[180px]">${u.lingkungan_name || u.wilayah_name ? `${escapeHtml(u.lingkungan_name || '-')}${u.wilayah_name ? ` (${escapeHtml(u.wilayah_name)})` : ''}` : '-'}</span>
                 </td>
                 <td class="px-6 py-4 text-slate-700 font-medium text-xs">
-                  <span class="truncate block max-w-[180px]">${u.kota_name || u.address || '-'}</span>
+                  <span class="truncate block max-w-[180px]">${escapeHtml(u.kota_name || u.address || '-')}</span>
                 </td>
                 <td class="px-6 py-4 text-center">
                   <span class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full ${u.account_status === 'APPROVED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'} font-bold text-[10.5px]">
@@ -283,7 +283,7 @@ function renderUmatTable(filteredUmat) {
             <div class="p-4 sm:p-6 border-b border-slate-200/80 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
               <div class="relative w-full max-w-md">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="umatPendatangSearchInput" placeholder="Cari nama pendatang, paroki asal, keuskupan asal..." value="${state.umatPendatangSearch}"
+                <input type="text" id="umatPendatangSearchInput" placeholder="Cari nama pendatang, paroki asal, keuskupan asal..." value="${escapeHtml(state.umatPendatangSearch)}"
                   oninput="state.umatPendatangSearch = this.value; renderApp();"
                   class="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm transition" />
               </div>
@@ -294,7 +294,7 @@ function renderUmatTable(filteredUmat) {
                     class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-none sm:max-w-[210px] truncate">
                     <option value="">Semua Keuskupan Asal</option>
                     ${keuskupanList.map(k => `
-                      <option value="${k}" ${state.umatPendatangFilterKeuskupan === k ? 'selected' : ''}>${k}</option>
+                      <option value="${escapeHtml(k)}" ${state.umatPendatangFilterKeuskupan === k ? 'selected' : ''}>${escapeHtml(k)}</option>
                     `).join('')}
                   </select>
                 </div>
@@ -304,7 +304,7 @@ function renderUmatTable(filteredUmat) {
                     class="w-full sm:w-auto pl-3.5 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-sm max-w-none sm:max-w-[200px] truncate">
                     <option value="">Semua Paroki Asal</option>
                     ${parokiList.map(p => `
-                      <option value="${p}" ${state.umatPendatangFilterParoki === p ? 'selected' : ''}>${p}</option>
+                      <option value="${escapeHtml(p)}" ${state.umatPendatangFilterParoki === p ? 'selected' : ''}>${escapeHtml(p)}</option>
                     `).join('')}
                   </select>
                 </div>

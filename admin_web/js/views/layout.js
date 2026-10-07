@@ -54,8 +54,8 @@
                 ${initials}
               </div>
               <div class="min-w-0 flex-1">
-                <p class="text-xs font-bold text-slate-200 truncate">${adminName}</p>
-                <p class="text-[9px] font-bold text-blue-400 uppercase tracking-wider">${roleLabel}</p>
+                <p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(adminName)}</p>
+                <p class="text-[9px] font-bold text-blue-400 uppercase tracking-wider">${escapeHtml(roleLabel)}</p>
               </div>
             </div>
 
@@ -88,7 +88,7 @@
 
       return `
         <div class="p-2.5 border-t border-slate-800 space-y-2 flex flex-col items-center">
-          <div class="w-9 h-9 rounded-full bg-blue-950 text-white flex items-center justify-center font-bold text-xs shadow-xs border border-blue-500/40" title="${adminName} (${roleLabel})">
+          <div class="w-9 h-9 rounded-full bg-blue-950 text-white flex items-center justify-center font-bold text-xs shadow-xs border border-blue-500/40" title="${escapeHtml(adminName)} (${escapeHtml(roleLabel)})">
             ${initials}
           </div>
 

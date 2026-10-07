@@ -31,7 +31,7 @@
                   <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-rose-600 mt-0.5"></i>
                   <div class="flex-1">
                     <p class="font-black text-rose-900">Peringatan Validasi</p>
-                    <p class="text-rose-700 font-semibold mt-0.5">${state.editFormError}</p>
+                    <p class="text-rose-700 font-semibold mt-0.5">${escapeHtml(state.editFormError)}</p>
                   </div>
                 </div>
               ` : ''}
@@ -48,12 +48,12 @@
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="md:col-span-2">
                       <label class="block font-extrabold text-slate-700 mb-1.5">Nama Lengkap *</label>
-                      <input type="text" id="editFullName" required value="${u.full_name || u.fullName || ''}" placeholder="Masukkan nama lengkap..." class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition" />
+                      <input type="text" id="editFullName" required value="${escapeHtml(u.full_name || u.fullName || '')}" placeholder="Masukkan nama lengkap..." class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition" />
                     </div>
 
                     <div>
                       <label class="block font-extrabold text-slate-700 mb-1.5">Alamat Email <span class="text-slate-400 font-normal text-[10px]">(Opsional)</span></label>
-                      <input type="text" id="editEmail" value="${u.email || ''}" placeholder="nama@email.com" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition" />
+                      <input type="text" id="editEmail" value="${escapeHtml(u.email || '')}" placeholder="nama@email.com" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition" />
                     </div>
 
                     <!-- WhatsApp with +62 Badge & Realtime Validation -->
@@ -64,13 +64,13 @@
                           <span class="text-xs mr-1">🇮🇩</span>
                           <span class="text-xs font-black text-slate-800 border-r border-slate-200 pr-2">+62</span>
                         </div>
-                        <input type="tel" id="editPhone" required value="${rawPhone}" placeholder="81234567890" oninput="onEditPhoneInput(this)" class="block w-full pl-16 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 transition" />
+                        <input type="tel" id="editPhone" required value="${escapeHtml(rawPhone)}" placeholder="81234567890" oninput="onEditPhoneInput(this)" class="block w-full pl-16 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl font-black text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 transition" />
                       </div>
                     </div>
 
                     <div>
                       <label class="block font-extrabold text-slate-700 mb-1.5">Alamat Lengkap Domisili</label>
-                      <input type="text" id="editAddress" value="${u.address || ''}" placeholder="Jl. Mawar No. 12..." class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition" />
+                      <input type="text" id="editAddress" value="${escapeHtml(u.address || '')}" placeholder="Jl. Mawar No. 12..." class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs transition" />
                     </div>
                   </div>
                 </div>
@@ -254,11 +254,11 @@
                       </div>
                       <div>
                         <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Mulai</label>
-                        <input type="number" id="editJabatanStartYear" value="${u.jabatan_start_year || 2024}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
+                        <input type="number" id="editJabatanStartYear" value="${escapeHtml(u.jabatan_start_year || 2024)}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
                       </div>
                       <div>
                         <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Selesai</label>
-                        <input type="number" id="editJabatanEndYear" value="${u.jabatan_end_year || 2027}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
+                        <input type="number" id="editJabatanEndYear" value="${escapeHtml(u.jabatan_end_year || 2027)}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
                       </div>
                     </div>
                   </div>
@@ -278,19 +278,19 @@
                       <div class="${isK ? '' : 'col-span-full'}">
                         <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pastoral *</label>
                         <select id="editRomoPosition" onchange="syncEditFormToState(); state.activeEditUser.romo_position = this.value; renderApp();" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
-                          <option value="Kepala Romo Paroki" ${isK ? 'selected' : (existK ? 'disabled class="text-slate-400 bg-slate-100"' : '')}>Kepala Romo Paroki (Pimpinan Paroki)${existK && !isK ? ` — Sudah ada: ${existK.full_name || existK.fullName}` : ''}</option>
+                          <option value="Kepala Romo Paroki" ${isK ? 'selected' : (existK ? 'disabled class="text-slate-400 bg-slate-100"' : '')}>Kepala Romo Paroki (Pimpinan Paroki)${existK && !isK ? ` — Sudah ada: ${escapeHtml(existK.full_name || existK.fullName)}` : ''}</option>
                           <option value="Romo Paroki" ${!isK ? 'selected' : ''}>Romo Paroki (Pastor Rekan)</option>
                         </select>
-                        ${existK && !isK ? `<p class="text-[11px] text-amber-700 font-semibold mt-1.5 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Paroki ini sudah memiliki Kepala Romo Paroki (${existK.full_name || existK.fullName}).</p>` : ''}
+                        ${existK && !isK ? `<p class="text-[11px] text-amber-700 font-semibold mt-1.5 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Paroki ini sudah memiliki Kepala Romo Paroki (${escapeHtml(existK.full_name || existK.fullName)}).</p>` : ''}
                       </div>
                       ${isK ? `
                       <div>
                         <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Mulai</label>
-                        <input type="number" id="editJabatanStartYear" value="${u.jabatan_start_year || 2024}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
+                        <input type="number" id="editJabatanStartYear" value="${escapeHtml(u.jabatan_start_year || 2024)}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
                       </div>
                       <div>
                         <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Selesai</label>
-                        <input type="number" id="editJabatanEndYear" value="${u.jabatan_end_year || 2027}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
+                        <input type="number" id="editJabatanEndYear" value="${escapeHtml(u.jabatan_end_year || 2027)}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
                       </div>` : ''}
                     </div>
                   </div>`;
@@ -311,19 +311,19 @@
                       <div class="${isKetuaOrdo ? '' : 'col-span-full'}">
                         <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan di Ordo / Kongregasi *</label>
                         <select id="editRomoOrdoPosition" onchange="syncEditFormToState(); state.activeEditUser.romo_position = this.value; renderApp();" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
-                          <option value="Ketua Romo Ordo" ${isKetuaOrdo ? 'selected' : (existK ? 'disabled class="text-slate-400 bg-slate-100"' : '')}>Ketua Romo Ordo (Pimpinan / Provinsial)${existK && !isKetuaOrdo ? ` — Sudah ada: ${existK.full_name || existK.fullName}` : ''}</option>
+                          <option value="Ketua Romo Ordo" ${isKetuaOrdo ? 'selected' : (existK ? 'disabled class="text-slate-400 bg-slate-100"' : '')}>Ketua Romo Ordo (Pimpinan / Provinsial)${existK && !isKetuaOrdo ? ` — Sudah ada: ${escapeHtml(existK.full_name || existK.fullName)}` : ''}</option>
                           <option value="Romo Ordo" ${!isKetuaOrdo ? 'selected' : ''}>Romo Ordo (Imam Anggota)</option>
                         </select>
-                        ${existK && !isKetuaOrdo ? `<p class="text-[11px] text-amber-700 font-semibold mt-1.5 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Ordo ini sudah memiliki Ketua Romo Ordo (${existK.full_name || existK.fullName}). Hanya boleh 1 Ketua per ordo.</p>` : ''}
+                        ${existK && !isKetuaOrdo ? `<p class="text-[11px] text-amber-700 font-semibold mt-1.5 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Ordo ini sudah memiliki Ketua Romo Ordo (${escapeHtml(existK.full_name || existK.fullName)}). Hanya boleh 1 Ketua per ordo.</p>` : ''}
                       </div>
                       ${isKetuaOrdo ? `
                       <div>
                         <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Mulai</label>
-                        <input type="number" id="editJabatanStartYear" value="${u.jabatan_start_year || 2024}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
+                        <input type="number" id="editJabatanStartYear" value="${escapeHtml(u.jabatan_start_year || 2024)}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
                       </div>
                       <div>
                         <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Selesai</label>
-                        <input type="number" id="editJabatanEndYear" value="${u.jabatan_end_year || 2027}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
+                        <input type="number" id="editJabatanEndYear" value="${escapeHtml(u.jabatan_end_year || 2027)}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
                       </div>` : ''}
                     </div>
                   </div>`;

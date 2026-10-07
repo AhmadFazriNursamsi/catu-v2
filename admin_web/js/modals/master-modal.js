@@ -46,7 +46,7 @@
               ${state.masterModalError ? `
                 <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start space-x-2 shadow-xs">
                   <i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-rose-600 mt-0.5"></i>
-                  <span>${state.masterModalError}</span>
+                  <span>${escapeHtml(state.masterModalError)}</span>
                 </div>
               ` : ''}
 
@@ -81,7 +81,7 @@
         return `
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Nama Keuskupan *</label>
-            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Keuskupan Agung Jakarta"
+            <input type="text" id="masterNameInput" required value="${escapeHtml(data.name || '')}" placeholder="misal: Keuskupan Agung Jakarta"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
           </div>
         `;
@@ -101,7 +101,7 @@
           })}
           <div>
             <label class="block font-bold text-slate-700 mb-1.5">Nama Paroki *</label>
-            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Paroki Santa Maria Regina"
+            <input type="text" id="masterNameInput" required value="${escapeHtml(data.name || '')}" placeholder="misal: Paroki Santa Maria Regina"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
           </div>
         `;
@@ -144,7 +144,7 @@
           <!-- 3. Nama Wilayah -->
           <div>
             <label class="block font-bold text-slate-800 mb-1.5">3. Nama Wilayah Baru *</label>
-            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Wilayah St. Fransiskus Xaverius"
+            <input type="text" id="masterNameInput" required value="${escapeHtml(data.name || '')}" placeholder="misal: Wilayah St. Fransiskus Xaverius"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
         `;
@@ -206,7 +206,7 @@
           <!-- 4. Nama Lingkungan -->
           <div>
             <label class="block font-bold text-slate-800 mb-1.5">4. Nama Lingkungan Baru *</label>
-            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Lingkungan St. Gabriel 1"
+            <input type="text" id="masterNameInput" required value="${escapeHtml(data.name || '')}" placeholder="misal: Lingkungan St. Gabriel 1"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
         `;
@@ -214,31 +214,31 @@
         return `
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Nama Ordo / Kongregasi *</label>
-            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Ordo Fratrum Minorum"
+            <input type="text" id="masterNameInput" required value="${escapeHtml(data.name || '')}" placeholder="misal: Ordo Fratrum Minorum"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Kode Singkatan</label>
-            <input type="text" id="masterCodeInput" value="${data.code || ''}" placeholder="misal: OFM, SJ, MSC, CSsR"
+            <input type="text" id="masterCodeInput" value="${escapeHtml(data.code || '')}" placeholder="misal: OFM, SJ, MSC, CSsR"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Alamat Lengkap / Markas</label>
             <textarea id="masterAddressInput" rows="2" placeholder="misal: Jl. Kramat Raya No. 134, Jakarta Pusat"
-              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">${data.address || ''}</textarea>
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">${escapeHtml(data.address || '')}</textarea>
           </div>
         `;
       } else if (type === 'services') {
         return `
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Nama Sakramen / Pelayanan *</label>
-            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Misa Syukur Ulang Tahun"
+            <input type="text" id="masterNameInput" required value="${escapeHtml(data.name || '')}" placeholder="misal: Misa Syukur Ulang Tahun"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Deskripsi Pelayanan</label>
             <textarea id="masterDescInput" rows="2" placeholder="Deskripsi singkat mengenai pelayanan ini..."
-              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">${data.description || ''}</textarea>
+              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">${escapeHtml(data.description || '')}</textarea>
           </div>
           <div class="grid grid-cols-2 gap-3 pt-1">
             <label class="flex items-center space-x-2 p-3 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer">
@@ -255,13 +255,13 @@
         return `
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Kode Role (Singkatan Unik) *</label>
-            <input type="text" id="masterCodeInput" required value="${data.code || ''}" placeholder="misal: PETUGAS_LITURGI, KOORDINATOR_WILAYAH"
+            <input type="text" id="masterCodeInput" required value="${escapeHtml(data.code || '')}" placeholder="misal: PETUGAS_LITURGI, KOORDINATOR_WILAYAH"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs uppercase" />
             <p class="text-[10px] text-slate-400 mt-1">Gunakan huruf kapital dan garis bawah (misal: UMAT, ROMO_PAROKI, ADMIN)</p>
           </div>
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Nama Peran / Jenis Pengguna *</label>
-            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Petugas Liturgi Gereja"
+            <input type="text" id="masterNameInput" required value="${escapeHtml(data.name || '')}" placeholder="misal: Petugas Liturgi Gereja"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
         `;
@@ -277,12 +277,12 @@
           </div>
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Kode Jabatan (Singkatan Unik) *</label>
-            <input type="text" id="masterCodeInput" required value="${data.code || ''}" placeholder="misal: KETUA_LINGKUNGAN, KEPALA_ROMO_PAROKI, SEKRETARIS"
+            <input type="text" id="masterCodeInput" required value="${escapeHtml(data.code || '')}" placeholder="misal: KETUA_LINGKUNGAN, KEPALA_ROMO_PAROKI, SEKRETARIS"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs uppercase" />
           </div>
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Nama Jabatan Resmi *</label>
-            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: Ketua Lingkungan, Kepala Romo Paroki, Sekretaris"
+            <input type="text" id="masterNameInput" required value="${escapeHtml(data.name || '')}" placeholder="misal: Ketua Lingkungan, Kepala Romo Paroki, Sekretaris"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
           <div class="pt-1">
@@ -296,7 +296,7 @@
         return `
           <div>
             <label class="block font-extrabold text-slate-700 mb-1.5">Nama Provinsi *</label>
-            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: JAWA BARAT"
+            <input type="text" id="masterNameInput" required value="${escapeHtml(data.name || '')}" placeholder="misal: JAWA BARAT"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs uppercase" />
             <p class="text-[10.5px] text-slate-400 mt-1">Gunakan huruf kapital (misal: DKI JAKARTA, JAWA TENGAH, BALI)</p>
           </div>
@@ -311,7 +311,7 @@
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
               <option value="">-- Pilih Provinsi Induk --</option>
               ${(state.provinsi || []).map(p => `
-                <option value="${p.id}" ${String(selectedProvinsiId) === String(p.id) ? 'selected' : ''}>${p.name}</option>
+                <option value="${p.id}" ${String(selectedProvinsiId) === String(p.id) ? 'selected' : ''}>${escapeHtml(p.name)}</option>
               `).join('')}
             </select>
           </div>
@@ -325,7 +325,7 @@
           </div>
           <div>
             <label class="block font-bold text-slate-700 mb-1.5">Nama Kabupaten / Kota *</label>
-            <input type="text" id="masterNameInput" required value="${data.name || ''}" placeholder="misal: KOTA BANDUNG atau KABUPATEN BOGOR"
+            <input type="text" id="masterNameInput" required value="${escapeHtml(data.name || '')}" placeholder="misal: KOTA BANDUNG atau KABUPATEN BOGOR"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs uppercase" />
           </div>
         `;

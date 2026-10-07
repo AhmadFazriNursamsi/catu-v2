@@ -14,7 +14,7 @@ function renderEditUserHeader(u, uName, status, roleCode) {
                     </span>
                   </div>
                   <div class="flex items-center space-x-2 text-xs text-slate-500 font-medium">
-                    <span class="font-bold text-slate-800 truncate">${uName}</span>
+                    <span class="font-bold text-slate-800 truncate">${escapeHtml(uName)}</span>
                     <span>•</span>
                     <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold text-[10px]">${roleCode}</span>
                   </div>
@@ -87,18 +87,18 @@ function renderEditUserHeader(u, uName, status, roleCode) {
         }
 
         // Preload kabupaten-kota list
-        const kkUrl = u.provinsi_id ? `${API_BASE}/auth/kabupaten-kota?provinsiId=${u.provinsi_id}` : `${API_BASE}/auth/kabupaten-kota`;
+        const kkUrl = u.provinsi_id ? `${API_BASE}/auth/kabupaten-kota?provinsiId=${encodeURIComponent(u.provinsi_id)}` : `${API_BASE}/auth/kabupaten-kota`;
         const kkRes = await fetch(kkUrl);
         state.editKabupatenKotaList = await kkRes.json();
 
         // Preload paroki list
-        const parUrl = u.keuskupan_id ? `${API_BASE}/auth/paroki?keuskupanId=${u.keuskupan_id}` : `${API_BASE}/auth/paroki`;
+        const parUrl = u.keuskupan_id ? `${API_BASE}/auth/paroki?keuskupanId=${encodeURIComponent(u.keuskupan_id)}` : `${API_BASE}/auth/paroki`;
         const parRes = await fetch(parUrl);
         state.editParokiList = await parRes.json();
 
         // Load cascading wilayah
         if (u.paroki_id) {
-          const wRes = await fetch(`${API_BASE}/auth/wilayah?parokiId=${u.paroki_id}`);
+          const wRes = await fetch(`${API_BASE}/auth/wilayah?parokiId=${encodeURIComponent(u.paroki_id)}`);
           state.editWilayahList = await wRes.json();
         } else {
           state.editWilayahList = [];
@@ -106,7 +106,7 @@ function renderEditUserHeader(u, uName, status, roleCode) {
 
         // Load cascading lingkungan
         if (u.wilayah_id) {
-          const lRes = await fetch(`${API_BASE}/auth/lingkungan?wilayahId=${u.wilayah_id}`);
+          const lRes = await fetch(`${API_BASE}/auth/lingkungan?wilayahId=${encodeURIComponent(u.wilayah_id)}`);
           state.editLingkunganList = await lRes.json();
         } else {
           state.editLingkunganList = [];

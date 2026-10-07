@@ -19,7 +19,7 @@ const APPROVAL_KIND_STYLE = {
 
 // Nama pendaftar dan data wilayah berasal dari pengguna: selalu di-escape sebelum masuk HTML.
 function escapeApprovalHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return escapeHtml(value);
 }
 
 function approvalKind(u) {

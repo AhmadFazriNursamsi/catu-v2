@@ -225,8 +225,8 @@
                   <i data-lucide="${iconName}" class="w-5 h-5"></i>
                 </div>
                 <div class="flex-1 min-w-0 pt-0.5">
-                  <h4 class="font-black text-xs ${titleColor} tracking-tight">${toast.title}</h4>
-                  <p class="text-xs font-semibold text-slate-700 mt-0.5 leading-relaxed">${toast.message}</p>
+                  <h4 class="font-black text-xs ${titleColor} tracking-tight">${escapeHtml(toast.title)}</h4>
+                  <p class="text-xs font-semibold text-slate-700 mt-0.5 leading-relaxed">${escapeHtml(toast.message)}</p>
                 </div>
                 <button onclick="dismissToast('${toast.id}')" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition flex-shrink-0" title="Tutup">
                   <i data-lucide="x" class="w-3.5 h-3.5"></i>
@@ -275,7 +275,7 @@
         return '<span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs"><span>-</span></span>';
       }
 
-      return `<span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-blue-900 border border-blue-200 font-bold text-xs"><span>${p}</span></span>`;
+      return `<span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-blue-900 border border-blue-200 font-bold text-xs"><span>${escapeHtml(p)}</span></span>`;
     }
 
     // ══════════════════════════════════════════════════════════════════════════

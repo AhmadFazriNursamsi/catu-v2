@@ -31,16 +31,16 @@
                 </div>
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
-                    <h3 class="text-base font-bold text-slate-900 tracking-tight truncate">${uName}</h3>
+                    <h3 class="text-base font-bold text-slate-900 tracking-tight truncate">${escapeHtml(uName)}</h3>
                     <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${uStatus === 'APPROVED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}">
                       <span class="w-1.5 h-1.5 rounded-full ${uStatus === 'APPROVED' ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
-                      <span>${uStatus}</span>
+                      <span>${escapeHtml(uStatus)}</span>
                     </span>
                   </div>
                   <div class="flex items-center space-x-2 text-xs text-slate-500 font-medium">
                     <span class="inline-flex items-center font-semibold text-slate-700">
                       <i data-lucide="shield" class="w-3.5 h-3.5 mr-1 text-slate-400"></i>
-                      ${uRole}
+                      ${escapeHtml(uRole)}
                     </span>
                   </div>
                 </div>
@@ -66,32 +66,32 @@
                     <p class="text-[10px] font-bold text-slate-400 uppercase">No. WhatsApp</p>
                     <p class="font-extrabold text-slate-900 mt-0.5 flex items-center text-xs">
                       <i data-lucide="phone" class="w-3 h-3 mr-1 text-emerald-600"></i>
-                      ${uPhone}
+                      ${escapeHtml(uPhone)}
                     </p>
                   </div>
                   <div class="bg-white p-2.5 rounded-xl border border-slate-200/60">
                     <p class="text-[10px] font-bold text-slate-400 uppercase">Email</p>
                     <p class="font-bold text-slate-800 mt-0.5 truncate text-xs">
-                      ${uEmail}
+                      ${escapeHtml(uEmail)}
                     </p>
                   </div>
                   <div class="bg-white p-2.5 rounded-xl border border-slate-200/60">
                     <p class="text-[10px] font-bold text-slate-400 uppercase">Tanggal Lahir</p>
                     <p class="font-bold text-slate-800 mt-0.5 text-xs">
-                      ${uBirth}
+                      ${escapeHtml(uBirth)}
                     </p>
                   </div>
                   <div class="bg-white p-2.5 rounded-xl border border-slate-200/60">
                     <p class="text-[10px] font-bold text-slate-400 uppercase">Domisili Kota</p>
                     <p class="font-bold text-slate-800 mt-0.5 text-xs">
-                      ${u.kota_name || u.kabupatenKotaName || 'JAKARTA TIMUR'}
+                      ${escapeHtml(u.kota_name || u.kabupatenKotaName || 'JAKARTA TIMUR')}
                     </p>
                   </div>
                 </div>
                 ${uAddr !== '-' ? `
                   <div class="bg-white p-2.5 rounded-xl border border-slate-200/60 mt-2">
                     <p class="text-[10px] font-bold text-slate-400 uppercase">${uRoleCode === 'UMAT_PENDATANG' ? 'Asal Alamat Tempat Tinggal' : 'Alamat Lengkap'}</p>
-                    <p class="font-medium text-slate-700 mt-0.5 text-xs">${uAddr}</p>
+                    <p class="font-medium text-slate-700 mt-0.5 text-xs">${escapeHtml(uAddr)}</p>
                   </div>
                 ` : ''}
               </div>
@@ -106,19 +106,19 @@
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
                     <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
                       <p class="text-[10px] font-bold text-slate-400 uppercase">${uRoleCode === 'UMAT_PENDATANG' ? 'Asal Paroki' : 'Paroki'}</p>
-                      <p class="font-extrabold text-blue-950 mt-0.5 text-xs">${uPar}</p>
+                      <p class="font-extrabold text-blue-950 mt-0.5 text-xs">${escapeHtml(uPar)}</p>
                     </div>
                     <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
                       <p class="text-[10px] font-bold text-slate-400 uppercase">${uRoleCode === 'UMAT_PENDATANG' ? 'Asal Keuskupan' : 'Keuskupan'}</p>
-                      <p class="font-bold text-slate-800 mt-0.5 text-xs">${u.keuskupan_name || u.keuskupanName || (uRoleCode === 'UMAT_PENDATANG' ? '-' : 'Keuskupan Agung Jakarta')}</p>
+                      <p class="font-bold text-slate-800 mt-0.5 text-xs">${escapeHtml(u.keuskupan_name || u.keuskupanName || (uRoleCode === 'UMAT_PENDATANG' ? '-' : 'Keuskupan Agung Jakarta'))}</p>
                     </div>
                     <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
                       <p class="text-[10px] font-bold text-slate-400 uppercase">${uRoleCode === 'UMAT_PENDATANG' ? 'Asal Wilayah' : 'Wilayah'}</p>
-                      <p class="font-bold text-slate-800 mt-0.5 text-xs">${uWil}</p>
+                      <p class="font-bold text-slate-800 mt-0.5 text-xs">${escapeHtml(uWil)}</p>
                     </div>
                     <div class="bg-white p-2.5 rounded-xl border border-blue-100/80">
                       <p class="text-[10px] font-bold text-slate-400 uppercase">${uRoleCode === 'UMAT_PENDATANG' ? 'Asal Lingkungan' : 'Lingkungan'}</p>
-                      <p class="font-bold text-slate-800 mt-0.5 text-xs">${uLing}</p>
+                      <p class="font-bold text-slate-800 mt-0.5 text-xs">${escapeHtml(uLing)}</p>
                     </div>
                   </div>
                 </div>
@@ -130,7 +130,7 @@
                   </p>
                   <div class="bg-white p-3 rounded-xl border border-blue-100/80">
                     <p class="text-[10px] font-bold text-slate-400 uppercase">Nama Ordo</p>
-                    <p class="font-extrabold text-blue-950 mt-0.5 text-sm">${u.ordo_name || u.ordoName || '-'}</p>
+                    <p class="font-extrabold text-blue-950 mt-0.5 text-sm">${escapeHtml(u.ordo_name || u.ordoName || '-')}</p>
                   </div>
                 </div>
               `}
