@@ -156,7 +156,7 @@ created_orders.clear(); created_users.clear()
 
 T = {}
 for name, sub, role in [('UMAT', 8, 'UMAT'), ('UMAT2', 58, 'UMAT'), ('ROMO', 12, 'ROMO_PAROKI'), ('ROMO2', 13, 'ROMO_PAROKI'), ('ROMO3', 45, 'ROMO_PAROKI'),
-                        ('ROMO257', 47, 'ROMO_PAROKI'), ('ORDO', 50, 'ROMO_ORDO'), ('ORDO2', 60, 'ROMO_ORDO'), ('ORDO_OUT', 48, 'ROMO_ORDO'), ('PENG', 9, 'PENGURUS_LINGKUNGAN'),
+                        ('ROMO257', 47, 'ROMO_PAROKI'), ('ORDO', 50, 'ROMO_ORDO'), ('ORDO2', 60, 'ROMO_ORDO'), ('ORDO_OUT', 48, 'ROMO_ORDO'), ('ROMO_P1', 59, 'ROMO_PAROKI'), ('PENG', 9, 'PENGURUS_LINGKUNGAN'),
                         ('PENG2', 49, 'PENGURUS_LINGKUNGAN'), ('KOOR', 53, 'KOORDINATOR_KEUSKUPAN'), ('KOOR_OUT', 54, 'KOORDINATOR_KEUSKUPAN'), ('ADMIN', 52, 'ADMIN')]:
     T[name] = jwt(sub, role)
 
@@ -196,7 +196,7 @@ try:
     st, r, oid = new_order(T['UMAT'], attachmentUrl='https://example.com/foto-uji.jpg')
     rec('A14', st == 201, 'Lampiran foto (URL) diterima', f"HTTP {st}")
     st, r, O_P257 = new_order(T['UMAT'], parokiId=257, notes=f'Nama Penerima: Maria | Catatan: {MARK}')
-    rec('A13', st == 201, 'Pelayanan untuk paroki penerima berbeda (257)', f"HTTP {st}; paroki_id={psql(f'select paroki_id from orders where id={O_P257}') if O_P257 else None}")
+    rec('A13', st == 201, 'Pelayanan untuk paroki penerima berbeda (257) = lintas paroki', f"HTTP {st}; paroki_id={psql(f'select paroki_id from orders where id={O_P257}') if O_P257 else None}")
 
     import threading
     conc, lock = [], threading.Lock()
@@ -223,7 +223,8 @@ try:
     G1 = (r or {}).get('groupId')
     rec('B7', st == 200 and G1, 'Pemohon dapat menemukan grup chat pelayanannya', f"groupId={G1}")
     st, r = call('GET', f'/orders/{O_P257}', T['UMAT'])
-    rec('B8', 47 in notif_users(O_P257, 'NEW_ORDER_ROMO') and 12 not in notif_users(O_P257, 'NEW_ORDER_ROMO'), 'Pelayanan paroki 257: Romo paroki 257 diberi tahu, Romo 256 tidak', f"penerima={notif_users(O_P257, 'NEW_ORDER_ROMO')}")
+    rp257 = notif_users(O_P257, 'NEW_ORDER_ROMO')
+    rec('B8', not ({12, 13, 45, 46, 47} & set(rp257)) and {50, 60} <= set(rp257), 'Pelayanan lintas paroki (257): Romo Paroki mana pun TIDAK diberi tahu; hanya Romo Ordo kota tujuan', f"penerima={rp257}")
 
     print('=== C. VISIBILITAS PER PERAN ===')
     def sees(token, query, oid):
@@ -236,7 +237,7 @@ try:
     rec('C4', sees(T['ROMO'], '?romoId=12', O1)[1] is True, 'Romo Paroki 256 melihat pelayanan di parokinya', '')
     rec('C5', sees(T['ROMO257'], '?romoId=47', O1)[1] is False, 'Romo Paroki 257 tidak melihat pelayanan paroki 256', '')
     rec('C6', sees(T['ORDO'], '?romoId=50', O1)[1] is False, 'Romo Ordo belum melihat pelayanan sebelum batas menit', '')
-    rec('C7', sees(T['PENG'], '?userId=9', O1)[1] is True, 'Pengurus lingkungan setempat memantau pelayanan umatnya', '')
+    rec('C7', sees(T['PENG'], '?userId=9', O1)[1] is False, 'Beranda pengurus lingkungan tidak memuat pelayanan umatnya (pemantauan lewat notifikasi dan grup chat)', '')
     rec('C8', sees(T['PENG2'], '?userId=49', O1)[1] is False, 'Pengurus lingkungan lain tidak melihatnya', '')
     rec('C9', sees(T['KOOR'], '?userId=53', O1)[1] is False, 'Koordinator tidak melihat pelayanan umat lain di daftarnya', '')
     rec('C10', sees(T['ADMIN'], '', O1)[1] is True, 'Admin melihat semua pelayanan', '')
@@ -338,12 +339,11 @@ try:
     rec('E13', in53, 'Chat pelayanan se-keuskupan muncul di daftar chat Koordinator', f"muncul={in53}")
 
     print('=== F. PERUBAHAN JAM (RESCHEDULE) ===')
-    d = future(8)
-    base = {'romoId': 12, 'newDate': d, 'newTimeStart': '19:00', 'newTimeEnd': '20:00', 'reason': 'Ada pelayanan mendadak di rumah sakit lain'}
+    base = {'romoId': 12, 'newTimeStart': '19:00', 'newTimeEnd': '20:00', 'reason': 'Ada pelayanan mendadak di rumah sakit lain'}
     for key, over, frag in [('jam tidak valid', {'newTimeStart': '25:61'}, 'Jam mulai'), ('jam selesai <= mulai', {'newTimeEnd': '18:00'}, 'Jam selesai'),
                             ('alasan terlalu singkat', {'reason': 'sibuk'}, 'singkat'), ('alasan kosong', {'reason': ''}, 'Alasan'),
-                            ('tanggal lewat', {'newDate': '2020-01-01'}, 'lewat'), ('tanggal > 60 hari', {'newDate': future(120)}, 'maksimal'),
-                            ('tanggal tidak valid', {'newDate': '2026-02-31'}, 'tidak valid')]:
+                            ('tanggal diubah (ubah jam tidak mengubah tanggal)', {'newDate': future(9)}, 'tidak dapat mengubah tanggal'),
+                            ('tanggal lewat', {'newDate': '2020-01-01'}, 'tidak dapat mengubah tanggal')]:
         st, r = call('POST', f'/orders/{O1}/reschedule/propose', T['ROMO'], {**base, **over})
         rec('F1-' + key, st == 400 and frag.lower() in msg(r).lower(), f'Validasi ajuan: {key} ditolak', f"HTTP {st}; {msg(r)[:70]}")
     st, r = call('POST', f'/orders/{O1}/reschedule/propose', T['ROMO2'], {**base, 'romoId': 13})
@@ -352,12 +352,15 @@ try:
     rec('F3', st == 403, 'Umat tidak dapat mengajukan ubah jam (role)', f"HTTP {st}")
     st, r = call('POST', f'/orders/{O1}/reschedule/propose', T['ROMO'], base)
     rec('F4', success(st, r), 'Romo bertugas mengajukan ubah jam', f"HTTP {st}; {msg(r)[:60]}")
+    rs = lambda oid: psql(f"select coalesce(reschedule_status,'NONE') from orders where id={oid}")
+    rec('F4b', rs(O1) == 'PENDING_UMAT', 'Status ubah jam = "Ubah Jam Diajukan" (PENDING_UMAT) sejak diajukan', f"reschedule_status={rs(O1)}")
     rec('F5', 'RESCHEDULE_PROPOSED' in notif(8, O1), 'Umat diberi tahu ada ajuan ubah jam', notif(8, O1))
     rec('F6', 'ubah jam' in (chat_texts(O1) or '').lower() or 'jadwal' in (chat_texts(O1) or '').lower(), 'Ajuan tercatat di grup chat', '')
     st, r = call('POST', f'/orders/{O1}/reschedule/respond', T['UMAT2'], {'userId': 58, 'action': 'ACCEPT'})
     rec('F7', st == 403, 'Umat lain tidak dapat merespons ajuan', f"HTTP {st}")
     st, r = call('POST', f'/orders/{O1}/reschedule/respond', T['UMAT'], {'userId': 8, 'action': 'REJECT'})
     rec('F8', success(st, r) and r.get('rejectedCount') == 1 and r.get('rescheduleClosed') is False, 'Umat menolak (1x) -> masih ada kesempatan', f"{json.dumps(r)[:120]}")
+    rec('F8b', rs(O1) == 'REJECTED', 'Status ubah jam = "Ubah Jam Ditolak" (REJECTED) setelah Umat menolak', f"reschedule_status={rs(O1)}")
     rec('F9', '1 kali lagi' in (chat_texts(O1) or ''), 'Pesan sisa kesempatan tercatat di chat', '')
     st, r = call('POST', f'/orders/{O1}/reschedule/propose', T['ROMO'], base)
     rec('F10', success(st, r), 'Romo mengajukan lagi (kesempatan ke-2)', f"HTTP {st}")
@@ -368,10 +371,12 @@ try:
     rec('F13', st in (400, 403), 'Setelah ditutup, ajuan baru ditolak', f"HTTP {st}; {msg(r)[:80]}")
     st, r, O2 = new_order(T['UMAT'])
     respond(T['ROMO'], O2, 'CONFIRMED', 12)
+    date_o2 = psql(f"select scheduled_date::text from orders where id={O2}")
     st, r = call('POST', f'/orders/{O2}/reschedule/propose', T['ROMO'], base)
     st, r = call('POST', f'/orders/{O2}/reschedule/respond', T['UMAT'], {'userId': 8, 'action': 'ACCEPT'})
     row = ord_row(O2)
-    rec('F14', success(st, r) and f'|{d}|19:00' in row, 'Umat menerima -> jadwal pelayanan berubah', f"order={row}")
+    rec('F14', success(st, r) and f'|{date_o2}|19:00' in row, 'Umat menerima -> hanya JAM yang berubah (19:00), tanggal tetap', f"order={row}; tanggal semula={date_o2}")
+    rec('F14b', rs(O2) == 'ACCEPTED', 'Status ubah jam = "Ubah Jam Diterima" (ACCEPTED) setelah Umat menerima', f"reschedule_status={rs(O2)}")
     rec('F15', 'RESCHEDULE_ACCEPTED' in notif(12, O2), 'Romo diberi tahu ajuan diterima', notif(12, O2))
     st, r = call('POST', f'/orders/{O2}/reschedule/respond', T['UMAT'], {'userId': 8, 'action': 'ACCEPT'})
     rec('F16', not (success(st, r) and 'berhasil' in msg(r).lower()), 'Merespons ajuan yang sudah selesai tidak diproses ulang', f"HTTP {st}; {msg(r)[:70]}")
@@ -409,7 +414,7 @@ try:
     rec('G13', 'ROMO_HANDOVER' in notif(8, O1) or 'ORDER_CONFIRMED' in notif(8, O1), 'Umat diberi tahu pergantian Romo', notif(8, O1))
     st, r = call('POST', f'/orders/{O1}/handover', T['ROMO2'], {'romoId': 13, 'targetRomoId': 45, 'reason': 'Dilimpahkan lagi'})
     rec('G14', bsc(r) == 400, 'Pelayanan hasil pelimpahan tidak dapat dilimpahkan lagi', f"body={bsc(r)}; {msg(r)[:70]}")
-    st, r = call('POST', f'/orders/{O1}/reschedule/propose', T['ROMO'], {**base, 'newDate': future(9)})
+    st, r = call('POST', f'/orders/{O1}/reschedule/propose', T['ROMO'], base)
     rec('G15', bsc(r) == 403 or st >= 400, 'Romo lama (12) tidak lagi berwenang mengajukan ubah jam', f"HTTP {st}; body={bsc(r)}")
     st, r, O4 = new_order(T['UMAT'])
     respond(T['ROMO'], O4, 'CONFIRMED', 12)
@@ -443,7 +448,7 @@ try:
     psql(f"update orders set status='DONE' where id={O1}; update order_items set status='DONE' where order_id={O1}")   # pulihkan agar bagian ulasan tidak ikut terpengaruh
     rec('H7', h7_row.startswith('DONE'), 'Pelayanan yang sudah DONE tidak dapat dikembalikan ke CONFIRMED', f"order={h7_row}")
     respond(T['ROMO'], O2, 'DONE', 12)
-    st, r = call('POST', f'/orders/{O2}/reschedule/propose', T['ROMO'], {**base, 'newDate': future(9)})
+    st, r = call('POST', f'/orders/{O2}/reschedule/propose', T['ROMO'], base)
     rec('H8', not success(st, r), 'Ubah jam pada pelayanan yang sudah DONE ditolak', f"order={ord_row(O2)}; HTTP {st}; body={bsc(r)}")
     st, r = call('POST', f'/orders/{O2}/handover', T['ROMO'], {'romoId': 12, 'targetRomoId': 45, 'reason': 'Setelah selesai'})
     rec('H9', not success(st, r), 'Pelimpahan pada pelayanan yang sudah DONE ditolak', f"HTTP {st}; body={bsc(r)}")
@@ -532,6 +537,70 @@ try:
 
     st, r = respond(T['ROMO'], L1, 'CONFIRMED', 12)
     rec('L3', ord_row(L1).startswith('FAIL'), 'Pelayanan berstatus FAIL (jadwal lewat tanpa Romo) tidak dapat diterima', f"order={ord_row(L1)}; HTTP {st}; {msg(r)[:60]}")
+
+    print('=== N. PELAYANAN LINTAS PAROKI (paroki penerima berbeda dari paroki pemohon) ===')
+    # Umat 8 berdomisili di paroki 256 (lingkungan 9471441, kota 3175, keuskupan 30) tetapi meminta sakramen di paroki 257 (kota 3173).
+    st, r, N1 = new_order(T['UMAT'], parokiId=257, keuskupanId=30, kabupatenKotaId=3173, notes=f'Nama Penerima: Maria | Catatan: {MARK}')
+    row = psql(f"select paroki_id||'|'||keuskupan_id||'|'||coalesce(lingkungan_id::text,'-')||'|'||coalesce(kabupaten_kota_id::text,'-')||'|'||lintas_paroki from orders where id={N1}") if N1 else ''
+    rec('N1', row == '257|30|9471441|3173|true', 'Pelayanan tercatat lintas paroki: paroki 257, kota 3173; keuskupan dan lingkungan tetap milik pemohon', f"paroki|keuskupan|lingkungan|kota|lintas = {row}")
+    rp = notif_users(N1, 'NEW_ORDER_ROMO')
+    rec('N2', rp == [48], 'Seketika (tanpa jeda): hanya Romo Ordo kota tujuan (48) yang diberi tahu; tidak satu pun Romo Paroki (257 maupun 256)', f"penerima NEW_ORDER_ROMO={rp}")
+    mon = notif_users(N1, 'NEW_ORDER_MONITOR')
+    rec('N3', {9, 11} <= set(mon), 'Pengurus lingkungan PEMOHON berhak tahu seperti biasa', f"pemantau={mon}")
+    ko = notif_users(N1, 'NEW_ORDER_KOORDINATOR')
+    rec('N4', {10, 51, 53} <= set(ko) and 54 not in ko, 'Koordinator keuskupan pemohon (30) diberi tahu dan ikut grup; keuskupan lain tidak', f"koordinator={ko}")
+    mem = members(N1)
+    rec('N5', all(x in mem for x in ('8:UMAT', '9:PENGURUS_LINGKUNGAN', '11:PENGURUS_LINGKUNGAN', '10:KOORDINATOR', '51:KOORDINATOR', '53:KOORDINATOR')) and not any(m.startswith(('46:', '47:', '12:')) for m in mem), 'Grup chat sejak dibuat: pemohon, pengurus, dan Koordinator; tanpa Romo Paroki', f"anggota={mem}")
+    rec('N6', 'diteruskan langsung ke Romo Ordo tujuan' in (chat_texts(N1) or ''), 'Pesan sistem menjelaskan pelayanan diteruskan ke Romo Ordo tujuan', '')
+    rec('N7', sees(T['ORDO_OUT'], '?romoId=48', N1)[1] is True and sees(T['ROMO257'], '?romoId=47', N1)[1] is False and sees(T['ROMO'], '?romoId=12', N1)[1] is False and sees(T['ORDO'], '?romoId=50', N1)[1] is False, 'Daftar: Romo Ordo tujuan (48) langsung melihat; Romo Paroki 257 dan 256 serta Romo Ordo kota lain (50) tidak', '')
+    rec('N8', sees(T['PENG'], '?userId=9', N1)[1] is False and sees(T['KOOR'], '?userId=53', N1)[1] is False, 'Pengurus pemohon dan Koordinator tidak memuatnya di daftar beranda (hanya lewat notifikasi dan grup chat)', '')
+    for who, tok, rid in (('Romo Paroki tujuan (257)', T['ROMO257'], 47), ('Romo Paroki asal (256)', T['ROMO'], 12), ('Romo Ordo kota lain (3175)', T['ORDO'], 50)):
+        st, r = respond(tok, N1, 'CONFIRMED', rid)
+        rec('N9-' + str(rid), st == 403 and ord_row(N1).startswith('PENDING'), f'{who} tidak dapat menerima', f"HTTP {st}; {msg(r)[:75]}")
+    st, r = respond(T['ORDO_OUT'], N1, 'CONFIRMED', 48)
+    rec('N10', success(st, r) and ord_row(N1).startswith('CONFIRMED|48'), 'Romo Ordo tujuan (48) dapat langsung menerima tanpa menunggu parameter', f"order={ord_row(N1)}")
+    mem = members(N1)
+    rec('N11', '48:ROMO_ORDO' in mem, 'Romo Ordo penerima masuk grup chat', f"anggota={mem}")
+    G_N1 = (call('GET', f'/chat/order/{N1}', T['UMAT'])[1] or {}).get('groupId')
+    st, r = call('GET', f'/chat/groups/{G_N1}/messages', T['KOOR'])
+    st2, r2 = call('GET', f'/chat/groups/{G_N1}/messages', T['ROMO257'])
+    rec('N12', st == 200 and st2 == 403, 'Koordinator ikut berdiskusi di grup; Romo Paroki tujuan (bukan anggota) tidak dapat membaca', f"koordinator HTTP {st}; romo257 HTTP {st2}")
+    date_n1 = psql(f"select scheduled_date::text from orders where id={N1}")
+    st, r = call('POST', f'/orders/{N1}/reschedule/propose', T['ORDO_OUT'], {'romoId': 48, 'newTimeStart': '16:00', 'newTimeEnd': '17:00', 'reason': 'Menyesuaikan jadwal dengan paroki tujuan'})
+    st2, r2 = call('POST', f'/orders/{N1}/reschedule/respond', T['UMAT'], {'userId': 8, 'action': 'ACCEPT'})
+    rec('N13', success(st, r) and success(st2, r2) and f'|{date_n1}|16:00' in ord_row(N1), 'Ubah jam oleh Romo Ordo diterima pemohon -> jam berubah (16:00), tanggal tetap', f"order={ord_row(N1)}; tanggal semula={date_n1}")
+    respond(T['ORDO_OUT'], N1, 'DONE', 48)
+    st, r = call('POST', f'/orders/{N1}/review', T['UMAT'], {'rating': 5, 'reviewNotes': 'Terima kasih Romo Ordo'})
+    rec('N14', ord_row(N1).startswith('DONE|48') and success(st, r) and 'ORDER_REVIEW' in notif(48, N1), 'Selesai dan diulas: Romo Ordo menerima notifikasi ulasan', f"order={ord_row(N1)}; romo48={notif(48, N1)}")
+
+    # Tidak diterima Romo Ordo: Koordinator mencarikan Romo setelah parameter Koordinator (20 menit), tidak sebelum itu.
+    st, r, N2 = new_order(T['UMAT'], parokiId=257, keuskupanId=30, kabupatenKotaId=3173, notes=f'Nama Penerima: Yosef | Catatan: {MARK}')
+    st, r = call('GET', f'/orders/{N2}/koordinator-assignment', T['KOOR'])
+    rec('N15', st == 200 and r.get('state') == 'WAITING', 'Koordinator belum dapat mencarikan Romo sebelum parameter Koordinator terlewati (peringatan waktu)', f"state={(r or {}).get('state')}; {(r or {}).get('reason')}")
+    psql(f"update orders set created_at = now() - interval '21 minutes' where id={N2}")
+    time.sleep(22)
+    ko2 = notif_users(N2, 'NEW_ORDER_KOORDINATOR')
+    rec('N16', ko2.count(53) >= 2 and 54 not in ko2, 'Lewat parameter Koordinator: Koordinator diberi tahu "perlu Romo" (selain pemantauan awal)', f"penerima={ko2}")
+    st, r = call('POST', f'/orders/{N2}/koordinator-assignment', T['KOOR'], {'romoId': 12})
+    rec('N17', st in (200, 201) and ord_row(N2).startswith('CONFIRMED|12'), 'Koordinator boleh menetapkan Romo mana pun (termasuk Romo Paroki) lewat Carikan Romo', f"order={ord_row(N2)}")
+
+    # Paroki tujuan di KEUSKUPAN LAIN (keuskupan 3): Koordinator keuskupan tujuan juga masuk grup.
+    other_paroki = psql("select id from paroki where keuskupan_id=3 order by id limit 1")
+    st, r, N3 = new_order(T['UMAT'], parokiId=int(other_paroki), keuskupanId=3, kabupatenKotaId=3273, notes=f'Nama Penerima: Anna | Catatan: {MARK}')
+    row3 = psql(f"select paroki_id||'|'||keuskupan_id||'|'||lintas_paroki from orders where id={N3}") if N3 else ''
+    rec('N18', row3.endswith('|true'), 'Paroki tujuan di keuskupan lain tercatat lintas paroki', f"paroki|keuskupan|lintas = {row3} (keuskupan order mengikuti pemohon)")
+    mem3 = members(N3)
+    rec('N19', all(f'{k}:KOORDINATOR' in mem3 for k in (10, 51, 53, 54)), 'Koordinator keuskupan pemohon (30) DAN Koordinator keuskupan tujuan (3: id 54) sama-sama masuk grup', f"anggota={mem3}")
+    ko3 = notif_users(N3, 'NEW_ORDER_KOORDINATOR')
+    rec('N20', {10, 51, 53, 54} <= set(ko3), 'Keduanya diberi tahu', f"penerima={ko3}")
+    G_N3 = (call('GET', f'/chat/order/{N3}', T['UMAT'])[1] or {}).get('groupId')
+    st, r = call('GET', f'/chat/groups/{G_N3}/messages', T['KOOR_OUT'])
+    st2, r2 = call('GET', f'/chat/groups/{G_N3}/messages', T['KOOR'])
+    rec('N21', st == 200 and st2 == 200, 'Koordinator keuskupan tujuan (54) dan pemohon (53) sama-sama dapat membaca chat', f"54: HTTP {st}; 53: HTTP {st2}")
+    st, r = call('GET', f'/orders/{N3}/koordinator-assignment', T['KOOR_OUT'])
+    rec('N22', st == 200, 'Koordinator keuskupan tujuan berwenang atas pelayanan ini (Carikan Romo)', f"HTTP {st}; state={(r or {}).get('state')}")
+    rp3 = notif_users(N3, 'NEW_ORDER_ROMO')
+    rec('N23', not ({12, 13, 45, 46, 47, 59} & set(rp3)), 'Tidak ada Romo Paroki (asal maupun tujuan) yang diberi tahu', f"penerima={rp3}")
 
     print('=== M. ADMIN & KETAHANAN ===')
     st, r = call('GET', '/orders', T['ADMIN'])

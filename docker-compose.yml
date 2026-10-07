@@ -21,6 +21,11 @@ services:
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME:-catu}
+      # Migrasi skema (backend/drizzle). Produksi yang memisahkan akun migrasi dari akun aplikasi: DB_AUTO_MIGRATE=false lalu jalankan
+      # `npm run db:migrate` (DB_MIGRATION_USERNAME/DB_MIGRATION_PASSWORD) pada setiap rilis; lihat backend/drizzle/README.md.
+      DB_AUTO_MIGRATE: ${DB_AUTO_MIGRATE:-true}
+      DB_MIGRATION_USERNAME: ${DB_MIGRATION_USERNAME:-}
+      DB_MIGRATION_PASSWORD: ${DB_MIGRATION_PASSWORD:-}
       PORT: ${PORT:-3000}
       JWT_SECRET: ${JWT_SECRET}
       FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/app/firebase-service-account.json}

@@ -23,6 +23,8 @@ Service pendukung lainnya:
 
 CATU menggunakan shared infrastructure yang sudah berjalan, yaitu `shared-postgres` dan `shared-searxng` pada network Docker `shared-network`. Database yang dipakai adalah database `catu`; Compose CATU hanya membuat container aplikasi dan tidak membuat PostgreSQL, volume database, atau SearXNG baru.
 
+**Database & migrasi:** skema dibangun dan diubah hanya oleh migrasi di `backend/drizzle` (aplikasi tidak menjalankan DDL, tidak mengubah data, dan tidak membuat akun saat start). Database baru: jalankan migrasi, buat admin pertama dengan `npm run db:create-admin`, dan (disarankan) pakai role aplikasi berhak minimal `backend/db/app-role.sql`. Tidak ada akun bawaan. Langkah lengkap: [`backend/drizzle/README.md`](backend/drizzle/README.md).
+
 Pastikan shared infrastructure aktif, lalu jalankan Backend API dan Admin Web di latar belakang:
 
 Pada production build, fitur Agentation/inspector UI otomatis dihilangkan dari artifact Admin Web. Fitur tersebut hanya tersedia jika image dibangun dengan `NODE_ENV` non-production.

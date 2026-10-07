@@ -12,12 +12,13 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # PostgreSQL sungguhan untuk tes integrasi (penerimaan atomik, nomor pelayanan, status, ulasan).
+    # PostgreSQL sungguhan untuk tes integrasi (penerimaan atomik, nomor pelayanan, status, ulasan, standar skema).
     services:
       postgres:
         image: postgres:16
         env:
           POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: catu_test
         ports:
           - 5432:5432
         options: >-
@@ -40,15 +41,13 @@ jobs:
         run: npx tsc --noEmit -p tsconfig.json
       - name: Unit & contract tests
         run: npx jest
-      - name: Integration tests (PostgreSQL)
+      - name: HTTP error contract (e2e, tanpa basis data)
+        run: npx jest --config ./test/jest-e2e.json error-contract
+      # Skema dibangun dari nol oleh migrasi (backend/drizzle), persis seperti produksi; tidak ada berkas dump.
+      - name: Integration tests (PostgreSQL, skema dari migrasi)
         env:
-          PGPASSWORD: postgres
           TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/catu_test
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
-          psql -h localhost -U postgres -c "CREATE DATABASE catu_test"
-          psql -h localhost -U postgres -d catu_test -q -f init.sql
-          npm run test:integration
+        run: npm run test:integration
       - name: Build
         run: npm run build
       # Informatif: temuan high saat ini berasal dari rantai transitif firebase-admin (perlu upgrade mayor).
@@ -72,3 +71,18 @@ jobs:
       - run: flutter pub get
       - name: Static analysis
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+  admin-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: admin_web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Semua tampilan dirender dengan payload HTML; satu pun yang lolos mentah menggagalkan build (XSS tersimpan).
+      - name: Render tampilan dengan payload XSS
+        run: node test/xss-render.check.cjs

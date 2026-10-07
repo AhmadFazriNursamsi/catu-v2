@@ -1,0 +1,18 @@
+# Menjalankan CATU dari image yang sudah dibangun GitHub Actions dan disimpan di GHCR (tanpa build di server).
+#
+#   docker login ghcr.io -u <user-github>        # sandi = token (PAT) dengan izin read:packages, bila paket privat
+#   docker compose -f docker-compose.yml -f docker-compose.ghcr.yml pull
+#   docker compose -f docker-compose.yml -f docker-compose.ghcr.yml up -d --no-build
+#
+# Tag: `latest` (terbaru dari main) atau `<commit-sha>` (tetap, disarankan untuk produksi agar bisa rollback tepat).
+#   CATU_IMAGE_TAG=<commit-sha> docker compose -f docker-compose.yml -f docker-compose.ghcr.yml up -d --no-build
+#
+# Sebelum pertama kali memakai versi ini pada database yang sudah ada: cadangkan database (pg_dump). Aplikasi menjalankan migrasi
+# saat start (DB_AUTO_MIGRATE=true); lihat backend/drizzle/README.md.
+services:
+  backend:
+    image: ghcr.io/${CATU_GHCR_OWNER:-ahmadfazrinursamsi}/catu-v2-backend:${CATU_IMAGE_TAG:-latest}
+    pull_policy: always
+  admin_web:
+    image: ghcr.io/${CATU_GHCR_OWNER:-ahmadfazrinursamsi}/catu-v2-admin-web:${CATU_IMAGE_TAG:-latest}
+    pull_policy: always
