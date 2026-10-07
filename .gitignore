@@ -24,3 +24,6 @@ __pycache__/
 # Firebase private credentials
 firebase-service-account.json
 *-firebase-adminsdk-*.json
+
+# Pengaturan lokal Claude Code (pribadi)
+.claude/settings.local.json
