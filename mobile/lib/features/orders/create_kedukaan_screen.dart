@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
-import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../widgets/searchable_select_field.dart';
 import '../../core/services/language_service.dart';
+import 'detail/deceased_photo_picker.dart';
 import 'widgets/form_helpers.dart';
 
 class CreateKedukaanScreen extends StatefulWidget {
@@ -50,54 +50,6 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
   // Attachment Foto Duka
   String? _attachmentUrl;
-
-  Future<void> _pickImage() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        allowMultiple: false,
-        withData: true,
-      );
-
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
-        String? finalUrl;
-        if (file.bytes != null && file.bytes!.isNotEmpty) {
-          final base64Str = base64Encode(file.bytes!);
-          finalUrl = 'data:image/png;base64,$base64Str';
-        } else if (file.path != null && file.path!.isNotEmpty) {
-          finalUrl = file.path;
-        }
-
-        if (finalUrl != null) {
-          setState(() {
-            _attachmentUrl = finalUrl;
-          });
-          if (mounted) {
-            ScaffoldMessenger.of(context).clearSnackBars();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Foto duka "${file.name}" berhasil dipilih!'),
-                backgroundColor: Colors.green.shade700,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memilih foto: $e'),
-            backgroundColor: Colors.red.shade700,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
 
   // Hierarchy Toggle & Master Data
   bool _isSameParish = true;
@@ -809,111 +761,10 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                         ),
                         const SizedBox(height: 14),
 
-                        // 7. Kedukaan Image Picker Container
-                        InkWell(
-                          onTap: _pickImage,
-                          borderRadius: BorderRadius.circular(14),
-                          child: Container(
-                            width: double.infinity,
-                            height: 140,
-                            decoration: BoxDecoration(
-                              color: _attachmentUrl != null
-                                  ? const Color(0xFFF0FDF4)
-                                  : const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: _attachmentUrl != null
-                                    ? const Color(0xFF10B981)
-                                    : const Color(0xFFCBD5E1),
-                                width: _attachmentUrl != null ? 1.8 : 1.0,
-                              ),
-                            ),
-                            child: _attachmentUrl != null
-                                ? Stack(
-                                    children: [
-                                      Center(
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            const Icon(
-                                              Icons.check_circle_rounded,
-                                              size: 36,
-                                              color: Color(0xFF10B981),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            const Text(
-                                              'Foto Duka Terpilih',
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFF0F172A),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              _attachmentUrl!.split('/').last,
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Color(0xFF059669),
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Positioned(
-                                        top: 8,
-                                        right: 8,
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _attachmentUrl = null;
-                                            });
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: const BoxDecoration(
-                                              color: Colors.redAccent,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Icon(
-                                              Icons.close_rounded,
-                                              color: Colors.white,
-                                              size: 16,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : const Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.add_photo_alternate_rounded,
-                                          size: 40, color: Color(0xFF1E5399)),
-                                      SizedBox(height: 8),
-                                      Text(
-                                        'Kedukaan Image',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF0F172A),
-                                        ),
-                                      ),
-                                      SizedBox(height: 2),
-                                      Text(
-                                        'Ketuk di sini untuk upload foto duka (Opsional)',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
+                        // 7. Foto almarhum/ah
+                        DeceasedPhotoPicker(
+                          value: _attachmentUrl,
+                          onChanged: (v) => setState(() => _attachmentUrl = v),
                         ),
                       ],
                     ),

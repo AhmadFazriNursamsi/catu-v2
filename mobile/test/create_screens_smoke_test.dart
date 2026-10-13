@@ -132,8 +132,8 @@ void main() {
       for (final lama in ['Isi form dibawah ini', 'Data Almarhum', 'Alm. Bapak', 'Catatan tambahan', 'Read Only', '/ banner', 'Alamat & Paroki Pelayanan Kedukaan']) {
         expect(find.textContaining(lama), findsNothing, reason: 'teks lama "$lama" harus hilang');
       }
-      await tester.scrollUntilVisible(find.textContaining('upload foto duka'), 300, scrollable: find.byType(Scrollable).first);
-      expect(find.text('Ketuk di sini untuk upload foto duka (Opsional)'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('Tambah Foto Almarhum/ah'), 300, scrollable: find.byType(Scrollable).first);
+      expect(find.text('Opsional · ketuk untuk memilih dari galeri atau kamera.'), findsOneWidget);
       expect(find.text('Catatan'), findsWidgets);
     });
 

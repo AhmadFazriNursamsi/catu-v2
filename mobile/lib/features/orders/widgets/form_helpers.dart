@@ -99,7 +99,11 @@ Widget dateHint(String ddmmyyyy) {
       children: [
         const Icon(Icons.event_available_rounded, size: 14, color: Color(0xFF0D9488)),
         const SizedBox(width: 5),
-        Text(formatLongDate(d), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0D9488))),
+        Flexible(
+          child: Text(formatLongDate(d),
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0D9488))),
+        ),
       ],
     ),
   );

@@ -672,9 +672,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           }
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res['message'] ?? 'Pelayanan telah selesai dilaksanakan. Terima kasih atas pelayanan Anda!'),
-            backgroundColor: const Color(0xFF059669),
+          const SnackBar(
+            content: Text('Pelayanan telah selesai dilaksanakan. Terima kasih atas pelayanan Anda!'),
+            backgroundColor: Color(0xFF059669),
           ),
         );
         Navigator.pop(context, true);
@@ -1862,7 +1862,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(res['message'] ?? 'Pelayanan berhasil diterima! Anda telah bergabung ke grup chat.'),
+            content: Text(order.categoryName.toLowerCase().contains('kedukaan')
+                ? 'Pelayanan Misa Terkonfirmasi'
+                : 'Pelayanan berhasil diterima! Anda telah bergabung ke grup chat.'),
             backgroundColor: const Color(0xFF059669),
           ),
         );

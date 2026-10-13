@@ -1404,47 +1404,39 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   ),
                                   const SizedBox(height: 14),
 
-                                  // Dynamic Backend Dropdowns for Provinsi & Kota
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: SearchableSelectField<int>(
-                                          label: 'Provinsi',
-                                          icon: Icons.map_rounded,
-                                          value: _selectedProvinsiId,
-                                          items: _dynamicProvinsiList
-                                              .map((item) => SearchableSelectItem<int>(
-                                                    value: int.parse(item['id'].toString()),
-                                                    label: item['name'].toString(),
-                                                  ))
-                                              .toList(),
-                                          onChanged: (val) {
-                                            if (val != null) _onProvinsiChanged(val);
-                                          },
-                                          emptyMessage: 'Provinsi tidak ditemukan',
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: SearchableSelectField<int>(
-                                          label: 'Kota / Kabupaten',
-                                          icon: Icons.location_city_rounded,
-                                          value: _selectedKabupatenKotaId,
-                                          items: _dynamicKotaList
-                                              .map((item) => SearchableSelectItem<int>(
-                                                    value: int.parse(item['id'].toString()),
-                                                    label: item['name'].toString(),
-                                                  ))
-                                              .toList(),
-                                          onChanged: (val) {
-                                            if (val != null) {
-                                              setState(() => _selectedKabupatenKotaId = val);
-                                            }
-                                          },
-                                          emptyMessage: 'Kota tidak ditemukan pada provinsi ini',
-                                        ),
-                                      ),
-                                    ],
+                                  // Provinsi dan Kota/Kabupaten masing-masing satu baris penuh
+                                  SearchableSelectField<int>(
+                                    label: 'Provinsi',
+                                    icon: Icons.map_rounded,
+                                    value: _selectedProvinsiId,
+                                    items: _dynamicProvinsiList
+                                        .map((item) => SearchableSelectItem<int>(
+                                              value: int.parse(item['id'].toString()),
+                                              label: item['name'].toString(),
+                                            ))
+                                        .toList(),
+                                    onChanged: (val) {
+                                      if (val != null) _onProvinsiChanged(val);
+                                    },
+                                    emptyMessage: 'Provinsi tidak ditemukan',
+                                  ),
+                                  const SizedBox(height: 14),
+                                  SearchableSelectField<int>(
+                                    label: 'Kota / Kabupaten',
+                                    icon: Icons.location_city_rounded,
+                                    value: _selectedKabupatenKotaId,
+                                    items: _dynamicKotaList
+                                        .map((item) => SearchableSelectItem<int>(
+                                              value: int.parse(item['id'].toString()),
+                                              label: item['name'].toString(),
+                                            ))
+                                        .toList(),
+                                    onChanged: (val) {
+                                      if (val != null) {
+                                        setState(() => _selectedKabupatenKotaId = val);
+                                      }
+                                    },
+                                    emptyMessage: 'Kota tidak ditemukan pada provinsi ini',
                                   ),
 
                                   const SizedBox(height: 30),
