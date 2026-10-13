@@ -238,17 +238,12 @@ class OrderRescheduleLog {
 }
 
 class OrderRomoHandover {
-  final int id;
-  final int orderId;
-  final int? itemId;
-  final int previousRomoId;
-  final String previousRomoName;
-  final int? newRomoId;
-  final String? newRomoName;
-  final String handoverType; // 'BROADCAST_POOL' or 'DIRECT_ASSIGN'
-  final String reason;
-  final String status;
-  final String? createdAt;
+  final int id, orderId, previousRomoId;
+  final int? itemId, newRomoId;
+  final String previousRomoName, reason, status;
+  final String handoverType; // 'BROADCAST_POOL' | 'DIRECT_ASSIGN' | 'EXTERNAL_ROMO'
+  /// Untuk EXTERNAL_ROMO: "Nama (nomor ponsel)" romo di luar CATU.
+  final String? newRomoName, createdAt, externalRomoName;
 
   OrderRomoHandover({
     required this.id,
@@ -262,6 +257,7 @@ class OrderRomoHandover {
     required this.reason,
     required this.status,
     this.createdAt,
+    this.externalRomoName,
   });
 
   factory OrderRomoHandover.fromJson(Map<String, dynamic> json) {
@@ -277,6 +273,7 @@ class OrderRomoHandover {
       reason: json['reason'] ?? '',
       status: json['status'] ?? 'COMPLETED',
       createdAt: json['createdAt'] ?? json['created_at'],
+      externalRomoName: json['externalRomoName'] ?? json['external_romo_name'],
     );
   }
 }

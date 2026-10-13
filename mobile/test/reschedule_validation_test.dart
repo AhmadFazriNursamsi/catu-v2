@@ -52,10 +52,10 @@ void main() {
     expect(run(e: const TimeOfDay(hour: 18, minute: 1)).end, isNull);
   });
 
-  test('alasan: wajib, minimal 10 karakter, maksimal 300', () {
+  test('alasan: wajib, tanpa minimal karakter, maksimal 300', () {
     expect(run(r: '').reason, contains('wajib'));
     expect(run(r: '   ').reason, contains('wajib'));
-    expect(run(r: 'sakit').reason, contains('singkat'));
+    expect(run(r: 'sakit').reason, isNull, reason: 'tidak ada batas minimal karakter');
     expect(run(r: 'x' * 10).reason, isNull);
     expect(run(r: 'x' * 301).reason, contains('maksimal'));
   });

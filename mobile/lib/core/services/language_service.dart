@@ -66,7 +66,7 @@ class LanguageService {
       'menu_title': 'Akun & Pengaturan',
       'edit_profile': 'Ubah Profil',
       'personal_info': 'INFORMASI PRIBADI',
-      'church_data': 'DATA KEUMATAN & GEREJA',
+      'church_data': 'DATA WILAYAH GEREJA',
       'address_info': 'ALAMAT TEMPAT TINGGAL',
       'account_security': 'AKUN & KEAMANAN',
       'app_settings': 'Setelan Aplikasi',

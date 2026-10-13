@@ -11,6 +11,7 @@ import 'about_catu_screen.dart';
 import 'change_password_screen.dart';
 import 'edit_profile_screen.dart';
 import 'help_center_screen.dart';
+import '../admin/approval_history_screen.dart';
 import '../admin/pengurus_approval_screen.dart';
 
 class MainMenuScreen extends StatefulWidget {
@@ -156,8 +157,8 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       return 'Romo Ordo — $_ordoName';
     }
     if (code == 'ROMO_PAROKI' || code.startsWith('ROMO')) {
-      if (_isKetuaRomo) return 'Romo Paroki — Pastor Kepala';
-      return 'Romo Paroki — Pastor Rekan';
+      if (_isKetuaRomo) return 'Ketua Romo Paroki';
+      return 'Romo Paroki';
     }
     if (_pengurusPos.toUpperCase().contains('KOORDINATOR') || code == 'KOORDINATOR') {
       return 'Umat — Koordinator Keuskupan';
@@ -471,40 +472,33 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       ),
       child: Column(
         children: [
-          // ── Pengurus Lingkungan Approval Tile (hanya tampil bila ada umat baru menunggu) ──
+          // ── Persetujuan umat (bila ada yang menunggu) & riwayat persetujuan, di atas menu Akun ──
           if (_isPengurus && _pendingPengurusCount > 0) ...[
             _buildMenuItem(
               icon: Icons.how_to_reg_rounded,
               title: 'Persetujuan Umat Lingkungan',
-              subtitle: _pendingPengurusCount > 0
-                  ? '$_pendingPengurusCount umat baru menunggu verifikasi Anda'
-                  : 'Verifikasi pendaftaran umat baru',
-              trailing: _pendingPengurusCount > 0
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '$_pendingPengurusCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    )
-                  : null,
+              subtitle: '$_pendingPengurusCount umat baru menunggu verifikasi Anda',
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: const Color(0xFFEF4444), borderRadius: BorderRadius.circular(10)),
+                child: Text('$_pendingPengurusCount', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+              ),
               onTap: () async {
                 HapticFeedback.selectionClick();
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PengurusApprovalScreen(user: _userData),
-                  ),
-                );
+                await Navigator.push(context, MaterialPageRoute(builder: (_) => PengurusApprovalScreen(user: _userData)));
                 _fetchApprovalCounts();
+              },
+            ),
+            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          ],
+          if (_isPengurus || _isKoordinator || _isKetuaRomo) ...[
+            _buildMenuItem(
+              icon: Icons.history_rounded,
+              title: 'Riwayat Persetujuan',
+              subtitle: 'Akun yang pernah Anda setujui atau tolak',
+              onTap: () {
+                HapticFeedback.selectionClick();
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ApprovalHistoryScreen()));
               },
             ),
             const Divider(height: 1, color: Color(0xFFF1F5F9)),

@@ -8,6 +8,8 @@ import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import '../chat/chat_screen.dart';
 import 'detail/address_actions.dart';
+import 'detail/external_romo_card.dart';
+import 'detail/limpahan_actions.dart';
 import 'detail/kedukaan_hero.dart';
 import 'detail/kedukaan_parts.dart';
 import 'detail/perminyakan_parts.dart';
@@ -224,6 +226,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
 
     final int? assignedRomoId = order.items.isNotEmpty ? displayItem.acceptedRomoId : order.acceptedRomoId;
     final String assignedRomoName = order.items.isNotEmpty ? (displayItem.acceptedRomoName ?? '') : (order.acceptedRomoName ?? '');
+    final externalHandover = externalHandoverOf(order, order.items.isNotEmpty ? displayItem : null);
+    final romoCancellation = romoCancellationOf(order, order.items.isNotEmpty ? displayItem : null);
     final String currentStatus = (order.items.isNotEmpty ? displayItem.status : order.status).toUpperCase();
 
     final bool isRomoAccepted = assignedRomoId != null || assignedRomoName.isNotEmpty;
@@ -266,7 +270,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         widget.romoId != assignedRomoId;
 
     final statusColor = _getStatusColor(effectiveStatus);
-    final statusLabel = _getStatusLabel(effectiveStatus);
+    final statusLabel = romoCancellation != null && effectiveStatus == 'FAIL' ? 'Dibatalkan Romo' : _getStatusLabel(effectiveStatus);
     final statusIcon = _getStatusIcon(effectiveStatus);
     final urgencyColor = _getUrgencyColor(order.urgencyName);
     final bool isKedukaan =
@@ -380,8 +384,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               _buildHandoverInfoCardForUmat(order, displayItem),
                               const SizedBox(height: 12),
                             ],
+                              // ── Dibatalkan oleh Romo limpahan ──
+                              if (romoCancellation != null) ...[
+                                RomoCancelledCard(cancellation: romoCancellation, isRomo: widget.isRomo),
+                                const SizedBox(height: 12),
+                              ],
+                              // ── Romo yang Bertugas: Romo Eksternal (di luar CATU) ──
+                              if (externalHandover != null && romoCancellation == null) ...[
+                                ExternalRomoCard(handover: externalHandover, fallbackName: assignedRomoName),
+                                const SizedBox(height: 12),
+                              ],
                               // ── Romo yang Bertugas Info Card ──
-                              if (isItemAccepted) ...[
+                              if (isItemAccepted && externalHandover == null && romoCancellation == null) ...[
                                 _buildInfoCard(
                                   icon: Icons.person_pin_rounded,
                                   iconBg: const Color(0xFF059669),
@@ -1385,6 +1399,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
   }
 
   Widget _buildRomoAcceptedBottomActions(Order order, {OrderItem? displayItem}) {
+    // Romo limpahan: tanpa Ubah Jam; bila berhalangan, Batalkan Pelayanan.
+    if (isRomoLimpahan(order, order.items.isNotEmpty ? displayItem : null, widget.romoId)) {
+      return LimpahanBottomActions(
+        onChat: () => _openChat(order),
+        onCancel: () => _cancelAsLimpahan(order, displayItem),
+        onComplete: () => _completeService(order, targetItem: displayItem),
+        submitting: _isSubmitting,
+      );
+    }
     final bool hasPendingHandover = order.items.isNotEmpty
         ? (displayItem?.hasPendingHandover ?? false)
         : ((displayItem?.hasPendingHandover ?? false) || order.hasPendingHandover);
@@ -1457,20 +1480,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       );
     }
 
-    final String itemResch = (displayItem?.rescheduleStatus ?? 'NONE').toUpperCase();
-    final String orderResch = order.rescheduleStatus.toUpperCase();
-    final String historyLatestResch = order.rescheduleHistory.isNotEmpty
-        ? order.rescheduleHistory.first.status.toUpperCase()
-        : 'NONE';
+    // Order multi-misa: status & riwayat ubah jam dibaca per misa, agar pengajuan satu misa tidak menandai misa lain.
+    final bool perItem = order.items.isNotEmpty && displayItem != null;
+    final String ownResch = rescheduleStatusOf(order, displayItem).toUpperCase();
+    final ownLogs = perItem ? order.rescheduleHistory.where((r) => r.itemId == displayItem.id) : order.rescheduleHistory;
+    final String historyLatestResch = ownLogs.isNotEmpty ? ownLogs.first.status.toUpperCase() : 'NONE';
 
-    final bool hasPendingProposal = itemResch == 'PENDING_UMAT' ||
-        orderResch == 'PENDING_UMAT' ||
-        historyLatestResch == 'PENDING_UMAT' ||
-        (displayItem?.hasPendingReschedule ?? false) ||
-        order.hasPendingReschedule;
+    final bool hasPendingProposal = ownResch == 'PENDING_UMAT' || historyLatestResch == 'PENDING_UMAT';
 
     final bool isRescheduleRejected = !hasPendingProposal &&
-        (itemResch == 'REJECTED' || orderResch == 'REJECTED' || historyLatestResch == 'REJECTED');
+        (ownResch == 'REJECTED' || historyLatestResch == 'REJECTED');
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1769,6 +1788,23 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           ),
       ],
     );
+  }
+
+  Future<void> _cancelAsLimpahan(Order order, OrderItem? displayItem) async {
+    final romoId = widget.romoId;
+    if (romoId == null) return;
+    final target = order.items.isNotEmpty ? displayItem : null;
+    final reason = await showRomoCancelSheet(context, serviceName: target?.itemName ?? order.categoryName);
+    if (reason == null || !mounted) return;
+    setState(() => _isSubmitting = true);
+    final error = await cancelServiceByRomo(orderId: order.id, itemId: target?.id, romoId: romoId, reason: reason);
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(error ?? 'Pelayanan telah dibatalkan. Umat dan pengurus sudah diberi tahu.'),
+      backgroundColor: error == null ? const Color(0xFF059669) : Colors.red.shade700,
+    ));
+    if (error == null) Navigator.pop(context, true);
   }
 
   void _showRescheduleBottomSheet(Order order, {OrderItem? targetItem}) {
@@ -2305,9 +2341,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
             itemBuilder: (context, idx) {
               final h = list[idx];
               final bool isDirect = h.handoverType == 'DIRECT_ASSIGN';
-              final String destination = isDirect
-                  ? (h.newRomoName != null ? 'Dialihkan ke Romo ${h.newRomoName}' : 'Dialihkan ke Romo Rekan')
-                  : 'Dikembalikan ke Paroki (Terbuka)';
+              final bool isExternal = h.handoverType.toUpperCase() == 'EXTERNAL_ROMO';
+              final bool isCancelled = h.handoverType.toUpperCase() == 'CANCELLED_BY_ROMO';
+              final String destination = isCancelled
+                  ? 'Pelayanan dibatalkan oleh Romo limpahan'
+                  : isExternal
+                  ? 'Dialihkan ke Romo Eksternal: ${h.externalRomoName ?? '-'}'
+                  : isDirect
+                      ? (h.newRomoName != null ? 'Dialihkan ke Romo ${h.newRomoName}' : 'Dialihkan ke Romo Rekan')
+                      : 'Dikembalikan ke Paroki (Terbuka)';
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2327,7 +2369,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                           border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.3)),
                         ),
                         child: Text(
-                          isDirect ? 'Pelimpahan Langsung' : 'Buka ke Paroki',
+                          isCancelled ? 'Dibatalkan' : isExternal ? 'Romo Eksternal' : (isDirect ? 'Pelimpahan Langsung' : 'Buka ke Paroki'),
                           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
                         ),
                       ),

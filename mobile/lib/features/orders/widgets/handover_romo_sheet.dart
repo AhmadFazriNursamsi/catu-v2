@@ -174,10 +174,18 @@ class _HandoverRomoSheetState extends State<HandoverRomoSheet> {
       builder: (c) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Konfirmasi Pengalihan', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('Apakah Anda yakin ingin mengajukan pergantian Romo kepada $label?'),
+        content: _selectedTargetRomoId != null
+            ? Text('Apakah Anda yakin ingin mengajukan pergantian Romo kepada $label?')
+            : Text(
+                'Pelayanan akan dialihkan ke Romo Eksternal (belum terdaftar di CATU):\n\n'
+                'Nama: Romo $name\nNo. ponsel: ${phone.isEmpty ? '-' : phone}\n\n'
+                'Pengalihan langsung berlaku tanpa menunggu persetujuan, dan Anda tidak lagi bertugas untuk pelayanan ini. '
+                'Umat dan pengurus akan diberi tahu; Romo eksternal tidak menerima notifikasi CATU.',
+                style: const TextStyle(height: 1.4),
+              ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Batal')),
-          ElevatedButton(onPressed: () => Navigator.pop(c, true), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E5399), foregroundColor: Colors.white), child: const Text('Ya, Ajukan')),
+          ElevatedButton(onPressed: () => Navigator.pop(c, true), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E5399), foregroundColor: Colors.white), child: Text(_selectedTargetRomoId != null ? 'Ya, Ajukan' : 'Ya, Alihkan')),
         ],
       ),
     );

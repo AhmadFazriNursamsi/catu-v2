@@ -328,7 +328,7 @@ class _RegisterScreenState extends State<RegisterScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Ordo ini sudah memiliki Ketua / Superior ($ketuaName). Anda tidak dapat mendaftar sebagai Ketua Ordo.',
+              'Ordo ini sudah memiliki Ketua Romo Ordo ($ketuaName). Anda tidak dapat mendaftar sebagai Ketua Romo Ordo.',
             ),
             backgroundColor: Colors.red.shade700,
           ),
@@ -347,7 +347,7 @@ class _RegisterScreenState extends State<RegisterScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Paroki ini sudah memiliki Pastor Kepala ($kepalaName). Anda tidak dapat mendaftar sebagai Pastor Kepala.',
+              'Paroki ini sudah memiliki Ketua Romo Paroki ($kepalaName). Anda tidak dapat mendaftar sebagai Ketua Romo Paroki.',
             ),
             backgroundColor: Colors.red.shade700,
           ),
@@ -789,7 +789,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             value: 'KETUA_ROMO',
             enabled: !hasKetua,
             child: Text(
-              hasKetua ? 'Ketua Ordo (Sudah Terisi)' : 'Ketua Ordo',
+              hasKetua ? 'Ketua Romo Ordo (Sudah Terisi)' : 'Ketua Romo Ordo',
               style: TextStyle(
                 fontSize: 13,
                 color: hasKetua ? Colors.grey.shade400 : Colors.black87,
@@ -799,7 +799,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           ),
           const DropdownMenuItem(
             value: 'ROMO_BIASA',
-            child: Text('Romo Ordo Biasa',
+            child: Text('Romo Ordo',
                 style: TextStyle(fontSize: 13),
                 overflow: TextOverflow.ellipsis),
           ),
@@ -828,7 +828,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             value: 'KETUA_ROMO',
             enabled: !hasKepala,
             child: Text(
-              hasKepala ? 'Pastor Kepala (Sudah Terisi)' : 'Pastor Kepala (Ketua Paroki)',
+              hasKepala ? 'Ketua Romo Paroki (Sudah Terisi)' : 'Ketua Romo Paroki',
               style: TextStyle(
                 fontSize: 13,
                 color: hasKepala ? Colors.grey.shade400 : Colors.black87,
@@ -838,7 +838,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           ),
           const DropdownMenuItem(
             value: 'ROMO_BIASA',
-            child: Text('Romo Paroki Biasa (Pastor Rekan)',
+            child: Text('Romo Paroki',
                 style: TextStyle(fontSize: 13),
                 overflow: TextOverflow.ellipsis),
           ),
@@ -1368,11 +1368,11 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   ),
                                   const SizedBox(height: 24),
 
-                                  // ── 3. DATA KEUMATAN & GEREJA ──
+                                  // ── 3. DATA WILAYAH GEREJA ──
                                   _buildSectionLabel(
                                       _isPendatang
-                                          ? 'DATA ASAL KEUMATAN & GEREJA'
-                                          : 'DATA KEUMATAN & GEREJA',
+                                          ? 'DATA ASAL WILAYAH GEREJA'
+                                          : 'DATA WILAYAH GEREJA',
                                       Icons.church_rounded),
 
                                   _buildHierarchyDropdowns(),

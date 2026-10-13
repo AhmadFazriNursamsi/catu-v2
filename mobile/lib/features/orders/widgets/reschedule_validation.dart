@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart' show TimeOfDay;
 import '../../../core/models/models.dart' show OrderRescheduleLog;
 
-const int kRescheduleReasonMin = 10;
 const int kRescheduleReasonMax = 300;
 
 /// Pengajuan ubah jam ditutup setelah ditolak sebanyak ini (harus sama dengan backend).
@@ -81,8 +80,6 @@ RescheduleErrors validateReschedule({
   final text = reason.trim();
   if (text.isEmpty) {
     reasonErr = 'Alasan wajib diisi.';
-  } else if (text.length < kRescheduleReasonMin) {
-    reasonErr = 'Alasan terlalu singkat, tambahkan ${kRescheduleReasonMin - text.length} karakter lagi.';
   } else if (text.length > kRescheduleReasonMax) {
     reasonErr = 'Alasan maksimal $kRescheduleReasonMax karakter.';
   }
