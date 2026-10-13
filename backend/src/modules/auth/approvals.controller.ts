@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -73,6 +73,7 @@ export class ApprovalsController {
   @Roles(...APPROVER_ROLES)
   @ApiOperation({ summary: 'Riwayat akun yang pernah disetujui / ditolak oleh penyetuju yang sedang login' })
   async getApprovalHistory(@CurrentUser() user: AuthUser) {
+    await this.assertHistoryAllowed(user);
     return await this.policy.history(user.sub);
   }
 
@@ -80,7 +81,15 @@ export class ApprovalsController {
   @Roles(...APPROVER_ROLES)
   @ApiOperation({ summary: 'Detail lengkap satu entri riwayat persetujuan milik penyetuju yang sedang login' })
   async getApprovalHistoryDetail(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number) {
+    await this.assertHistoryAllowed(user);
     return await this.policy.historyDetail(user.sub, id);
+  }
+
+  /** Riwayat persetujuan tidak tersedia bagi Koordinator Keuskupan. */
+  private async assertHistoryAllowed(user: AuthUser): Promise<void> {
+    if ((await this.policy.scopeFor(user.sub))?.kind === 'KEUSKUPAN') {
+      throw new ForbiddenException('Riwayat persetujuan tidak tersedia bagi Koordinator.');
+    }
   }
 
   @Get('romo/pending-romo')

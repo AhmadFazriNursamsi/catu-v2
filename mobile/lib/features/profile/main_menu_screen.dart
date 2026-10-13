@@ -491,7 +491,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
             ),
             const Divider(height: 1, color: Color(0xFFF1F5F9)),
           ],
-          if (_isPengurus || _isKoordinator || _isKetuaRomo) ...[
+          if (_isPengurus || _isKetuaRomo) ...[
             _buildMenuItem(
               icon: Icons.history_rounded,
               title: 'Riwayat Persetujuan',
