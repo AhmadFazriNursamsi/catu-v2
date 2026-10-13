@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -67,6 +67,20 @@ export class ApprovalsController {
     const result = await this.authService.processPengurusApproval({ ...body, approverUserId: user.sub });
     this.policy.afterProcessed(body.targetUserId);
     return result;
+  }
+
+  @Get('approvals/history')
+  @Roles(...APPROVER_ROLES)
+  @ApiOperation({ summary: 'Riwayat akun yang pernah disetujui / ditolak oleh penyetuju yang sedang login' })
+  async getApprovalHistory(@CurrentUser() user: AuthUser) {
+    return await this.policy.history(user.sub);
+  }
+
+  @Get('approvals/history/:id')
+  @Roles(...APPROVER_ROLES)
+  @ApiOperation({ summary: 'Detail lengkap satu entri riwayat persetujuan milik penyetuju yang sedang login' })
+  async getApprovalHistoryDetail(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number) {
+    return await this.policy.historyDetail(user.sub, id);
   }
 
   @Get('romo/pending-romo')

@@ -21,6 +21,8 @@ import { EscalationSettingsService } from './modules/escalation/escalation-setti
 import { OrderGuardsService } from './modules/order-rules/order-guards.service';
 import { LintasParokiService } from './modules/order-rules/lintas-paroki.service';
 import { AssignmentWorkflowService } from './modules/assignments/assignment-workflow.service';
+import { ApprovalPolicyService } from './modules/auth/approval-policy.service';
+import { RomoCancelService } from './modules/orders/romo-cancel.service';
 import * as bcrypt from 'bcrypt';
 
 const adminUser = { sub: 1, roleCode: 'ADMIN' };
@@ -92,6 +94,9 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
         { provide: EscalationService, useValue: { assertCanAccept: jest.fn().mockResolvedValue(undefined) } },
         // Penjaga keadaan pelayanan diuji terpisah (order-rules, perminyakan-flow.py); di sini cukup dilewati.
         { provide: OrderGuardsService, useValue: { assertNewOrderRefs: jest.fn().mockResolvedValue(undefined), assertExists: jest.fn().mockResolvedValue(undefined) } },
+        // Aturan ganti peran diuji terpisah (registration-rules.spec); di sini akun target tidak ditemukan sehingga dilewati.
+        { provide: RomoCancelService, useValue: { cancel: jest.fn() } },
+        { provide: ApprovalPolicyService, useValue: { load: jest.fn().mockResolvedValue(null) } },
         { provide: LintasParokiService, useValue: { afterCreate: jest.fn().mockResolvedValue(false) } },
         { provide: AssignmentWorkflowService, useFactory: (svc: AssignmentsService) => ({ respond: (id: number, dto: any, ctx: any) => svc.respondAssignment(String(id), { ...dto, romoId: ctx.romoId }) }), inject: [AssignmentsService] },
       ],

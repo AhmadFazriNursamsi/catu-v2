@@ -56,10 +56,10 @@ describe('validateRescheduleProposal', () => {
     expect(validateRescheduleProposal({ ...valid, newDate: undefined, newTimeStart: '02:00', newTimeEnd: undefined } as any, lateUtc, '2026-10-03')).toBeNull(); // 3 Okt bukan hari ini di WIB
   });
 
-  it('menolak alasan kosong, terlalu singkat, dan terlalu panjang', () => {
+  it('menolak alasan kosong dan terlalu panjang; alasan singkat diterima', () => {
     expect(check({ reason: '' })).toMatch(/wajib/);
     expect(check({ reason: '   ' })).toMatch(/wajib/);
-    expect(check({ reason: 'sakit' })).toMatch(/singkat/);
+    expect(check({ reason: 'sakit' })).toBeNull();
     expect(check({ reason: 'x'.repeat(301) })).toMatch(/maksimal/);
     expect(check({ reason: 'x'.repeat(300) })).toBeNull();
   });

@@ -41,8 +41,25 @@ export class OrderGuardsService {
     await this.target(orderId, null);
   }
 
-  /** Ubah jam hanya untuk pelayanan yang sudah diterima dan belum berlangsung, tanpa ajuan lain yang masih menunggu. */
-  async assertRescheduleProposable(orderId: number, itemId?: number | null): Promise<void> {
+  /** Romo [romoId] menerima pelayanan/misa ini lewat pelimpahan (Romo limpahan). */
+  async isHandoverRecipient(orderId: number, itemId: number | null | undefined, romoId: number): Promise<boolean> {
+    const rows = await this.dataSource.query(
+      `SELECT 1 FROM order_romo_handovers
+       WHERE order_id = $1 AND new_romo_id = $2 AND status = 'ACCEPTED' AND ($3::bigint IS NULL OR item_id IS NULL OR item_id = $3::bigint)
+       LIMIT 1`,
+      [orderId, romoId, itemId ?? null],
+    );
+    return rows.length > 0;
+  }
+
+  /**
+   * Ubah jam hanya untuk pelayanan yang sudah diterima dan belum berlangsung, tanpa ajuan lain yang masih menunggu.
+   * Romo limpahan tidak dapat mengajukan ubah jam; bila berhalangan, ia membatalkan pelayanan.
+   */
+  async assertRescheduleProposable(orderId: number, itemId?: number | null, romoId?: number): Promise<void> {
+    if (romoId && (await this.isHandoverRecipient(orderId, itemId, romoId))) {
+      throw new ConflictException('Ubah jam tidak tersedia bagi Romo limpahan. Bila berhalangan, gunakan Batalkan Pelayanan.');
+    }
     const t = await this.target(orderId, itemId);
     if (t.status !== 'CONFIRMED') throw new ConflictException(`Ubah jam hanya dapat diajukan untuk pelayanan yang sudah diterima Romo dan belum berlangsung (status saat ini ${t.status}).`);
     if (t.rescheduleStatus === 'PENDING_UMAT') throw new ConflictException('Masih ada ajuan ubah jam yang menunggu respons umat.');

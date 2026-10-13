@@ -31,3 +31,43 @@ export function registrationError(dto: RegistrationScope): string | null {
       return null;
   }
 }
+
+/** Peran tujuan yang boleh dipilih Admin untuk tiap peran asal; peran yang tidak tercantum tidak dibatasi aturan ini. */
+const ROLE_CHANGE_TARGETS: Record<string, string[]> = {
+  UMAT: ['PENGURUS_LINGKUNGAN', 'KOORDINATOR'],
+  PENGURUS_LINGKUNGAN: ['UMAT'],
+  KOORDINATOR: ['UMAT'],
+  UMAT_PENDATANG: [],
+  ROMO_PAROKI: [],
+  ROMO_ORDO: [],
+};
+
+const ROLE_CHANGE_MESSAGES: Record<string, string> = {
+  UMAT: 'Umat hanya dapat diubah menjadi Pengurus Lingkungan atau Koordinator.',
+  PENGURUS_LINGKUNGAN: 'Pengurus Lingkungan hanya dapat diubah menjadi Umat.',
+  KOORDINATOR: 'Koordinator hanya dapat diubah menjadi Umat.',
+  UMAT_PENDATANG: 'Peran Umat Pendatang tidak dapat diubah.',
+  ROMO_PAROKI: 'Peran Romo tidak dapat diubah. Yang dapat diubah hanya posisi pastoral.',
+  ROMO_ORDO: 'Peran Romo tidak dapat diubah. Yang dapat diubah hanya posisi pastoral.',
+};
+
+/** Peran efektif untuk aturan ganti peran: Koordinator disatukan, umat yang punya jabatan dianggap pengurus. */
+export function effectiveRole(roleCode: string, pengurusPosition?: string | null): string {
+  const role = (roleCode || '').toUpperCase();
+  const pos = (pengurusPosition ?? '').trim().toLowerCase();
+  if (role.startsWith('KOORDINATOR') || pos.includes('koordinator')) return 'KOORDINATOR';
+  if (role === 'UMAT' && pos) return 'PENGURUS_LINGKUNGAN';
+  return role;
+}
+
+/**
+ * Pesan galat bila Admin mengganti peran dari [from] ke [to], atau null bila boleh.
+ * Umat -> Pengurus Lingkungan / Koordinator; Pengurus Lingkungan & Koordinator -> Umat;
+ * Umat Pendatang, Romo Paroki, dan Romo Ordo tidak dapat berganti peran (Romo hanya posisi pastoralnya).
+ */
+export function roleChangeError(from: string, to: string): string | null {
+  const target = effectiveRole(to);
+  const allowed = ROLE_CHANGE_TARGETS[from];
+  if (!to || from === target || !allowed || allowed.includes(target)) return null;
+  return ROLE_CHANGE_MESSAGES[from];
+}

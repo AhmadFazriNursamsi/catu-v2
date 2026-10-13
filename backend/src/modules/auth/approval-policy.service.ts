@@ -58,6 +58,56 @@ export class ApprovalPolicyService {
     return actor ? approvalScope(actor) : null;
   }
 
+  /** Riwayat akun yang pernah disetujui / ditolak oleh [actorId], terbaru lebih dulu. */
+  async history(actorId: number, limit = 200) {
+    return this.dataSource.query(
+      `SELECT ua.id, ua.target_user_id, ua.rejection_reason, ua.created_at,
+              CASE WHEN UPPER(ua.action) LIKE 'APPROVE%' THEN 'APPROVED' ELSE 'REJECTED' END AS action,
+              p.full_name, u.phone_number, u.account_status, r.code AS role_code, p.pengurus_position, p.romo_position,
+              l.name AS lingkungan_name, w.name AS wilayah_name, par.name AS paroki_name, ord.name AS ordo_name
+       FROM user_approvals ua
+       JOIN auth_users u ON u.id = ua.target_user_id
+       JOIN roles r ON r.id = u.role_id
+       LEFT JOIN user_profiles p ON p.user_id = u.id
+       LEFT JOIN lingkungan l ON l.id = p.lingkungan_id
+       LEFT JOIN wilayah w ON w.id = p.wilayah_id
+       LEFT JOIN paroki par ON par.id = p.paroki_id
+       LEFT JOIN ordo ord ON ord.id = p.ordo_id
+       WHERE ua.approver_user_id = $1
+       ORDER BY ua.created_at DESC, ua.id DESC
+       LIMIT $2`,
+      [actorId, limit],
+    );
+  }
+
+  /** Data lengkap satu entri riwayat; hanya bila entri itu memang diproses oleh [actorId]. */
+  async historyDetail(actorId: number, entryId: number) {
+    const rows = await this.dataSource.query(
+      `SELECT ua.id, ua.target_user_id, ua.rejection_reason, ua.created_at,
+              CASE WHEN UPPER(ua.action) LIKE 'APPROVE%' THEN 'APPROVED' ELSE 'REJECTED' END AS action,
+              u.phone_number, u.account_status, u.created_at AS registered_at, r.code AS role_code,
+              p.full_name, p.email, p.gender, p.birth_date, p.address, p.avatar_url,
+              p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year,
+              k.name AS keuskupan_name, par.name AS paroki_name, w.name AS wilayah_name, l.name AS lingkungan_name,
+              kk.name AS kota_name, prov.name AS provinsi_name, ord.name AS ordo_name
+       FROM user_approvals ua
+       JOIN auth_users u ON u.id = ua.target_user_id
+       JOIN roles r ON r.id = u.role_id
+       LEFT JOIN user_profiles p ON p.user_id = u.id
+       LEFT JOIN keuskupan k ON k.id = p.keuskupan_id
+       LEFT JOIN paroki par ON par.id = p.paroki_id
+       LEFT JOIN wilayah w ON w.id = p.wilayah_id
+       LEFT JOIN lingkungan l ON l.id = p.lingkungan_id
+       LEFT JOIN kabupaten_kota kk ON kk.id = p.kabupaten_kota_id
+       LEFT JOIN provinsi prov ON prov.id = kk.provinsi_id
+       LEFT JOIN ordo ord ON ord.id = p.ordo_id
+       WHERE ua.id = $1 AND ua.approver_user_id = $2`,
+      [entryId, actorId],
+    );
+    if (rows.length === 0) throw new NotFoundException('Riwayat persetujuan tidak ditemukan.');
+    return rows[0];
+  }
+
   /** Setelah status berubah: cache status akun target dibuang agar berlaku seketika. */
   afterProcessed(targetId: number): void {
     this.accounts.invalidate(targetId);

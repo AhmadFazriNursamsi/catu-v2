@@ -39,7 +39,8 @@ import {
   ChangePasswordDto,
 } from '../../auth.dto';
 import { UpdateProfileDto } from './update-profile.dto';
-import { registrationError } from './registration-rules';
+import { effectiveRole, registrationError, roleChangeError } from './registration-rules';
+import { ApprovalPolicyService } from './approval-policy.service';
 import { AdminOrderStatusDto } from './admin-order-status.dto';
 import { OrderGuardsService } from '../order-rules/order-guards.service';
 import { AuthService } from './auth.service';
@@ -54,7 +55,16 @@ export class AuthController {
     private readonly access: AccessService,
     private readonly jwtService: JwtService,
     private readonly orderGuards: OrderGuardsService,
+    private readonly approvalPolicy: ApprovalPolicyService,
   ) {}
+
+  /** Menolak ganti peran yang tidak diizinkan (lihat roleChangeError); tanpa roleCode tidak ada yang diperiksa. */
+  private async assertRoleChange(userIdParam: string, roleCode?: string): Promise<void> {
+    if (!roleCode) return;
+    const current = await this.approvalPolicy.load(Number(userIdParam));
+    const error = current ? roleChangeError(effectiveRole(current.roleCode, current.pengurusPosition), roleCode) : null;
+    if (error) throw new BadRequestException(error);
+  }
 
   @Public()
   @Get('roles')
@@ -232,6 +242,7 @@ export class AuthController {
     @Body() dto: UpdateProfileDto,
   ) {
     this.access.assertSelf(user, userIdParam);
+    await this.assertRoleChange(userIdParam, (dto as any).roleCode ?? (dto as any).role_code);
     return await this.authService.updateProfile(userIdParam, dto);
   }
 
@@ -274,6 +285,7 @@ export class AuthController {
     @Param('userId') userIdParam: string,
     @Body() body: { roleCode: string },
   ) {
+    await this.assertRoleChange(userIdParam, body.roleCode);
     return await this.authService.updateAdminUserRole(userIdParam, body);
   }
 

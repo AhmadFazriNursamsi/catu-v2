@@ -1,4 +1,3 @@
-export const RESCHEDULE_REASON_MIN = 10;
 export const RESCHEDULE_REASON_MAX = 300;
 
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
@@ -50,9 +49,6 @@ export function validateRescheduleProposal(
 
   const reason = (dto.reason ?? '').trim();
   if (!reason) return 'Alasan perubahan jadwal wajib diisi.';
-  if (reason.length < RESCHEDULE_REASON_MIN) {
-    return `Alasan terlalu singkat, minimal ${RESCHEDULE_REASON_MIN} karakter.`;
-  }
   if (reason.length > RESCHEDULE_REASON_MAX) {
     return `Alasan maksimal ${RESCHEDULE_REASON_MAX} karakter.`;
   }

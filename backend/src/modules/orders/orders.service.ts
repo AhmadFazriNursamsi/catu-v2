@@ -32,7 +32,7 @@ export class OrdersService {
     });
   }
 
-  private async getPengurusForOrder(orderId: number, excludeUserId?: number): Promise<any[]> {
+  async getPengurusForOrder(orderId: number, excludeUserId?: number): Promise<any[]> {
     const orderHierarchy = await this.dataSource.query(
       `SELECT o.lingkungan_id, o.paroki_id, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id
        FROM orders o
@@ -485,7 +485,7 @@ export class OrdersService {
         `SELECT h.id, h.order_id as "orderId", h.item_id as "itemId",
                 h.previous_romo_id as "previousRomoId", p_prev.full_name as "previousRomoName",
                 h.new_romo_id as "newRomoId", p_new.full_name as "newRomoName",
-                h.handover_type as "handoverType", h.reason, h.status, h.created_at as "createdAt"
+                h.handover_type as "handoverType", h.reason, h.status, h.created_at as "createdAt", h.external_romo_name as "externalRomoName"
          FROM order_romo_handovers h
          LEFT JOIN user_profiles p_prev ON h.previous_romo_id = p_prev.user_id
          LEFT JOIN user_profiles p_new ON h.new_romo_id = p_new.user_id
@@ -587,7 +587,7 @@ export class OrdersService {
         `SELECT h.id, h.order_id as "orderId", h.item_id as "itemId",
                 h.previous_romo_id as "previousRomoId", p_prev.full_name as "previousRomoName",
                 h.new_romo_id as "newRomoId", p_new.full_name as "newRomoName",
-                h.handover_type as "handoverType", h.reason, h.status, h.created_at as "createdAt"
+                h.handover_type as "handoverType", h.reason, h.status, h.created_at as "createdAt", h.external_romo_name as "externalRomoName"
          FROM order_romo_handovers h
          LEFT JOIN user_profiles p_prev ON h.previous_romo_id = p_prev.user_id
          LEFT JOIN user_profiles p_new ON h.new_romo_id = p_new.user_id

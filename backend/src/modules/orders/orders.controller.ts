@@ -15,6 +15,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateOrderDto } from '../../orders.dto';
 import { OrdersService } from './orders.service';
+import { RomoCancelService } from './romo-cancel.service';
 import { OrderReviewsService } from './order-reviews.service';
 import { validateRescheduleProposal } from './reschedule-validation';
 import { validateNewOrder } from '../order-rules/order-input-rules';
@@ -36,6 +37,7 @@ export class OrdersController {
     private readonly events: OrderEventsService,
     private readonly guards: OrderGuardsService,
     private readonly lintas: LintasParokiService,
+    private readonly romoCancel: RomoCancelService,
   ) {}
 
   private readonly logger = new Logger(OrdersController.name);
@@ -147,7 +149,7 @@ export class OrdersController {
     const invalid = validateRescheduleProposal(dto, new Date(), (await this.guards.scheduledDate(Number(idParam), dto.itemId)) ?? undefined);
     if (invalid) throw new BadRequestException(invalid);
     await this.events.assertRescheduleOpen(Number(idParam), dto.itemId);
-    await this.guards.assertRescheduleProposable(Number(idParam), dto.itemId);
+    await this.guards.assertRescheduleProposable(Number(idParam), dto.itemId, this.actor(user, dto.romoId));
     return await this.ordersService.proposeReschedule(idParam, {
       ...dto,
       romoId: this.actor(user, dto.romoId) as number,
@@ -196,6 +198,18 @@ export class OrdersController {
     const romoId = this.actor(user, dto.romoId) as number;
     await this.guards.assertHandoverAllowed(Number(idParam), dto.itemId, { ...dto, romoId });
     return await this.ordersService.handoverOrder(idParam, { ...dto, romoId });
+  }
+
+  @Post(':id/cancel-by-romo')
+  @Roles(...ROMO_ROLES, ...ADMIN_ROLES)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Romo limpahan membatalkan pelayanan (atau satu misa) yang ia terima lewat pelimpahan' })
+  async cancelByRomo(
+    @CurrentUser() user: AuthUser,
+    @Param('id') idParam: string,
+    @Body() dto: { romoId?: number; itemId?: number; reason: string },
+  ) {
+    return await this.romoCancel.cancel(Number(idParam), dto.itemId, this.actor(user, dto.romoId) as number, dto.reason);
   }
 
   @Post(':id/handover/respond')
