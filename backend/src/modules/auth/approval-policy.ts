@@ -93,3 +93,25 @@ export function approvalScope(actor: ApprovalAccount): ApprovalScope | null {
   if (isPengurus(actor)) return active(actor) && actor.lingkunganId ? { kind: 'LINGKUNGAN', lingkunganId: Number(actor.lingkunganId) } : null;
   return null;
 }
+
+/**
+ * Kolom SQL `approver_name` untuk daftar pengguna Admin (alias: u = auth_users, r = roles, p = user_profiles target).
+ * Bila penyetuju tidak tercatat (pengurus yang mendaftar, atau umat yang mendaftar sebelum ada pengurus),
+ * pakai pengurus aktif di lingkungan yang sama sesuai decideApproval: Ketua Lingkungan untuk pengurus, pengurus mana pun untuk umat.
+ */
+export const APPROVER_NAME_SQL = `COALESCE(
+    (SELECT ap.full_name FROM user_profiles ap WHERE ap.user_id = u.approval_assigned_to_user_id),
+    (SELECT lp.full_name FROM user_profiles lp
+       JOIN auth_users lu ON lu.id = lp.user_id JOIN roles lr ON lr.id = lu.role_id
+      WHERE p.lingkungan_id IS NOT NULL AND lp.lingkungan_id = p.lingkungan_id AND lu.id <> u.id
+        AND r.code IN ('UMAT', 'PENGURUS_LINGKUNGAN')
+        AND COALESCE(LOWER(p.pengurus_position), '') NOT LIKE '%koordinator%'
+        AND lu.account_status = 'APPROVED' AND lp.is_jabatan_active IS NOT FALSE
+        AND (lr.code = 'PENGURUS_LINGKUNGAN' OR COALESCE(TRIM(lp.pengurus_position), '') <> '')
+        AND LOWER(COALESCE(lp.pengurus_position, '')) NOT LIKE '%koordinator%'
+        AND (COALESCE(TRIM(p.pengurus_position), '') = '' AND r.code = 'UMAT'
+             OR (LOWER(lp.pengurus_position) LIKE '%ketua%' AND LOWER(lp.pengurus_position) NOT LIKE '%wakil%'
+                 AND NOT (LOWER(p.pengurus_position) LIKE '%ketua%' AND LOWER(p.pengurus_position) NOT LIKE '%wakil%')))
+      ORDER BY CASE WHEN LOWER(lp.pengurus_position) LIKE '%ketua%' AND LOWER(lp.pengurus_position) NOT LIKE '%wakil%' THEN 1 ELSE 2 END, lu.id
+      LIMIT 1)
+  )`;

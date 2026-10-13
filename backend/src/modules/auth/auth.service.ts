@@ -22,10 +22,9 @@ import {
   VerifyResetOtpDto,
   ResetPasswordDto,
 } from "../../auth.dto";
-import {
-  UpdateUserProfileDto,
-} from "../../orders.dto";
+import { UpdateUserProfileDto } from "../../orders.dto";
 import { FcmService } from "../../fcm.service";
+import { APPROVER_NAME_SQL } from "./approval-policy";
 
 @Injectable()
 export class AuthService {
@@ -1887,7 +1886,7 @@ export class AuthService {
     search?: string,
   ) {
     let query = `
-      SELECT u.id, u.uuid, u.phone_number, u.account_status, u.is_active, u.created_at, u.approval_assigned_to_user_id, (SELECT ap.full_name FROM user_profiles ap WHERE ap.user_id = u.approval_assigned_to_user_id) as approver_name,
+      SELECT u.id, u.uuid, u.phone_number, u.account_status, u.is_active, u.created_at, u.approval_assigned_to_user_id, ${APPROVER_NAME_SQL} as approver_name,
              r.id as role_id, r.code as role_code, r.name as role_name,
              p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url,
              p.keuskupan_id, k.name as keuskupan_name,
