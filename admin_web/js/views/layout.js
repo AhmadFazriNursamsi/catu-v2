@@ -119,12 +119,9 @@
       const pendingApprovalsCount = state.users.filter(u => (u.account_status || u.accountStatus) === 'PENDING_APPROVAL').length;
       const activeUmatCount = state.users.filter(u => (u.role_code || u.roleCode) === 'UMAT' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const activeUmatPendatangCount = state.users.filter(u => (u.role_code || u.roleCode) === 'UMAT_PENDATANG' && (u.account_status || u.accountStatus) === 'APPROVED').length;
-      const isPengurusOrKoordinator = u => {
-        const r = (u.role_code || u.roleCode || '').toUpperCase();
-        const pos = (u.pengurus_position || '').toLowerCase();
-        return (r === 'PENGURUS_LINGKUNGAN' || pos.includes('koordinator') || r.includes('KOORDINATOR')) && (u.account_status || u.accountStatus) === 'APPROVED';
-      };
-      const activePengurusCount = state.users.filter(isPengurusOrKoordinator).length;
+      const isApproved = u => (u.account_status || u.accountStatus) === 'APPROVED';
+      const activePengurusCount = state.users.filter(u => isApproved(u) && isPurePengurusUser(u)).length;
+      const activeKoordinatorCount = state.users.filter(u => isApproved(u) && isKoordinatorUser(u)).length;
       const activeRomoParokiCount = state.users.filter(u => (u.role_code || u.roleCode) === 'ROMO_PAROKI' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const activeRomoOrdoCount = state.users.filter(u => (u.role_code || u.roleCode) === 'ROMO_ORDO' && (u.account_status || u.accountStatus) === 'APPROVED').length;
       const activeAnnotationsCount = AGENTATION_ENABLED ? state.agentation.annotations.filter(a => !a.resolved).length : 0;
@@ -162,6 +159,7 @@
                     ${renderNavItem('umat', 'users', 'Umat Katolik', activeUmatCount, 'bg-blue-600')}
                     ${renderNavItem('umat_pendatang', 'map-pin', 'Umat Pendatang', activeUmatPendatangCount, 'bg-blue-600')}
                     ${renderNavItem('pengurus', 'briefcase', 'Pengurus Lingkungan', activePengurusCount, 'bg-blue-600')}
+                    ${renderNavItem('koordinator', 'award', 'Koordinator Keuskupan', activeKoordinatorCount, 'bg-blue-600')}
                     ${renderNavItem('romo_paroki', 'church', 'Romo Paroki', activeRomoParokiCount, 'bg-blue-600')}
                     ${renderNavItem('romo_ordo', 'cross', 'Romo Ordo', activeRomoOrdoCount, 'bg-blue-600')}
                   </div>
@@ -253,7 +251,8 @@
       if (tab === 'orders') return 'Daftar Pelayanan';
       if (tab === 'umat') return 'Data Umat Katolik';
       if (tab === 'umat_pendatang') return 'Data Umat Pendatang';
-      if (tab === 'pengurus') return state.pengurusSubTab === 'koordinator' ? 'Data Koordinator Keuskupan' : 'Data Pengurus Lingkungan';
+      if (tab === 'pengurus') return 'Data Pengurus Lingkungan';
+      if (tab === 'koordinator') return 'Data Koordinator Keuskupan';
       if (tab === 'romo_paroki') return 'Data Romo Paroki';
       if (tab === 'romo_ordo') return 'Data Romo Ordo';
       if (tab === 'approvals') return 'Persetujuan Pendaftaran Akun';

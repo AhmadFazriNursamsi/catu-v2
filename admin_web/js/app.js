@@ -51,6 +51,7 @@
       if (state.currentTab === 'umat') return renderUmatTab();
       if (state.currentTab === 'umat_pendatang') return renderUmatPendatangTab();
       if (state.currentTab === 'pengurus') return renderPengurusTab();
+      if (state.currentTab === 'koordinator') return renderKoordinatorTab();
       if (state.currentTab === 'romo_paroki') return renderRomoParokiTab();
       if (state.currentTab === 'romo_ordo') return renderRomoOrdoTab();
       if (state.currentTab === 'approvals') return renderApprovalsTab();

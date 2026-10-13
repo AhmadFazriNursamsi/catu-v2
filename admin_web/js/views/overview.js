@@ -30,12 +30,9 @@
       const totalUmat = (state.users || []).filter(u => (u.role_code || u.roleCode) === 'UMAT' && (u.account_status || u.accountStatus) === 'APPROVED').length || users.total_umat || 0;
       const totalUmatPendatang = (state.users || []).filter(u => (u.role_code || u.roleCode) === 'UMAT_PENDATANG' && (u.account_status || u.accountStatus) === 'APPROVED').length || 0;
 
-      const isPengurusOrKoordinator = u => {
-        const r = (u.role_code || u.roleCode || '').toUpperCase();
-        const pos = (u.pengurus_position || '').toLowerCase();
-        return (r === 'PENGURUS_LINGKUNGAN' || pos.includes('koordinator') || r.includes('KOORDINATOR')) && (u.account_status || u.accountStatus) === 'APPROVED';
-      };
-      const totalPengurus = (state.users || []).filter(isPengurusOrKoordinator).length || 0;
+      const isApproved = u => (u.account_status || u.accountStatus) === 'APPROVED';
+      const totalPengurus = (state.users || []).filter(u => isApproved(u) && isPurePengurusUser(u)).length;
+      const totalKoordinator = (state.users || []).filter(u => isApproved(u) && isKoordinatorUser(u)).length;
 
       const totalRomoParoki = (state.users || []).filter(u => (u.role_code || u.roleCode) === 'ROMO_PAROKI' && (u.account_status || u.accountStatus) === 'APPROVED').length || users.total_romo_paroki || 0;
       const totalRomoOrdo = (state.users || []).filter(u => (u.role_code || u.roleCode) === 'ROMO_ORDO' && (u.account_status || u.accountStatus) === 'APPROVED').length || users.total_romo_ordo || 0;
@@ -59,7 +56,8 @@
             ${renderOverviewCard('approvals', 'shield-check', 'bg-amber-50 text-amber-800', pendingUsers, 'Persetujuan Pendaftaran', 'Verifikasi pendaftaran pengguna', pendingUsers > 0 ? `${pendingUsers} Verifikasi` : 'Semua Disetujui', pendingUsers > 0 ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200')}
             ${renderOverviewCard('umat', 'users', 'bg-indigo-50 text-indigo-900', totalUmat, 'Umat Katolik', 'Warga paroki terdaftar aktif', 'Warga Paroki', 'bg-indigo-50 text-indigo-800 border border-indigo-200')}
             ${renderOverviewCard('umat_pendatang', 'map-pin', 'bg-emerald-50 text-emerald-800', totalUmatPendatang, 'Umat Pendatang', 'Umat tamu & kunjungan beribadah', 'Kunjungan', 'bg-emerald-50 text-emerald-800 border border-emerald-200')}
-            ${renderOverviewCard('pengurus', 'briefcase', 'bg-sky-50 text-sky-800', totalPengurus, 'Pengurus Lingkungan', 'Koordinator & pengurus lingkungan', 'Pengurus', 'bg-sky-50 text-sky-800 border border-sky-200')}
+            ${renderOverviewCard('pengurus', 'briefcase', 'bg-sky-50 text-sky-800', totalPengurus, 'Pengurus Lingkungan', 'Ketua, wakil, sekretaris & bendahara', 'Pengurus', 'bg-sky-50 text-sky-800 border border-sky-200')}
+            ${renderOverviewCard('koordinator', 'award', 'bg-indigo-50 text-indigo-800', totalKoordinator, 'Koordinator Keuskupan', 'Koordinator pelayanan keuskupan', 'Koordinator', 'bg-indigo-50 text-indigo-800 border border-indigo-200')}
             ${renderOverviewCard('romo_paroki', 'church', 'bg-amber-50 text-amber-800', totalRomoParoki, 'Romo Paroki', 'Pastor paroki siap bertugas', 'Diosesan', 'bg-amber-50 text-amber-800 border border-amber-200')}
             ${renderOverviewCard('romo_ordo', 'cross', 'bg-purple-50 text-purple-800', totalRomoOrdo, 'Romo Ordo', 'Pastor kongregasi / ordo', 'Ordo', 'bg-purple-50 text-purple-800 border border-purple-200')}
             ${renderOverviewCard('master', 'database', 'bg-slate-100 text-slate-700', totalParoki, 'Master Data', `${totalKeuskupan} Keuskupan terdaftar`, 'Paroki & Wilayah', 'bg-blue-50 text-blue-800 border border-blue-200')}
