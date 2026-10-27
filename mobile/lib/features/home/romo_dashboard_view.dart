@@ -423,7 +423,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                             Positioned(
                               top: 6,
                               right: 6,
-                              child: Container(
+                              child: IgnorePointer(child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: const BoxDecoration(
                                   color: Colors.redAccent,
@@ -435,7 +435,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                                   style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
                                   textAlign: TextAlign.center,
                                 ),
-                              ),
+                              )),
                             ),
                         ],
                       ),
@@ -463,7 +463,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                             Positioned(
                               top: 6,
                               right: 6,
-                              child: Container(
+                              child: IgnorePointer(child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: const BoxDecoration(
                                   color: Colors.redAccent,
@@ -475,7 +475,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                                   style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
                                   textAlign: TextAlign.center,
                                 ),
-                              ),
+                              )),
                             ),
                         ],
                       ),
