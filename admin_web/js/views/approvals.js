@@ -75,3 +75,30 @@ function renderApprovalsTab() {
       </div>
     </div>`;
 }
+
+// Dialog konfirmasi umum (setujui/tolak akun, dll). Judul dan tombol di-escape; `subtitle` adalah HTML tepercaya
+// yang dirakit pemanggil dengan nama pengguna yang sudah di-escape.
+function renderActionConfirmModal() {
+  const modal = state.actionConfirmModal;
+  if (!modal) return '';
+  return `
+    <div class="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-5">
+        <div class="flex items-start space-x-4">
+          <div class="w-12 h-12 rounded-2xl ${modal.iconBg || 'bg-blue-50 text-blue-700 border-blue-200'} border flex items-center justify-center flex-shrink-0 shadow-xs">
+            <i data-lucide="${modal.icon || 'help-circle'}" class="w-6 h-6"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 class="text-base font-black text-slate-900">${escapeHtml(modal.title || 'Konfirmasi Tindakan')}</h3>
+            <div class="text-xs text-slate-600 mt-1.5 leading-relaxed">${modal.subtitle || 'Apakah Anda yakin ingin melanjutkan tindakan ini?'}</div>
+          </div>
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2.5">
+          <button onclick="state.actionConfirmModal = null; renderApp();"
+            class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs transition">${escapeHtml(modal.cancelText || 'Batal')}</button>
+          <button onclick="if (state.actionConfirmModal && state.actionConfirmModal.onConfirm) state.actionConfirmModal.onConfirm();"
+            class="px-5 py-2.5 rounded-xl text-white font-black text-xs shadow-md transition transform hover:-translate-y-0.5 cursor-pointer ${modal.confirmBtnClass || 'bg-blue-950 hover:bg-slate-900'}">${escapeHtml(modal.confirmText || 'Konfirmasi')}</button>
+        </div>
+      </div>
+    </div>`;
+}

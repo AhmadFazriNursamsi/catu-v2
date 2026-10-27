@@ -241,7 +241,6 @@
                             <option value="Wakil Ketua" ${u.pengurus_position === 'Wakil Ketua' ? 'selected' : ''}>Wakil Ketua</option>
                             <option value="Sekretaris" ${u.pengurus_position === 'Sekretaris' ? 'selected' : ''}>Sekretaris</option>
                             <option value="Bendahara" ${u.pengurus_position === 'Bendahara' ? 'selected' : ''}>Bendahara</option>
-                            <option value="Koordinator" ${u.pengurus_position === 'Koordinator' ? 'selected' : ''}>Koordinator (Keuskupan)</option>
                           `}
                         </select>
                       </div>
