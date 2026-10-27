@@ -429,7 +429,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                       ),
                                     ],
                                     if (isAssignedToCurrentRomo &&
-                                        (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS') &&
+                                        effectiveStatus == 'CONFIRMED' &&
                                         !isReceivedFromHandover &&
                                         (order.items.isNotEmpty
                                             ? (!displayItem.hasPendingHandover && !displayItem.isHandoverCompleted)
@@ -614,7 +614,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       }
       if (isAssignedToCurrentRomo &&
           (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS')) {
-        return _buildRomoAcceptedBottomActions(order, displayItem: displayItem);
+        return _buildRomoAcceptedBottomActions(order, displayItem: displayItem, inProgress: effectiveStatus == 'IN_PROGRESS');
       }
       if (isAssignedToCurrentRomo && effectiveStatus == 'DONE') {
         return _buildFloatingChatButton(order);
@@ -1398,7 +1398,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     );
   }
 
-  Widget _buildRomoAcceptedBottomActions(Order order, {OrderItem? displayItem}) {
+  Widget _buildRomoAcceptedBottomActions(Order order, {OrderItem? displayItem, bool inProgress = false}) {
     // Romo limpahan: tanpa Ubah Jam; bila berhalangan, Batalkan Pelayanan.
     if (isRomoLimpahan(order, order.items.isNotEmpty ? displayItem : null, widget.romoId)) {
       return LimpahanBottomActions(
@@ -1576,7 +1576,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               ),
             ),
           )
-        else if (isRescheduleRejected)
+        else if (isRescheduleRejected && !inProgress)
           // 2. Rejected: Chat + Ajukan Jam Baru (Selesaikan is hidden)
           Row(
             children: [
@@ -1710,7 +1710,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               ),
               const SizedBox(width: 8),
 
-              // Reschedule Button (Middle)
+              if (!inProgress) ...[
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -1736,8 +1736,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                 ),
               ),
               const SizedBox(width: 8),
-
-              // Complete Service Button (Right)
+              ],
               Expanded(
                 flex: 4,
                 child: Container(
