@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
+import 'approval_history_screen.dart';
 
 class RomoApprovalScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -102,7 +103,6 @@ class _RomoApprovalScreenState extends State<RomoApprovalScreen> {
     );
 
     setState(() => _processingMap[targetId] = false);
-
     if (!mounted) return;
 
     if (res['statusCode'] == 200) {
@@ -131,7 +131,7 @@ class _RomoApprovalScreenState extends State<RomoApprovalScreen> {
           margin: const EdgeInsets.all(16),
         ),
       );
-      _fetchPendingList();
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ApprovalHistoryScreen(user: widget.user)));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

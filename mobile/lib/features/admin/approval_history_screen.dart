@@ -5,10 +5,15 @@ import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_http.dart' as http;
 import 'approval_history_detail_screen.dart';
+import 'approval_pending_list.dart';
 
 /// Riwayat akun yang pernah disetujui / ditolak oleh penyetuju yang sedang login.
+/// Dengan [user], layar ini punya tab "Menunggu" (keputusan yang belum diambil) di samping riwayat;
+/// [startOnPending] membukanya langsung di tab itu (dipakai notifikasi pendaftaran baru).
 class ApprovalHistoryScreen extends StatefulWidget {
-  const ApprovalHistoryScreen({super.key});
+  final Map<String, dynamic>? user;
+  final bool startOnPending;
+  const ApprovalHistoryScreen({super.key, this.user, this.startOnPending = false});
 
   @override
   State<ApprovalHistoryScreen> createState() => _ApprovalHistoryScreenState();
@@ -54,11 +59,31 @@ class _ApprovalHistoryScreenState extends State<ApprovalHistoryScreen> {
   String? _error;
   String _filter = 'ALL';
   String _query = '';
+  late bool _onPending = widget.user != null && widget.startOnPending;
+  int _pendingCount = 0;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  Widget _tabs() {
+    Widget tab(bool pending, String label) {
+      final selected = _onPending == pending;
+      return Expanded(
+        child: InkWell(
+          onTap: () => setState(() => _onPending = pending),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 11),
+            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: selected ? AppConstants.primaryBlue : Colors.transparent, width: 2.5))),
+            child: Center(child: Text(label, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: selected ? AppConstants.primaryBlue : _muted))),
+          ),
+        ),
+      );
+    }
+
+    return Container(color: Colors.white, child: Row(children: [tab(true, 'Menunggu ($_pendingCount)'), tab(false, 'Riwayat (${_items.length})')]));
   }
 
   Future<void> _load() async {
@@ -103,11 +128,24 @@ class _ApprovalHistoryScreenState extends State<ApprovalHistoryScreen> {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         elevation: 0,
-        title: const Text('Riwayat Persetujuan',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppConstants.textDark)),
+        title: Text(widget.user == null ? 'Riwayat Persetujuan' : 'Persetujuan',
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppConstants.textDark)),
         iconTheme: const IconThemeData(color: AppConstants.textDark),
+        bottom: widget.user == null ? null : PreferredSize(preferredSize: const Size.fromHeight(46), child: _tabs()),
       ),
-      body: RefreshIndicator(onRefresh: _load, child: _body()),
+      body: widget.user == null
+          ? RefreshIndicator(onRefresh: _load, child: _body())
+          : IndexedStack(index: _onPending ? 0 : 1, children: [
+              ApprovalPendingList(
+                user: widget.user!,
+                onPendingChanged: (n) => setState(() => _pendingCount = n),
+                onDecided: () {
+                  _load();
+                  setState(() => _onPending = false);
+                },
+              ),
+              RefreshIndicator(onRefresh: _load, child: _body()),
+            ]),
     );
   }
 

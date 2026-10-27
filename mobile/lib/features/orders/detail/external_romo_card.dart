@@ -153,3 +153,7 @@ class ExternalRomoCard extends StatelessWidget {
         ]),
       );
 }
+
+/// Pelayanan yang [romoId] alihkan ke Romo Eksternal: tetap dipantau dari Histori karena Romo eksternal tidak memakai aplikasi.
+bool isExternalMonitoredBy(Order order, OrderItem? item, int? romoId) =>
+    romoId != null && externalHandoverOf(order, item)?.previousRomoId == romoId;

@@ -196,11 +196,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
           if (widget.isRomo) {
             if (widget.showPendingOnly) {
-              // Permintaan Masuk: Only show unaccepted items with status PENDING
-              final isIncomingHandover = widget.romoId != null &&
-                  (item.handoverTargetRomoId == widget.romoId && item.hasPendingHandover);
-              if (item.acceptedRomoId != null && !isIncomingHandover) continue;
-              if (itemSt != 'PENDING' && !isIncomingHandover) continue;
+              // Permintaan Masuk: hanya misa belum diterima berstatus PENDING; pelimpahan masuk baru tampil setelah diterima.
+              if (widget.romoId != null && item.handoverTargetRomoId == widget.romoId && item.hasPendingHandover) continue;
+              if (item.acceptedRomoId != null || itemSt != 'PENDING') continue;
             } else {
               // Jadwal Dikonfirmasi: Only show items accepted by THIS Romo with CONFIRMED/IN_PROGRESS status
               if (widget.romoId != null && item.acceptedRomoId != widget.romoId) continue;
@@ -252,9 +250,8 @@ class _ScheduleScreenState extends State<ScheduleScreen>
       } else {
         if (widget.isRomo) {
           if (widget.showPendingOnly) {
-            final isIncomingHandover = widget.romoId != null &&
-                (order.handoverTargetRomoId == widget.romoId && order.hasPendingHandover);
-            if ((st != 'PENDING' || order.acceptedRomoId != null) && !isIncomingHandover) continue;
+            if (widget.romoId != null && order.handoverTargetRomoId == widget.romoId && order.hasPendingHandover) continue;
+            if (st != 'PENDING' || order.acceptedRomoId != null) continue;
           } else {
             if (widget.romoId != null && order.acceptedRomoId != widget.romoId) continue;
             if (order.acceptedRomoId == null && st != 'CONFIRMED' && st != 'IN_PROGRESS' && st != 'ACCEPTED') continue;

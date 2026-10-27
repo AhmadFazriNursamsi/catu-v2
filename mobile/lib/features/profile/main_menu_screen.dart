@@ -498,7 +498,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
               subtitle: 'Akun yang pernah Anda setujui atau tolak',
               onTap: () {
                 HapticFeedback.selectionClick();
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ApprovalHistoryScreen()));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => ApprovalHistoryScreen(user: _userData)));
               },
             ),
             const Divider(height: 1, color: Color(0xFFF1F5F9)),

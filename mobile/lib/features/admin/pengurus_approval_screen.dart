@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
+import 'approval_history_screen.dart';
 
 class PengurusApprovalScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -84,7 +85,6 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
     );
 
     setState(() => _processingMap[targetId] = false);
-
     if (!mounted) return;
 
     if (res['statusCode'] == 200) {
@@ -111,7 +111,7 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
-      _fetchPendingList();
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ApprovalHistoryScreen(user: widget.user)));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

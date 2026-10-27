@@ -295,7 +295,7 @@ class Order {
   final String notes;
   final String keuskupanName;
   final String parokiName;
-  final String lingkunganName;
+  final String lingkunganName, wilayahName;
   final int? parokiId; final int? kabupatenKotaId;
   final List<OrderItem> items;
   final String? attachmentUrl;
@@ -328,7 +328,7 @@ class Order {
     this.notes = '',
     this.keuskupanName = '',
     this.parokiName = '',
-    this.lingkunganName = '',
+    this.lingkunganName = '', this.wilayahName = '',
     this.parokiId,
     this.kabupatenKotaId,
     this.items = const [],
@@ -629,7 +629,7 @@ class Order {
       notes: json['notes'] ?? '',
       keuskupanName: json['keuskupan_name'] ?? json['keuskupanName'] ?? '',
       parokiName: json['paroki_name'] ?? json['parokiName'] ?? '',
-      lingkunganName: json['lingkungan_name'] ?? json['lingkunganName'] ?? '',
+      lingkunganName: json['lingkungan_name'] ?? json['lingkunganName'] ?? '', wilayahName: json['wilayah_name'] ?? json['wilayahName'] ?? '',
       parokiId: parsedParokiId,
       kabupatenKotaId: parsedKabKotaId,
       items: parsedItems,
