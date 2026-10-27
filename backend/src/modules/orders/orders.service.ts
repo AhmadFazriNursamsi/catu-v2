@@ -49,7 +49,7 @@ export class OrdersService {
         `SELECT u.id FROM auth_users u JOIN user_profiles p ON u.id = p.user_id JOIN roles r ON u.role_id = r.id
          WHERE ((r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
-           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN') AND r.code NOT LIKE '%KOORDINATOR%') AND p.lingkungan_id = $1`,
+           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN') AND r.code NOT LIKE '%KOORDINATOR%') AND u.account_status = 'APPROVED' AND p.lingkungan_id = $1`,
         [oh.lingkungan_id],
       );
     }
@@ -58,7 +58,7 @@ export class OrdersService {
         `SELECT u.id FROM auth_users u JOIN user_profiles p ON u.id = p.user_id JOIN roles r ON u.role_id = r.id
          WHERE ((r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
-           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN') AND r.code NOT LIKE '%KOORDINATOR%') AND p.paroki_id = $1`,
+           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN') AND r.code NOT LIKE '%KOORDINATOR%') AND u.account_status = 'APPROVED' AND p.paroki_id = $1`,
         [oh.paroki_id],
       );
     }
@@ -140,7 +140,7 @@ export class OrdersService {
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
            AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
            AND r.code NOT LIKE '%KOORDINATOR%'
-         ) AND p.lingkungan_id = $1`,
+         ) AND u.account_status = 'APPROVED' AND p.lingkungan_id = $1`,
         [lId],
       );
     }
@@ -154,7 +154,7 @@ export class OrdersService {
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
            AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
            AND r.code NOT LIKE '%KOORDINATOR%'
-         ) AND p.paroki_id = $1`,
+         ) AND u.account_status = 'APPROVED' AND p.paroki_id = $1`,
         [pId],
       );
     }
@@ -166,7 +166,7 @@ export class OrdersService {
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE r.code = 'ROMO_PAROKI' AND p.paroki_id = $1 AND $1::int IS NOT DISTINCT FROM (SELECT paroki_id FROM user_profiles WHERE user_id = $2)`,
+         WHERE r.code = 'ROMO_PAROKI' AND u.account_status = 'APPROVED' AND p.paroki_id = $1 AND $1::int IS NOT DISTINCT FROM (SELECT paroki_id FROM user_profiles WHERE user_id = $2)`,
         [pId, userId],
       );
     }
@@ -344,7 +344,7 @@ export class OrdersService {
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status,
              o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, o.attachment_url as "attachmentUrl", o.user_id, o.rating, o.review_notes as "reviewNotes", o.reviewed_at as "reviewedAt",
-             p.full_name as pemohon_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
+             p.full_name as pemohon_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name, w.name as wilayah_name,
              COALESCE(o.paroki_id, p.paroki_id) as paroki_id, COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id,
              o.accepted_romo_id as "acceptedRomoId", COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
              COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus", o.reschedule_proposed_by as "rescheduleProposedBy",
@@ -360,6 +360,7 @@ export class OrdersService {
       LEFT JOIN keuskupan k ON COALESCE(o.keuskupan_id, p.keuskupan_id) = k.id
       LEFT JOIN paroki par ON COALESCE(o.paroki_id, p.paroki_id) = par.id
       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+      LEFT JOIN wilayah w ON p.wilayah_id = w.id
     `;
 
     let orders: any[], requestingRomo: any = null;
@@ -520,7 +521,7 @@ export class OrdersService {
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status,
              o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, o.attachment_url as "attachmentUrl", o.rating, o.review_notes as "reviewNotes", o.reviewed_at as "reviewedAt",
-             p.full_name as pemohon_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
+             p.full_name as pemohon_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name, w.name as wilayah_name,
              COALESCE(o.paroki_id, p.paroki_id) as paroki_id, COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id, o.user_id,
              o.accepted_romo_id as "acceptedRomoId", COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
              COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus", o.reschedule_proposed_by as "rescheduleProposedBy",
@@ -536,6 +537,7 @@ export class OrdersService {
       LEFT JOIN keuskupan k ON COALESCE(o.keuskupan_id, p.keuskupan_id) = k.id
       LEFT JOIN paroki par ON COALESCE(o.paroki_id, p.paroki_id) = par.id
       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+      LEFT JOIN wilayah w ON p.wilayah_id = w.id
       WHERE o.id = $1
     `;
     const orders = await this.dataSource.query(selectQuery, [orderId]);

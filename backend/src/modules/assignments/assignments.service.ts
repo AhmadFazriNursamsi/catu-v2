@@ -32,7 +32,7 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND p.lingkungan_id = $1`,
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND u.account_status = 'APPROVED' AND p.lingkungan_id = $1`,
         [oh.lingkungan_id],
       );
     }
@@ -41,7 +41,7 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND p.paroki_id = $1`,
+         WHERE (r.code = 'PENGURUS_LINGKUNGAN' OR (p.pengurus_position IS NOT NULL AND LOWER(p.pengurus_position) NOT LIKE '%koordinator%')) AND u.account_status = 'APPROVED' AND p.paroki_id = $1`,
         [oh.paroki_id],
       );
     }

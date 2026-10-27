@@ -409,7 +409,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
            AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
            AND r.code NOT LIKE '%KOORDINATOR%'
-         ) AND p.lingkungan_id = $1
+         ) AND u.account_status = 'APPROVED' AND p.lingkungan_id = $1
          ORDER BY u.id ASC`,
         [order.lingkungan_id],
       );
@@ -427,7 +427,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
            AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
            AND r.code NOT LIKE '%KOORDINATOR%'
-         ) AND p.paroki_id = $1
+         ) AND u.account_status = 'APPROVED' AND p.paroki_id = $1
          ORDER BY u.id ASC`,
         [order.paroki_id],
       );
