@@ -333,7 +333,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             _buildTitleCard(
                                 displayItem, order, statusColor, statusLabel, statusIcon, effectiveStatus),
                             const SizedBox(height: 12),
-                            KoordinatorAssignCard(orderId: order.id, onAssigned: () => Navigator.pop(context, true), servicePending: order.items.isNotEmpty ? (displayItem.acceptedRomoId == null && displayItem.status.toUpperCase() == 'PENDING') : (order.acceptedRomoId == null && order.status.toUpperCase() == 'PENDING')),
+                            KoordinatorAssignCard(orderId: order.id, itemId: order.items.isNotEmpty ? displayItem.id : null, onAssigned: () => Navigator.pop(context, true), servicePending: order.items.isNotEmpty ? (displayItem.acceptedRomoId == null && displayItem.status.toUpperCase() == 'PENDING') : (order.acceptedRomoId == null && order.status.toUpperCase() == 'PENDING')),
                             // ── Service Review Card (DONE or CLOSE) ──
                             if (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE') ...[
                               OrderReviewCard(
