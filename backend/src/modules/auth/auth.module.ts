@@ -5,9 +5,10 @@ import { ApprovalPolicyService } from './approval-policy.service';
 import { AuthService } from './auth.service';
 import { PasswordService } from './password.service';
 import { FcmModule } from '../fcm/fcm.module';
+import { OtpModule } from '../otp/otp.module';
 
 @Module({
-  imports: [FcmModule],
+  imports: [FcmModule, OtpModule],
   controllers: [AuthController, ApprovalsController],
   providers: [AuthService, PasswordService, ApprovalPolicyService],
   exports: [AuthService, PasswordService],

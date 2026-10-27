@@ -41,6 +41,7 @@ import {
 import { UpdateProfileDto } from './update-profile.dto';
 import { effectiveRole, registrationError, roleChangeError } from './registration-rules';
 import { ApprovalPolicyService } from './approval-policy.service';
+import { PasswordResetService } from '../otp/password-reset.service';
 import { AdminOrderStatusDto } from './admin-order-status.dto';
 import { OrderGuardsService } from '../order-rules/order-guards.service';
 import { AuthService } from './auth.service';
@@ -56,6 +57,7 @@ export class AuthController {
     private readonly jwtService: JwtService,
     private readonly orderGuards: OrderGuardsService,
     private readonly approvalPolicy: ApprovalPolicyService,
+    private readonly passwordReset: PasswordResetService,
   ) {}
 
   /** Menolak ganti peran yang tidak diizinkan (lihat roleChangeError); tanpa roleCode tidak ada yang diperiksa. */
@@ -186,10 +188,10 @@ export class AuthController {
   @Post('forgot-password/request-otp')
   @ApiOperation({
     summary: 'Request OTP untuk Lupa Kata Sandi (WhatsApp OTP)',
-    description: 'Mengirimkan kode OTP verifikasi 6-digit ke nomor WhatsApp pengguna terdaftar.',
+    description: 'Mengantrekan kode OTP 6 digit (berlaku 5 menit) ke WhatsApp pengguna terdaftar lewat layanan WhatsApp internal.',
   })
   async requestResetOtp(@Body() dto: RequestResetOtpDto) {
-    return await this.authService.requestResetOtp(dto);
+    return await this.passwordReset.requestOtp(dto);
   }
 
   @Public()
@@ -199,7 +201,7 @@ export class AuthController {
     summary: 'Verifikasi Kode OTP Lupa Kata Sandi',
   })
   async verifyResetOtp(@Body() dto: VerifyResetOtpDto) {
-    return await this.authService.verifyResetOtp(dto);
+    return await this.passwordReset.verifyOtp(dto);
   }
 
   @Public()
@@ -209,7 +211,7 @@ export class AuthController {
     summary: 'Reset / Simpan Kata Sandi Baru',
   })
   async resetPassword(@Body() dto: ResetPasswordDto) {
-    return await this.authService.resetPassword(dto);
+    return await this.passwordReset.resetPassword(dto);
   }
 
   @Post('change-password')

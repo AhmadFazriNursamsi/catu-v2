@@ -15,6 +15,20 @@
       "when": 1791300000000,
       "tag": "0001_standardization",
       "breakpoints": false
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791900000000,
+      "tag": "0002_otp_codes",
+      "breakpoints": false
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792000000000,
+      "tag": "0003_chat_members_active_only",
+      "breakpoints": false
     }
   ]
 }
