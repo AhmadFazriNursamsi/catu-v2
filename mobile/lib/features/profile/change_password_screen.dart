@@ -6,8 +6,9 @@ import '../../core/services/api_service.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   final Map<String, dynamic> user;
+  final bool forced;
 
-  const ChangePasswordScreen({super.key, required this.user});
+  const ChangePasswordScreen({super.key, required this.user, this.forced = false});
 
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
@@ -136,7 +137,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             SizedBox(
               width: double.infinity, height: 42,
               child: ElevatedButton(
-                onPressed: () { Navigator.pop(ctx); Navigator.pop(context); },
+                onPressed: () { Navigator.pop(ctx); Navigator.pop(context, true); },
                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0066FF), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
                 child: const Text('OK, Mengerti', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
@@ -152,13 +153,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final hasMinLength = _newPasswordController.text.length >= 6;
     final isMatching = _newPasswordController.text.isNotEmpty && _newPasswordController.text == _confirmPasswordController.text;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
+    return PopScope(
+      canPop: !widget.forced,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAFC),
         appBar: AppBar(
           backgroundColor: Colors.white, elevation: 0,
-          leading: IconButton(icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)), onPressed: () => Navigator.pop(context)),
+          automaticallyImplyLeading: false,
+          leading: widget.forced ? null : IconButton(icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)), onPressed: () => Navigator.pop(context)),
           title: const Text('Ubah Kata Sandi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A), letterSpacing: -0.3)),
           centerTitle: true,
         ),
@@ -173,7 +177,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 _buildHeroCard(),
                 const SizedBox(height: 20),
                 _buildPasswordField(
-                  controller: _currentPasswordController, label: 'Kata Sandi Saat Ini', hint: 'Masukkan kata sandi lama',
+                  controller: _currentPasswordController, label: 'Kata Sandi Saat Ini', hint: widget.forced ? 'Kata sandi sementara dari WhatsApp' : 'Masukkan kata sandi lama',
                   obscure: _obscureCurrent, onToggle: () => setState(() => _obscureCurrent = !_obscureCurrent),
                   icon: Icons.lock_outline_rounded, validator: (v) => (v == null || v.isEmpty) ? 'Kata sandi saat ini wajib diisi' : null,
                 ),
@@ -211,6 +215,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -222,13 +227,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         children: [
           Container(width: 46, height: 46, decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(14)), child: const Icon(Icons.lock_reset_rounded, color: Color(0xFF0066FF), size: 24)),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Keamanan Akun', style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
-                SizedBox(height: 2),
-                Text('Gunakan kata sandi baru yang aman dan mudah Anda ingat.', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                const Text('Keamanan Akun', style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                const SizedBox(height: 2),
+                Text(widget.forced ? 'Kata sandi Anda masih sementara. Demi keamanan, ganti dengan kata sandi baru sebelum melanjutkan.' : 'Gunakan kata sandi baru yang aman dan mudah Anda ingat.', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
               ],
             ),
           ),

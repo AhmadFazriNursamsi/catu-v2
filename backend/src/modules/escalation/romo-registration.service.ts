@@ -111,8 +111,8 @@ export class RomoRegistrationService {
     await runner.startTransaction();
     try {
       const user = await runner.query(
-        `INSERT INTO auth_users (phone_number, password_hash, role_id, account_status, approval_assigned_to_user_id)
-         VALUES ($1, $2, $3, 'APPROVED', NULL) RETURNING id`,
+        `INSERT INTO auth_users (phone_number, password_hash, role_id, account_status, approval_assigned_to_user_id, must_change_password)
+         VALUES ($1, $2, $3, 'APPROVED', NULL, TRUE) RETURNING id`,
         [phone, hash, role[0].id],
       );
       await runner.query(

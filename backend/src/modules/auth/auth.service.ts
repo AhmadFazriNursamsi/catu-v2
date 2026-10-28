@@ -1047,7 +1047,7 @@ export class AuthService {
     const localPhone = `0${phone}`;
 
     const users = await this.dataSource.query(
-      `SELECT u.id, u.uuid, u.phone_number, u.password_hash, u.account_status, r.code as role_code,
+      `SELECT u.id, u.uuid, u.phone_number, u.password_hash, u.account_status, u.must_change_password, r.code as role_code,
               p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.ordo_id, p.kabupaten_kota_id, kk.provinsi_id,
               k.name as keuskupan_name, par.name as paroki_name, w.name as wilayah_name, l.name as lingkungan_name, ord.name as ordo_name, kk.name as kota_name, prov.name as provinsi_name,
               p.pengurus_position, p.romo_position, p.jabatan_start_year, p.jabatan_end_year, p.jabatan_start_date, p.jabatan_end_date, p.is_jabatan_active
@@ -1107,6 +1107,7 @@ export class AuthService {
         avatarUrl: user.avatar_url,
         roleCode: user.role_code,
         accountStatus: user.account_status,
+        mustChangePassword: user.must_change_password === true,
         keuskupanId: user.keuskupan_id,
         parokiId: user.paroki_id,
         wilayahId: user.wilayah_id,

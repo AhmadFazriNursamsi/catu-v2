@@ -90,7 +90,7 @@ export class PasswordResetService {
     const result = await this.otp.check(phone, PURPOSE, dto.otpCode, { consume: true });
     if (result !== 'OK') return { statusCode: 400, message: OTP_MESSAGES[result] };
     const newHash = await bcrypt.hash(dto.newPassword, 10);
-    await this.dataSource.query(`UPDATE auth_users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [newHash, user.id]);
+    await this.dataSource.query(`UPDATE auth_users SET password_hash = $1, must_change_password = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [newHash, user.id]);
     return { statusCode: 200, message: 'Kata sandi berhasil diperbarui! Silakan masuk dengan kata sandi baru Anda.' };
   }
 }

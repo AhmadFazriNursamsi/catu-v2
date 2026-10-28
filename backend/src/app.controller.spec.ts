@@ -23,6 +23,7 @@ import { LintasParokiService } from './modules/order-rules/lintas-paroki.service
 import { AssignmentWorkflowService } from './modules/assignments/assignment-workflow.service';
 import { ApprovalPolicyService } from './modules/auth/approval-policy.service';
 import { PasswordResetService } from './modules/otp/password-reset.service';
+import { AccountStatusService } from './common/access/account-status.service';
 import { RomoCancelService } from './modules/orders/romo-cancel.service';
 import * as bcrypt from 'bcrypt';
 
@@ -97,6 +98,7 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
         { provide: OrderGuardsService, useValue: { assertNewOrderRefs: jest.fn().mockResolvedValue(undefined), assertExists: jest.fn().mockResolvedValue(undefined) } },
         // Aturan ganti peran diuji terpisah (registration-rules.spec); di sini akun target tidak ditemukan sehingga dilewati.
         { provide: RomoCancelService, useValue: { cancel: jest.fn() } },
+        { provide: AccountStatusService, useValue: { invalidate: jest.fn() } },
         { provide: ApprovalPolicyService, useValue: { load: jest.fn().mockResolvedValue(null) } },
         { provide: PasswordResetService, useValue: { requestOtp: jest.fn(), verifyOtp: jest.fn(), resetPassword: jest.fn() } },
         { provide: LintasParokiService, useValue: { afterCreate: jest.fn().mockResolvedValue(false) } },

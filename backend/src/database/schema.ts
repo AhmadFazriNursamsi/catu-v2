@@ -16,6 +16,7 @@ export const authUsers = pgTable('auth_users', {
   email: varchar('email', { length: 100 }),
   roleId: integer('role_id').references(() => roles.id),
   accountStatus: varchar('account_status', { length: 50 }).default('APPROVED'),
+  mustChangePassword: boolean('must_change_password').notNull().default(false),
   fcmToken: text('fcm_token'),
   lastLogin: timestamp('last_login'),
   createdAt: timestamp('created_at').defaultNow(),

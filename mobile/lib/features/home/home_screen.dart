@@ -9,6 +9,7 @@ import '../../core/services/language_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/services/auth_service.dart';
 import '../news/public_news_screen.dart';
+import '../profile/change_password_screen.dart';
 import 'romo_dashboard_view.dart';
 import 'umat_dashboard_view.dart';
 import 'widgets/logout_back_guard.dart';
@@ -47,7 +48,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       NotificationService.syncBadgeCount();
       NotificationService.checkPendingNotificationTap();
+      _enforcePasswordChange();
     });
+  }
+
+  Future<void> _enforcePasswordChange() async {
+    if (_currentUserMap['mustChangePassword'] != true || !mounted) return;
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => ChangePasswordScreen(user: _currentUserMap, forced: true)),
+    );
+    if (changed != true) return _enforcePasswordChange();
+    _currentUserMap['mustChangePassword'] = false;
+    AuthService.saveSession(_currentUserMap);
   }
 
   @override
