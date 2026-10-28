@@ -49,6 +49,8 @@ class SearchableSelectField<T> extends StatelessWidget {
 
   void _showSearchSheet(BuildContext context) {
     if (items.isEmpty && !isLoading) return;
+    // Lepas fokus kolom teks agar tidak kembali ke sana (dan keyboard tidak muncul) setelah memilih.
+    FocusManager.instance.primaryFocus?.unfocus();
 
     showModalBottomSheet(
       context: context,
