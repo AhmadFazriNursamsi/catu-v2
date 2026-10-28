@@ -348,7 +348,7 @@ export class OrdersService {
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status,
              o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, o.attachment_url as "attachmentUrl", o.user_id, o.rating, o.review_notes as "reviewNotes", o.reviewed_at as "reviewedAt",
-             p.full_name as pemohon_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name, w.name as wilayah_name,
+             p.full_name as pemohon_name, (SELECT r.code FROM auth_users au JOIN roles r ON r.id = au.role_id WHERE au.id = o.user_id) = 'UMAT_PENDATANG' as is_pendatang, (SELECT kk.name FROM kabupaten_kota kk WHERE kk.id = COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id)) as kabupaten_kota_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name, w.name as wilayah_name,
              COALESCE(o.paroki_id, p.paroki_id) as paroki_id, COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id,
              o.accepted_romo_id as "acceptedRomoId", COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
              COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus", o.reschedule_proposed_by as "rescheduleProposedBy",
@@ -525,7 +525,7 @@ export class OrdersService {
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status,
              o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, o.attachment_url as "attachmentUrl", o.rating, o.review_notes as "reviewNotes", o.reviewed_at as "reviewedAt",
-             p.full_name as pemohon_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name, w.name as wilayah_name,
+             p.full_name as pemohon_name, (SELECT r.code FROM auth_users au JOIN roles r ON r.id = au.role_id WHERE au.id = o.user_id) = 'UMAT_PENDATANG' as is_pendatang, (SELECT kk.name FROM kabupaten_kota kk WHERE kk.id = COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id)) as kabupaten_kota_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name, w.name as wilayah_name,
              COALESCE(o.paroki_id, p.paroki_id) as paroki_id, COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id, o.user_id,
              o.accepted_romo_id as "acceptedRomoId", COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
              COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus", o.reschedule_proposed_by as "rescheduleProposedBy",

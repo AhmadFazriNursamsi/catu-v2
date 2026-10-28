@@ -296,7 +296,7 @@ class Order {
   final String keuskupanName;
   final String parokiName;
   final String lingkunganName, wilayahName;
-  final int? parokiId; final int? kabupatenKotaId;
+  final int? parokiId; final int? kabupatenKotaId; final bool isPendatang; final String kabupatenKotaName;
   final List<OrderItem> items;
   final String? attachmentUrl;
   String rescheduleStatus;
@@ -330,7 +330,7 @@ class Order {
     this.parokiName = '',
     this.lingkunganName = '', this.wilayahName = '',
     this.parokiId,
-    this.kabupatenKotaId,
+    this.kabupatenKotaId, this.isPendatang = false, this.kabupatenKotaName = '',
     this.items = const [],
     this.attachmentUrl,
     this.rescheduleStatus = 'NONE',
@@ -631,7 +631,7 @@ class Order {
       parokiName: json['paroki_name'] ?? json['parokiName'] ?? '',
       lingkunganName: json['lingkungan_name'] ?? json['lingkunganName'] ?? '', wilayahName: json['wilayah_name'] ?? json['wilayahName'] ?? '',
       parokiId: parsedParokiId,
-      kabupatenKotaId: parsedKabKotaId,
+      kabupatenKotaId: parsedKabKotaId, isPendatang: json['is_pendatang'] == true || json['isPendatang'] == true, kabupatenKotaName: (json['kabupaten_kota_name'] ?? json['kabupatenKotaName'] ?? '').toString(),
       items: parsedItems,
       attachmentUrl: json['attachment_url'] ?? json['attachmentUrl'],
       rescheduleStatus: (json['rescheduleStatus'] ?? json['reschedule_status'] ?? 'NONE').toString().toUpperCase(),

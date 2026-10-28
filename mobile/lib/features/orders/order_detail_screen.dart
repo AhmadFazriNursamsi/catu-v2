@@ -504,10 +504,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             _buildInfoCard(
                               icon: Icons.church_rounded,
                               iconBg: const Color(0xFF0D9488),
-                              title: isKedukaan ? 'Data Paroki' : LanguageService.tr('parish_region'),
+                              title: order.isPendatang ? 'Tujuan Pelayanan' : (isKedukaan ? 'Data Paroki' : LanguageService.tr('parish_region')),
                               children: [
-                                _buildInfoTile(icon: Icons.location_city_rounded, label: 'Keuskupan', value: order.keuskupanName),
-                                _buildInfoTile(icon: Icons.apartment_rounded, label: 'Paroki', value: order.parokiName, isLast: true),
+                                _buildInfoTile(icon: Icons.location_city_rounded, label: order.isPendatang ? 'Kota / Kabupaten' : 'Keuskupan', value: order.isPendatang ? (order.kabupatenKotaName.isNotEmpty ? order.kabupatenKotaName : '-') : order.keuskupanName),
+                                _buildInfoTile(icon: order.isPendatang ? Icons.workspace_premium_rounded : Icons.apartment_rounded, label: order.isPendatang ? 'Diteruskan Kepada' : 'Paroki', value: order.isPendatang ? 'Romo Ordo' : order.parokiName, isLast: true),
                               ],
                             ),
                             const SizedBox(height: 12),
@@ -518,9 +518,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               iconBg: const Color(0xFFD97706),
                               title: isKedukaan ? 'Data Pemohon & Catatan' : LanguageService.tr('notes_applicant'),
                               children: [
-                                _buildInfoTile(icon: Icons.account_circle_outlined, label: 'Nama Pemohon', value: order.pemohonName),
-                                if (order.wilayahName.isNotEmpty) _buildInfoTile(icon: Icons.map_rounded, label: 'Wilayah', value: order.wilayahName),
-                                _buildInfoTile(icon: Icons.groups_rounded, label: 'Lingkungan', value: 'Lingkungan ${order.lingkunganName}', isLast: order.catatanLabel.isEmpty),
+                                _buildInfoTile(icon: Icons.account_circle_outlined, label: 'Nama Pemohon', value: order.pemohonName, isLast: order.isPendatang && order.catatanLabel.isEmpty),
+                                if (!order.isPendatang && order.wilayahName.isNotEmpty) _buildInfoTile(icon: Icons.map_rounded, label: 'Wilayah', value: order.wilayahName),
+                                if (!order.isPendatang) _buildInfoTile(icon: Icons.groups_rounded, label: 'Lingkungan', value: 'Lingkungan ${order.lingkunganName}', isLast: order.catatanLabel.isEmpty),
                                 if (order.catatanLabel.isNotEmpty) _buildNotesTile(order.catatanLabel),
                               ],
                             ),
