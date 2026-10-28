@@ -33,6 +33,7 @@ export class WhatsappService {
         signal: AbortSignal.timeout(10_000),
       });
       const body: any = await res.json().catch(() => ({}));
+      this.logger.log(`WAGate membalas HTTP ${res.status}${body?.status ? ` status=${body.status}` : ''}${body?.message ? ` pesan="${String(body.message).slice(0, 120)}"` : ''}`);
       if (res.ok) return { ok: true, id: String(body.id ?? body.messageId ?? ''), status: String(body.status ?? 'sent') };
       return { ok: false, code: body.code ?? `HTTP_${res.status}`, message: body.message ?? 'Pesan WhatsApp gagal dikirim.' };
     } catch (e: any) {
