@@ -49,6 +49,8 @@ class SearchableSelectField<T> extends StatelessWidget {
 
   void _showSearchSheet(BuildContext context) {
     if (items.isEmpty && !isLoading) return;
+    // Lepas fokus kolom teks agar tidak kembali ke sana (dan keyboard tidak muncul) setelah memilih.
+    FocusManager.instance.primaryFocus?.unfocus();
 
     showModalBottomSheet(
       context: context,
@@ -226,7 +228,6 @@ class _SearchModalSheetState<T> extends State<_SearchModalSheet<T>> {
             child: TextField(
               controller: _searchController,
               onChanged: _onSearchChanged,
-              autofocus: true,
               style: const TextStyle(fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Search / Cari ${widget.title}...',

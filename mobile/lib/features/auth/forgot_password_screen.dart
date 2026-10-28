@@ -104,7 +104,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
         _targetPhone = fullPhone;
         _maskedPhone = res['maskedPhone'] ?? fullPhone;
         _fullName = res['fullName'] ?? 'Pengguna';
-        _demoOtp = res['demoOtp'] ?? '123456';
+        _demoOtp = (res['demoOtp'] ?? '').toString();
         _currentStep = 1;
         _errorMessage = null;
       });

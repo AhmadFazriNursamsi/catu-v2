@@ -270,7 +270,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         widget.romoId != assignedRomoId;
 
     final statusColor = _getStatusColor(effectiveStatus);
-    final statusLabel = romoCancellation != null && effectiveStatus == 'FAIL' ? 'Dibatalkan Romo' : _getStatusLabel(effectiveStatus);
+    final statusLabel = romoCancellation != null && effectiveStatus == 'FAIL' ? 'Dibatalkan' : _getStatusLabel(effectiveStatus);
     final statusIcon = _getStatusIcon(effectiveStatus);
     final urgencyColor = _getUrgencyColor(order.urgencyName);
     final bool isKedukaan =
@@ -333,7 +333,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             _buildTitleCard(
                                 displayItem, order, statusColor, statusLabel, statusIcon, effectiveStatus),
                             const SizedBox(height: 12),
-                            KoordinatorAssignCard(orderId: order.id, onAssigned: () => Navigator.pop(context, true)),
+                            KoordinatorAssignCard(orderId: order.id, itemId: order.items.isNotEmpty ? displayItem.id : null, onAssigned: () => Navigator.pop(context, true), servicePending: order.items.isNotEmpty ? (displayItem.acceptedRomoId == null && displayItem.status.toUpperCase() == 'PENDING') : (order.acceptedRomoId == null && order.status.toUpperCase() == 'PENDING')),
                             // ── Service Review Card (DONE or CLOSE) ──
                             if (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE') ...[
                               OrderReviewCard(
@@ -429,7 +429,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                       ),
                                     ],
                                     if (isAssignedToCurrentRomo &&
-                                        (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS') &&
+                                        effectiveStatus == 'CONFIRMED' &&
                                         !isReceivedFromHandover &&
                                         (order.items.isNotEmpty
                                             ? (!displayItem.hasPendingHandover && !displayItem.isHandoverCompleted)
@@ -460,10 +460,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             _buildInfoCard(
                               icon: Icons.event_rounded,
                               iconBg: const Color(0xFF1D4ED8),
-                              title: LanguageService.tr('time_location'),
+                              title: isKedukaan ? 'Lokasi Misa' : LanguageService.tr('time_location'),
                               children: [
-                                _buildInfoTile(icon: Icons.calendar_month_rounded, label: isKedukaan ? 'Tanggal Misa' : 'Tanggal Kunjungan', value: formatServiceDate(displayItem.scheduledDate.isNotEmpty ? displayItem.scheduledDate : order.scheduledDate)),
-                                _buildInfoTile(icon: Icons.access_time_rounded, label: 'Jam Pelaksanaan', value: '${displayItem.scheduledTimeStart} – ${displayItem.scheduledTimeEnd} WIB'),
+                                if (!isKedukaan) _buildInfoTile(icon: Icons.access_time_rounded, label: 'Jam Pelaksanaan', value: '${displayItem.scheduledTimeStart} – ${displayItem.scheduledTimeEnd} WIB'),
                                 _buildInfoTile(icon: Icons.place_rounded, label: isKedukaan ? 'Lokasi' : 'Alamat Kunjungan', value: displayItem.locationName.isNotEmpty ? displayItem.locationName : order.displayAddress, isLast: true),
                                 AddressActions(address: displayItem.locationName.isNotEmpty ? displayItem.locationName : order.displayAddress, color: isKedukaan ? const Color(0xFF1E293B) : const Color(0xFF0F766E)),
                               ],
@@ -504,23 +503,23 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             _buildInfoCard(
                               icon: Icons.church_rounded,
                               iconBg: const Color(0xFF0D9488),
-                              title: LanguageService.tr('parish_region'),
+                              title: order.isPendatang ? 'Tujuan Pelayanan' : (isKedukaan ? 'Data Paroki' : LanguageService.tr('parish_region')),
                               children: [
-                                _buildInfoTile(icon: Icons.location_city_rounded, label: 'Keuskupan', value: order.keuskupanName),
-                                _buildInfoTile(icon: Icons.apartment_rounded, label: 'Paroki', value: order.parokiName, isLast: true),
+                                _buildInfoTile(icon: Icons.location_city_rounded, label: order.isPendatang ? 'Kota / Kabupaten' : 'Keuskupan', value: order.isPendatang ? (order.kabupatenKotaName.isNotEmpty ? order.kabupatenKotaName : '-') : order.keuskupanName),
+                                _buildInfoTile(icon: order.isPendatang ? Icons.workspace_premium_rounded : Icons.apartment_rounded, label: order.isPendatang ? 'Diteruskan Kepada' : 'Paroki', value: order.isPendatang ? 'Romo Ordo' : order.parokiName, isLast: true),
                               ],
                             ),
-
                             const SizedBox(height: 12),
 
                             // ── Catatan & Pemohon ──
                             _buildInfoCard(
                               icon: Icons.notes_rounded,
                               iconBg: const Color(0xFFD97706),
-                              title: LanguageService.tr('notes_applicant'),
+                              title: isKedukaan ? 'Data Pemohon & Catatan' : LanguageService.tr('notes_applicant'),
                               children: [
-                                _buildInfoTile(icon: Icons.account_circle_outlined, label: 'Nama Pemohon', value: order.pemohonName),
-                                _buildInfoTile(icon: Icons.groups_rounded, label: 'Lingkungan', value: 'Lingkungan ${order.lingkunganName}', isLast: order.catatanLabel.isEmpty),
+                                _buildInfoTile(icon: Icons.account_circle_outlined, label: 'Nama Pemohon', value: order.pemohonName, isLast: order.isPendatang && order.catatanLabel.isEmpty),
+                                if (!order.isPendatang && order.wilayahName.isNotEmpty) _buildInfoTile(icon: Icons.map_rounded, label: 'Wilayah', value: order.wilayahName),
+                                if (!order.isPendatang) _buildInfoTile(icon: Icons.groups_rounded, label: 'Lingkungan', value: 'Lingkungan ${order.lingkunganName}', isLast: order.catatanLabel.isEmpty),
                                 if (order.catatanLabel.isNotEmpty) _buildNotesTile(order.catatanLabel),
                               ],
                             ),
@@ -614,7 +613,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       }
       if (isAssignedToCurrentRomo &&
           (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS')) {
-        return _buildRomoAcceptedBottomActions(order, displayItem: displayItem);
+        return _buildRomoAcceptedBottomActions(order, displayItem: displayItem, inProgress: effectiveStatus == 'IN_PROGRESS');
       }
       if (isAssignedToCurrentRomo && effectiveStatus == 'DONE') {
         return _buildFloatingChatButton(order);
@@ -1398,7 +1397,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     );
   }
 
-  Widget _buildRomoAcceptedBottomActions(Order order, {OrderItem? displayItem}) {
+  Widget _buildRomoAcceptedBottomActions(Order order, {OrderItem? displayItem, bool inProgress = false}) {
     // Romo limpahan: tanpa Ubah Jam; bila berhalangan, Batalkan Pelayanan.
     if (isRomoLimpahan(order, order.items.isNotEmpty ? displayItem : null, widget.romoId)) {
       return LimpahanBottomActions(
@@ -1576,7 +1575,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               ),
             ),
           )
-        else if (isRescheduleRejected)
+        else if (isRescheduleRejected && !inProgress)
           // 2. Rejected: Chat + Ajukan Jam Baru (Selesaikan is hidden)
           Row(
             children: [
@@ -1635,7 +1634,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                     ],
                   ),
                   child: Material(
-                    color: rescheduleRejections(order.rescheduleHistory, displayItem?.id) >= kRescheduleMaxRejections ? Colors.grey.shade500 : const Color(0xFFD97706),
+                    color: rescheduleClosed(order.rescheduleHistory, displayItem?.id) ? Colors.grey.shade500 : const Color(0xFFD97706),
                     borderRadius: BorderRadius.circular(16),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
@@ -1710,7 +1709,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               ),
               const SizedBox(width: 8),
 
-              // Reschedule Button (Middle)
+              if (!inProgress) ...[
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -1723,7 +1722,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   ],
                 ),
                 child: Material(
-                  color: rescheduleRejections(order.rescheduleHistory, displayItem?.id) >= kRescheduleMaxRejections ? Colors.grey.shade500 : const Color(0xFFD97706),
+                  color: rescheduleClosed(order.rescheduleHistory, displayItem?.id) ? Colors.grey.shade500 : const Color(0xFFD97706),
                   borderRadius: BorderRadius.circular(16),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
@@ -1736,8 +1735,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                 ),
               ),
               const SizedBox(width: 8),
-
-              // Complete Service Button (Right)
+              ],
               Expanded(
                 flex: 4,
                 child: Container(
@@ -1811,7 +1809,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     final item = (targetItem != null && targetItem.scheduledDate.isNotEmpty) ? targetItem : null;
     showRescheduleSheet(
       context: context,
-      itemName: item?.itemName ?? order.categoryName, rejectedCount: rescheduleRejections(order.rescheduleHistory, item?.id),
+      itemName: item?.itemName ?? order.categoryName, rejectedCount: rescheduleRejections(order.rescheduleHistory, item?.id), accepted: rescheduleAccepted(order.rescheduleHistory, item?.id),
       currentDate: parseDateOnly(item?.scheduledDate ?? order.scheduledDate),
       currentStart: parseTimeOfDay(item?.scheduledTimeStart ?? order.jamMulaiLabel),
       currentEnd: parseTimeOfDay(item?.scheduledTimeEnd ?? order.jamSelesaiLabel),

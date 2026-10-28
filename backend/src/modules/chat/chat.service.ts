@@ -359,7 +359,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
     const orderRes = await this.dataSource.query(
       `SELECT o.id as order_id,
               COALESCE(oi.status, o.status::text) as status,
-              o.user_id as pemohon_id,
+              o.user_id as pemohon_id, o.lintas_paroki,
               COALESCE(oi.accepted_romo_id, o.accepted_romo_id) as accepted_romo_id,
               COALESCE(o.lingkungan_id, p.lingkungan_id) as lingkungan_id,
               COALESCE(o.paroki_id, p.paroki_id) as paroki_id,
@@ -396,7 +396,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
 
     // 2. Pengurus Lingkungan (from same lingkungan or paroki)
     let pengurus: any[] = [];
-    if (order.lingkungan_id) {
+    if (order.lingkungan_id && !order.lintas_paroki) {
       pengurus = await this.dataSource.query(
         `SELECT u.id as user_id, 'PENGURUS_LINGKUNGAN' as role_in_group, p.full_name, u.phone_number,
                 COALESCE(l.name, 'Lingkungan') as lingkungan_name
@@ -409,12 +409,12 @@ private async resolveGroupId(idParam: string): Promise<number> {
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
            AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
            AND r.code NOT LIKE '%KOORDINATOR%'
-         ) AND p.lingkungan_id = $1
+         ) AND u.account_status = 'APPROVED' AND p.lingkungan_id = $1
          ORDER BY u.id ASC`,
         [order.lingkungan_id],
       );
     }
-    if (pengurus.length === 0 && order.paroki_id) {
+    if (!order.lingkungan_id && order.paroki_id && !order.lintas_paroki) {
       pengurus = await this.dataSource.query(
         `SELECT u.id as user_id, 'PENGURUS_LINGKUNGAN' as role_in_group, p.full_name, u.phone_number,
                 COALESCE(l.name, 'Lingkungan') as lingkungan_name
@@ -427,7 +427,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
            AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
            AND r.code NOT LIKE '%KOORDINATOR%'
-         ) AND p.paroki_id = $1
+         ) AND u.account_status = 'APPROVED' AND p.paroki_id = $1
          ORDER BY u.id ASC`,
         [order.paroki_id],
       );

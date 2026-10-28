@@ -5,6 +5,8 @@ import '../../core/models/models.dart';
 import '../../core/widgets/urgency_label.dart';
 import '../../core/services/language_service.dart';
 import '../orders/order_detail_screen.dart';
+import 'detail/external_romo_card.dart' show isExternalMonitoredBy;
+import 'detail/limpahan_actions.dart' show romoCancellationOf;
 
 class HistoriScreen extends StatefulWidget {
   final List<Order> orders;
@@ -49,6 +51,7 @@ class HistoriEntryItem {
   String get effectiveStatus {
     final item = subItem;
     final st = (item != null ? item.status : parentOrder.status).toUpperCase();
+    if (st == 'FAIL' && romoCancellationOf(parentOrder, item) != null) return 'CANCELLED';
     if (st == 'DONE' || st == 'CLOSE' || st == 'FAIL') return st;
     final bool romoAccepted = item != null
         ? (item.acceptedRomoId != null || (item.acceptedRomoName != null && item.acceptedRomoName!.isNotEmpty) || parentOrder.acceptedRomoId != null || (parentOrder.acceptedRomoName != null && parentOrder.acceptedRomoName!.isNotEmpty))
@@ -78,13 +81,7 @@ class _HistoriScreenState extends State<HistoriScreen>
   late AnimationController _animController;
   late Animation<double> _fadeIn;
 
-  static const List<String> _statusFilters = [
-    'SEMUA',
-    'IN_PROGRESS',
-    'DONE',
-    'CLOSE',
-    'FAIL',
-  ];
+  static const List<String> _statusFilters = ['SEMUA', 'IN_PROGRESS', 'DONE', 'CLOSE', 'FAIL', 'CANCELLED'];
 
   // ── Lifecycle ────────────────────────────────────────────────────────────────
   @override
@@ -121,7 +118,7 @@ class _HistoriScreenState extends State<HistoriScreen>
         return const Color(0xFF059669); // hijau
       case 'CLOSE':
         return const Color(0xFF64748B); // abu-abu
-      case 'FAIL':
+      case 'FAIL': case 'CANCELLED':
       case 'DECLINED':
       case 'REJECTED':
         return const Color(0xFFDC2626);
@@ -145,6 +142,7 @@ class _HistoriScreenState extends State<HistoriScreen>
         return 'Ditutup Otomatis';
       case 'FAIL':
         return 'Gagal';
+      case 'CANCELLED': return 'Dibatalkan';
       case 'DECLINED':
       case 'REJECTED':
         return 'Ditolak';
@@ -166,7 +164,7 @@ class _HistoriScreenState extends State<HistoriScreen>
         return Icons.task_alt_rounded;
       case 'CLOSE':
         return Icons.archive_outlined;
-      case 'FAIL':
+      case 'FAIL': case 'CANCELLED':
       case 'DECLINED':
       case 'REJECTED':
         return Icons.cancel_outlined;
@@ -204,6 +202,7 @@ class _HistoriScreenState extends State<HistoriScreen>
         if (o.items.isNotEmpty) {
           for (final item in o.items) {
             final itemSt = item.status.toUpperCase();
+            if (isExternalMonitoredBy(o, item, widget.romoId)) { entries.add(HistoriEntryItem(parentOrder: o, subItem: item)); continue; }
             if (widget.romoId != null && item.acceptedRomoId != widget.romoId) continue;
             if (item.acceptedRomoId == null) continue;
             if (isParentDone || itemSt == 'DONE' || itemSt == 'CLOSE' || itemSt == 'FAIL' || _isDateBeforeToday(item.scheduledDate)) {
@@ -211,6 +210,7 @@ class _HistoriScreenState extends State<HistoriScreen>
             }
           }
         } else {
+          if (isExternalMonitoredBy(o, null, widget.romoId)) { entries.add(HistoriEntryItem(parentOrder: o)); continue; }
           if (st == 'PENDING') continue;
           if (widget.romoId != null && o.acceptedRomoId != widget.romoId) continue;
           if (o.acceptedRomoId == null) continue;
@@ -236,12 +236,10 @@ class _HistoriScreenState extends State<HistoriScreen>
   List<HistoriEntryItem> get _filtered {
     List<HistoriEntryItem> result = _historyBaseEntries;
 
-    // Filter by status
     if (_filterStatus != 'SEMUA') {
       result = result.where((e) => e.effectiveStatus == _filterStatus).toList();
     }
 
-    // Filter by search
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       result = result.where((e) {
@@ -540,6 +538,7 @@ class _HistoriScreenState extends State<HistoriScreen>
       case 'DONE':        return LanguageService.tr('status_done');
       case 'CLOSE':       return 'Ditutup';
       case 'FAIL':        return 'Gagal';
+      case 'CANCELLED':   return 'Dibatalkan';
       default:            return s;
     }
   }
@@ -674,7 +673,7 @@ class _HistoriScreenState extends State<HistoriScreen>
 
     final String effectiveStatus = entry.effectiveStatus;
     final statusColor = _statusColor(effectiveStatus);
-    final statusLabel = _statusLabel(effectiveStatus);
+    final statusLabel = isExternalMonitoredBy(order, displayItem, widget.romoId) && (effectiveStatus == 'CONFIRMED' || effectiveStatus == 'IN_PROGRESS') ? 'Dialihkan ke Romo Eksternal' : _statusLabel(effectiveStatus);
     final statusIcon = _statusIcon(effectiveStatus);
 
     String scheduleStr = order.fullScheduleLabel;

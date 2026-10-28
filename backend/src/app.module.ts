@@ -24,6 +24,7 @@ import { NewsModule } from './modules/news/news.module';
 import { TestRunnerModule } from './modules/test-runner/test-runner.module';
 import { ApkModule } from './modules/apk/apk.module';
 import { ActivityLogsModule } from './modules/activity-logs/activity-logs.module';
+import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 
 import { AppService } from './app.service';
 import { HttpLoggerMiddleware } from './logger.middleware';
@@ -67,6 +68,7 @@ import { HttpLoggerMiddleware } from './logger.middleware';
     DatabaseInitModule,
     DrizzleModule,
     FcmModule,
+    WhatsappModule,
     HealthModule,
     AuthModule,
     OrdersModule,

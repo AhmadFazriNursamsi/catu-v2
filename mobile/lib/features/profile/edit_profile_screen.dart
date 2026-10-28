@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import '../auth/widgets/gender_form_field.dart';
+import '../home/widgets/home_greeting.dart' show homeRoleTitle;
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -804,10 +805,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
               _buildSectionTitle(LanguageService.tr('church_data'), Icons.church_rounded),
               const SizedBox(height: 12),
-
               _buildReadOnlyField(
                 label: LanguageService.tr('role'),
-                value: _selectedRole,
+                value: homeRoleTitle(widget.user),
                 icon: Icons.badge_rounded,
               ),
               const SizedBox(height: 14),

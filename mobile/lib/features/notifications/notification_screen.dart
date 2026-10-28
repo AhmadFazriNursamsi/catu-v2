@@ -5,8 +5,7 @@ import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/notification_service.dart';
 import '../orders/order_detail_screen.dart';
-import '../admin/pengurus_approval_screen.dart';
-import '../admin/romo_approval_screen.dart';
+import '../admin/approval_history_screen.dart';
 import '../chat/chat_screen.dart';
 import '../chat/chat_list_screen.dart';
 
@@ -664,18 +663,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 return;
               }
               // 0. Account Approval / Rejection Result Notification -> ONLY show Alert Dialog, DO NOT redirect!
-              final titleLower = item.title.toLowerCase();
-              final bodyLower = item.body.toLowerCase();
-              final isAccountResult = item.type == 'ACCOUNT_APPROVED' ||
-                  item.type == 'ACCOUNT_REJECTED' ||
-                  titleLower.contains('disetujui') ||
-                  titleLower.contains('ditolak') ||
-                  (bodyLower.contains('pendaftaran') && (bodyLower.contains('disetujui') || bodyLower.contains('ditolak')));
+              final isAccountResult = item.type == 'ACCOUNT_APPROVED' || item.type == 'ACCOUNT_REJECTED';
 
               if (isAccountResult) {
-                final isApproved = item.type == 'ACCOUNT_APPROVED' ||
-                    titleLower.contains('disetujui') ||
-                    bodyLower.contains('disetujui');
+                final isApproved = item.type == 'ACCOUNT_APPROVED';
                 await showDialog(
                   context: context,
                   builder: (ctx) => AlertDialog(
@@ -736,23 +727,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       item.title.toLowerCase().contains('baru'));
 
               if (isApprovalNotification) {
-                final isRomoApproval = item.title.toLowerCase().contains('romo') ||
-                    (widget.role.toUpperCase().contains('ROMO') && item.title.toLowerCase().contains('romo'));
-                if (isRomoApproval) {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => RomoApprovalScreen(user: widget.user),
-                    ),
-                  );
-                } else {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PengurusApprovalScreen(user: widget.user),
-                    ),
-                  );
-                }
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ApprovalHistoryScreen(user: widget.user, startOnPending: true),
+                  ),
+                );
                 return;
               }
 

@@ -238,6 +238,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 
   void _onRoleChanged(String roleCode) {
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
       _selectedRole = roleCode;
       _selectedUmatPosition = null;
@@ -564,9 +565,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       label: item['name'].toString(),
                     ))
                 .toList(),
-            onChanged: (val) {
-              if (val != null) _onKeuskupanChanged(val);
-            },
+            onChanged: (val) { if (val != null) _onKeuskupanChanged(val); },
             emptyMessage: 'Keuskupan tidak ditemukan',
           ),
 
@@ -581,9 +580,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       label: item['name'].toString(),
                     ))
                 .toList(),
-            onChanged: (val) {
-              if (val != null) _onParokiChanged(val);
-            },
+            onChanged: (val) { if (val != null) _onParokiChanged(val); },
             emptyMessage: 'Paroki tidak ditemukan pada keuskupan ini',
           ),
 
@@ -704,6 +701,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       if (currentPos == 'BENDAHARA' && hasBendahara) currentPos = null;
 
       return DropdownButtonFormField<String?>(
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         key: ValueKey('umat_pos_${_selectedLingkunganId}_${hasKetua}_${hasWakil}_${hasSekretaris}_$hasBendahara'),
         initialValue: currentPos,
         decoration: _fieldDeco(
@@ -777,6 +775,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       final bool hasKetua = selectedOrdo['has_ketua'] == true || selectedOrdo['hasKetua'] == true || selectedOrdo['has_ketua'] == 'true';
 
       return DropdownButtonFormField<String>(
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         key: ValueKey('romo_ordo_${_selectedOrdoId}_$hasKetua'),
         initialValue: hasKetua ? 'ROMO_BIASA' : _selectedRomoOrdoPosition,
         decoration: _fieldDeco(
@@ -816,6 +815,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       final bool hasKepala = selectedParoki['has_kepala_romo'] == true || selectedParoki['hasKepalaRomo'] == true || selectedParoki['has_kepala_romo'] == 'true';
 
       return DropdownButtonFormField<String>(
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         key: ValueKey('romo_paroki_${_selectedParokiId}_$hasKepala'),
         initialValue: hasKepala ? 'ROMO_BIASA' : _selectedRomoParokiPosition,
         decoration: _fieldDeco(

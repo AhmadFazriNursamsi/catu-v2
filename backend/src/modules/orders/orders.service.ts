@@ -7,6 +7,7 @@ import { generateOrderNumber } from './order-number';
 import { EscalationSettingsService } from '../escalation/escalation-settings.service';
 import { orderStatusFromItemsSql } from '../order-rules/order-status-derive';
 import { OrderEventsService } from '../order-events/order-events.service';
+import { isLintasParoki } from '../order-rules/lintas-paroki';
 @Injectable()
 export class OrdersService {
   constructor(@InjectDataSource() private readonly dataSource: DataSource, private readonly fcmService: FcmService, private readonly escalation: EscalationSettingsService, private readonly events: OrderEventsService) {}
@@ -34,7 +35,7 @@ export class OrdersService {
 
   async getPengurusForOrder(orderId: number, excludeUserId?: number): Promise<any[]> {
     const orderHierarchy = await this.dataSource.query(
-      `SELECT o.lingkungan_id, o.paroki_id, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id
+      `SELECT o.lingkungan_id, o.paroki_id, o.lintas_paroki, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id
        FROM orders o
        JOIN user_profiles p ON o.user_id = p.user_id
        WHERE o.id = $1`,
@@ -42,6 +43,7 @@ export class OrdersService {
     );
     if (orderHierarchy.length === 0) return [];
     const oh = orderHierarchy[0];
+    if (oh.lintas_paroki) return [];
     const keuskupanId = oh.keuskupan_id;
     let pengurus: any[] = [];
     if (oh.lingkungan_id) {
@@ -49,16 +51,16 @@ export class OrdersService {
         `SELECT u.id FROM auth_users u JOIN user_profiles p ON u.id = p.user_id JOIN roles r ON u.role_id = r.id
          WHERE ((r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
-           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN') AND r.code NOT LIKE '%KOORDINATOR%') AND p.lingkungan_id = $1`,
+           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN') AND r.code NOT LIKE '%KOORDINATOR%') AND u.account_status = 'APPROVED' AND p.lingkungan_id = $1`,
         [oh.lingkungan_id],
       );
     }
-    if (pengurus.length === 0 && oh.paroki_id) {
+    if (!oh.lingkungan_id && oh.paroki_id) {
       pengurus = await this.dataSource.query(
         `SELECT u.id FROM auth_users u JOIN user_profiles p ON u.id = p.user_id JOIN roles r ON u.role_id = r.id
          WHERE ((r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
-           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN') AND r.code NOT LIKE '%KOORDINATOR%') AND p.paroki_id = $1`,
+           AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN') AND r.code NOT LIKE '%KOORDINATOR%') AND u.account_status = 'APPROVED' AND p.paroki_id = $1`,
         [oh.paroki_id],
       );
     }
@@ -140,11 +142,11 @@ export class OrdersService {
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
            AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
            AND r.code NOT LIKE '%KOORDINATOR%'
-         ) AND p.lingkungan_id = $1`,
+         ) AND u.account_status = 'APPROVED' AND p.lingkungan_id = $1`,
         [lId],
       );
     }
-    if (pengurus.length === 0 && pId) {
+    if (!lId && pId) {
       pengurus = await this.dataSource.query(
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
@@ -154,7 +156,7 @@ export class OrdersService {
            AND (p.pengurus_position IS NULL OR LOWER(p.pengurus_position) NOT LIKE '%koordinator%')
            AND r.code NOT IN ('KOORDINATOR', 'KOORDINATOR_KEUSKUPAN')
            AND r.code NOT LIKE '%KOORDINATOR%'
-         ) AND p.paroki_id = $1`,
+         ) AND u.account_status = 'APPROVED' AND p.paroki_id = $1`,
         [pId],
       );
     }
@@ -166,13 +168,15 @@ export class OrdersService {
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
          JOIN roles r ON u.role_id = r.id
-         WHERE r.code = 'ROMO_PAROKI' AND p.paroki_id = $1 AND $1::int IS NOT DISTINCT FROM (SELECT paroki_id FROM user_profiles WHERE user_id = $2)`,
+         WHERE r.code = 'ROMO_PAROKI' AND u.account_status = 'APPROVED' AND p.paroki_id = $1 AND $1::int IS NOT DISTINCT FROM (SELECT paroki_id FROM user_profiles WHERE user_id = $2)`,
         [pId, userId],
       );
     }
 
     // Pemohon tidak masuk daftar pemantau. Lintas paroki: tanpa Romo Paroki; Romo Ordo/Koordinator lewat eskalasi
     // (EscalationService) bila pelayanan belum diterima setelah batas menit pada master data.
+    const pemohonParoki = (await this.dataSource.query('SELECT paroki_id FROM user_profiles WHERE user_id = $1', [userId]))[0]?.paroki_id;
+    if (isLintasParoki(pId, pemohonParoki)) pengurus = []; // lintas paroki: tanpa pengurus
     if (userId) {
       const numUserId = Number(userId);
       pengurus = pengurus.filter((p: any) => Number(p.id) !== numUserId);
@@ -344,7 +348,7 @@ export class OrdersService {
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status,
              o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, o.attachment_url as "attachmentUrl", o.user_id, o.rating, o.review_notes as "reviewNotes", o.reviewed_at as "reviewedAt",
-             p.full_name as pemohon_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
+             p.full_name as pemohon_name, (SELECT r.code FROM auth_users au JOIN roles r ON r.id = au.role_id WHERE au.id = o.user_id) = 'UMAT_PENDATANG' as is_pendatang, (SELECT kk.name FROM kabupaten_kota kk WHERE kk.id = COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id)) as kabupaten_kota_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name, w.name as wilayah_name,
              COALESCE(o.paroki_id, p.paroki_id) as paroki_id, COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id,
              o.accepted_romo_id as "acceptedRomoId", COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
              COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus", o.reschedule_proposed_by as "rescheduleProposedBy",
@@ -360,6 +364,7 @@ export class OrdersService {
       LEFT JOIN keuskupan k ON COALESCE(o.keuskupan_id, p.keuskupan_id) = k.id
       LEFT JOIN paroki par ON COALESCE(o.paroki_id, p.paroki_id) = par.id
       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+      LEFT JOIN wilayah w ON p.wilayah_id = w.id
     `;
 
     let orders: any[], requestingRomo: any = null;
@@ -371,7 +376,7 @@ export class OrdersService {
       whereClauses.push(`COALESCE(o.keuskupan_id, p.keuskupan_id) = $${paramIdx++}`);
       queryParams.push(parseInt(keuskupanId));
     } else if (lingkunganId && !isNaN(parseInt(lingkunganId))) {
-      whereClauses.push(`COALESCE(o.lingkungan_id, p.lingkungan_id) = $${paramIdx++}`);
+      whereClauses.push(`COALESCE(o.lingkungan_id, p.lingkungan_id) = $${paramIdx++} AND NOT o.lintas_paroki`);
       queryParams.push(parseInt(lingkunganId));
     } else if (romoId && !isNaN(parseInt(romoId))) {
       const parsedRId = parseInt(romoId);
@@ -520,7 +525,7 @@ export class OrdersService {
     const selectQuery = `
       SELECT o.id, o.order_number, sc.name as category_name, ul.name as urgency_name, o.status,
              o.scheduled_date, o.scheduled_time, o.location_name, o.address_detail, o.notes, o.attachment_url as "attachmentUrl", o.rating, o.review_notes as "reviewNotes", o.reviewed_at as "reviewedAt",
-             p.full_name as pemohon_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name,
+             p.full_name as pemohon_name, (SELECT r.code FROM auth_users au JOIN roles r ON r.id = au.role_id WHERE au.id = o.user_id) = 'UMAT_PENDATANG' as is_pendatang, (SELECT kk.name FROM kabupaten_kota kk WHERE kk.id = COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id)) as kabupaten_kota_name, k.name as keuskupan_name, par.name as paroki_name, l.name as lingkungan_name, w.name as wilayah_name,
              COALESCE(o.paroki_id, p.paroki_id) as paroki_id, COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) as kabupaten_kota_id, o.user_id,
              o.accepted_romo_id as "acceptedRomoId", COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = o.accepted_romo_id), o.external_romo_name) as "acceptedRomoName",
              COALESCE(o.reschedule_status, 'NONE') as "rescheduleStatus", o.reschedule_proposed_by as "rescheduleProposedBy",
@@ -536,6 +541,7 @@ export class OrdersService {
       LEFT JOIN keuskupan k ON COALESCE(o.keuskupan_id, p.keuskupan_id) = k.id
       LEFT JOIN paroki par ON COALESCE(o.paroki_id, p.paroki_id) = par.id
       LEFT JOIN lingkungan l ON p.lingkungan_id = l.id
+      LEFT JOIN wilayah w ON p.wilayah_id = w.id
       WHERE o.id = $1
     `;
     const orders = await this.dataSource.query(selectQuery, [orderId]);
@@ -888,6 +894,16 @@ export class OrdersService {
         [orderId],
       );
 
+      const rj = (await this.dataSource.query(
+        `SELECT previous_time_start, previous_time_end, proposed_time_start, proposed_time_end FROM order_reschedules
+         WHERE order_id = $1 AND status = 'PENDING_UMAT' AND ($2::bigint IS NULL OR item_id = $2::bigint) ORDER BY id DESC LIMIT 1`,
+        [orderId, itemId || null],
+      ))[0];
+      const hm = (a?: string | null, b?: string | null) => (a ? `${String(a).slice(0, 5)}${b ? ` - ${String(b).slice(0, 5)}` : ''} WIB` : '');
+      const umatName = (await this.dataSource.query('SELECT full_name FROM user_profiles WHERE user_id = $1', [order.user_id]))[0]?.full_name || 'Umat pemohon';
+      const [prevJam, newJam] = [hm(rj?.previous_time_start, rj?.previous_time_end), hm(rj?.proposed_time_start, rj?.proposed_time_end)];
+      const rejectBody = `${umatName} menolak usulan perubahan jam ${serviceTitle}${newJam ? ` menjadi ${newJam}` : ''} (${order.order_number}). Pelayanan tetap dilaksanakan pada jadwal awal${prevJam ? `, pukul ${prevJam}` : ''}.`;
+
       // Update order_reschedules log
       await this.dataSource.query(
         `UPDATE order_reschedules
@@ -900,7 +916,7 @@ export class OrdersService {
       if (groups.length > 0) {
         await this.dataSource.query(
           `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
-          [groups[0].id, `Umat pemohon MENOLAK pengajuan perubahan jadwal. Pelayanan tetap dilaksanakan sesuai jadwal awal.`],
+          [groups[0].id, rejectBody],
         );
       }
 
@@ -908,7 +924,7 @@ export class OrdersService {
       if (romoId) {
         await this.dataSource.query(
           `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read) VALUES ($1, $2, (SELECT id FROM chat_groups WHERE order_id = $2 ORDER BY (order_item_id IS NOT DISTINCT FROM $5::bigint) DESC, id ASC LIMIT 1), $3, $4, 'RESCHEDULE_REJECTED', false)`,
-          [ romoId, orderId, `Perubahan Jadwal Ditolak: ${serviceTitle}`, `Umat tidak menyetujui perubahan jadwal (${order.order_number}). Pelayanan tetap pada jadwal semula.`, itemId || null, ],
+          [ romoId, orderId, `Perubahan Jadwal Ditolak: ${serviceTitle}`, rejectBody, itemId || null, ],
         );
       }
 
@@ -916,7 +932,7 @@ export class OrdersService {
       for (const p of pengurusRespond) {
         await this.dataSource.query(
           `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read) VALUES ($1, $2, (SELECT id FROM chat_groups WHERE order_id = $2 ORDER BY (order_item_id IS NOT DISTINCT FROM $5::bigint) DESC, id ASC LIMIT 1), $3, $4, 'RESCHEDULE_REJECTED', false)`,
-          [ p.id, orderId, `Perubahan Jadwal Ditolak: ${serviceTitle}`, `Umat menolak perubahan jadwal pelayanan ${serviceTitle} (${order.order_number}). Pelayanan tetap sesuai jadwal awal.`, itemId || null, ],
+          [ p.id, orderId, `Perubahan Jadwal Ditolak: ${serviceTitle}`, rejectBody, itemId || null, ],
         );
       }
 
@@ -930,7 +946,7 @@ export class OrdersService {
         if (targetReschedRespUsers.length > 0) {
           await this.fcmService.sendPushToUsers(targetReschedRespUsers, {
             title: `Perubahan Jadwal Ditolak: ${serviceTitle}`,
-            body: `Umat menolak perubahan jadwal (${order.order_number}). Pelayanan tetap pada jadwal awal.`,
+            body: rejectBody,
             data: { type: 'RESCHEDULE_REJECTED', orderId: orderId.toString(), orderNumber: order.order_number, itemId: String(itemId || '') },
           });
         }

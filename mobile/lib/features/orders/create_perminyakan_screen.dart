@@ -587,7 +587,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                         _buildInputField(
                           controller: _namaController,
                           label: LanguageService.tr('recipient_name'),
-                          hint: 'Contoh: Bapak Antonius Supardi',
+                          hint: 'Contoh: Antonius Supardi',
                           prefixIcon: Icons.person_outline_rounded,
                           validator: (v) =>
                               v == null || v.isEmpty ? 'Nama wajib diisi' : null,
@@ -669,7 +669,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                                     _selectedUrgensi!
                                             .contains('Sangat')
                                         ? 'Pelayanan darurat/kritis akan mendapatkan prioritas penanganan cepat.'
-                                        : 'Permintaan akan diteruskan ke Romo dan Pengurus Lingkungan.',
+                                        : _isPendatang ? 'Permintaan akan diteruskan kepada Romo Ordo.' : 'Permintaan akan diteruskan ke Romo dan Pengurus Lingkungan.',
                                     style: TextStyle(
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w600,
@@ -686,8 +686,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                         _buildInputField(
                           controller: _catatanController,
                           label: 'Catatan',
-                          hint:
-                              'Catatan tambahan (misal: dirawat di ICU, butuh minyak suci segera)',
+                          hint: 'Catatan',
                           prefixIcon: Icons.notes_rounded,
                           maxLines: 3,
                         ),
@@ -982,7 +981,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Lengkapi form dibawah untuk memohon pengurapan minyak suci bagi anggota keluarga atau sahabat.',
+                  'Lengkapi form di bawah untuk permohonan Sakramen Perminyakan bagi anggota keluarga atau sahabat.',
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 11.5,

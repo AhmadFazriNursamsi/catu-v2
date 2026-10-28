@@ -10,10 +10,14 @@ const _amber = Color(0xFFD97706);
 class KoordinatorAssignCard extends StatefulWidget {
   final int orderId;
   final VoidCallback onAssigned;
+  /// Misa yang sedang dilihat; Romo hanya dicarikan untuk misa ini. Null = seluruh pelayanan.
+  final int? itemId;
+  /// Pelayanan/misa yang sedang dilihat belum diterima Romo; bila false, kartu disembunyikan.
+  final bool servicePending;
   final AssignmentLoader? loader;
   /// Untuk uji: menggantikan pemeriksaan peran dari sesi.
   final bool? isKoordinator;
-  const KoordinatorAssignCard({super.key, required this.orderId, required this.onAssigned, this.loader, this.isKoordinator});
+  const KoordinatorAssignCard({super.key, required this.orderId, required this.onAssigned, this.itemId, this.servicePending = true, this.loader, this.isKoordinator});
 
   @override
   State<KoordinatorAssignCard> createState() => _KoordinatorAssignCardState();
@@ -56,14 +60,14 @@ class _KoordinatorAssignCardState extends State<KoordinatorAssignCard> {
       );
 
   Future<void> _open() async {
-    final assigned = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => KoordinatorAssignScreen(orderId: widget.orderId, loader: widget.loader)));
+    final assigned = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => KoordinatorAssignScreen(orderId: widget.orderId, itemId: widget.itemId, loader: widget.loader)));
     if (assigned == true) widget.onAssigned();
   }
 
   @override
   Widget build(BuildContext context) {
     final data = _data;
-    if (data == null || data.state == 'CLOSED') return const SizedBox.shrink();
+    if (!widget.servicePending || data == null || data.state == 'CLOSED') return const SizedBox.shrink();
     final open = data.state == 'OPEN';
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),

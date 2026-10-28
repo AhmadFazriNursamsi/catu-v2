@@ -10,6 +10,14 @@ const int kRescheduleMaxRejections = 2;
 int rescheduleRejections(Iterable<OrderRescheduleLog> history, int? itemId) =>
     history.where((r) => r.itemId == itemId && r.status.toUpperCase() == 'REJECTED').length;
 
+/// Umat sudah menyetujui perubahan jam untuk misa [itemId]: Romo tidak berhak mengubah jam lagi (harus sama dengan backend).
+bool rescheduleAccepted(Iterable<OrderRescheduleLog> history, int? itemId) =>
+    history.any((r) => r.itemId == itemId && r.status.toUpperCase() == 'ACCEPTED');
+
+/// Ubah jam tertutup: ditolak [kRescheduleMaxRejections] kali, atau sudah disetujui Umat satu kali.
+bool rescheduleClosed(Iterable<OrderRescheduleLog> history, int? itemId) =>
+    rescheduleRejections(history, itemId) >= kRescheduleMaxRejections || rescheduleAccepted(history, itemId);
+
 const _days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 const _months = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',

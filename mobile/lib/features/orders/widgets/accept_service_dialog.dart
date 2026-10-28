@@ -7,12 +7,8 @@ Future<bool> showAcceptServiceDialog(
   OrderItem? targetItem,
 }) async {
   final itemName = targetItem != null ? targetItem.itemName : order.categoryName;
-  final dateStr = targetItem != null ? targetItem.scheduledDate : order.scheduledDate;
-  final timeStr = targetItem != null
-      ? (targetItem.scheduledTimeEnd.isNotEmpty
-          ? '${targetItem.scheduledTimeStart} - ${targetItem.scheduledTimeEnd}'
-          : targetItem.scheduledTimeStart)
-      : order.scheduledTime;
+  // Format jadwal sama dengan detail pelayanan: "Sabtu, 15/08/26 • 14:00 – 15:00 WIB".
+  final scheduleStr = targetItem != null ? targetItem.fullScheduleLabel : order.fullScheduleLabel;
   final locStr = targetItem != null ? targetItem.locationName : order.locationName;
   final pemohonStr = order.pemohonName.isNotEmpty ? order.pemohonName : 'Umat Pemohon';
 
@@ -63,7 +59,7 @@ Future<bool> showAcceptServiceDialog(
                 const Divider(height: 12, thickness: 0.5),
                 _buildRow(Icons.person_rounded, 'Pemohon', pemohonStr),
                 const Divider(height: 12, thickness: 0.5),
-                _buildRow(Icons.calendar_today_rounded, 'Jadwal', '$dateStr • $timeStr'),
+                _buildRow(Icons.calendar_today_rounded, 'Jadwal', scheduleStr),
                 const Divider(height: 12, thickness: 0.5),
                 _buildRow(Icons.location_on_rounded, 'Lokasi', locStr),
               ],

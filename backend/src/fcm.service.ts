@@ -197,7 +197,7 @@ export class FcmService implements OnModuleInit {
               icon: 'ic_stat_catu',
               color: '#1E5399',
               sound: 'notif_catu',
-              channelId: 'catu_custom_sound_channel_v2',
+              channelId: 'catu_custom_sound_channel_v3',
               clickAction: 'FLUTTER_NOTIFICATION_CLICK',
               defaultSound: false,
               defaultVibrateTimings: true,

@@ -39,7 +39,7 @@ class NotificationService {
   static final Map<String, int> _recentNotificationTimestamps = {};
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'catu_custom_sound_channel_v2',
+    'catu_custom_sound_channel_v3',
     'Pelayanan & Chat CATU',
     description: 'Notifikasi penting untuk permintaan pelayanan Romo, persetujuan jadwal, dan pesan chat umat',
     importance: Importance.max,
@@ -142,17 +142,12 @@ class NotificationService {
       // 🔔 0. ACCOUNT APPROVAL / REJECTION RESULT -> Tampilkan Alert Dialog di layar aktif, JANGAN redirect
       final titleStr = (data['title'] ?? '').toString();
       final bodyStr = (data['body'] ?? data['message'] ?? '').toString();
-      final titleLower = titleStr.toLowerCase();
-      final bodyLower = bodyStr.toLowerCase();
 
-      final isAccountResult = type == 'ACCOUNT_APPROVED' ||
-          type == 'ACCOUNT_REJECTED' ||
-          titleLower.contains('disetujui') ||
-          titleLower.contains('ditolak') ||
-          (bodyLower.contains('pendaftaran') && (bodyLower.contains('disetujui') || bodyLower.contains('ditolak')));
+      // Hanya berdasarkan tipe: judul "Perubahan Jadwal Ditolak/Disetujui" bukan hasil pendaftaran akun.
+      final isAccountResult = type == 'ACCOUNT_APPROVED' || type == 'ACCOUNT_REJECTED';
 
       if (isAccountResult) {
-        final isApproved = type == 'ACCOUNT_APPROVED' || titleLower.contains('disetujui') || bodyLower.contains('disetujui');
+        final isApproved = type == 'ACCOUNT_APPROVED';
         final title = titleStr.isNotEmpty ? titleStr : (isApproved ? '🎉 Akun Berhasil Disetujui!' : '⚠️ Status Pendaftaran Akun');
         final message = bodyStr.isNotEmpty ? bodyStr : (isApproved ? 'Pendaftaran akun Anda telah disetujui. Anda kini dapat menggunakan seluruh fitur aplikasi CATU.' : 'Pendaftaran akun Anda ditolak.');
 

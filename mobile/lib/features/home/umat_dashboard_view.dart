@@ -417,7 +417,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                             Positioned(
                               top: 6,
                               right: 6,
-                              child: Container(
+                              child: IgnorePointer(child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: const BoxDecoration(
                                   color: Colors.redAccent,
@@ -433,7 +433,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                       fontWeight: FontWeight.bold),
                                   textAlign: TextAlign.center,
                                 ),
-                              ),
+                              )),
                             ),
                         ],
                       ),
@@ -461,7 +461,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                             Positioned(
                               top: 6,
                               right: 6,
-                              child: Container(
+                              child: IgnorePointer(child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: const BoxDecoration(
                                   color: Colors.redAccent,
@@ -477,7 +477,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
                                       fontWeight: FontWeight.bold),
                                   textAlign: TextAlign.center,
                                 ),
-                              ),
+                              )),
                             ),
                         ],
                       ),

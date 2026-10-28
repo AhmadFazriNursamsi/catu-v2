@@ -12,11 +12,13 @@ typedef RomoAssigner = Future<String> Function(int orderId, {required int romoId
 /// Koordinator mencarikan Romo: pilih dari seluruh Romo terdaftar, pelayanan otomatis diterima atas nama Romo itu.
 class KoordinatorAssignScreen extends StatefulWidget {
   final int orderId;
+  /// Bila diisi, Romo hanya dicarikan untuk misa ini (tanpa pilihan misa lain).
+  final int? itemId;
   final AssignmentLoader? loader;
   final RomoAssigner? assigner;
   final RegisterOptionsLoader? optionsLoader;
   final RomoRegistrar? registrar;
-  const KoordinatorAssignScreen({super.key, required this.orderId, this.loader, this.assigner, this.optionsLoader, this.registrar});
+  const KoordinatorAssignScreen({super.key, required this.orderId, this.itemId, this.loader, this.assigner, this.optionsLoader, this.registrar});
 
   @override
   State<KoordinatorAssignScreen> createState() => _KoordinatorAssignScreenState();
@@ -28,7 +30,7 @@ class _KoordinatorAssignScreenState extends State<KoordinatorAssignScreen> {
   bool _loading = true;
   bool _saving = false;
   int? _romoId;
-  int? _itemId; // null = semua misa yang belum diterima
+  late int? _itemId = widget.itemId; // null = semua misa yang belum diterima
   String _query = '';
 
   @override
@@ -139,7 +141,7 @@ class _KoordinatorAssignScreenState extends State<KoordinatorAssignScreen> {
         if (!data.eligible)
           Padding(padding: const EdgeInsets.only(top: 16), child: _notice(data.reason ?? 'Pelayanan ini belum dapat dicarikan Romo.'))
         else ...[
-          if (data.pendingItems.length > 1) ..._itemPicker(data),
+          if (data.pendingItems.length > 1 && widget.itemId == null) ..._itemPicker(data),
           const SizedBox(height: 16),
           TextField(
             onChanged: (v) => setState(() => _query = v),
@@ -176,11 +178,17 @@ class _KoordinatorAssignScreenState extends State<KoordinatorAssignScreen> {
             Text(data.orderNumber, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _muted)),
             if (data.summary.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text(data.summary, style: const TextStyle(fontSize: 13, color: Color(0xFF334155), height: 1.3)),
+              Text(_summaryText(data), style: const TextStyle(fontSize: 13, color: Color(0xFF334155), height: 1.3)),
             ],
           ],
         ),
       );
+
+  /// Untuk satu misa yang dipilih: nama dan jadwal misanya, bukan ringkasan seluruh pelayanan.
+  String _summaryText(KoordinatorAssignment data) {
+    final item = widget.itemId == null ? null : data.pendingItems.where((i) => i.id == widget.itemId).firstOrNull;
+    return item == null ? data.summary : '${item.name}${item.schedule.isEmpty ? '' : ' • ${item.schedule}'}';
+  }
 
   List<Widget> _itemPicker(KoordinatorAssignment data) => [
         const SizedBox(height: 16),

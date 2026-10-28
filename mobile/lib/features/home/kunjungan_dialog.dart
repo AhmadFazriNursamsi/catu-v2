@@ -38,22 +38,32 @@ class _KunjunganDialogState extends State<KunjunganDialog> {
   }
 
   Future<void> _loadProvinsi() async {
-    final list = await ApiService.getProvinsiList();
+    // Nama provinsi di data bisa ganda (mis. JAWA BARAT); satukan per nama agar nilai dropdown unik.
+    final byName = <String, Map<String, dynamic>>{};
+    for (final p in await ApiService.getProvinsiList()) {
+      (byName.putIfAbsent(p['name'].toString(), () => {...p, 'ids': <int>[]})['ids'] as List<int>).add(int.parse(p['id'].toString()));
+    }
     if (mounted) {
       setState(() {
-        _provinsiList = list;
+        _provinsiList = byName.values.toList();
         _isLoadingProv = false;
       });
     }
   }
 
-  Future<void> _loadKota(int provinsiId) async {
+  Future<void> _loadKota(List<int> provinsiIds) async {
     setState(() {
       _isLoadingKota = true;
       _selectedKota = null;
       _kotaList = [];
     });
-    final list = await ApiService.getKabupatenKotaList(provinsiId: provinsiId);
+    final byName = <String, Map<String, dynamic>>{};
+    for (final id in provinsiIds) {
+      for (final k in await ApiService.getKabupatenKotaList(provinsiId: id)) {
+        byName.putIfAbsent(k['name'].toString(), () => k);
+      }
+    }
+    final list = byName.values.toList();
     if (mounted) {
       setState(() {
         _kotaList = list;
@@ -249,7 +259,7 @@ class _KunjunganDialogState extends State<KunjunganDialog> {
                             if (val != null) {
                               setState(() => _selectedProvinsi = val);
                               final item = _provinsiList.firstWhere((p) => p['name'] == val, orElse: () => {});
-                              if (item['id'] != null) _loadKota(int.parse(item['id'].toString()));
+                              if (item['ids'] != null) _loadKota(item['ids'] as List<int>);
                             }
                           },
                         ),

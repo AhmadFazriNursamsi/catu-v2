@@ -199,7 +199,9 @@
       const pos = (targetUser?.pengurus_position || targetUser?.pengurusPosition || '').toString().toLowerCase();
       const isKoordinator = pos.includes('koordinator') || r === 'KOORDINATOR';
 
-      if (r === 'UMAT' && !isKoordinator) {
+      // Umat di lingkungan tanpa pengurus tidak punya penyetuju lain, sehingga diproses Admin dari sini.
+      const isOrphan = !!targetUser && approvalApproverInfo(targetUser).orphan;
+      if (r === 'UMAT' && !isKoordinator && !isOrphan) {
         showToast('Pendaftaran akun Umat biasa diverifikasi oleh Pengurus Lingkungan via aplikasi mobile CATU.', 'warning', 'Persetujuan Khusus Pengurus');
         return;
       }
@@ -255,8 +257,8 @@
       state.actionConfirmModal = {
         title: isApprove ? 'Konfirmasi Persetujuan Akun' : 'Konfirmasi Penolakan Pendaftaran',
         subtitle: isApprove
-          ? `Apakah Anda yakin ingin menyetujui akun pendaftaran milik <strong class="text-slate-900 font-extrabold">${userName}</strong>? Akun ini akan segera dapat login dan menggunakan aplikasi.`
-          : `Apakah Anda yakin ingin menolak permohonan pendaftaran milik <strong class="text-slate-900 font-extrabold">${userName}</strong>?`,
+          ? `Apakah Anda yakin ingin menyetujui akun pendaftaran milik <strong class="text-slate-900 font-extrabold">${escapeHtml(userName)}</strong>? Akun ini akan segera dapat login dan menggunakan aplikasi.`
+          : `Apakah Anda yakin ingin menolak permohonan pendaftaran milik <strong class="text-slate-900 font-extrabold">${escapeHtml(userName)}</strong>?`,
         icon: isApprove ? 'shield-check' : 'shield-alert',
         iconBg: isApprove ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-600 border-rose-200',
         confirmText: isApprove ? 'Ya, Setujui Akun' : 'Ya, Tolak Permohonan',

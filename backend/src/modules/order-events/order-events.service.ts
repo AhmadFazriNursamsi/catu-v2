@@ -125,8 +125,15 @@ export class OrderEventsService {
     return rows[0]?.total ?? 0;
   }
 
-  /** 403 bila pengajuan ubah jam sudah ditutup (ditolak 2x); 400 bila masih ada pengajuan yang menunggu Umat. */
+  /** 403 bila pengajuan ubah jam sudah ditutup (ditolak 2x atau sudah disetujui Umat 1x); 400 bila masih ada pengajuan yang menunggu Umat. */
   async assertRescheduleOpen(orderId: number, itemId?: number | null): Promise<void> {
+    const accepted = await this.dataSource.query(
+      `SELECT 1 FROM order_reschedules WHERE order_id = $1 AND status = 'ACCEPTED' AND item_id IS NOT DISTINCT FROM $2::bigint LIMIT 1`,
+      [orderId, itemId || null],
+    );
+    if (accepted.length > 0) {
+      throw new ForbiddenException('Perubahan jam sudah disetujui Umat. Jadwal tidak dapat diubah lagi.');
+    }
     if ((await this.rejectedRescheduleCount(orderId, itemId)) >= MAX_RESCHEDULE_REJECTIONS) {
       throw new ForbiddenException(
         `Pengajuan ubah jam sudah ditutup karena telah ditolak ${MAX_RESCHEDULE_REJECTIONS} kali. Jadwal tetap sesuai jadwal terakhir.`,

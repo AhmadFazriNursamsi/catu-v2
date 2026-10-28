@@ -6,6 +6,7 @@ import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
 import 'kunjungan_detail_screen.dart';
+import 'kunjungan_delete_dialog.dart';
 import 'kunjungan_dialog.dart';
 import 'umat_dashboard_view.dart';
 
@@ -64,7 +65,7 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
       if (raw != null) {
         final decoded = jsonDecode(raw);
         if (decoded is Map<String, dynamic>) {
-          final rawList = (decoded['history'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          final rawList = (decoded['history'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).where((h) => h['id'] != 'kunj_init').toList(); // buang data contoh lama
           final List<Map<String, dynamic>> deduped = [];
           for (final h in rawList) {
             h['id'] ??= 'kunj_${(h['tanggal'] ?? '').hashCode.abs()}_${(h['alamat'] ?? '').hashCode.abs()}';
@@ -83,9 +84,6 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
         }
       }
     } catch (_) {}
-    if (_history.isEmpty) {
-      setState(() => _history = [{'id': 'kunj_init', 'tanggal': '23 September 2026', 'provinsi': 'DKI JAKARTA', 'kota': 'KOTA JAKARTA UTARA', 'alamat': 'Kelapa Gading', 'orderIds': <int>[]}]);
-    }
   }
 
   Future<void> _persistData() async {
@@ -95,23 +93,17 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
     } catch (_) {}
   }
 
-  int _countOrdersForKunjungan(Map<String, dynamic> item) {
+  List<Order> _ordersOfKunjungan(Map<String, dynamic> item) {
     final kunjId = item['id']?.toString() ?? '';
     final orderIds = (item['orderIds'] as List?)?.map((e) => e.toString()).toSet() ?? {};
     final kunjAlamat = (item['alamat'] ?? '').toString().trim().toLowerCase();
-    int count = 0;
-    for (final o in widget.orders) {
-      final rawNotes = o.notes;
-      if (kunjId.isNotEmpty && rawNotes.contains('[KunjunganId: $kunjId]')) {
-        count++;
-      } else if (orderIds.contains(o.id.toString())) {
-        count++;
-      } else if (kunjAlamat.isNotEmpty && o.locationName.trim().toLowerCase() == kunjAlamat && !rawNotes.contains('[KunjunganId:')) {
-        count++;
-      }
-    }
-    return count;
+    return widget.orders.where((o) =>
+        (kunjId.isNotEmpty && o.notes.contains('[KunjunganId: $kunjId]')) ||
+        orderIds.contains(o.id.toString()) ||
+        (kunjAlamat.isNotEmpty && o.locationName.trim().toLowerCase() == kunjAlamat && !o.notes.contains('[KunjunganId:'))).toList();
   }
+
+  int _countOrdersForKunjungan(Map<String, dynamic> item) => _ordersOfKunjungan(item).length;
 
   void _openKunjunganDialog() {
     showDialog(
@@ -143,7 +135,9 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
     ))).then((_) => widget.onRefresh());
   }
 
-  void _deleteHistory(int idx) {
+  Future<void> _deleteHistory(int idx) async {
+    final item = _history[idx];
+    if (!await confirmDeleteKunjungan(context, item, _ordersOfKunjungan(item)) || !mounted || idx >= _history.length || _history[idx] != item) return;
     setState(() => _history.removeAt(idx));
     _persistData();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Riwayat kunjungan dihapus'), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 1), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))));

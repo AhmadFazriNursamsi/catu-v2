@@ -31,6 +31,9 @@ services:
       FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/app/firebase-service-account.json}
       SEARXNG_BASE_URL: ${SEARXNG_BASE_URL:-http://localhost:8888/}
       SEARXNG_INTERNAL_URL: ${SEARXNG_INTERNAL_URL:-http://shared-searxng:8080}
+      # WAGate (gateway WhatsApp sendiri) untuk OTP. Kosongkan salah satunya untuk mematikan pengiriman.
+      WAGATE_URL: ${WAGATE_URL:-}
+      WAGATE_API_KEY: ${WAGATE_API_KEY:-}
     volumes:
       - ./backend/firebase-service-account.json:/app/firebase-service-account.json
       - ../Sensio/sensio-env/secrets/sensio_env_config_token:/run/secrets/sensio_env_config_token:ro

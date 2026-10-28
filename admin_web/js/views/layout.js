@@ -264,7 +264,7 @@
     }
 
     function setTab(tab) {
-      if ((tab === 'activity_logs' || tab === 'settings') && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser())) {
+      if (['activity_logs', 'settings'].includes(tab) && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser())) {
         if (typeof showToast === 'function') showToast('warning', 'Akses terbatas: Menu ini hanya dapat diakses oleh Super Admin.');
         state.currentTab = 'overview';
         state.isMobileMenuOpen = false;
