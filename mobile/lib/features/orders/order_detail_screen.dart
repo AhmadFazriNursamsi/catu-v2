@@ -1634,7 +1634,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                     ],
                   ),
                   child: Material(
-                    color: rescheduleRejections(order.rescheduleHistory, displayItem?.id) >= kRescheduleMaxRejections ? Colors.grey.shade500 : const Color(0xFFD97706),
+                    color: rescheduleClosed(order.rescheduleHistory, displayItem?.id) ? Colors.grey.shade500 : const Color(0xFFD97706),
                     borderRadius: BorderRadius.circular(16),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
@@ -1722,7 +1722,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   ],
                 ),
                 child: Material(
-                  color: rescheduleRejections(order.rescheduleHistory, displayItem?.id) >= kRescheduleMaxRejections ? Colors.grey.shade500 : const Color(0xFFD97706),
+                  color: rescheduleClosed(order.rescheduleHistory, displayItem?.id) ? Colors.grey.shade500 : const Color(0xFFD97706),
                   borderRadius: BorderRadius.circular(16),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
@@ -1809,7 +1809,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     final item = (targetItem != null && targetItem.scheduledDate.isNotEmpty) ? targetItem : null;
     showRescheduleSheet(
       context: context,
-      itemName: item?.itemName ?? order.categoryName, rejectedCount: rescheduleRejections(order.rescheduleHistory, item?.id),
+      itemName: item?.itemName ?? order.categoryName, rejectedCount: rescheduleRejections(order.rescheduleHistory, item?.id), accepted: rescheduleAccepted(order.rescheduleHistory, item?.id),
       currentDate: parseDateOnly(item?.scheduledDate ?? order.scheduledDate),
       currentStart: parseTimeOfDay(item?.scheduledTimeStart ?? order.jamMulaiLabel),
       currentEnd: parseTimeOfDay(item?.scheduledTimeEnd ?? order.jamSelesaiLabel),

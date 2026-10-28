@@ -18,6 +18,7 @@ Future<void> showRescheduleSheet({
   required TimeOfDay? currentStart,
   required TimeOfDay? currentEnd,
   int rejectedCount = 0,
+  bool accepted = false,
   required Future<String?> Function(RescheduleRequest request) onSubmit,
 }) {
   return showModalBottomSheet(
@@ -30,6 +31,7 @@ Future<void> showRescheduleSheet({
       currentStart: currentStart,
       currentEnd: currentEnd,
       rejectedCount: rejectedCount,
+      accepted: accepted,
       onSubmit: onSubmit,
     ),
   );
@@ -40,6 +42,7 @@ class RescheduleSheet extends StatefulWidget {
   final DateTime? currentDate;
   final TimeOfDay? currentStart, currentEnd;
   final int rejectedCount;
+  final bool accepted;
   final Future<String?> Function(RescheduleRequest request) onSubmit;
 
   const RescheduleSheet({
@@ -49,6 +52,7 @@ class RescheduleSheet extends StatefulWidget {
     required this.currentStart,
     required this.currentEnd,
     this.rejectedCount = 0,
+    this.accepted = false,
     required this.onSubmit,
   });
 
@@ -139,7 +143,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
     }
   }
 
-  bool get _closed => widget.rejectedCount >= kRescheduleMaxRejections;
+  bool get _closed => widget.accepted || widget.rejectedCount >= kRescheduleMaxRejections;
 
   @override
   Widget build(BuildContext context) {
@@ -197,7 +201,9 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
             const Text('Ubah Jam Sudah Ditutup', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: kRescheduleInk)),
             const SizedBox(height: 8),
             Text(
-              'Pengajuan ubah jam${widget.itemName.isNotEmpty ? ' untuk ${widget.itemName}' : ''} telah ditolak ${widget.rejectedCount} kali, sehingga jadwal tidak dapat diubah lagi. '
+              widget.accepted
+                  ? 'Perubahan jam${widget.itemName.isNotEmpty ? ' untuk ${widget.itemName}' : ''} sudah disetujui Umat, sehingga jadwal tidak dapat diubah lagi. '
+                  : 'Pengajuan ubah jam${widget.itemName.isNotEmpty ? ' untuk ${widget.itemName}' : ''} telah ditolak ${widget.rejectedCount} kali, sehingga jadwal tidak dapat diubah lagi. '
               'Pelayanan dilaksanakan sesuai jadwal terakhir. Bila ada kendala, hubungi Umat melalui grup chat.',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 13, color: kRescheduleMuted, height: 1.45),
