@@ -669,7 +669,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                                     _selectedUrgensi!
                                             .contains('Sangat')
                                         ? 'Pelayanan darurat/kritis akan mendapatkan prioritas penanganan cepat.'
-                                        : 'Permintaan akan diteruskan ke Romo dan Pengurus Lingkungan.',
+                                        : _isPendatang ? 'Permintaan akan diteruskan kepada Romo Ordo.' : 'Permintaan akan diteruskan ke Romo dan Pengurus Lingkungan.',
                                     style: TextStyle(
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w600,
