@@ -17,7 +17,7 @@ export class AssignmentsService {
   ) {}
 private async getPengurusForOrder(orderId: number, excludeUserId?: number): Promise<any[]> {
     const orderHierarchy = await this.dataSource.query(
-      `SELECT o.lingkungan_id, o.paroki_id, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id
+      `SELECT o.lingkungan_id, o.paroki_id, o.lintas_paroki, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id
        FROM orders o
        JOIN user_profiles p ON o.user_id = p.user_id
        WHERE o.id = $1`,
@@ -25,6 +25,7 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
     );
     if (orderHierarchy.length === 0) return [];
     const oh = orderHierarchy[0];
+    if (oh.lintas_paroki) return [];
     const keuskupanId = oh.keuskupan_id;
     let pengurus: any[] = [];
     if (oh.lingkungan_id) {

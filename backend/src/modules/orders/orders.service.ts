@@ -7,6 +7,7 @@ import { generateOrderNumber } from './order-number';
 import { EscalationSettingsService } from '../escalation/escalation-settings.service';
 import { orderStatusFromItemsSql } from '../order-rules/order-status-derive';
 import { OrderEventsService } from '../order-events/order-events.service';
+import { isLintasParoki } from '../order-rules/lintas-paroki';
 @Injectable()
 export class OrdersService {
   constructor(@InjectDataSource() private readonly dataSource: DataSource, private readonly fcmService: FcmService, private readonly escalation: EscalationSettingsService, private readonly events: OrderEventsService) {}
@@ -34,7 +35,7 @@ export class OrdersService {
 
   async getPengurusForOrder(orderId: number, excludeUserId?: number): Promise<any[]> {
     const orderHierarchy = await this.dataSource.query(
-      `SELECT o.lingkungan_id, o.paroki_id, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id
+      `SELECT o.lingkungan_id, o.paroki_id, o.lintas_paroki, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id
        FROM orders o
        JOIN user_profiles p ON o.user_id = p.user_id
        WHERE o.id = $1`,
@@ -42,6 +43,7 @@ export class OrdersService {
     );
     if (orderHierarchy.length === 0) return [];
     const oh = orderHierarchy[0];
+    if (oh.lintas_paroki) return [];
     const keuskupanId = oh.keuskupan_id;
     let pengurus: any[] = [];
     if (oh.lingkungan_id) {
@@ -173,6 +175,8 @@ export class OrdersService {
 
     // Pemohon tidak masuk daftar pemantau. Lintas paroki: tanpa Romo Paroki; Romo Ordo/Koordinator lewat eskalasi
     // (EscalationService) bila pelayanan belum diterima setelah batas menit pada master data.
+    const pemohonParoki = (await this.dataSource.query('SELECT paroki_id FROM user_profiles WHERE user_id = $1', [userId]))[0]?.paroki_id;
+    if (isLintasParoki(pId, pemohonParoki)) pengurus = []; // lintas paroki: tanpa pengurus
     if (userId) {
       const numUserId = Number(userId);
       pengurus = pengurus.filter((p: any) => Number(p.id) !== numUserId);
@@ -372,7 +376,7 @@ export class OrdersService {
       whereClauses.push(`COALESCE(o.keuskupan_id, p.keuskupan_id) = $${paramIdx++}`);
       queryParams.push(parseInt(keuskupanId));
     } else if (lingkunganId && !isNaN(parseInt(lingkunganId))) {
-      whereClauses.push(`COALESCE(o.lingkungan_id, p.lingkungan_id) = $${paramIdx++}`);
+      whereClauses.push(`COALESCE(o.lingkungan_id, p.lingkungan_id) = $${paramIdx++} AND NOT o.lintas_paroki`);
       queryParams.push(parseInt(lingkunganId));
     } else if (romoId && !isNaN(parseInt(romoId))) {
       const parsedRId = parseInt(romoId);
