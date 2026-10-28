@@ -663,18 +663,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 return;
               }
               // 0. Account Approval / Rejection Result Notification -> ONLY show Alert Dialog, DO NOT redirect!
-              final titleLower = item.title.toLowerCase();
-              final bodyLower = item.body.toLowerCase();
-              final isAccountResult = item.type == 'ACCOUNT_APPROVED' ||
-                  item.type == 'ACCOUNT_REJECTED' ||
-                  titleLower.contains('disetujui') ||
-                  titleLower.contains('ditolak') ||
-                  (bodyLower.contains('pendaftaran') && (bodyLower.contains('disetujui') || bodyLower.contains('ditolak')));
+              final isAccountResult = item.type == 'ACCOUNT_APPROVED' || item.type == 'ACCOUNT_REJECTED';
 
               if (isAccountResult) {
-                final isApproved = item.type == 'ACCOUNT_APPROVED' ||
-                    titleLower.contains('disetujui') ||
-                    bodyLower.contains('disetujui');
+                final isApproved = item.type == 'ACCOUNT_APPROVED';
                 await showDialog(
                   context: context,
                   builder: (ctx) => AlertDialog(
