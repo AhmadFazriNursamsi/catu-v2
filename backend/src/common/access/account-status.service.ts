@@ -8,6 +8,8 @@ export interface AccountState {
   status: string;
   roleCode: string;
   isActive: boolean;
+  /** Kata sandi sementara (dibuat Koordinator): wajib diganti sebelum memakai API lain. */
+  mustChangePassword: boolean;
 }
 
 const CACHE_TTL_MS = 5_000;
@@ -27,11 +29,11 @@ export class AccountStatusService {
     const hit = this.cache.get(userId);
     if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.state;
     const rows = await this.dataSource.query(
-      `SELECT u.account_status, u.is_active, r.code AS role_code
+      `SELECT u.account_status, u.is_active, u.must_change_password, r.code AS role_code
        FROM auth_users u JOIN roles r ON r.id = u.role_id WHERE u.id = $1`,
       [userId],
     );
-    const state: AccountState | null = rows.length === 0 ? null : { status: rows[0].account_status, roleCode: rows[0].role_code, isActive: rows[0].is_active !== false };
+    const state: AccountState | null = rows.length === 0 ? null : { status: rows[0].account_status, roleCode: rows[0].role_code, isActive: rows[0].is_active !== false, mustChangePassword: rows[0].must_change_password === true };
     this.cache.set(userId, { at: Date.now(), state });
     return state;
   }

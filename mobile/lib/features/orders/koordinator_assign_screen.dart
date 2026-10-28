@@ -68,13 +68,9 @@ class _KoordinatorAssignScreenState extends State<KoordinatorAssignScreen> {
         _query = '';
       });
     }
-    await showRomoCredentialsDialog(context, result);
-    if (!mounted) return;
-    if (result.assigned) {
-      Navigator.pop(context, true);
-    } else if (result.assignError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Akun dibuat, tetapi penetapan gagal: ${result.assignError}'), backgroundColor: Colors.red.shade700, behavior: SnackBarBehavior.floating));
-    }
+    final sentTo = 'Data masuk dikirim lewat WhatsApp ke ${result.phoneNumber}.';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.assigned || result.assignError == null ? 'Akun ${result.romo.fullName} aktif. $sentTo' : 'Akun dibuat ($sentTo), tetapi penetapan gagal: ${result.assignError}'), backgroundColor: result.assigned || result.assignError == null ? const Color(0xFF059669) : Colors.red.shade700, behavior: SnackBarBehavior.floating));
+    if (result.assigned) Navigator.pop(context, true);
   }
 
   Future<void> _confirm() async {

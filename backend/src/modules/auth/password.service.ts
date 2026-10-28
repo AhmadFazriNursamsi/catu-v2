@@ -7,11 +7,13 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { ChangePasswordDto } from '../../auth.dto';
+import { AccountStatusService } from '../../common/access/account-status.service';
 
 @Injectable()
 export class PasswordService {
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly accounts: AccountStatusService,
   ) {}
 
   async changePassword(dto: ChangePasswordDto) {
@@ -47,10 +49,11 @@ export class PasswordService {
 
     await this.dataSource.query(
       `UPDATE auth_users
-       SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
+       SET password_hash = $1, must_change_password = FALSE, updated_at = CURRENT_TIMESTAMP
        WHERE id = $2`,
       [newHash, user.id],
     );
+    this.accounts.invalidate(Number(user.id));
 
     return {
       statusCode: 200,

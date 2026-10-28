@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../core/services/koordinator_assignment_api.dart';
 
 const _ink = Color(0xFF0F172A);
@@ -20,51 +19,6 @@ Future<RegisteredRomo?> showRegisterRomoSheet(BuildContext context, int orderId,
   );
 }
 
-/// Kredensial sementara Romo baru; kata sandi hanya ditampilkan sekali.
-Future<void> showRomoCredentialsDialog(BuildContext context, RegisteredRomo r) {
-  final text = 'Akun CATU ${r.romo.fullName}\nNomor HP: ${r.phoneNumber}\nKata sandi sementara: ${r.temporaryPassword}';
-  return showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Text('Akun Romo Aktif', style: TextStyle(fontWeight: FontWeight.w800)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(r.assigned ? '${r.romo.fullName} sudah terdaftar, langsung aktif, dan otomatis menerima pelayanan ini. Sampaikan data masuk berikut kepada Romo:' : '${r.romo.fullName} sudah terdaftar dan langsung aktif. Sampaikan data masuk berikut kepada Romo:', style: const TextStyle(height: 1.4)),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(12)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Nomor HP', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-              SelectableText(r.phoneNumber, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-              const SizedBox(height: 8),
-              Text('Kata sandi sementara', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-              SelectableText(r.temporaryPassword, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: 1.5)),
-            ]),
-          ),
-          const SizedBox(height: 10),
-          const Text('Kata sandi hanya ditampilkan sekali. Romo dapat menggantinya setelah masuk.', style: TextStyle(fontSize: 12, color: _muted, height: 1.4)),
-        ],
-      ),
-      actions: [
-        TextButton.icon(
-          onPressed: () async {
-            await Clipboard.setData(ClipboardData(text: text));
-            if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Data masuk disalin'), behavior: SnackBarBehavior.floating));
-          },
-          icon: const Icon(Icons.copy_rounded, size: 18),
-          label: const Text('Salin'),
-        ),
-        ElevatedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Selesai')),
-      ],
-    ),
-  );
-}
-
 class _RegisterRomoForm extends StatefulWidget {
   final int orderId;
   final int? itemId;
@@ -82,7 +36,7 @@ class _RegisterRomoFormState extends State<_RegisterRomoForm> {
   final _phone = TextEditingController();
   RomoRegisterOptions? _options;
   String _role = 'ROMO_PAROKI';
-  int? _parokiId;
+  int? _parokiId, _keuskupanId;
   int? _ordoId;
   String? _error;
   bool _saving = false;
@@ -91,7 +45,7 @@ class _RegisterRomoFormState extends State<_RegisterRomoForm> {
   void initState() {
     super.initState();
     widget.optionsLoader(widget.orderId).then((o) {
-      if (mounted) setState(() { _options = o; _parokiId = o.defaultParokiId; });
+      if (mounted) setState(() { _options = o; _keuskupanId = o.defaultKeuskupanId; _parokiId = o.defaultParokiId; });
     }).catchError((Object e) {
       if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     });
@@ -121,7 +75,8 @@ class _RegisterRomoFormState extends State<_RegisterRomoForm> {
   Widget build(BuildContext context) {
     final options = _options;
     final isParoki = _role == 'ROMO_PAROKI';
-    final choices = isParoki ? options?.parokis : options?.ordos;
+    final showKeuskupan = isParoki && (options?.keuskupans.isNotEmpty ?? false);
+    final choices = isParoki ? options?.parokis.where((p) => !showKeuskupan || p.parentId == _keuskupanId).toList() : options?.ordos;
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(context).viewInsets.bottom + 20),
       child: SingleChildScrollView(
@@ -149,16 +104,28 @@ class _RegisterRomoFormState extends State<_RegisterRomoForm> {
               const SizedBox(height: 14),
               if (options == null && _error == null)
                 const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()))
-              else if (choices != null)
+              else if (choices != null) ...[
+                if (showKeuskupan) ...[
+                  DropdownButtonFormField<int>(
+                    initialValue: _keuskupanId,
+                    isExpanded: true,
+                    decoration: _deco('Keuskupan', Icons.account_balance_outlined),
+                    items: [for (final k in options!.keuskupans) DropdownMenuItem(value: k.id, child: Text(k.name, overflow: TextOverflow.ellipsis))],
+                    onChanged: (v) => setState(() { _keuskupanId = v; _parokiId = null; }),
+                    validator: (v) => v == null ? 'Pilih keuskupan' : null,
+                  ),
+                  const SizedBox(height: 14),
+                ],
                 DropdownButtonFormField<int>(
-                  key: ValueKey(_role),
-                  initialValue: isParoki ? _parokiId : _ordoId,
+                  key: ValueKey('$_role-$_keuskupanId'),
+                  initialValue: choices.any((c) => c.id == (isParoki ? _parokiId : _ordoId)) ? (isParoki ? _parokiId : _ordoId) : null,
                   isExpanded: true,
                   decoration: _deco(isParoki ? 'Paroki' : 'Ordo / Tarekat', isParoki ? Icons.church_rounded : Icons.groups_rounded),
                   items: [for (final c in choices) DropdownMenuItem(value: c.id, child: Text(c.name, overflow: TextOverflow.ellipsis))],
                   onChanged: (v) => setState(() => isParoki ? _parokiId = v : _ordoId = v),
                   validator: (v) => v == null ? (isParoki ? 'Pilih paroki' : 'Pilih ordo') : null,
                 ),
+              ],
               if (_error != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12.5, height: 1.3))),
               const SizedBox(height: 16),
               SizedBox(

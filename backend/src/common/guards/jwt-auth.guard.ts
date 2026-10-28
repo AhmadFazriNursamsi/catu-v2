@@ -9,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { ALLOW_INACTIVE_KEY } from '../decorators/allow-inactive.decorator';
+import { ALLOW_PASSWORD_CHANGE_KEY } from '../decorators/allow-password-change.decorator';
 import { ACCOUNT_APPROVED, AccountStatusService } from '../access/account-status.service';
 
 const INACTIVE_MESSAGES: Record<string, string> = {
@@ -52,6 +53,9 @@ export class JwtAuthGuard implements CanActivate {
     if (account.status !== ACCOUNT_APPROVED) {
       const allowed = this.reflector.getAllAndOverride<boolean>(ALLOW_INACTIVE_KEY, targets);
       if (!allowed) throw new ForbiddenException(INACTIVE_MESSAGES[account.status] ?? 'Akun Anda belum aktif');
+    }
+    if (account.mustChangePassword && !this.reflector.getAllAndOverride<boolean>(ALLOW_PASSWORD_CHANGE_KEY, targets)) {
+      throw new ForbiddenException('Anda wajib mengganti kata sandi sementara terlebih dahulu.');
     }
     request.user = { ...payload, roleCode: account.roleCode };
     return true;

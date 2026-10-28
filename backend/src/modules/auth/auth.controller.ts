@@ -14,6 +14,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
 import { AllowInactiveAccount } from '../../common/decorators/allow-inactive.decorator';
+import { AllowPasswordChange } from '../../common/decorators/allow-password-change.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AccessService, AuthUser } from '../../common/access/access.service';
@@ -214,6 +215,7 @@ export class AuthController {
     return await this.passwordReset.resetPassword(dto);
   }
 
+  @AllowPasswordChange()
   @Post('change-password')
   @HttpCode(200)
   @ApiOperation({
@@ -226,6 +228,7 @@ export class AuthController {
   }
 
   @AllowInactiveAccount()
+  @AllowPasswordChange()
   @Get('profile/:userId')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Ambil Detail Profil User Lengkap dari Database' })

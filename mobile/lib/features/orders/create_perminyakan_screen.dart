@@ -270,6 +270,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   }
 
   Future<void> _pickDate() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -306,6 +307,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       }
     }
 
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await showTimePicker(
       context: context,
       initialTime: initialTime,
@@ -600,8 +602,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                           prefixIcon: Icons.wc_rounded,
                           items: _genderOptions,
                           itemLabel: (e) => e,
-                          onChanged: (v) =>
-                              setState(() => _selectedGender = v),
+                          onChanged: (v) => setState(() => _selectedGender = v),
                           validator: (v) =>
                               v == null ? 'Pilih gender' : null,
                         ),
@@ -637,8 +638,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                           prefixIcon: Icons.warning_amber_rounded,
                           items: _urgensiOptions,
                           itemLabel: (e) => e,
-                          onChanged: (v) =>
-                              setState(() => _selectedUrgensi = v),
+                          onChanged: (v) => setState(() => _selectedUrgensi = v),
                           validator: (v) =>
                               v == null ? 'Jenis urgensi wajib dipilih' : null,
                         ),
@@ -789,7 +789,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                         if (!_isPendatang) ...[
                           InkWell(
                             onTap: () async {
-                              final nextVal = !_isSameParish;
+                              final nextVal = !_isSameParish; FocusManager.instance.primaryFocus?.unfocus();
                               setState(() => _isSameParish = nextVal);
                               if (nextVal) await _forceResetToProfileLocation();
                             },
@@ -1211,6 +1211,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                   ))
               .toList(),
           onChanged: onChanged,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         ),
       ],
     );
