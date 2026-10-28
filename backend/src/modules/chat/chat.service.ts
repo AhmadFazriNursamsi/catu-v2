@@ -414,7 +414,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
         [order.lingkungan_id],
       );
     }
-    if (pengurus.length === 0 && order.paroki_id) {
+    if (!order.lingkungan_id && order.paroki_id) {
       pengurus = await this.dataSource.query(
         `SELECT u.id as user_id, 'PENGURUS_LINGKUNGAN' as role_in_group, p.full_name, u.phone_number,
                 COALESCE(l.name, 'Lingkungan') as lingkungan_name

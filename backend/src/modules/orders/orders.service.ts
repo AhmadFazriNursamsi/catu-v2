@@ -53,7 +53,7 @@ export class OrdersService {
         [oh.lingkungan_id],
       );
     }
-    if (pengurus.length === 0 && oh.paroki_id) {
+    if (!oh.lingkungan_id && oh.paroki_id) {
       pengurus = await this.dataSource.query(
         `SELECT u.id FROM auth_users u JOIN user_profiles p ON u.id = p.user_id JOIN roles r ON u.role_id = r.id
          WHERE ((r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
@@ -144,7 +144,7 @@ export class OrdersService {
         [lId],
       );
     }
-    if (pengurus.length === 0 && pId) {
+    if (!lId && pId) {
       pengurus = await this.dataSource.query(
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id

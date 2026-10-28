@@ -36,7 +36,7 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
         [oh.lingkungan_id],
       );
     }
-    if (pengurus.length === 0 && oh.paroki_id) {
+    if (!oh.lingkungan_id && oh.paroki_id) {
       pengurus = await this.dataSource.query(
         `SELECT u.id FROM auth_users u
          JOIN user_profiles p ON u.id = p.user_id
