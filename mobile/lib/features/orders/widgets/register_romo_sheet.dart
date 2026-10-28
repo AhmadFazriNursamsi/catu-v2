@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../core/services/koordinator_assignment_api.dart';
 
 const _ink = Color(0xFF0F172A);
@@ -17,51 +16,6 @@ Future<RegisteredRomo?> showRegisterRomoSheet(BuildContext context, int orderId,
     backgroundColor: Colors.white,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
     builder: (_) => _RegisterRomoForm(orderId: orderId, itemId: itemId, optionsLoader: optionsLoader ?? KoordinatorAssignmentApi.registerOptions, registrar: registrar ?? KoordinatorAssignmentApi.registerRomo),
-  );
-}
-
-/// Kredensial sementara Romo baru; kata sandi hanya ditampilkan sekali.
-Future<void> showRomoCredentialsDialog(BuildContext context, RegisteredRomo r) {
-  final text = 'Akun CATU ${r.romo.fullName}\nNomor HP: ${r.phoneNumber}\nKata sandi sementara: ${r.temporaryPassword}';
-  return showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Text('Akun Romo Aktif', style: TextStyle(fontWeight: FontWeight.w800)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(r.assigned ? '${r.romo.fullName} sudah terdaftar, langsung aktif, dan otomatis menerima pelayanan ini. Sampaikan data masuk berikut kepada Romo:' : '${r.romo.fullName} sudah terdaftar dan langsung aktif. Sampaikan data masuk berikut kepada Romo:', style: const TextStyle(height: 1.4)),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(12)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Nomor HP', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-              SelectableText(r.phoneNumber, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-              const SizedBox(height: 8),
-              Text('Kata sandi sementara', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-              SelectableText(r.temporaryPassword, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: 1.5)),
-            ]),
-          ),
-          const SizedBox(height: 10),
-          const Text('Kata sandi hanya ditampilkan sekali. Romo dapat menggantinya setelah masuk.', style: TextStyle(fontSize: 12, color: _muted, height: 1.4)),
-        ],
-      ),
-      actions: [
-        TextButton.icon(
-          onPressed: () async {
-            await Clipboard.setData(ClipboardData(text: text));
-            if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Data masuk disalin'), behavior: SnackBarBehavior.floating));
-          },
-          icon: const Icon(Icons.copy_rounded, size: 18),
-          label: const Text('Salin'),
-        ),
-        ElevatedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Selesai')),
-      ],
-    ),
   );
 }
 

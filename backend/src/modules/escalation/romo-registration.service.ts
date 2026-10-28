@@ -1,7 +1,8 @@
-import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { generatePassword, normalizePhone } from './romo-registration-rules';
 
 export interface RegisterRomoInput {
@@ -17,17 +18,24 @@ export interface OrderScope {
   paroki_id: number | null;
   kabupaten_kota_id: number | null;
   keuskupan_id: number | null;
+  order_number?: string;
+  category_name?: string;
+  scheduled_date?: string | null;
+  location_name?: string | null;
 }
 
 /**
  * Koordinator mendaftarkan akun Romo yang belum terdaftar: langsung aktif (tanpa persetujuan admin atau Ketua Romo)
- * dengan kata sandi acak yang dikembalikan sekali agar Koordinator dapat menyampaikannya.
+ * dengan kata sandi acak yang dikirim langsung ke WhatsApp Romo (tidak pernah dikembalikan ke aplikasi Koordinator).
  */
 @Injectable()
 export class RomoRegistrationService {
   private readonly logger = new Logger(RomoRegistrationService.name);
 
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly wa: WhatsappService,
+  ) {}
 
   /** Pilihan paroki (se-keuskupan pelayanan) dan ordo untuk formulir. */
   async options(order: OrderScope) {
@@ -41,6 +49,20 @@ export class RomoRegistrationService {
       ordos: ordo.map((o: any) => ({ id: Number(o.id), name: o.name })),
       defaultParokiId: order.paroki_id ? Number(order.paroki_id) : null,
     };
+  }
+
+  private welcomeText(fullName: string, phone: string, password: string, order: OrderScope): string {
+    const service = [order.category_name, order.order_number ? `(${order.order_number})` : ''].filter(Boolean).join(' ');
+    const raw: any = order.scheduled_date;
+    const day = raw instanceof Date ? raw : raw ? new Date(`${String(raw).slice(0, 10)}T00:00:00`) : null;
+    const when = day && !isNaN(day.getTime()) ? ` pada ${day.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}` : '';
+    const where = order.location_name ? ` di ${order.location_name}` : '';
+    return (
+      `*CATU* - Shalom ${fullName},\n\n` +
+      `Anda didaftarkan oleh Koordinator untuk melayani ${service || 'sebuah pelayanan'}${when}${where}. Pelayanan ini sudah tercatat Anda terima.\n\n` +
+      `Akun CATU Anda sudah aktif:\nNomor HP: ${phone}\nKata sandi sementara: *${password}*\n\n` +
+      `Silakan masuk ke aplikasi CATU, lalu segera ganti kata sandi Anda. Jangan berikan kata sandi ini kepada siapa pun.`
+    );
   }
 
   async register(order: OrderScope, input: RegisterRomoInput) {
@@ -79,6 +101,7 @@ export class RomoRegistrationService {
 
     const role = await this.dataSource.query('SELECT id FROM roles WHERE code = $1', [input.roleCode]);
     if (role.length === 0) throw new BadRequestException('Peran Romo tidak tersedia.');
+    if (!this.wa.enabled) throw new ServiceUnavailableException('Layanan WhatsApp belum aktif, Romo belum dapat didaftarkan. Hubungi admin CATU.');
     const password = generatePassword();
     const hash = await bcrypt.hash(password, 10);
 
@@ -96,8 +119,11 @@ export class RomoRegistrationService {
          VALUES ($1, $2, $3, $4, $5, $6, 'ROMO_BIASA', TRUE)`,
         [user[0].id, fullName, order.keuskupan_id || null, parokiId, order.kabupaten_kota_id || null, ordoId],
       );
+      // Kirim kredensial sebelum commit: bila WhatsApp gagal, akun dibatalkan agar tidak ada akun yang kata sandinya tidak diketahui siapa pun.
+      const sent = await this.wa.send(phone, this.welcomeText(fullName, phone, password, order), { priority: 'normal' });
+      if (!sent.ok) throw new ServiceUnavailableException(`Pesan WhatsApp ke Romo gagal dikirim (${sent.message}). Romo belum didaftarkan, coba lagi.`);
       await runner.commitTransaction();
-      this.logger.log(`Romo ${user[0].id} (${input.roleCode}) didaftarkan Koordinator dan langsung aktif`);
+      this.logger.log(`Romo ${user[0].id} (${input.roleCode}) didaftarkan Koordinator, kredensial dikirim lewat WhatsApp`);
       return {
         romo: {
           id: Number(user[0].id),
@@ -107,7 +133,7 @@ export class RomoRegistrationService {
           local: true,
         },
         phoneNumber: phone,
-        temporaryPassword: password,
+        notified: true,
       };
     } catch (err) {
       await runner.rollbackTransaction();

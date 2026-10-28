@@ -41,20 +41,18 @@ class RomoRegisterOptions {
   }
 }
 
-/// Romo yang baru didaftarkan Koordinator, beserta kredensial sementara (hanya diberikan sekali oleh server).
+/// Romo yang baru didaftarkan Koordinator. Kredensial dikirim server langsung ke WhatsApp Romo, tidak pernah ke aplikasi.
 class RegisteredRomo {
   final AssignableRomo romo;
   final String phoneNumber;
-  final String temporaryPassword;
   /// Pelayanan otomatis diterima Romo baru; bila false, [assignError] berisi alasannya dan Romo dipilih manual.
   final bool assigned;
   final String? assignError;
-  const RegisteredRomo({required this.romo, required this.phoneNumber, required this.temporaryPassword, this.assigned = false, this.assignError});
+  const RegisteredRomo({required this.romo, required this.phoneNumber, this.assigned = false, this.assignError});
 
   factory RegisteredRomo.fromJson(Map<String, dynamic> j) => RegisteredRomo(
         romo: AssignableRomo.fromJson((j['romo'] as Map).cast<String, dynamic>()),
         phoneNumber: j['phoneNumber']?.toString() ?? '',
-        temporaryPassword: j['temporaryPassword']?.toString() ?? '',
         assigned: j['assigned'] == true,
         assignError: j['assignError']?.toString(),
       );

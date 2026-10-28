@@ -45,7 +45,7 @@ void main() {
     expect(calls, 0);
   });
 
-  testWidgets('daftar Romo Paroki: kirim data, kata sandi tampil, lalu pelayanan otomatis diterima dan layar menutup', (tester) async {
+  testWidgets('daftar Romo Paroki: kirim data, kredensial dikirim lewat WhatsApp (tanpa popup kata sandi), lalu layar menutup', (tester) async {
     Map<String, Object?>? sent;
     var popped = false;
     await _pump(tester, onPop: (v) => popped = v == true, registrar: (id, {required fullName, required phoneNumber, required roleCode, parokiId, ordoId, itemId}) async {
@@ -53,7 +53,6 @@ void main() {
       return const RegisteredRomo(
         romo: AssignableRomo(id: 99, fullName: 'Romo Baru Uji', roleCode: 'ROMO_PAROKI', affiliation: 'Paroki Santo Yosef', local: true),
         phoneNumber: '6281300000771',
-        temporaryPassword: 'Ab3dEf7hJk',
         assigned: true,
       );
     });
@@ -63,12 +62,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(sent, {'order': 5, 'name': 'Romo Baru Uji', 'phone': '0813-0000-0771', 'role': 'ROMO_PAROKI', 'paroki': 256, 'ordo': null, 'item': null});
-    expect(find.text('Akun Romo Aktif'), findsOneWidget);
-    expect(find.textContaining('otomatis menerima pelayanan ini'), findsOneWidget);
-    expect(find.text('Ab3dEf7hJk'), findsOneWidget);
-    expect(find.text('6281300000771'), findsOneWidget);
-
-    await tester.tap(find.text('Selesai'));
+    expect(find.text('Akun Romo Aktif'), findsNothing); // tidak ada popup nomor dan kata sandi
+    expect(find.textContaining('Kata sandi'), findsNothing);
+    expect(find.textContaining('dikirim lewat WhatsApp ke 6281300000771'), findsOneWidget);
     await tester.pumpAndSettle();
     expect(popped, isTrue); // layar Carikan Romo menutup dengan hasil "ditetapkan"
     expect(find.text('Carikan Romo'), findsNothing);
@@ -78,7 +74,6 @@ void main() {
     await _pump(tester, registrar: (id, {required fullName, required phoneNumber, required roleCode, parokiId, ordoId, itemId}) async => const RegisteredRomo(
           romo: AssignableRomo(id: 99, fullName: 'Romo Baru Uji', roleCode: 'ROMO_PAROKI', affiliation: 'Paroki Santo Yosef', local: true),
           phoneNumber: '6281300000771',
-          temporaryPassword: 'Ab3dEf7hJk',
           assigned: false,
           assignError: 'Pelayanan ini sudah diterima Romo lain.',
         ));
@@ -86,9 +81,7 @@ void main() {
     await tester.enterText(find.widgetWithText(TextFormField, 'Nomor HP / WhatsApp'), '0813-0000-0771');
     await tester.tap(find.widgetWithText(ElevatedButton, 'Daftarkan Romo'));
     await tester.pumpAndSettle();
-    expect(find.text('Akun Romo Aktif'), findsOneWidget);
-    expect(find.textContaining('otomatis menerima'), findsNothing);
-    await tester.tap(find.text('Selesai'));
+    expect(find.text('Akun Romo Aktif'), findsNothing);
     await tester.pumpAndSettle();
 
     expect(find.text('Carikan Romo'), findsOneWidget);
