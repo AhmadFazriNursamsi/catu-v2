@@ -81,14 +81,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
   }
 
   // ── Step 1: Request OTP ──
-  Future<void> _handleRequestOtp() async {
-    if (!_formKeyPhone.currentState!.validate()) return;
+  // resend: dari langkah OTP (form nomor tidak tampil), pakai nomor yang sama.
+  Future<void> _handleRequestOtp({bool resend = false}) async {
+    if (!resend && !_formKeyPhone.currentState!.validate()) return;
     HapticFeedback.lightImpact();
 
     String rawPhone = _phoneController.text.trim();
     if (rawPhone.startsWith('0')) rawPhone = rawPhone.substring(1);
     if (rawPhone.startsWith('62')) rawPhone = rawPhone.substring(2);
-    final fullPhone = '62$rawPhone';
+    final fullPhone = resend ? _targetPhone : '62$rawPhone';
 
     setState(() {
       _isLoading = true;
@@ -111,10 +112,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
       _startCountdown();
       _animController.reset();
       _animController.forward();
+      if (resend && mounted) { _otpController.clear(); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kode OTP baru sedang dikirim ke WhatsApp Anda.'), behavior: SnackBarBehavior.floating)); }
     } else {
-      setState(() {
-        _errorMessage = res['message'] ?? 'Nomor WhatsApp tidak terdaftar di sistem CATU.';
-      });
+      setState(() => _errorMessage = res['message'] ?? 'Nomor WhatsApp tidak terdaftar di sistem CATU.');
     }
   }
 
@@ -615,7 +615,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
                     style: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
                   )
                 : TextButton(
-                    onPressed: _handleRequestOtp,
+                    onPressed: _isLoading ? null : () => _handleRequestOtp(resend: true),
                     child: const Text(
                       'Kirim Ulang Kode OTP',
                       style: TextStyle(
