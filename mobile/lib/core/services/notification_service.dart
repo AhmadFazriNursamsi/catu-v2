@@ -39,7 +39,7 @@ class NotificationService {
   static final Map<String, int> _recentNotificationTimestamps = {};
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'catu_custom_sound_channel_v2',
+    'catu_custom_sound_channel_v3',
     'Pelayanan & Chat CATU',
     description: 'Notifikasi penting untuk permintaan pelayanan Romo, persetujuan jadwal, dan pesan chat umat',
     importance: Importance.max,
