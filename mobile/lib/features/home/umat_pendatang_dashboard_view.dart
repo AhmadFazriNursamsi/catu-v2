@@ -6,6 +6,7 @@ import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
 import 'kunjungan_detail_screen.dart';
+import 'kunjungan_delete_dialog.dart';
 import 'kunjungan_dialog.dart';
 import 'umat_dashboard_view.dart';
 
@@ -140,7 +141,9 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
     ))).then((_) => widget.onRefresh());
   }
 
-  void _deleteHistory(int idx) {
+  Future<void> _deleteHistory(int idx) async {
+    final item = _history[idx];
+    if (!await confirmDeleteKunjungan(context, item, _countOrdersForKunjungan(item)) || !mounted || idx >= _history.length || _history[idx] != item) return;
     setState(() => _history.removeAt(idx));
     _persistData();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Riwayat kunjungan dihapus'), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 1), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))));
