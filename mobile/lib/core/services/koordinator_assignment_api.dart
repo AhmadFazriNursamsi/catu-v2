@@ -25,19 +25,22 @@ class AssignableRomo {
 class NamedOption {
   final int id;
   final String name;
-  const NamedOption(this.id, this.name);
+  /// Induk pilihan (mis. id keuskupan untuk paroki); null bila tidak ada.
+  final int? parentId;
+  const NamedOption(this.id, this.name, [this.parentId]);
 }
 
-/// Pilihan formulir pendaftaran Romo: paroki se-keuskupan pelayanan, daftar ordo, dan paroki bawaan.
+/// Pilihan formulir pendaftaran Romo: keuskupan, paroki (dengan induk keuskupan), daftar ordo, serta keuskupan dan paroki bawaan.
 class RomoRegisterOptions {
   final List<NamedOption> parokis;
   final List<NamedOption> ordos;
-  final int? defaultParokiId;
-  const RomoRegisterOptions({required this.parokis, required this.ordos, this.defaultParokiId});
+  final List<NamedOption> keuskupans;
+  final int? defaultParokiId, defaultKeuskupanId;
+  const RomoRegisterOptions({required this.parokis, required this.ordos, this.keuskupans = const [], this.defaultParokiId, this.defaultKeuskupanId});
 
   factory RomoRegisterOptions.fromJson(Map<String, dynamic> j) {
-    List<NamedOption> list(String key) => ((j[key] as List?) ?? const []).cast<Map>().map((e) => NamedOption((e['id'] as num).toInt(), e['name']?.toString() ?? '')).toList();
-    return RomoRegisterOptions(parokis: list('parokis'), ordos: list('ordos'), defaultParokiId: (j['defaultParokiId'] as num?)?.toInt());
+    List<NamedOption> list(String key) => ((j[key] as List?) ?? const []).cast<Map>().map((e) => NamedOption((e['id'] as num).toInt(), e['name']?.toString() ?? '', (e['keuskupanId'] as num?)?.toInt())).toList();
+    return RomoRegisterOptions(parokis: list('parokis'), ordos: list('ordos'), keuskupans: list('keuskupans'), defaultParokiId: (j['defaultParokiId'] as num?)?.toInt(), defaultKeuskupanId: (j['defaultKeuskupanId'] as num?)?.toInt());
   }
 }
 

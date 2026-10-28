@@ -37,16 +37,16 @@ export class RomoRegistrationService {
     private readonly wa: WhatsappService,
   ) {}
 
-  /** Pilihan paroki (se-keuskupan pelayanan) dan ordo untuk formulir. */
+  /** Pilihan keuskupan, paroki (semua keuskupan; Romo bisa dari keuskupan mana pun), dan ordo untuk formulir. */
   async options(order: OrderScope) {
-    const paroki = await this.dataSource.query(
-      'SELECT id, name FROM paroki WHERE ($1::int IS NULL OR keuskupan_id = $1::int) ORDER BY name',
-      [order.keuskupan_id],
-    );
+    const keuskupan = await this.dataSource.query('SELECT k.id, k.name FROM keuskupan k WHERE EXISTS (SELECT 1 FROM paroki p WHERE p.keuskupan_id = k.id) ORDER BY k.name');
+    const paroki = await this.dataSource.query('SELECT id, name, keuskupan_id FROM paroki ORDER BY name');
     const ordo = await this.dataSource.query('SELECT id, name FROM ordo ORDER BY name');
     return {
-      parokis: paroki.map((p: any) => ({ id: Number(p.id), name: p.name })),
+      keuskupans: keuskupan.map((k: any) => ({ id: Number(k.id), name: k.name })),
+      parokis: paroki.map((p: any) => ({ id: Number(p.id), name: p.name, keuskupanId: Number(p.keuskupan_id) })),
       ordos: ordo.map((o: any) => ({ id: Number(o.id), name: o.name })),
+      defaultKeuskupanId: order.keuskupan_id ? Number(order.keuskupan_id) : null,
       defaultParokiId: order.paroki_id ? Number(order.paroki_id) : null,
     };
   }
@@ -74,14 +74,13 @@ export class RomoRegistrationService {
 
     let parokiId: number | null = null;
     let ordoId: number | null = null;
+    let keuskupanId: number | null = order.keuskupan_id ? Number(order.keuskupan_id) : null;
     let affiliation = '';
     if (input.roleCode === 'ROMO_PAROKI') {
       const paroki = await this.dataSource.query('SELECT id, name, keuskupan_id FROM paroki WHERE id = $1', [input.parokiId ?? 0]);
       if (paroki.length === 0) throw new BadRequestException('Paroki wajib dipilih untuk Romo Paroki.');
-      if (order.keuskupan_id && String(paroki[0].keuskupan_id) !== String(order.keuskupan_id)) {
-        throw new BadRequestException('Paroki harus berada di keuskupan pelayanan ini.');
-      }
       parokiId = Number(paroki[0].id);
+      keuskupanId = paroki[0].keuskupan_id ? Number(paroki[0].keuskupan_id) : null;
       affiliation = paroki[0].name;
     } else {
       const ordo = await this.dataSource.query('SELECT id, name FROM ordo WHERE id = $1', [input.ordoId ?? 0]);
@@ -91,6 +90,8 @@ export class RomoRegistrationService {
       affiliation = ordo[0].name;
     }
 
+    // Kota pelayanan hanya diwariskan bila Romo berasal dari keuskupan pelayanan yang sama.
+    const kotaId = !keuskupanId || String(keuskupanId) === String(order.keuskupan_id) ? order.kabupaten_kota_id || null : null;
     const existing = await this.dataSource.query(
       'SELECT p.full_name FROM auth_users u LEFT JOIN user_profiles p ON p.user_id = u.id WHERE u.phone_number = $1',
       [phone],
@@ -117,7 +118,7 @@ export class RomoRegistrationService {
       await runner.query(
         `INSERT INTO user_profiles (user_id, full_name, keuskupan_id, paroki_id, kabupaten_kota_id, ordo_id, romo_position, is_jabatan_active)
          VALUES ($1, $2, $3, $4, $5, $6, 'ROMO_BIASA', TRUE)`,
-        [user[0].id, fullName, order.keuskupan_id || null, parokiId, order.kabupaten_kota_id || null, ordoId],
+        [user[0].id, fullName, keuskupanId, parokiId, kotaId, ordoId],
       );
       // Kirim kredensial sebelum commit: bila WhatsApp gagal, akun dibatalkan agar tidak ada akun yang kata sandinya tidak diketahui siapa pun.
       const sent = await this.wa.send(phone, this.welcomeText(fullName, phone, password, order), { priority: 'normal' });

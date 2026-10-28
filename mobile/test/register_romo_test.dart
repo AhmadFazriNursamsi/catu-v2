@@ -109,4 +109,34 @@ void main() {
     expect(find.text('Nomor 6281300000771 sudah terdaftar atas nama Romo Lama.'), findsOneWidget);
     expect(find.text('Daftarkan Romo'), findsWidgets);
   });
+
+  testWidgets('pilih keuskupan lain: daftar paroki mengikuti keuskupan, dan paroki dari keuskupan itu terkirim', (tester) async {
+    int? sentParoki;
+    const options = RomoRegisterOptions(
+      keuskupans: [NamedOption(1, 'Keuskupan Agung Jakarta'), NamedOption(30, 'Keuskupan Bekasi')],
+      parokis: [NamedOption(256, 'Paroki Santo Yosef', 1), NamedOption(300, 'Paroki Babelan', 30)],
+      ordos: [NamedOption(2, 'SJ - Serikat Yesus')],
+      defaultKeuskupanId: 1,
+      defaultParokiId: 256,
+    );
+    await _pump(tester, optionsLoader: (_) async => options, registrar: (id, {required fullName, required phoneNumber, required roleCode, parokiId, ordoId, itemId}) async {
+      sentParoki = parokiId;
+      return const RegisteredRomo(romo: AssignableRomo(id: 99, fullName: 'Romo Bekasi', roleCode: 'ROMO_PAROKI', affiliation: 'Paroki Babelan', local: true), phoneNumber: '6281300000771', assigned: true);
+    });
+    expect(find.text('Keuskupan'), findsWidgets);
+    await tester.tap(find.byType(DropdownButtonFormField<int>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Keuskupan Bekasi').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<int>).last);
+    await tester.pumpAndSettle();
+    expect(find.text('Paroki Santo Yosef'), findsNothing); // paroki keuskupan lain tidak muncul
+    await tester.tap(find.text('Paroki Babelan').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Nama Lengkap Romo'), 'Romo Bekasi');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Nomor HP / WhatsApp'), '0813-0000-0771');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Daftarkan Romo'));
+    await tester.pumpAndSettle();
+    expect(sentParoki, 300);
+  });
 }
