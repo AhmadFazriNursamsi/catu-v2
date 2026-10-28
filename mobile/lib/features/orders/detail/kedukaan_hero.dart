@@ -48,13 +48,6 @@ class KedukaanHero extends StatelessWidget {
   final Order order;
   const KedukaanHero({super.key, required this.order});
 
-  String get _passedLine {
-    final date = order.tanggalMeninggalLabel;
-    final time = order.waktuMeninggalLabel;
-    if (date.isEmpty) return '';
-    return time.isEmpty ? 'Berpulang $date' : 'Berpulang $date · $time WIB';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -101,12 +94,6 @@ class KedukaanHero extends StatelessWidget {
                         color: Colors.white, fontSize: 25, fontWeight: FontWeight.w700, height: 1.2)),
                 const SizedBox(height: 10),
                 const _Ornament(),
-                if (_passedLine.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Text(_passedLine,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Color(0xFFB6BDC8), fontSize: 12.5, fontWeight: FontWeight.w500)),
-                ],
               ],
             ),
           ),
