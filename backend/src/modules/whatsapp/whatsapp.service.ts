@@ -5,7 +5,8 @@ export type WaSendResult = { ok: true; id: string; status: string } | { ok: fals
 
 /**
  * Klien ke WAGate (gateway WhatsApp milik sendiri). Nonaktif bila WAGATE_URL atau WAGATE_API_KEY kosong.
- * WAGATE_URL adalah alamat lengkap endpoint kirim; kunci dikirim lewat header `x-api-key`.
+ * WAGATE_URL adalah alamat lengkap endpoint kirim pesan pribadi (POST .../api/v1/send, body {number, content});
+ * kunci dikirim lewat header `x-api-key`. Pesan bebas dan boleh berulang ke nomor yang sama (tidak lewat buku undangan grup).
  */
 @Injectable()
 export class WhatsappService {
@@ -29,12 +30,12 @@ export class WhatsappService {
       const res = await fetch(this.url, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-api-key': this.apiKey },
-        body: JSON.stringify({ numbers: [this.normalize(to)], force: false, messages: [text] }),
+        body: JSON.stringify({ number: this.normalize(to), content: text }),
         signal: AbortSignal.timeout(10_000),
       });
       const body: any = await res.json().catch(() => ({}));
       this.logger.log(`WAGate membalas HTTP ${res.status}${body?.status ? ` status=${body.status}` : ''}${body?.message ? ` pesan="${String(body.message).slice(0, 120)}"` : ''}`);
-      if (res.ok) return { ok: true, id: String(body.id ?? body.messageId ?? ''), status: String(body.status ?? 'sent') };
+      if (res.ok) return { ok: true, id: String(body.id ?? body.messageId ?? ''), status: String(body.status ?? 'queued') };
       return { ok: false, code: body.code ?? `HTTP_${res.status}`, message: body.message ?? 'Pesan WhatsApp gagal dikirim.' };
     } catch (e: any) {
       this.logger.warn(`WAGate tidak dapat dihubungi: ${e?.message ?? e}`);
