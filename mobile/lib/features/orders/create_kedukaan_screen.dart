@@ -301,6 +301,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
   }
 
   Future<void> _pickDate(TextEditingController controller, {bool futureOnly = false}) async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -339,6 +340,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
       }
     }
 
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await showTimePicker(
       context: context,
       initialTime: initialTime,
@@ -400,6 +402,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
   }
 
   void _addMisaItem() {
+    FocusManager.instance.primaryFocus?.unfocus();
     if (_tanggalMisaController.text.isEmpty) {
       _showError('Tanggal misa wajib diisi.');
       return;
@@ -695,9 +698,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                           prefixIcon: Icons.family_restroom_rounded,
                           items: _hubunganOptions,
                           itemLabel: (e) => e,
-                          onChanged: (v) {
-                            if (v != null) setState(() => _selectedHubungan = v);
-                          },
+                          onChanged: (v) { if (v != null) setState(() => _selectedHubungan = v); },
                         ),
                         const SizedBox(height: 14),
 
@@ -754,9 +755,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                           prefixIcon: Icons.warning_amber_rounded,
                           items: _urgensiOptions,
                           itemLabel: (e) => e,
-                          onChanged: (v) {
-                            if (v != null) setState(() => _selectedUrgensi = v);
-                          },
+                          onChanged: (v) { if (v != null) setState(() => _selectedUrgensi = v); },
                           validator: (v) => v == null ? 'Pilih jenis urgensi' : null,
                         ),
                         const SizedBox(height: 14),
@@ -787,9 +786,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                           itemLabel: (e) => _misaList.any((m) => m.itemName.trim().toLowerCase() == e.trim().toLowerCase())
                               ? '$e (Sudah Ditambahkan)'
                               : e,
-                          onChanged: (v) {
-                            if (v != null) setState(() => _selectedJenisMisa = v);
-                          },
+                          onChanged: (v) { if (v != null) setState(() => _selectedJenisMisa = v); },
                         ),
                         const SizedBox(height: 14),
 
@@ -1003,6 +1000,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
                         if (!_isPendatang) ...[
                           InkWell(
                             onTap: () async {
+                              FocusManager.instance.primaryFocus?.unfocus();
                               final nextVal = !_isSameParish;
                               setState(() => _isSameParish = nextVal);
                               if (nextVal) await _forceResetToProfileLocation();
@@ -1417,6 +1415,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
               )
               .toList(),
           onChanged: onChanged,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
           validator: validator,
         ),
       ],

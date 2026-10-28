@@ -67,6 +67,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 
   Future<void> _pickDate() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
@@ -77,6 +78,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 
   Future<void> _pickTime() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await showTimePicker(
       context: context,
       initialTime: _selectedTime,
@@ -156,6 +158,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   const Text('Kategori Pelayanan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<int>(
+                    onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
                     initialValue: _selectedCategory,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -185,6 +188,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   const Text('Tingkat Urgensi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<int>(
+                    onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
                     initialValue: _selectedUrgency,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
