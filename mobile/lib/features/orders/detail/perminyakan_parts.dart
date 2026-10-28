@@ -38,7 +38,7 @@ class _Chip extends StatelessWidget {
   }
 }
 
-/// Latar header: foto gereja + nama penerima, gender/usia, dan jadwal kunjungan.
+/// Latar header: foto gereja + nama penerima dan gender/usia (tanggal & jam ada di kartu ringkasan).
 class PerminyakanHero extends StatelessWidget {
   final Order order;
   final OrderItem item;
@@ -48,7 +48,6 @@ class PerminyakanHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final meta = _recipientMeta(order);
-    final date = item.scheduledDate.isNotEmpty ? item.scheduledDate : order.scheduledDate;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -83,17 +82,6 @@ class PerminyakanHero extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(meta, style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
               ],
-              const SizedBox(height: 10),
-              Row(children: [
-                const Icon(Icons.event_rounded, size: 14, color: Color(0xFF99F6E4)),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text('${formatServiceDate(date)} · ${item.scheduledTimeStart} WIB',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Color(0xFFCCFBF1), fontSize: 13, fontWeight: FontWeight.w600)),
-                ),
-              ]),
             ],
           ),
         ),

@@ -462,7 +462,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               iconBg: const Color(0xFF1D4ED8),
                               title: isKedukaan ? 'Lokasi Misa' : LanguageService.tr('time_location'),
                               children: [
-                                if (!isKedukaan) _buildInfoTile(icon: Icons.calendar_month_rounded, label: 'Tanggal Kunjungan', value: formatServiceDate(displayItem.scheduledDate.isNotEmpty ? displayItem.scheduledDate : order.scheduledDate)),
                                 if (!isKedukaan) _buildInfoTile(icon: Icons.access_time_rounded, label: 'Jam Pelaksanaan', value: '${displayItem.scheduledTimeStart} – ${displayItem.scheduledTimeEnd} WIB'),
                                 _buildInfoTile(icon: Icons.place_rounded, label: isKedukaan ? 'Lokasi' : 'Alamat Kunjungan', value: displayItem.locationName.isNotEmpty ? displayItem.locationName : order.displayAddress, isLast: true),
                                 AddressActions(address: displayItem.locationName.isNotEmpty ? displayItem.locationName : order.displayAddress, color: isKedukaan ? const Color(0xFF1E293B) : const Color(0xFF0F766E)),
