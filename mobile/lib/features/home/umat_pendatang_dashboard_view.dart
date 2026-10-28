@@ -64,7 +64,7 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
       if (raw != null) {
         final decoded = jsonDecode(raw);
         if (decoded is Map<String, dynamic>) {
-          final rawList = (decoded['history'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          final rawList = (decoded['history'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).where((h) => h['id'] != 'kunj_init').toList(); // buang data contoh lama
           final List<Map<String, dynamic>> deduped = [];
           for (final h in rawList) {
             h['id'] ??= 'kunj_${(h['tanggal'] ?? '').hashCode.abs()}_${(h['alamat'] ?? '').hashCode.abs()}';
@@ -83,9 +83,6 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
         }
       }
     } catch (_) {}
-    if (_history.isEmpty) {
-      setState(() => _history = [{'id': 'kunj_init', 'tanggal': '23 September 2026', 'provinsi': 'DKI JAKARTA', 'kota': 'KOTA JAKARTA UTARA', 'alamat': 'Kelapa Gading', 'orderIds': <int>[]}]);
-    }
   }
 
   Future<void> _persistData() async {
