@@ -44,7 +44,7 @@ cd "$MOBILE_DIR"
 
 VERSION_LINE=$(sed -n 's/^version: //p' pubspec.yaml | head -1)
 VERSION_NAME="${VERSION_LINE%%+*}"; VERSION_CODE="${VERSION_LINE##*+}"
-grep -q "appVersion = 'v$VERSION_NAME'" lib/core/constants/app_constants.dart || { echo "❌ AppConstants.appVersion tidak sama dengan versi di pubspec.yaml (v$VERSION_NAME)."; exit 1; }
+grep -Eq "appVersion = 'v$VERSION_NAME(\+$VERSION_CODE)?'" lib/core/constants/app_constants.dart || { echo "❌ AppConstants.appVersion tidak sama dengan versi di pubspec.yaml (v$VERSION_NAME)."; exit 1; }
 echo "🏷️  Versi $VERSION_NAME (kode $VERSION_CODE)"
 
 echo "📦 Resolving Flutter dependencies..."
