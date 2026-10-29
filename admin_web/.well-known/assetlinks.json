@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.example.catu_mobile",
+      "sha256_cert_fingerprints": [
+        "2B:F0:1B:E2:3B:99:47:55:55:86:33:2E:11:03:91:55:69:30:A7:94:BB:95:6B:53:EE:60:65:A3:E1:83:2E:16"
+      ]
+    }
+  }
+]
