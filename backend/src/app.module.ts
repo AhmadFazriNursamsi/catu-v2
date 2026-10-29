@@ -23,6 +23,7 @@ import { MasterDataModule } from './modules/master-data/master-data.module';
 import { NewsModule } from './modules/news/news.module';
 import { TestRunnerModule } from './modules/test-runner/test-runner.module';
 import { ApkModule } from './modules/apk/apk.module';
+import { LoginLinkModule } from './modules/login-link/login-link.module';
 import { ActivityLogsModule } from './modules/activity-logs/activity-logs.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 
@@ -80,6 +81,7 @@ import { HttpLoggerMiddleware } from './logger.middleware';
     // Live Unit Test Runner hanya tersedia di luar production.
     ...(process.env.NODE_ENV === 'production' ? [] : [TestRunnerModule]),
     ApkModule,
+    LoginLinkModule,
     ActivityLogsModule,
   ],
   providers: [

@@ -241,3 +241,13 @@ export const activityLogs = pgTable('activity_logs', {
   metadata: text('metadata'),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+/** Tautan masuk sekali pakai (WhatsApp) untuk Romo yang didaftarkan Koordinator. Hanya hash token yang disimpan. */
+export const authLoginLinks = pgTable('auth_login_links', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => authUsers.id, { onDelete: 'cascade' }),
+  tokenHash: varchar('token_hash', { length: 64 }).notNull().unique(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});

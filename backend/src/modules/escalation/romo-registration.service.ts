@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, Logger, ServiceUnav
 import { InjectDataSource } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
+import { LoginLinkService } from '../login-link/login-link.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { generatePassword, normalizePhone } from './romo-registration-rules';
 
@@ -35,6 +36,7 @@ export class RomoRegistrationService {
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly wa: WhatsappService,
+    private readonly links: LoginLinkService,
   ) {}
 
   /** Pilihan keuskupan, paroki (semua keuskupan; Romo bisa dari keuskupan mana pun), dan ordo untuk formulir. */
@@ -51,7 +53,7 @@ export class RomoRegistrationService {
     };
   }
 
-  private welcomeText(fullName: string, phone: string, password: string, order: OrderScope): string {
+  private welcomeText(fullName: string, phone: string, password: string, order: OrderScope, loginUrl: string | null): string {
     const service = [order.category_name, order.order_number ? `(${order.order_number})` : ''].filter(Boolean).join(' ');
     const raw: any = order.scheduled_date;
     const day = raw instanceof Date ? raw : raw ? new Date(`${String(raw).slice(0, 10)}T00:00:00`) : null;
@@ -60,8 +62,13 @@ export class RomoRegistrationService {
     return (
       `*CATU* - Shalom ${fullName},\n\n` +
       `Anda didaftarkan oleh Koordinator untuk melayani ${service || 'sebuah pelayanan'}${when}${where}. Pelayanan ini sudah tercatat Anda terima.\n\n` +
-      `Akun CATU Anda sudah aktif:\nNomor HP: ${phone}\nKata sandi sementara: *${password}*\n\n` +
-      `Silakan masuk ke aplikasi CATU, lalu segera ganti kata sandi Anda. Jangan berikan kata sandi ini kepada siapa pun.`
+      `Akun CATU Anda sudah aktif.\n\n` +
+      (loginUrl
+        ? `Ketuk tautan ini untuk masuk otomatis (sekali pakai, berlaku 48 jam), lalu buat kata sandi baru:\n${loginUrl}\n\n` +
+          `Atau masuk manual:\n`
+        : '') +
+      `Nomor HP: ${phone}\nKata sandi sementara: *${password}*\n\n` +
+      `Segera ganti kata sandi Anda. Jangan berikan tautan atau kata sandi ini kepada siapa pun.`
     );
   }
 
@@ -121,7 +128,8 @@ export class RomoRegistrationService {
         [user[0].id, fullName, keuskupanId, parokiId, kotaId, ordoId],
       );
       // Kirim kredensial sebelum commit: bila WhatsApp gagal, akun dibatalkan agar tidak ada akun yang kata sandinya tidak diketahui siapa pun.
-      const sent = await this.wa.send(phone, this.welcomeText(fullName, phone, password, order), { priority: 'normal' });
+      const loginUrl = this.links.buildUrl(await this.links.create(Number(user[0].id), runner));
+      const sent = await this.wa.send(phone, this.welcomeText(fullName, phone, password, order, loginUrl), { priority: 'normal' });
       if (!sent.ok) throw new ServiceUnavailableException(`Pesan WhatsApp ke Romo gagal dikirim (${sent.message}). Romo belum didaftarkan, coba lagi.`);
       await runner.commitTransaction();
       this.logger.log(`Romo ${user[0].id} (${input.roleCode}) didaftarkan Koordinator, kredensial dikirim lewat WhatsApp`);

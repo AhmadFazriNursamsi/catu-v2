@@ -25,6 +25,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _obscureConfirm = true;
   bool _isLoading = false;
 
+  /// Sesi dari tautan WhatsApp: kata sandi sementara belum diketahui pengguna, jadi tidak diminta lagi.
+  bool get _skipCurrent => widget.forced && widget.user['loginViaLink'] == true;
+
   @override
   void dispose() {
     _currentPasswordController.dispose();
@@ -36,7 +39,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final currentPass = _currentPasswordController.text.trim();
+    final currentPass = _skipCurrent ? '' : _currentPasswordController.text.trim();
     final newPass = _newPasswordController.text.trim();
     final confirmPass = _confirmPasswordController.text.trim();
 
@@ -67,7 +70,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             body: jsonEncode({
               'userId': userId,
               'phoneNumber': phone,
-              'currentPassword': currentPass,
+              if (!_skipCurrent) 'currentPassword': currentPass,
               'newPassword': newPass,
             }),
           )
@@ -176,12 +179,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               children: [
                 _buildHeroCard(),
                 const SizedBox(height: 20),
-                _buildPasswordField(
-                  controller: _currentPasswordController, label: 'Kata Sandi Saat Ini', hint: widget.forced ? 'Kata sandi sementara dari WhatsApp' : 'Masukkan kata sandi lama',
-                  obscure: _obscureCurrent, onToggle: () => setState(() => _obscureCurrent = !_obscureCurrent),
-                  icon: Icons.lock_outline_rounded, validator: (v) => (v == null || v.isEmpty) ? 'Kata sandi saat ini wajib diisi' : null,
-                ),
-                const SizedBox(height: 16),
+                if (!_skipCurrent) ...[
+                  _buildPasswordField(
+                    controller: _currentPasswordController, label: 'Kata Sandi Saat Ini', hint: widget.forced ? 'Kata sandi sementara dari WhatsApp' : 'Masukkan kata sandi lama',
+                    obscure: _obscureCurrent, onToggle: () => setState(() => _obscureCurrent = !_obscureCurrent),
+                    icon: Icons.lock_outline_rounded, validator: (v) => (v == null || v.isEmpty) ? 'Kata sandi saat ini wajib diisi' : null,
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 _buildPasswordField(
                   controller: _newPasswordController, label: 'Kata Sandi Baru', hint: 'Minimal 6 karakter',
                   obscure: _obscureNew, onToggle: () => setState(() => _obscureNew = !_obscureNew),

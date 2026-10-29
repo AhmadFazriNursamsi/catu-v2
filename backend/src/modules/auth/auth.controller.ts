@@ -47,6 +47,7 @@ import { AdminOrderStatusDto } from './admin-order-status.dto';
 import { OrderGuardsService } from '../order-rules/order-guards.service';
 import { AuthService } from './auth.service';
 import { PasswordService } from './password.service';
+import { LOGIN_LINK_VIA } from '../login-link/login-link.service';
 
 @ApiTags('Auth & Registration')
 @Controller('auth')
@@ -224,7 +225,10 @@ export class AuthController {
   })
   async changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
     // Identitas selalu diambil dari token, bukan dari body.
-    return await this.passwordService.changePassword({ ...dto, userId: user.sub, phoneNumber: undefined });
+    return await this.passwordService.changePassword(
+      { ...dto, userId: user.sub, phoneNumber: undefined },
+      { viaLoginLink: user.via === LOGIN_LINK_VIA },
+    );
   }
 
   @AllowInactiveAccount()

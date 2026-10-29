@@ -8,20 +8,20 @@ import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { ChangePasswordDto } from '../../auth.dto';
 import { AccountStatusService } from '../../common/access/account-status.service';
+import { LoginLinkService } from '../login-link/login-link.service';
 
 @Injectable()
 export class PasswordService {
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly accounts: AccountStatusService,
+    private readonly loginLinks: LoginLinkService,
   ) {}
 
-  async changePassword(dto: ChangePasswordDto) {
+  /** `viaLoginLink`: sesi dari tautan WhatsApp; boleh tanpa kata sandi lama selama kata sandi masih sementara. */
+  async changePassword(dto: ChangePasswordDto, opts: { viaLoginLink?: boolean } = {}) {
     if (!dto.newPassword || dto.newPassword.trim().length < 6) {
       throw new BadRequestException('Kata sandi baru minimal 6 karakter.');
-    }
-    if (!dto.currentPassword) {
-      throw new BadRequestException('Kata sandi saat ini wajib diisi.');
     }
 
     const user = await this.findUser(dto);
@@ -29,12 +29,17 @@ export class PasswordService {
       throw new NotFoundException('Pengguna tidak ditemukan.');
     }
 
-    const isPasswordValid = await bcrypt.compare(
-      dto.currentPassword,
-      user.password_hash || '',
-    );
-    if (!isPasswordValid) {
-      throw new BadRequestException('Kata sandi saat ini (lama) tidak sesuai.');
+    if (!(opts.viaLoginLink && user.must_change_password === true)) {
+      if (!dto.currentPassword) {
+        throw new BadRequestException('Kata sandi saat ini wajib diisi.');
+      }
+      const isPasswordValid = await bcrypt.compare(
+        dto.currentPassword,
+        user.password_hash || '',
+      );
+      if (!isPasswordValid) {
+        throw new BadRequestException('Kata sandi saat ini (lama) tidak sesuai.');
+      }
     }
 
     const isSamePassword = await bcrypt.compare(
@@ -54,6 +59,7 @@ export class PasswordService {
       [newHash, user.id],
     );
     this.accounts.invalidate(Number(user.id));
+    await this.loginLinks.invalidateForUser(Number(user.id));
 
     return {
       statusCode: 200,
@@ -66,7 +72,7 @@ export class PasswordService {
       const userIdNum = typeof dto.userId === 'string' ? parseInt(dto.userId, 10) : Number(dto.userId);
       if (!isNaN(userIdNum)) {
         const users = await this.dataSource.query(
-          `SELECT id, phone_number, password_hash FROM auth_users WHERE id = $1`,
+          `SELECT id, phone_number, password_hash, must_change_password FROM auth_users WHERE id = $1`,
           [userIdNum],
         );
         if (users.length > 0) return users[0];
@@ -80,7 +86,7 @@ export class PasswordService {
       const fullPhone = `62${phone}`;
 
       const users = await this.dataSource.query(
-        `SELECT id, phone_number, password_hash FROM auth_users WHERE phone_number = $1 OR phone_number = $2 OR phone_number = $3`,
+        `SELECT id, phone_number, password_hash, must_change_password FROM auth_users WHERE phone_number = $1 OR phone_number = $2 OR phone_number = $3`,
         [fullPhone, `0${phone}`, dto.phoneNumber.trim()],
       );
       if (users.length > 0) return users[0];

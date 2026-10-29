@@ -14,6 +14,7 @@ import { AuthController } from '../../modules/auth/auth.controller';
 import { MasterDataController } from '../../modules/master-data/master-data.controller';
 import { GeoMasterDataController } from '../../modules/master-data/geo-master-data.controller';
 import { ApkController } from '../../modules/apk/apk.controller';
+import { LoginLinkController, LoginLinkPageController } from '../../modules/login-link/login-link.controller';
 import { NewsController } from '../../news.controller';
 import { HealthController } from '../../health.controller';
 import { OrdersController } from '../../modules/orders/orders.controller';
@@ -29,6 +30,8 @@ const CONTROLLERS = [
   MasterDataController,
   GeoMasterDataController,
   ApkController,
+  LoginLinkController,
+  LoginLinkPageController,
   NewsController,
   HealthController,
   OrdersController,
@@ -94,11 +97,13 @@ describe('akses publik API (kontrak keamanan)', () => {
       'GET /news/search-live',
       'GET /news/sources',
       'GET /public/apk',
+      'GET /public/m/login',
       'POST /auth/admin/login',
       'POST /auth/forgot-password/request-otp',
       'POST /auth/forgot-password/reset',
       'POST /auth/forgot-password/verify-otp',
       'POST /auth/login',
+      'POST /auth/login-link',
       'POST /auth/register',
     ].sort());
   });
