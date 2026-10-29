@@ -8,6 +8,8 @@ import { orderKeuskupanSql } from '../../modules/order-rules/lintas-paroki';
 export class AuthUser {
   sub!: number;
   roleCode!: string;
+  /** Diisi 'login-link' bila sesi berasal dari tautan masuk WhatsApp. */
+  via?: string;
 }
 
 @Injectable()

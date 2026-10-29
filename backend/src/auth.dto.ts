@@ -301,10 +301,10 @@ export class ChangePasswordDto {
   @IsString()
   phoneNumber?: string;
 
-  @ApiProperty({ example: 'oldPassword123', description: 'Kata Sandi Saat Ini / Lama' })
+  @ApiPropertyOptional({ example: 'oldPassword123', description: 'Kata Sandi Saat Ini / Lama (boleh kosong hanya untuk sesi tautan masuk dengan kata sandi sementara)' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  currentPassword: string;
+  currentPassword?: string;
 
   @ApiProperty({ example: 'newPassword123', description: 'Kata Sandi Baru (min 6 karakter)' })
   @IsString()

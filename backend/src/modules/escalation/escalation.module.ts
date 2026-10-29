@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { AssignmentsModule } from '../assignments/assignments.module';
+import { LoginLinkModule } from '../login-link/login-link.module';
 import { EscalationController } from './escalation.controller';
 import { EscalationService } from './escalation.service';
 import { EscalationSettingsService } from './escalation-settings.service';
@@ -9,7 +10,7 @@ import { RomoRegistrationService } from './romo-registration.service';
 
 @Global()
 @Module({
-  imports: [AssignmentsModule],
+  imports: [AssignmentsModule, LoginLinkModule],
   controllers: [EscalationController, KoordinatorAssignmentController],
   providers: [EscalationSettingsService, EscalationService, KoordinatorAssignmentService, RomoRegistrationService],
   exports: [EscalationSettingsService, EscalationService],
