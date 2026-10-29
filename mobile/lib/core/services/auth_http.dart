@@ -40,6 +40,7 @@ class AuthTokenStore {
   static bool _isPublic(Uri url) {
     final path = url.path;
     return path.endsWith('/auth/login') ||
+        path.endsWith('/auth/login-link') ||
         path.endsWith('/auth/admin/login') ||
         path.endsWith('/auth/register') ||
         path.contains('/auth/forgot-password/') ||
@@ -66,7 +67,7 @@ Future<http.Response> _send(
 ) async {
   if (AuthTokenStore._isPublic(url)) {
     final publicResponse = await call(headers);
-    final issuesToken = url.path.endsWith('/auth/login') || url.path.endsWith('/auth/register');
+    final issuesToken = url.path.endsWith('/auth/login') || url.path.endsWith('/auth/login-link') || url.path.endsWith('/auth/register');
     if (issuesToken && publicResponse.statusCode < 300) {
       await _storeLoginToken(publicResponse.body);
     }

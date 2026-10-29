@@ -60,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
     if (changed != true) return _enforcePasswordChange();
     _currentUserMap['mustChangePassword'] = false;
+    _currentUserMap.remove('loginViaLink');
     AuthService.saveSession(_currentUserMap);
   }
 
