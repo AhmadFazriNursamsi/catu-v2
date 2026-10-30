@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:catu_mobile/core/models/news_model.dart';
+import 'package:catu_mobile/features/news/news_content.dart';
 import 'package:catu_mobile/features/news/news_filters.dart';
 
 void main() {
@@ -24,5 +25,17 @@ void main() {
     ));
     await tester.enterText(find.byType(TextField), 'paus');
     expect(typed, 'paus');
+  });
+
+  testWidgets('isi artikel: entitas terbaca, daftar & judul tampil, sisa "Read more" dibuang', (tester) async {
+    const html = '<p><strong>Bacaan I &#8211; Flp 3:3-8a</strong></p>\n\n<p>Karena kitalah  orang\nbersunat &amp; beriman.</p>'
+        '<h3>Renungan</h3><ul><li>Satu</li><li>Dua</li></ul><blockquote><p>Kutipan</p></blockquote><p>Read more</p><p>&nbsp;</p>';
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: SingleChildScrollView(child: NewsContent(html: html)))));
+    expect(find.textContaining('Bacaan I – Flp 3:3-8a', findRichText: true), findsOneWidget);
+    expect(find.textContaining('kitalah orang bersunat & beriman.', findRichText: true), findsOneWidget);
+    expect(find.text('Renungan', findRichText: true), findsOneWidget);
+    expect(find.text('•'), findsNWidgets(2));
+    expect(find.text('Kutipan', findRichText: true), findsOneWidget);
+    expect(find.textContaining('Read more', findRichText: true), findsNothing);
   });
 }
