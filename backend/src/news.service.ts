@@ -287,7 +287,6 @@ export class NewsService {
 
   private getDefaultCatholicImage(sourceCode: string): string {
     const defaultImages = [
-      'https://images.unsplash.com/photo-1548625361-195fe578cb26?w=800&auto=format&fit=crop&q=80', // Katedral
       'https://images.unsplash.com/photo-1519817650390-64a93db51149?w=800&auto=format&fit=crop&q=80', // Altar
       'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=800&auto=format&fit=crop&q=80', // Cahaya Salib
       'https://images.unsplash.com/photo-1543807535-eceef0bc6599?w=800&auto=format&fit=crop&q=80', // Gereja
