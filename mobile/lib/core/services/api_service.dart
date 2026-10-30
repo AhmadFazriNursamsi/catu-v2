@@ -994,17 +994,17 @@ class ApiService {
     }
 
     final query = queryParams.join('&');
-    for (final host in [baseUrl, ..._candidateBaseUrls]) {
+    for (final host in {baseUrl, ..._candidateBaseUrls}) {
       try {
         final res = await http.get(Uri.parse('$host/news?$query')).timeout(const Duration(seconds: 4));
         if (res.statusCode == 200) { _activeBaseUrl = host; return jsonDecode(res.body); }
       } catch (_) {}
     }
-    return {'articles': [], 'featuredArticles': [], 'total': 0, 'totalPages': 0};
+    return {'articles': [], 'featuredArticles': [], 'total': 0, 'totalPages': 0, 'offline': true};
   }
 
   static Future<List<dynamic>> getNewsCategories() async {
-    for (final host in [baseUrl, ..._candidateBaseUrls]) {
+    for (final host in {baseUrl, ..._candidateBaseUrls}) {
       try {
         final res = await http.get(Uri.parse('$host/news/categories')).timeout(const Duration(seconds: 3));
         if (res.statusCode == 200) { _activeBaseUrl = host; return jsonDecode(res.body); }
@@ -1035,14 +1035,6 @@ class ApiService {
       debugPrint('Error searchLiveNews: $e');
     }
     return {'results': []};
-  }
-
-  static Future<void> triggerNewsScrape() async {
-    try {
-      await http.post(Uri.parse('$baseUrl/news/scrape/run')).timeout(const Duration(seconds: 15));
-    } catch (e) {
-      debugPrint('Error triggerNewsScrape: $e');
-    }
   }
 
   // ── Push Notification & FCM Device Registration ──

@@ -5,6 +5,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/models/news_model.dart';
 import '../../core/services/api_service.dart';
 import '../auth/login_screen.dart';
+import 'news_image.dart';
 
 class NewsDetailScreen extends StatefulWidget {
   final NewsArticle article;
@@ -132,14 +133,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (_article.imageUrl != null && _article.imageUrl!.isNotEmpty)
-                    Image.network(
-                      _article.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildFallbackImage(),
-                    )
-                  else
-                    _buildFallbackImage(),
+                  NewsImage(url: _article.imageUrl, cacheWidth: 420),
                   // Gradient Overlay
                   const DecoratedBox(
                     decoration: BoxDecoration(
@@ -479,13 +473,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                   child: SizedBox(
                     width: 70,
                     height: 70,
-                    child: item.imageUrl != null && item.imageUrl!.isNotEmpty
-                        ? Image.network(
-                            item.imageUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _buildFallbackImage(),
-                          )
-                        : _buildFallbackImage(),
+                    child: NewsImage(url: item.imageUrl, cacheWidth: 70),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -511,15 +499,6 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildFallbackImage() {
-    return Container(
-      color: const Color(0xFF1E3A8A),
-      child: const Center(
-        child: Icon(Icons.church_rounded, color: Colors.white54, size: 40),
       ),
     );
   }

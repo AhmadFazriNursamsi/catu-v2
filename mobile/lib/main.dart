@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart' show LicenseEntryWithLineBreaks, LicenseRegistry;
 import 'package:flutter/material.dart';
 import 'core/constants/app_constants.dart';
@@ -21,7 +22,8 @@ void main() async {
     );
   });
   AuthTokenStore.onUnauthorized = AuthService.handleSessionExpired;
-  await ApiService.loadCustomBaseUrl();
+  // Pemeriksaan alamat server tidak boleh menahan layar pertama (bisa sampai 1 dtk saat jaringan lambat).
+  unawaited(ApiService.loadCustomBaseUrl());
   await LanguageService.init();
   final savedUser = await AuthService.initSession();
   runApp(CatuApp(initialUser: savedUser));
