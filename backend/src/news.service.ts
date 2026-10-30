@@ -26,6 +26,8 @@ export interface NewsArticleItem {
   isEditorsChoice: boolean;
 }
 
+const SCRAPE_HOUR_WIB = 23;
+
 @Injectable()
 export class NewsService {
   private readonly logger = new Logger(NewsService.name);
@@ -42,16 +44,26 @@ export class NewsService {
       this.checkAndAutoScrape();
     }, 5000);
 
-    // Periodic background auto-scrape every 30 minutes
-    this.scrapeIntervalTimer = setInterval(() => {
-      this.logger.log('[NewsService] Periodic auto-scrape triggered by timer (every 30m)...');
-      this.scrapeAll().catch((err) => this.logger.error(`[NewsService] Periodic scrape error: ${err.message}`));
-    }, 30 * 60 * 1000);
+    this.scheduleNextScrape();
+  }
+
+  /** Scrape sekali sehari pada pukul 23:00 WIB (UTC+7, tanpa DST), lalu jadwalkan ulang untuk esok harinya. */
+  private scheduleNextScrape() {
+    const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+    const wibNow = new Date(Date.now() + WIB_OFFSET_MS);
+    const target = Date.UTC(wibNow.getUTCFullYear(), wibNow.getUTCMonth(), wibNow.getUTCDate(), SCRAPE_HOUR_WIB) - WIB_OFFSET_MS;
+    const next = target > Date.now() ? target : target + 24 * 60 * 60 * 1000;
+    this.scrapeIntervalTimer = setTimeout(() => {
+      this.logger.log('[NewsService] Daily auto-scrape triggered by timer (23:00 WIB)...');
+      this.scrapeAll()
+        .catch((err) => this.logger.error(`[NewsService] Daily scrape error: ${err.message}`))
+        .finally(() => this.scheduleNextScrape());
+    }, next - Date.now());
   }
 
   onModuleDestroy() {
     if (this.scrapeIntervalTimer) {
-      clearInterval(this.scrapeIntervalTimer);
+      clearTimeout(this.scrapeIntervalTimer);
       this.scrapeIntervalTimer = null;
     }
   }
@@ -83,7 +95,7 @@ export class NewsService {
       );
       const latestScrape = recentScrape[0]?.latestScrape;
 
-      const isStale = !latestScrape || (Date.now() - new Date(latestScrape).getTime()) > 30 * 60 * 1000;
+      const isStale = !latestScrape || (Date.now() - new Date(latestScrape).getTime()) > 25 * 60 * 60 * 1000;
 
       if (count === 0 || isStale) {
         this.logger.log(`[NewsService] News data is stale or empty (articles: ${count}, last scrape: ${latestScrape}). Scraping latest news...`);
