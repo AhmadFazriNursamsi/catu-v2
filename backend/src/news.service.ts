@@ -26,8 +26,6 @@ export interface NewsArticleItem {
   isEditorsChoice: boolean;
 }
 
-const SCRAPE_HOUR_WIB = 23;
-
 @Injectable()
 export class NewsService {
   private readonly logger = new Logger(NewsService.name);
@@ -36,29 +34,19 @@ export class NewsService {
   constructor(private readonly dataSource: DataSource) {}
 
   async onModuleInit() {
-    // Ensure default working Catholic news sources are seeded
     await this.ensureSourcesSeed();
-
-    // Initial scrape check on startup after short delay
-    setTimeout(() => {
-      this.checkAndAutoScrape();
-    }, 5000);
-
+    setTimeout(() => this.checkAndAutoScrape(), 5000);
     this.scheduleNextScrape();
   }
 
-  /** Scrape sekali sehari pada pukul 23:00 WIB (UTC+7, tanpa DST), lalu jadwalkan ulang untuk esok harinya. */
+  /** Scrape harian pukul 23:00 WIB (UTC+7), lalu jadwalkan ulang. */
   private scheduleNextScrape() {
-    const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
-    const wibNow = new Date(Date.now() + WIB_OFFSET_MS);
-    const target = Date.UTC(wibNow.getUTCFullYear(), wibNow.getUTCMonth(), wibNow.getUTCDate(), SCRAPE_HOUR_WIB) - WIB_OFFSET_MS;
-    const next = target > Date.now() ? target : target + 24 * 60 * 60 * 1000;
+    const wib = 7 * 3600_000;
+    const d = new Date(Date.now() + wib);
+    const t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 23) - wib;
     this.scrapeIntervalTimer = setTimeout(() => {
-      this.logger.log('[NewsService] Daily auto-scrape triggered by timer (23:00 WIB)...');
-      this.scrapeAll()
-        .catch((err) => this.logger.error(`[NewsService] Daily scrape error: ${err.message}`))
-        .finally(() => this.scheduleNextScrape());
-    }, next - Date.now());
+      this.scrapeAll().catch((e) => this.logger.error(`Daily scrape error: ${e.message}`)).finally(() => this.scheduleNextScrape());
+    }, (t > Date.now() ? t : t + 86400_000) - Date.now());
   }
 
   onModuleDestroy() {
@@ -100,8 +88,6 @@ export class NewsService {
       if (count === 0 || isStale) {
         this.logger.log(`[NewsService] News data is stale or empty (articles: ${count}, last scrape: ${latestScrape}). Scraping latest news...`);
         await this.scrapeAll();
-      } else {
-        this.logger.log(`[NewsService] News sources were recently scraped at ${latestScrape}. Next cycle scheduled in background.`);
       }
     } catch (e) {
       this.logger.error(`Initial scrape check error: ${e.message}`);
