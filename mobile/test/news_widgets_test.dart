@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:catu_mobile/core/models/news_model.dart';
 import 'package:catu_mobile/features/news/news_content.dart';
 import 'package:catu_mobile/features/news/news_filters.dart';
+import 'package:catu_mobile/features/news/news_image.dart';
 
 void main() {
   testWidgets('chip kategori memanggil onSelected dengan slug', (tester) async {
@@ -37,5 +38,12 @@ void main() {
     expect(find.text('•'), findsNWidgets(2));
     expect(find.text('Kutipan', findRichText: true), findsOneWidget);
     expect(find.textContaining('Read more', findRichText: true), findsNothing);
+  });
+
+  testWidgets('artikel tanpa gambar atau bergambar stok memakai foto Katedral Jakarta', (tester) async {
+    for (final url in [null, '', 'https://images.unsplash.com/photo-1519817650390-64a93db51149?w=800']) {
+      await tester.pumpWidget(MaterialApp(home: SizedBox(width: 100, height: 100, child: NewsImage(url: url))));
+      expect(find.byType(NewsFallbackImage), findsOneWidget, reason: 'url=$url');
+    }
   });
 }

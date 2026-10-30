@@ -219,7 +219,7 @@ export class NewsService {
           if (!isNaN(parsed.getTime())) publishedAt = parsed;
         }
 
-        const imageUrl = this.extractImageUrl(rawContent, itemXml) || this.getDefaultCatholicImage(source.code);
+        const imageUrl = this.extractImageUrl(rawContent, itemXml) || null;
         const catSlug = this.categorize(title, summary);
         const categoryId = catMap.get(catSlug) || catMap.get('gereja-indonesia') || 1;
         const slug = this.generateSlug(title);
@@ -281,15 +281,6 @@ export class NewsService {
       );
       return { inserted, skipped, total };
     }
-  }
-
-  private getDefaultCatholicImage(sourceCode: string): string {
-    const defaultImages = [
-      'https://images.unsplash.com/photo-1519817650390-64a93db51149?w=800&auto=format&fit=crop&q=80', // Altar
-      'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=800&auto=format&fit=crop&q=80', // Cahaya Salib
-      'https://images.unsplash.com/photo-1543807535-eceef0bc6599?w=800&auto=format&fit=crop&q=80', // Gereja
-    ];
-    return defaultImages[Math.floor(Math.random() * defaultImages.length)];
   }
 
   async scrapeAll(): Promise<{ message: string; results: any[] }> {

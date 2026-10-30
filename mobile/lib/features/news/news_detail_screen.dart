@@ -27,8 +27,6 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
   bool _isLoading = false;
   bool _collapsed = false;
 
-  bool get _hasImage => (_article.imageUrl ?? '').isNotEmpty;
-
   @override
   void initState() {
     super.initState();
@@ -86,7 +84,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
   }
 
   SystemUiOverlayStyle get _overlay {
-    final light = _hasImage && !_collapsed;
+    final light = !_collapsed;
     return SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: light ? Brightness.light : Brightness.dark,
@@ -98,9 +96,6 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
   Widget _heroBar() {
     final back = NewsRoundButton(icon: Icons.arrow_back_rounded, tooltip: 'Kembali', onPressed: () => Navigator.pop(context));
     final share = NewsRoundButton(icon: Icons.link_rounded, tooltip: 'Salin tautan', onPressed: _copyLink);
-    if (!_hasImage) {
-      return SliverAppBar(pinned: true, backgroundColor: Colors.white, surfaceTintColor: Colors.transparent, elevation: 0, systemOverlayStyle: _overlay, leading: back, actions: [share]);
-    }
     return SliverAppBar(
       pinned: true,
       expandedHeight: _kHeroHeight,
@@ -114,7 +109,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            NewsImage(url: _article.imageUrl, cacheWidth: 420, dark: true),
+            NewsImage(url: _article.imageUrl, cacheWidth: 420),
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.center, colors: [Color(0x66000000), Colors.transparent]),

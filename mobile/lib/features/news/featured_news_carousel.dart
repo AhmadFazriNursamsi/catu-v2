@@ -104,7 +104,7 @@ class _FeaturedCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              NewsImage(url: article.imageUrl, cacheWidth: 360, dark: true),
+              NewsImage(url: article.imageUrl, cacheWidth: 360),
               const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
