@@ -18,6 +18,10 @@ export class DatabaseInitService implements OnModuleInit {
   constructor(@InjectDataSource() private dataSource: DataSource) {}
 
   async onModuleInit() {
+    if ((process.env.MASTER_DATA_AUTO_SEED ?? 'true').toLowerCase() === 'false') {
+      this.logger.log('MASTER_DATA_AUTO_SEED=false: pengisian otomatis data master dilewati.');
+      return;
+    }
     await this.syncFullMasterData();
   }
 
