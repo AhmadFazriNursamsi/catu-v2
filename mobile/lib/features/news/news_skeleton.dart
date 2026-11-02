@@ -1,89 +1,62 @@
 import 'package:flutter/material.dart';
 
-class NewsArticleSkeleton extends StatelessWidget {
+/// Kerangka baris artikel saat memuat; berdenyut halus agar terasa hidup.
+class NewsArticleSkeleton extends StatefulWidget {
   const NewsArticleSkeleton({super.key});
 
   @override
+  State<NewsArticleSkeleton> createState() => _NewsArticleSkeletonState();
+}
+
+class _NewsArticleSkeletonState extends State<NewsArticleSkeleton> with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  Widget _bar(double width, double height) => Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(color: const Color(0xFFE9EDF3), borderRadius: BorderRadius.circular(6)),
+      );
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image thumbnail skeleton
-          Container(
-            width: 100,
-            height: 95,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE2E8F0),
-              borderRadius: BorderRadius.circular(12),
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.55, end: 1).animate(_pulse),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFEEF1F5)))),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _bar(120, 10),
+                  const SizedBox(height: 10),
+                  _bar(double.infinity, 14),
+                  const SizedBox(height: 7),
+                  _bar(double.infinity, 14),
+                  const SizedBox(height: 7),
+                  _bar(150, 14),
+                  const SizedBox(height: 12),
+                  _bar(90, 10),
+                ],
+              ),
             ),
-            child: const Center(
-              child: Icon(Icons.image_outlined, color: Color(0xFFCBD5E1), size: 30),
+            const SizedBox(width: 14),
+            Container(
+              width: 104,
+              height: 82,
+              decoration: BoxDecoration(color: const Color(0xFFE9EDF3), borderRadius: BorderRadius.circular(12)),
             ),
-          ),
-          const SizedBox(width: 12),
-          // Content skeleton lines
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Category badge skeleton
-                Container(
-                  width: 70,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEEF2F6),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Title line 1
-                Container(
-                  width: double.infinity,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE2E8F0),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                // Title line 2
-                Container(
-                  width: 160,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE2E8F0),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Footer (source + time)
-                Container(
-                  width: 110,
-                  height: 11,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

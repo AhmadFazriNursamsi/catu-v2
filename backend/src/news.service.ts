@@ -34,24 +34,24 @@ export class NewsService {
   constructor(private readonly dataSource: DataSource) {}
 
   async onModuleInit() {
-    // Ensure default working Catholic news sources are seeded
     await this.ensureSourcesSeed();
+    setTimeout(() => this.checkAndAutoScrape(), 5000);
+    this.scheduleNextScrape();
+  }
 
-    // Initial scrape check on startup after short delay
-    setTimeout(() => {
-      this.checkAndAutoScrape();
-    }, 5000);
-
-    // Periodic background auto-scrape every 30 minutes
-    this.scrapeIntervalTimer = setInterval(() => {
-      this.logger.log('[NewsService] Periodic auto-scrape triggered by timer (every 30m)...');
-      this.scrapeAll().catch((err) => this.logger.error(`[NewsService] Periodic scrape error: ${err.message}`));
-    }, 30 * 60 * 1000);
+  /** Scrape harian pukul 23:00 WIB (UTC+7), lalu jadwalkan ulang. */
+  private scheduleNextScrape() {
+    const wib = 7 * 3600_000;
+    const d = new Date(Date.now() + wib);
+    const t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 23) - wib;
+    this.scrapeIntervalTimer = setTimeout(() => {
+      this.scrapeAll().catch((e) => this.logger.error(`Daily scrape error: ${e.message}`)).finally(() => this.scheduleNextScrape());
+    }, (t > Date.now() ? t : t + 86400_000) - Date.now());
   }
 
   onModuleDestroy() {
     if (this.scrapeIntervalTimer) {
-      clearInterval(this.scrapeIntervalTimer);
+      clearTimeout(this.scrapeIntervalTimer);
       this.scrapeIntervalTimer = null;
     }
   }
@@ -83,13 +83,11 @@ export class NewsService {
       );
       const latestScrape = recentScrape[0]?.latestScrape;
 
-      const isStale = !latestScrape || (Date.now() - new Date(latestScrape).getTime()) > 30 * 60 * 1000;
+      const isStale = !latestScrape || (Date.now() - new Date(latestScrape).getTime()) > 25 * 60 * 60 * 1000;
 
       if (count === 0 || isStale) {
         this.logger.log(`[NewsService] News data is stale or empty (articles: ${count}, last scrape: ${latestScrape}). Scraping latest news...`);
         await this.scrapeAll();
-      } else {
-        this.logger.log(`[NewsService] News sources were recently scraped at ${latestScrape}. Next cycle scheduled in background.`);
       }
     } catch (e) {
       this.logger.error(`Initial scrape check error: ${e.message}`);
@@ -221,7 +219,7 @@ export class NewsService {
           if (!isNaN(parsed.getTime())) publishedAt = parsed;
         }
 
-        const imageUrl = this.extractImageUrl(rawContent, itemXml) || this.getDefaultCatholicImage(source.code);
+        const imageUrl = this.extractImageUrl(rawContent, itemXml) || null;
         const catSlug = this.categorize(title, summary);
         const categoryId = catMap.get(catSlug) || catMap.get('gereja-indonesia') || 1;
         const slug = this.generateSlug(title);
@@ -283,16 +281,6 @@ export class NewsService {
       );
       return { inserted, skipped, total };
     }
-  }
-
-  private getDefaultCatholicImage(sourceCode: string): string {
-    const defaultImages = [
-      'https://images.unsplash.com/photo-1548625361-195fe578cb26?w=800&auto=format&fit=crop&q=80', // Katedral
-      'https://images.unsplash.com/photo-1519817650390-64a93db51149?w=800&auto=format&fit=crop&q=80', // Altar
-      'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=800&auto=format&fit=crop&q=80', // Cahaya Salib
-      'https://images.unsplash.com/photo-1543807535-eceef0bc6599?w=800&auto=format&fit=crop&q=80', // Gereja
-    ];
-    return defaultImages[Math.floor(Math.random() * defaultImages.length)];
   }
 
   async scrapeAll(): Promise<{ message: string; results: any[] }> {
