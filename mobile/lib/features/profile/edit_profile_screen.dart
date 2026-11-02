@@ -97,27 +97,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
   }
 
+  static String _ordoLabel(Map<String, dynamic> o) => [o['code'], o['name']].where((v) => (v ?? '').toString().trim().isNotEmpty).join(' — ');
+
   void _syncSelectedOrdo() {
     if (_ordoList.isEmpty) return;
 
     if (_selectedOrdoId != null) {
-      final match = _ordoList.firstWhere(
-        (e) => e['id'].toString() == _selectedOrdoId.toString(),
-        orElse: () => _ordoList.first,
-      );
+      final match = _ordoList.firstWhere((e) => e['id'].toString() == _selectedOrdoId.toString(), orElse: () => _ordoList.first);
       _selectedOrdoId = int.tryParse(match['id'].toString());
-      _selectedOrdoName = '${match['code']} — ${match['name']}';
+      _selectedOrdoName = _ordoLabel(match);
     } else if (_selectedOrdoName.isNotEmpty) {
-      final match = _ordoList.firstWhere(
-        (e) => e['name'].toString().toLowerCase().contains(_selectedOrdoName.toLowerCase()) ||
-               '${e['code']} — ${e['name']}'.toLowerCase() == _selectedOrdoName.toLowerCase(),
-        orElse: () => _ordoList.first,
-      );
+      final wanted = _selectedOrdoName.toLowerCase();
+      final match = _ordoList.firstWhere((e) => e['name'].toString().toLowerCase().contains(wanted) || _ordoLabel(e).toLowerCase() == wanted, orElse: () => _ordoList.first);
       _selectedOrdoId = int.tryParse(match['id'].toString());
-      _selectedOrdoName = '${match['code']} — ${match['name']}';
+      _selectedOrdoName = _ordoLabel(match);
     } else {
       _selectedOrdoId = int.tryParse(_ordoList.first['id'].toString());
-      _selectedOrdoName = '${_ordoList.first['code']} — ${_ordoList.first['name']}';
+      _selectedOrdoName = _ordoLabel(_ordoList.first);
     }
   }
 
