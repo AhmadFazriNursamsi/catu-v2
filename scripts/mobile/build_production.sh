@@ -70,6 +70,8 @@ build_apk() {
   local CERT; CERT=$("$BT/apksigner" verify --print-certs "$APK" | grep -E "certificate DN|SHA-256")
   echo "$CERT"
   echo "$CERT" | grep -qi "Android Debug" && { echo "❌ APK ditandatangani kunci debug."; exit 1; }
+  local WANT GOT; WANT=$(tr -d ': \n' < release-cert.sha256 | tr 'A-F' 'a-f'); GOT=$(echo "$CERT" | grep -i "SHA-256 digest" | head -1 | awk '{print $NF}' | tr 'A-F' 'a-f')
+  [ -n "$WANT" ] && [ "$GOT" = "$WANT" ] || { echo "❌ Sidik jari kunci APK ($GOT) bukan kunci rilis resmi ($WANT, mobile/release-cert.sha256). Pengguna tidak bisa memperbarui aplikasi."; exit 1; }
   local SCHEMES; SCHEMES=$("$BT/apksigner" verify --verbose "$APK")
   echo "$SCHEMES" | grep -qE "Verified using v2 scheme .*: true" || { echo "❌ Tanda tangan v2 tidak valid."; exit 1; }
   echo "$SCHEMES" | grep -qE "Verified using v3 scheme .*: true" || { echo "❌ Tanda tangan v3 tidak valid."; exit 1; }
