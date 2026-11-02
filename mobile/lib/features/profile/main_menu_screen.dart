@@ -131,46 +131,6 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   String get _userName =>
       _userData['fullName'] ?? _userData['full_name'] ?? 'Umat';
 
-  String get _pengurusPos =>
-      _userData['pengurusPosition'] ?? _userData['pengurus_position'] ?? '';
-
-  String get _accountStatus =>
-      _userData['accountStatus'] ?? _userData['account_status'] ?? 'APPROVED';
-
-  bool get _isApproved => _accountStatus == 'APPROVED';
-
-  String get _paroki =>
-      _userData['parokiName'] ?? _userData['paroki_name'] ?? 'Paroki Alam Sutera - St. Laurensius';
-
-  String get _roleCode =>
-      _userData['roleCode'] ?? _userData['role_code'] ?? _userData['role'] ?? 'UMAT';
-
-  String get _ordoName {
-    final name = _userData['ordoName'] ?? _userData['ordo_name'];
-    if (name != null && name.toString().isNotEmpty) return name.toString();
-    return 'Serikat Yesus (SJ)';
-  }
-
-  String get _positionTitle {
-    final code = _roleCode.toUpperCase();
-    if (code == 'ROMO_ORDO') {
-      return 'Romo Ordo — $_ordoName';
-    }
-    if (code == 'ROMO_PAROKI' || code.startsWith('ROMO')) {
-      if (_isKetuaRomo) return 'Ketua Romo Paroki';
-      return 'Romo Paroki';
-    }
-    if (_pengurusPos.toUpperCase().contains('KOORDINATOR') || code == 'KOORDINATOR') {
-      return 'Umat — Koordinator Keuskupan';
-    }
-    if (_pengurusPos == 'KETUA' || _pengurusPos.toLowerCase().contains('ketua')) return 'Umat — Ketua Lingkungan';
-    if (_pengurusPos == 'WAKIL' || _pengurusPos.toLowerCase().contains('wakil')) return 'Umat — Wakil Ketua';
-    if (_pengurusPos == 'SEKRETARIS' || _pengurusPos.toLowerCase().contains('sekretaris')) return 'Umat — Sekretaris';
-    if (_pengurusPos == 'BENDAHARA' || _pengurusPos.toLowerCase().contains('bendahara')) return 'Umat — Bendahara';
-    return 'Umat (Anggota Lingkungan)';
-  }
-
-
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
@@ -247,41 +207,19 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       ),
       child: Column(
         children: [
-          // Profile Avatar with Camera Edit Badge
-          Stack(
-            children: [
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF1D4ED8).withValues(alpha: 0.1),
-                  border: Border.all(color: const Color(0xFF1D4ED8), width: 2.5),
-                  image: DecorationImage(
-                    image: _getAvatarImageProvider(),
-                    fit: BoxFit.cover,
-                  ),
-                ),
+          // Foto profil
+          Container(
+            width: 90,
+            height: 90,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF1D4ED8).withValues(alpha: 0.1),
+              border: Border.all(color: const Color(0xFF1D4ED8), width: 2.5),
+              image: DecorationImage(
+                image: _getAvatarImageProvider(),
+                fit: BoxFit.cover,
               ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: _navigateToEditProfile,
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1D4ED8),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: const Icon(Icons.camera_alt_rounded,
-                        size: 14, color: Colors.white),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
 
           const SizedBox(height: 14),
@@ -296,113 +234,6 @@ class _MainMenuScreenState extends State<MainMenuScreen>
               letterSpacing: -0.3,
             ),
             textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-
-          // Position Badge
-          Text(
-            _positionTitle,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1D4ED8),
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 10),
-
-          // Status & Parish Info Pills Row
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              // Verification Status Pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                decoration: BoxDecoration(
-                  color: _isApproved
-                      ? const Color(0xFF059669).withValues(alpha: 0.1)
-                      : const Color(0xFFD97706).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _isApproved
-                          ? Icons.check_circle_rounded
-                          : Icons.hourglass_top_rounded,
-                      size: 12,
-                      color: _isApproved
-                          ? const Color(0xFF059669)
-                          : const Color(0xFFD97706),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _isApproved ? LanguageService.tr('account_approved') : LanguageService.tr('pending_verification'),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: _isApproved
-                            ? const Color(0xFF059669)
-                            : const Color(0xFFD97706),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Paroki Pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _roleCode.toUpperCase() == 'ROMO_ORDO' ? _ordoName : _paroki,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF475569),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 14),
-
-          // Ubah Profil Pill Button
-          GestureDetector(
-            onTap: _navigateToEditProfile,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1D4ED8).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFF1D4ED8).withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.edit_rounded, size: 14, color: Color(0xFF1D4ED8)),
-                  const SizedBox(width: 6),
-                  Text(
-                    LanguageService.tr('edit_profile'),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1D4ED8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
         ],
       ),
