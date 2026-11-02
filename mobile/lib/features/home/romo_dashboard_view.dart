@@ -217,6 +217,19 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
     super.dispose();
   }
 
+  /// Tab bawah (Histori/Jadwal/Menu): kembali (tombol atau gestur sistem) selalu ke tab Beranda, bukan menutup beranda ke layar berita.
+  Widget _tabScaffold(Widget body) => PopScope(
+        canPop: _currentNavIndex == 0,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) setState(() => _currentNavIndex = 0);
+        },
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF1F5F9),
+          body: body,
+          bottomNavigationBar: LiquidBottomNavBar(selectedIndex: _currentNavIndex, onTabSelected: (i) => setState(() => _currentNavIndex = i), items: _buildNavItems()),
+        ),
+      );
+
   List<LiquidNavItem> _buildNavItems() {
     return const [
       LiquidNavItem(
@@ -263,64 +276,38 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
 
     // ── Histori Tab (Nav Index 1) ──
     if (_currentNavIndex == 1) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFF1F5F9),
-        body: HistoriScreen(
+      return _tabScaffold(
+        HistoriScreen(
           orders: widget.orders,
           userName: userName,
           userId: romoId,
           onRefresh: widget.onRefresh,
           isRomo: true,
           romoId: romoId,
-        ),
-        bottomNavigationBar: LiquidBottomNavBar(
-          selectedIndex: _currentNavIndex,
-          onTabSelected: (index) {
-            setState(() => _currentNavIndex = index);
-          },
-          items: _buildNavItems(),
-        ),
-      );
+        ));
     }
 
     // ── Schedule / Jadwal Tab (Nav Index 2) ──
     if (_currentNavIndex == 2) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFF1F5F9),
-        body: ScheduleScreen(
+      return _tabScaffold(
+        ScheduleScreen(
           orders: widget.orders,
           userName: userName,
           onRefresh: widget.onRefresh,
+          onBack: () => setState(() => _currentNavIndex = 0),
           isRomo: true,
           romoId: romoId,
-        ),
-        bottomNavigationBar: LiquidBottomNavBar(
-          selectedIndex: _currentNavIndex,
-          onTabSelected: (index) {
-            setState(() => _currentNavIndex = index);
-          },
-          items: _buildNavItems(),
-        ),
-      );
+        ));
     }
 
     // ── Menu Utama Tab (Nav Index 3) ──
     if (_currentNavIndex == 3) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFF1F5F9),
-        body: MainMenuScreen(
+      return _tabScaffold(
+        MainMenuScreen(
           user: widget.user,
           onRefresh: widget.onRefresh,
           onLogout: widget.onLogout,
-        ),
-        bottomNavigationBar: LiquidBottomNavBar(
-          selectedIndex: _currentNavIndex,
-          onTabSelected: (index) {
-            setState(() => _currentNavIndex = index);
-          },
-          items: _buildNavItems(),
-        ),
-      );
+        ));
     }
 
     return Scaffold(
