@@ -24,6 +24,8 @@ services:
       # Migrasi skema (backend/drizzle). Produksi yang memisahkan akun migrasi dari akun aplikasi: DB_AUTO_MIGRATE=false lalu jalankan
       # `npm run db:migrate` (DB_MIGRATION_USERNAME/DB_MIGRATION_PASSWORD) pada setiap rilis; lihat backend/drizzle/README.md.
       DB_AUTO_MIGRATE: ${DB_AUTO_MIGRATE:-true}
+      # false = backend tidak mengisi ulang data master wilayah/keuskupan/ordo saat start.
+      MASTER_DATA_AUTO_SEED: ${MASTER_DATA_AUTO_SEED:-true}
       DB_MIGRATION_USERNAME: ${DB_MIGRATION_USERNAME:-}
       DB_MIGRATION_PASSWORD: ${DB_MIGRATION_PASSWORD:-}
       PORT: ${PORT:-3000}
