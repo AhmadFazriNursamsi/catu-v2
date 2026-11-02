@@ -66,6 +66,7 @@ class ScheduleScreen extends StatefulWidget {
   final int? romoId;
   final int? userId;
   final bool showPendingOnly;
+  final VoidCallback? onBack; // dipakai saat tampil sebagai tab: kembali ke tab Beranda, bukan menutup beranda
 
   const ScheduleScreen({
     super.key,
@@ -76,6 +77,7 @@ class ScheduleScreen extends StatefulWidget {
     this.romoId,
     this.userId,
     this.showPendingOnly = false,
+    this.onBack,
   });
 
   @override
@@ -584,7 +586,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   // ── Top Header ──────────────────────────────────────────────────────────────
 
   Widget _buildTopHeader() {
-    final bool canGoBack = Navigator.canPop(context);
+    final bool canGoBack = widget.onBack != null || Navigator.canPop(context);
 
     return Container(
       decoration: const BoxDecoration(
@@ -606,7 +608,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             GestureDetector(
               onTap: () {
                 HapticFeedback.lightImpact();
-                Navigator.pop(context);
+                widget.onBack != null ? widget.onBack!() : Navigator.pop(context);
               },
               child: Container(
                 width: 40,

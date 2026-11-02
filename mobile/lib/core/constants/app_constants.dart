@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppConstants {
   static const String appName = 'CATU Pelayanan';
-  static const String appVersion = 'v2.9.41+184';
+  static const String appVersion = 'v2.9.42+185';
   
   // Canonical Environments: Only Publish (Server) and Local Development
   static const String publishApiUrl = 'https://catu.devoutsys.com/api';
