@@ -33,9 +33,7 @@
       if (sub === 'ordo') {
         return `
           <td class="py-4 px-6 font-bold text-slate-900 text-xs">${escapeHtml(item.name)}</td>
-          <td class="py-4 px-6 font-mono font-bold text-slate-800 text-xs">${escapeHtml(item.code || '-')}</td>
           <td class="py-4 px-6 font-semibold text-slate-800 text-xs">${escapeHtml(item.total_romo || 0)} Romo</td>
-          <td class="py-4 px-6 text-slate-700 font-medium text-xs max-w-xs truncate" title="${escapeHtml(item.address || '')}">${escapeHtml(item.address || 'Alamat belum diatur')}</td>
         `;
       }
       if (sub === 'services') {

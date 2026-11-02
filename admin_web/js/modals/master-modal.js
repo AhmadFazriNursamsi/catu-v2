@@ -217,16 +217,6 @@
             <input type="text" id="masterNameInput" required value="${escapeHtml(data.name || '')}" placeholder="misal: Ordo Fratrum Minorum"
               class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
           </div>
-          <div>
-            <label class="block font-extrabold text-slate-700 mb-1.5">Kode Singkatan</label>
-            <input type="text" id="masterCodeInput" value="${escapeHtml(data.code || '')}" placeholder="misal: OFM, SJ, MSC, CSsR"
-              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs" />
-          </div>
-          <div>
-            <label class="block font-extrabold text-slate-700 mb-1.5">Alamat Lengkap / Markas</label>
-            <textarea id="masterAddressInput" rows="2" placeholder="misal: Jl. Kramat Raya No. 134, Jakarta Pusat"
-              class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs">${escapeHtml(data.address || '')}</textarea>
-          </div>
         `;
       } else if (type === 'services') {
         return `

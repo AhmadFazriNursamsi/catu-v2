@@ -29,9 +29,7 @@
       } else if (sub === 'ordo') {
         return `
           <th class="py-4 px-6">NAMA ORDO / KONGREGASI</th>
-          <th class="py-4 px-6">KODE</th>
           <th class="py-4 px-6">TOTAL ROMO</th>
-          <th class="py-4 px-6">ALAMAT MARKAS</th>
         `;
       } else if (sub === 'services') {
         return `
