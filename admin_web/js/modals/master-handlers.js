@@ -207,15 +207,9 @@
         } else if (type === 'ordo') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/ordo` : `${API_BASE}/master/ordo/${data.id}`;
           const nameVal = document.getElementById('masterNameInput')?.value?.trim();
-          const codeVal = document.getElementById('masterCodeInput')?.value?.trim();
-          const addressVal = document.getElementById('masterAddressInput')?.value?.trim();
           if (!nameVal) throw new Error('Nama Ordo / Kongregasi wajib diisi');
           payload = { name: nameVal };
-          if (codeVal) payload.code = codeVal;
-          if (addressVal) payload.address = addressVal;
           modal.data.name = nameVal;
-          modal.data.code = codeVal;
-          modal.data.address = addressVal;
         } else if (type === 'services') {
           endpoint = mode === 'CREATE' ? `${API_BASE}/master/service-categories` : `${API_BASE}/master/service-categories/${data.id}`;
           const nameVal = document.getElementById('masterNameInput')?.value?.trim();
