@@ -9,6 +9,7 @@ import 'core/services/language_service.dart';
 import 'core/services/login_link_service.dart';
 import 'core/services/notification_service.dart';
 import 'features/auth/pending_approval_screen.dart';
+import 'features/auth/rejected_registration_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/news/public_news_screen.dart';
 
@@ -55,9 +56,11 @@ class CatuApp extends StatelessWidget {
             fontFamily: 'Roboto',
           ),
           home: initialUser != null
-              ? (initialUser!['accountStatus'] == 'PENDING_APPROVAL'
-                  ? PendingApprovalScreen(user: initialUser!)
-                  : HomeScreen(user: initialUser!))
+              ? switch (initialUser!['accountStatus']) {
+                  'PENDING_APPROVAL' => PendingApprovalScreen(user: initialUser!),
+                  'REJECTED' => RejectedRegistrationScreen(user: initialUser!),
+                  _ => HomeScreen(user: initialUser!),
+                }
               : const PublicNewsScreen(),
         );
       },

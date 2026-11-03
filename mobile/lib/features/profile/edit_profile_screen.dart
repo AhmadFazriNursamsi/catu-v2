@@ -15,12 +15,9 @@ import 'region_transfer_flow.dart';
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> user;
   final VoidCallback onSaved;
+  final bool resubmit;
 
-  const EditProfileScreen({
-    super.key,
-    required this.user,
-    required this.onSaved,
-  });
+  const EditProfileScreen({super.key, required this.user, required this.onSaved, this.resubmit = false});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -194,18 +191,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final response = await http.get(
         Uri.parse('${ApiService.baseUrl}/auth/profile/$userId'),
       );
-      if (response.statusCode >= 400) {
-        if (!mounted) return;
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(backendMessage(response.body, 'Gagal menyimpan profil.')), backgroundColor: const Color(0xFFDC2626), behavior: SnackBarBehavior.floating));
-        return;
-      }
       if (response.statusCode == 200) {
         final resData = jsonDecode(response.body);
-        if (resData['regionTransfer'] == 'PENDING') {
-          if (mounted) await openPendingAfterTransfer(context, widget.user..addAll(Map<String, dynamic>.from(resData['user'] ?? {})));
-          return;
-        }
         if (resData['user'] != null) {
           final u = resData['user'];
           if (mounted) {
@@ -540,7 +527,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih lingkungan tujuan terlebih dahulu.')));
         return;
       }
-      if (!await confirmRegionTransfer(context)) return;
+      if (!widget.resubmit && !await confirmRegionTransfer(context)) return;
     }
     setState(() => _isSaving = true);
 
@@ -549,7 +536,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final fullName =
           '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'
               .trim();
-      final url = Uri.parse('${ApiService.baseUrl}/auth/profile/$userId');
 
       _syncSelectedOrdo();
       final roleCode = _roleToCode(_selectedRole);
@@ -574,14 +560,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         body['ordoId'] = _selectedOrdoId;
       }
 
-      final response = await http.put(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
+      final headers = {'Content-Type': 'application/json'};
+      final base = ApiService.baseUrl;
+      final response = widget.resubmit
+          ? await http.post(Uri.parse('$base/auth/resubmit-registration'), headers: headers, body: jsonEncode(body))
+          : await http.put(Uri.parse('$base/auth/profile/$userId'), headers: headers, body: jsonEncode(body));
 
+      if (response.statusCode >= 400) {
+        if (mounted) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(backendMessage(response.body, 'Gagal menyimpan profil.')), backgroundColor: const Color(0xFFDC2626), behavior: SnackBarBehavior.floating));
+        }
+        return;
+      }
       if (response.statusCode == 200) {
         final resData = jsonDecode(response.body);
+        if (widget.resubmit || resData['regionTransfer'] == 'PENDING') {
+          if (mounted) await openPendingAfterTransfer(context, widget.user..addAll({'fullName': fullName, ...Map<String, dynamic>.from(resData['user'] ?? {})}));
+          return;
+        }
         if (resData['user'] != null && resData['user'] is Map) {
           final Map<String, dynamic> updated = Map<String, dynamic>.from(resData['user']);
           widget.user.addAll(updated);

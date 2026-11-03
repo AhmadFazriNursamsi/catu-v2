@@ -261,6 +261,20 @@ export class AuthController {
     return { ...result, accountStatus: 'PENDING_APPROVAL', regionTransfer: 'PENDING' };
   }
 
+  @AllowInactiveAccount()
+  @Post('resubmit-registration')
+  @HttpCode(200)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Perbaiki data & ajukan ulang pendaftaran yang ditolak' })
+  async resubmitRegistration(@CurrentUser() user: AuthUser, @Body() dto: UpdateProfileDto) {
+    const userId = Number(user.sub);
+    await this.regionTransfer.assertRejected(userId);
+    await this.assertRoleChange(String(userId), (dto as any).roleCode ?? (dto as any).role_code);
+    await this.authService.updateProfile(String(userId), dto);
+    await this.regionTransfer.resubmit(userId);
+    return { statusCode: 200, message: 'Pendaftaran diajukan ulang.', accountStatus: 'PENDING_APPROVAL' };
+  }
+
   @Roles(...ADMIN_ROLES)
   @Get('admin/analytics')
   @ApiBearerAuth('JWT-auth')

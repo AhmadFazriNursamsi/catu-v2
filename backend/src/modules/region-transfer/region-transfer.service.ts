@@ -62,7 +62,25 @@ export class RegionTransferService {
       await m.query(`UPDATE auth_users SET account_status = 'PENDING_APPROVAL', approval_assigned_to_user_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [userId]);
     });
     this.accounts.invalidate(userId);
-    await this.notifyApprovers(userId, to.lingkunganId!);
+    await this.notifyApprovers(userId, to.lingkunganId!, 'transfer');
+  }
+
+  async assertRejected(userId: number): Promise<void> {
+    const r = await this.dataSource.query('SELECT account_status FROM auth_users WHERE id = $1', [userId]);
+    if (r[0]?.account_status !== 'REJECTED') throw new ConflictException('Hanya pendaftaran yang ditolak yang dapat diajukan ulang.');
+  }
+
+  /** Pendaftar yang ditolak mengajukan ulang setelah memperbaiki data: kembali menunggu keputusan. */
+  async resubmit(userId: number): Promise<void> {
+    // UPDATE ... RETURNING pada TypeORM mengembalikan [baris, jumlah].
+    const [done] = await this.dataSource.query(
+      `UPDATE auth_users SET account_status = 'PENDING_APPROVAL', updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND account_status = 'REJECTED' RETURNING id`,
+      [userId],
+    );
+    if (done.length === 0) throw new ConflictException('Hanya pendaftaran yang ditolak yang dapat diajukan ulang.');
+    this.accounts.invalidate(userId);
+    const lingkungan = (await this.dataSource.query('SELECT lingkungan_id FROM user_profiles WHERE user_id = $1', [userId]))[0]?.lingkungan_id;
+    if (lingkungan) await this.notifyApprovers(userId, num(lingkungan)!, 'resubmit');
   }
 
   /** Memproses persetujuan/penolakan bila [targetId] punya permintaan pindah terbuka; null bila tidak ada. */
@@ -152,7 +170,7 @@ export class RegionTransferService {
     );
   }
 
-  private async notifyApprovers(userId: number, lingkunganId: number): Promise<void> {
+  private async notifyApprovers(userId: number, lingkunganId: number, kind: 'transfer' | 'resubmit'): Promise<void> {
     try {
       const who = await this.dataSource.query(
         `SELECT u.id FROM auth_users u JOIN user_profiles p ON p.user_id = u.id JOIN roles r ON r.id = u.role_id
@@ -161,7 +179,10 @@ export class RegionTransferService {
         [lingkunganId, userId, await this.isPengurus(userId)],
       );
       const name = (await this.dataSource.query('SELECT full_name FROM user_profiles WHERE user_id = $1', [userId]))[0]?.full_name ?? 'Seorang umat';
-      for (const w of who) await this.notify(w.id, 'Permintaan pindah lingkungan', `${name} meminta pindah ke lingkungan Anda dan menunggu persetujuan.`, 'REGION_TRANSFER_REQUEST');
+      const [title, body, type] = kind === 'transfer'
+        ? ['Permintaan pindah lingkungan', `${name} meminta pindah ke lingkungan Anda dan menunggu persetujuan.`, 'REGION_TRANSFER_REQUEST']
+        : ['Pendaftaran diajukan ulang', `${name} memperbaiki data pendaftaran dan mengajukannya kembali untuk disetujui.`, 'REGISTRATION_RESUBMITTED'];
+      for (const w of who) await this.notify(w.id, title, body, type);
     } catch (e: any) {
       this.logger.error(`Gagal memberi tahu pengurus: ${e.message}`);
     }
