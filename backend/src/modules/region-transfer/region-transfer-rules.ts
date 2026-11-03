@@ -46,12 +46,12 @@ export const isMove = (current: RegionIds, target: RegionIds) =>
   KEYS.some(([prop]) => (target[prop] ?? null) !== (current[prop] ?? null));
 
 /**
- * Pengurus Lingkungan tidak boleh pindah selama masih ada transaksi (pesanan) yang belum selesai/ditutup atau
- * umat yang menunggu persetujuan di lingkungannya. Mengembalikan pesan penolakan, atau null bila boleh pindah.
+ * Tidak boleh pindah lingkungan selama masih ada transaksi (pesanan) yang belum selesai/ditutup, dan (khusus Pengurus)
+ * akun yang menunggu persetujuan di lingkungannya. Mengembalikan pesan penolakan, atau null bila boleh pindah.
  */
 export function leaveBlockMessage(openOrders: number, pendingAccounts: number): string | null {
   const reasons: string[] = [];
   if (openOrders > 0) reasons.push(`${openOrders} transaksi yang belum selesai`);
   if (pendingAccounts > 0) reasons.push(`${pendingAccounts} akun yang menunggu persetujuan`);
-  return reasons.length === 0 ? null : `Belum bisa pindah lingkungan: masih ada ${reasons.join(' dan ')} di lingkungan Anda. Selesaikan terlebih dahulu.`;
+  return reasons.length === 0 ? null : `Belum bisa pindah lingkungan: masih ada ${reasons.join(' dan ')}. Selesaikan terlebih dahulu.`;
 }

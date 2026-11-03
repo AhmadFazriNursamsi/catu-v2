@@ -38,7 +38,7 @@ export class RegionTransferService {
     if (!usesTransferFlow(cur.role_code, cur.pengurus_position)) throw new ForbiddenException('Perubahan wilayah gereja untuk peran ini dilakukan oleh Admin.');
     if (cur.account_status !== 'APPROVED') throw new ConflictException('Akun Anda sedang menunggu persetujuan; wilayah belum dapat diubah.');
     if (!wanted.lingkunganId) throw new BadRequestException('Pilih lingkungan tujuan terlebih dahulu.');
-    if (cur.role_code === 'PENGURUS_LINGKUNGAN') await this.assertPengurusCanLeave(userId, num(cur.lingkungan_id));
+    await this.assertCanLeave(userId, num(cur.lingkungan_id), cur.role_code === 'PENGURUS_LINGKUNGAN');
     const chain = await this.dataSource.query(
       `SELECT l.id AS lingkungan_id, w.id AS wilayah_id, par.id AS paroki_id, par.keuskupan_id
        FROM lingkungan l JOIN wilayah w ON w.id = l.wilayah_id JOIN paroki par ON par.id = w.paroki_id WHERE l.id = $1`,
@@ -104,20 +104,25 @@ export class RegionTransferService {
     return rows.map((r) => (byUser.has(Number(r.id)) ? { ...r, transfer_from: byUser.get(Number(r.id)) } : r));
   }
 
-  /** Pengurus tidak boleh pindah bila masih ada pesanan terbuka (miliknya, dipantau, atau di lingkungannya) atau akun menunggu persetujuan di lingkungannya. */
-  private async assertPengurusCanLeave(userId: number, lingkunganId: number | null): Promise<void> {
+  /**
+   * Umat: tidak boleh pindah bila masih punya pesanan terbuka. Pengurus: juga bila ada pesanan terbuka yang dipantau
+   * atau di lingkungannya, atau akun menunggu persetujuan di lingkungannya.
+   */
+  private async assertCanLeave(userId: number, lingkunganId: number | null, isPengurus: boolean): Promise<void> {
     const [orders, pending] = await Promise.all([
       this.dataSource.query(
         `SELECT COUNT(*)::int AS n FROM orders o
          WHERE o.status::text NOT IN ('DONE', 'CLOSE', 'FAIL')
-           AND (o.user_id = $1 OR o.lingkungan_id = $2 OR EXISTS (SELECT 1 FROM order_monitors m WHERE m.order_id = o.id AND m.user_id = $1))`,
-        [userId, lingkunganId],
+           AND (o.user_id = $1 OR ($3 AND (o.lingkungan_id = $2 OR EXISTS (SELECT 1 FROM order_monitors m WHERE m.order_id = o.id AND m.user_id = $1))))`,
+        [userId, lingkunganId, isPengurus],
       ),
-      this.dataSource.query(
-        `SELECT COUNT(*)::int AS n FROM auth_users u JOIN user_profiles p ON p.user_id = u.id
-         WHERE u.account_status = 'PENDING_APPROVAL' AND p.lingkungan_id = $2 AND u.id <> $1`,
-        [userId, lingkunganId],
-      ),
+      isPengurus
+        ? this.dataSource.query(
+            `SELECT COUNT(*)::int AS n FROM auth_users u JOIN user_profiles p ON p.user_id = u.id
+             WHERE u.account_status = 'PENDING_APPROVAL' AND p.lingkungan_id = $2 AND u.id <> $1`,
+            [userId, lingkunganId],
+          )
+        : Promise.resolve([{ n: 0 }]),
     ]);
     const message = leaveBlockMessage(orders[0].n, pending[0].n);
     if (message) throw new ConflictException(message);
