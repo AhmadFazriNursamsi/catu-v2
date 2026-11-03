@@ -1,10 +1,11 @@
 import { isMove, takeRegionFields, usesTransferFlow } from './region-transfer-rules';
 
 describe('region-transfer-rules', () => {
-  it('hanya Umat yang memakai alur persetujuan', () => {
+  it('Umat dan Pengurus Lingkungan memakai alur persetujuan, Koordinator dan Romo tidak', () => {
     expect(usesTransferFlow('UMAT')).toBe(true);
     expect(usesTransferFlow('UMAT_PENDATANG')).toBe(true);
-    expect(usesTransferFlow('PENGURUS_LINGKUNGAN')).toBe(false);
+    expect(usesTransferFlow('PENGURUS_LINGKUNGAN', 'KETUA')).toBe(true);
+    expect(usesTransferFlow('PENGURUS_LINGKUNGAN', 'Koordinator Keuskupan')).toBe(false);
     expect(usesTransferFlow('ROMO_PAROKI')).toBe(false);
   });
 

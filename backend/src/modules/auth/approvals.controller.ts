@@ -61,7 +61,13 @@ export class ApprovalsController {
       : scope?.kind === 'LINGKUNGAN'
         ? await this.authService.getPengurusPendingUmat(String(scope.lingkunganId))
         : await this.authService.getPengurusPendingUmat(undefined, String((scope as any).keuskupanId));
-    return await this.regionTransfer.annotate(rows);
+    const isAdmin = this.access.isAdmin(user);
+    const extra = await this.regionTransfer.pendingPengurus(isAdmin && lingkunganId ? Number(lingkunganId) : (scope as any)?.lingkunganId, isAdmin && keuskupanId ? Number(keuskupanId) : (scope as any)?.keuskupanId);
+    const visible: any[] = [];
+    for (const row of extra) {
+      if (isAdmin || (await this.policy.authorize(user.sub, Number(row.id), 'REJECT').then(() => true, () => false))) visible.push(row);
+    }
+    return await this.regionTransfer.annotate([...rows, ...visible]);
   }
 
   @Post('pengurus/process-approval')

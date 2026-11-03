@@ -116,7 +116,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return code.startsWith('ROMO') || _selectedRole.contains('Romo');
   }
 
-  bool get _isUmatRole => _selectedRole == 'Umat' || _selectedRole.startsWith('Umat');
+  bool get _isUmatRole => _selectedRole.startsWith('Umat') || _selectedRole == 'Pengurus Lingkungan';
 
   bool get _isRomoOrdo {
     final code = (widget.user['roleCode'] ?? widget.user['role_code'] ?? widget.user['role'] ?? '').toString().toUpperCase();

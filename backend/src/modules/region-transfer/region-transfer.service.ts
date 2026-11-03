@@ -27,7 +27,7 @@ export class RegionTransferService {
     const wanted = takeRegionFields(dto);
     if (!wanted) return null;
     const rows = await this.dataSource.query(
-      `SELECT r.code AS role_code, u.account_status, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id
+      `SELECT r.code AS role_code, p.pengurus_position, u.account_status, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id
        FROM auth_users u JOIN roles r ON r.id = u.role_id LEFT JOIN user_profiles p ON p.user_id = u.id WHERE u.id = $1`,
       [userId],
     );
@@ -35,7 +35,7 @@ export class RegionTransferService {
     const cur = rows[0];
     const current: RegionIds = { keuskupanId: num(cur.keuskupan_id), parokiId: num(cur.paroki_id), wilayahId: num(cur.wilayah_id), lingkunganId: num(cur.lingkungan_id) };
     if (!isMove(current, wanted)) return null;
-    if (!usesTransferFlow(cur.role_code)) throw new ForbiddenException('Perubahan wilayah gereja untuk peran ini dilakukan oleh Admin.');
+    if (!usesTransferFlow(cur.role_code, cur.pengurus_position)) throw new ForbiddenException('Perubahan wilayah gereja untuk peran ini dilakukan oleh Admin.');
     if (cur.account_status !== 'APPROVED') throw new ConflictException('Akun Anda sedang menunggu persetujuan; wilayah belum dapat diubah.');
     if (!wanted.lingkunganId) throw new BadRequestException('Pilih lingkungan tujuan terlebih dahulu.');
     const chain = await this.dataSource.query(
@@ -103,12 +103,37 @@ export class RegionTransferService {
     return rows.map((r) => (byUser.has(Number(r.id)) ? { ...r, transfer_from: byUser.get(Number(r.id)) } : r));
   }
 
+  private async isPengurus(userId: number): Promise<boolean> {
+    const r = await this.dataSource.query(`SELECT r.code FROM auth_users u JOIN roles r ON r.id = u.role_id WHERE u.id = $1`, [userId]);
+    return r[0]?.code === 'PENGURUS_LINGKUNGAN';
+  }
+
+  /** Permintaan pindah Pengurus Lingkungan yang menunggu (daftar Umat tidak memuat mereka); disaring penyetuju oleh pemanggil. */
+  async pendingPengurus(lingkunganId?: number, keuskupanId?: number): Promise<any[]> {
+    return this.dataSource.query(
+      `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.created_at, r.code AS role_code, p.pengurus_position,
+              p.full_name, p.email, p.birth_date, p.gender, p.address, p.avatar_url,
+              k.name AS keuskupan_name, par.name AS paroki_name, w.name AS wilayah_name, l.name AS lingkungan_name, kk.name AS kota_name
+       FROM region_transfer_requests t
+       JOIN auth_users u ON u.id = t.user_id AND u.account_status = 'PENDING_APPROVAL'
+       JOIN roles r ON r.id = u.role_id AND r.code = 'PENGURUS_LINGKUNGAN'
+       JOIN user_profiles p ON p.user_id = u.id
+       LEFT JOIN keuskupan k ON k.id = p.keuskupan_id LEFT JOIN paroki par ON par.id = p.paroki_id
+       LEFT JOIN wilayah w ON w.id = p.wilayah_id LEFT JOIN lingkungan l ON l.id = p.lingkungan_id
+       LEFT JOIN kabupaten_kota kk ON kk.id = p.kabupaten_kota_id
+       WHERE t.status = 'PENDING' AND ($1::int IS NULL OR p.lingkungan_id = $1) AND ($2::int IS NULL OR p.keuskupan_id = $2)
+       ORDER BY u.created_at DESC`,
+      [lingkunganId ?? null, keuskupanId ?? null],
+    );
+  }
+
   private async notifyApprovers(userId: number, lingkunganId: number): Promise<void> {
     try {
       const who = await this.dataSource.query(
         `SELECT u.id FROM auth_users u JOIN user_profiles p ON p.user_id = u.id JOIN roles r ON r.id = u.role_id
-         WHERE p.lingkungan_id = $1 AND r.code = 'PENGURUS_LINGKUNGAN' AND u.account_status = 'APPROVED' AND p.is_jabatan_active IS NOT FALSE AND u.id <> $2`,
-        [lingkunganId, userId],
+         WHERE p.lingkungan_id = $1 AND r.code = 'PENGURUS_LINGKUNGAN' AND u.account_status = 'APPROVED' AND p.is_jabatan_active IS NOT FALSE AND u.id <> $2
+           AND ($3 = false OR (LOWER(p.pengurus_position) LIKE '%ketua%' AND LOWER(p.pengurus_position) NOT LIKE '%wakil%'))`,
+        [lingkunganId, userId, await this.isPengurus(userId)],
       );
       const name = (await this.dataSource.query('SELECT full_name FROM user_profiles WHERE user_id = $1', [userId]))[0]?.full_name ?? 'Seorang umat';
       for (const w of who) await this.notify(w.id, 'Permintaan pindah lingkungan', `${name} meminta pindah ke lingkungan Anda dan menunggu persetujuan.`, 'REGION_TRANSFER_REQUEST');

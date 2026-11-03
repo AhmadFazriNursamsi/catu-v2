@@ -19,8 +19,9 @@ const toId = (v: unknown): number | null => {
   return v != null && v !== '' && Number.isInteger(n) && n > 0 ? n : null;
 };
 
-/** Hanya Umat (termasuk pendatang) yang memakai alur persetujuan pindah; peran lain mengubah wilayah lewat Admin. */
-export const usesTransferFlow = (roleCode: string) => roleCode === 'UMAT' || roleCode === 'UMAT_PENDATANG';
+/** Umat (termasuk pendatang) dan Pengurus Lingkungan memakai alur persetujuan pindah; peran lain mengubah wilayah lewat Admin. */
+export const usesTransferFlow = (roleCode: string, pengurusPosition?: string | null) =>
+  ['UMAT', 'UMAT_PENDATANG', 'PENGURUS_LINGKUNGAN'].includes(roleCode) && !/koordinator/i.test(pengurusPosition ?? '');
 
 /**
  * Mengambil isian wilayah dari DTO (camelCase atau snake_case) dan MENGHAPUSNYA dari DTO.
