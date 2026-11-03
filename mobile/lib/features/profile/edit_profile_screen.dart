@@ -50,6 +50,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   final bool _notifyKetuaLingkungan = true;
   bool _isSaving = false;
+  String? _emailError;
 
   final List<String> _keuskupanList = [
     'Keuskupan Agung Jakarta',
@@ -623,6 +624,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _handleSave() async {
     HapticFeedback.mediumImpact();
+    final email = _emailController.text.trim();
+    if (email.isNotEmpty && !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$').hasMatch(email)) {
+      setState(() => _emailError = 'Format email tidak valid. Contoh: nama@perusahaan.com');
+      return;
+    }
     setState(() => _isSaving = true);
 
     try {
@@ -753,26 +759,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _buildSectionTitle(LanguageService.tr('personal_info'), Icons.person_outline_rounded),
               const SizedBox(height: 12),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _firstNameController,
-                      label: LanguageService.tr('first_name'),
-                      hint: 'Kevin',
-                      icon: Icons.person_rounded,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _lastNameController,
-                      label: LanguageService.tr('last_name'),
-                      hint: 'Antaratama',
-                    ),
-                  ),
-                ],
-              ),
+              _buildTextField(controller: _firstNameController, label: LanguageService.tr('first_name'), hint: 'Kevin', icon: Icons.person_rounded),
+              const SizedBox(height: 14),
+              _buildTextField(controller: _lastNameController, label: LanguageService.tr('last_name'), hint: 'Antaratama'),
               const SizedBox(height: 14),
               if (!_isRomo) ...[
                 GenderFormField(value: _gender, onChanged: (g) => setState(() => _gender = g)),
@@ -791,10 +780,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _buildTextField(
                 controller: _emailController,
                 label: LanguageService.tr('email'),
-                hint: 'kevin@catu.id',
+                hint: 'nama@perusahaan.com',
                 icon: Icons.email_rounded,
                 keyboardType: TextInputType.emailAddress,
-                readOnly: false,
+                errorText: _emailError,
+                onChanged: (_) {
+                  if (_emailError != null) setState(() => _emailError = null);
+                },
               ),
 
               const SizedBox(height: 24),
@@ -1027,6 +1019,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
     bool readOnly = false,
+    String? errorText,
+    ValueChanged<String>? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1081,6 +1075,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: TextField(
             controller: controller,
             readOnly: readOnly,
+            onChanged: onChanged,
             keyboardType: keyboardType,
             maxLines: maxLines,
             style: TextStyle(
@@ -1103,6 +1098,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ),
         ),
+        if (errorText != null) Padding(padding: const EdgeInsets.only(top: 6, left: 4), child: Text(errorText, style: const TextStyle(fontSize: 12, color: Color(0xFFDC2626)))),
       ],
     );
   }
