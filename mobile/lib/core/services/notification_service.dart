@@ -13,7 +13,7 @@ import '../models/models.dart';
 import '../../features/chat/chat_screen.dart';
 import '../../features/chat/chat_list_screen.dart';
 import '../../features/notifications/notification_screen.dart';
-
+import '../../features/admin/approval_history_screen.dart';
 import 'notification_item.dart';
 import 'order_notification_router.dart';
 export 'notification_item.dart';
@@ -144,10 +144,10 @@ class NotificationService {
       final bodyStr = (data['body'] ?? data['message'] ?? '').toString();
 
       // Hanya berdasarkan tipe: judul "Perubahan Jadwal Ditolak/Disetujui" bukan hasil pendaftaran akun.
-      final isAccountResult = type == 'ACCOUNT_APPROVED' || type == 'ACCOUNT_REJECTED';
+      final isAccountResult = const {'ACCOUNT_APPROVED', 'ACCOUNT_REJECTED', 'REGION_TRANSFER_APPROVED', 'REGION_TRANSFER_REJECTED'}.contains(type);
 
       if (isAccountResult) {
-        final isApproved = type == 'ACCOUNT_APPROVED';
+        final isApproved = type.endsWith('_APPROVED');
         final title = titleStr.isNotEmpty ? titleStr : (isApproved ? '🎉 Akun Berhasil Disetujui!' : '⚠️ Status Pendaftaran Akun');
         final message = bodyStr.isNotEmpty ? bodyStr : (isApproved ? 'Pendaftaran akun Anda telah disetujui. Anda kini dapat menggunakan seluruh fitur aplikasi CATU.' : 'Pendaftaran akun Anda ditolak.');
 
@@ -174,7 +174,7 @@ class NotificationService {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      isApproved ? 'Akun Telah Disetujui' : 'Status Pendaftaran Akun',
+                      type.startsWith('REGION_TRANSFER') ? 'Pindah Lingkungan' : (isApproved ? 'Akun Telah Disetujui' : 'Status Pendaftaran Akun'),
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -255,6 +255,11 @@ class NotificationService {
         return;
       }
 
+      // Pendaftaran/permintaan pindah yang menunggu keputusan penyetuju -> daftar Menunggu
+      if (type == 'USER_APPROVAL' || type == 'REGISTRATION_RESUBMITTED' || type == 'REGION_TRANSFER_REQUEST') {
+        await navState.push(MaterialPageRoute(builder: (_) => ApprovalHistoryScreen(user: userMap ?? {}, startOnPending: true)));
+        return syncBadgeCount(userId: currentUserId, role: role);
+      }
       // 🔔 2. NOTIFIKASI PELAYANAN -> buka detail misa tujuan; bila tidak ada order, cukup daftar notifikasi
       if (await openOrderFromNotification(navState, data: data, userName: uName.toString(), userId: currentUserId, isRomo: isRomo)) {
         await syncBadgeCount(userId: currentUserId, role: role);
