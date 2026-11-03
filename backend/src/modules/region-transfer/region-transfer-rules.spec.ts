@@ -1,4 +1,4 @@
-import { isMove, takeRegionFields, usesTransferFlow } from './region-transfer-rules';
+import { isMove, leaveBlockMessage, takeRegionFields, usesTransferFlow } from './region-transfer-rules';
 
 describe('region-transfer-rules', () => {
   it('Umat dan Pengurus Lingkungan memakai alur persetujuan, Koordinator dan Romo tidak', () => {
@@ -25,5 +25,12 @@ describe('region-transfer-rules', () => {
     expect(isMove(cur, { ...cur })).toBe(false);
     expect(isMove(cur, { ...cur, lingkunganId: 5 })).toBe(true);
     expect(isMove(cur, { ...cur, lingkunganId: null })).toBe(true);
+  });
+
+  it('leaveBlockMessage menolak bila ada transaksi terbuka atau akun menunggu', () => {
+    expect(leaveBlockMessage(0, 0)).toBeNull();
+    expect(leaveBlockMessage(2, 0)).toContain('2 transaksi yang belum selesai');
+    expect(leaveBlockMessage(0, 3)).toContain('3 akun yang menunggu persetujuan');
+    expect(leaveBlockMessage(1, 1)).toContain('1 transaksi yang belum selesai dan 1 akun yang menunggu persetujuan');
   });
 });
