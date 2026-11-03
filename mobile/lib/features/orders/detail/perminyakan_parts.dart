@@ -1,3 +1,4 @@
+import '../../../core/widgets/urgency_label.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/models.dart';
 
@@ -70,7 +71,7 @@ class PerminyakanHero extends StatelessWidget {
             children: [
               Wrap(spacing: 8, runSpacing: 6, children: [
                 const _Chip('✚ SAKRAMEN PERMINYAKAN', Color(0xFF5EEAD4)),
-                if (order.urgencyName.isNotEmpty) _Chip(order.urgencyName.toUpperCase(), urgencyColor, solid: true),
+                if (order.urgencyName.isNotEmpty) _Chip(urgencyLabelOf(order.urgencyName).toUpperCase(), urgencyColor, solid: true),
               ]),
               const SizedBox(height: 10),
               Text(order.penerimaName,
@@ -171,7 +172,7 @@ class PerminyakanSummaryCard extends StatelessWidget {
             _Fact(
                 icon: Icons.priority_high_rounded,
                 label: 'Urgensi',
-                value: order.urgencyName.isNotEmpty ? order.urgencyName : '-',
+                value: order.urgencyName.isNotEmpty ? urgencyLabelOf(order.urgencyName) : '-',
                 color: urgencyColor),
           ]),
         ],
