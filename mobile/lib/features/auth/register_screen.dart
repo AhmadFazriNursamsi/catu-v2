@@ -1312,42 +1312,19 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   _buildSectionLabel('INFORMASI PRIBADI',
                                       Icons.person_outline_rounded),
 
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextFormField(
-                                          controller: _firstNameController,
-                                          textCapitalization:
-                                              TextCapitalization.words,
-                                          style: const TextStyle(
-                                              fontSize: 14,
-                                              color: AppConstants.textDark),
-                                          decoration: _fieldDeco(
-                                              label: 'Nama Depan',
-                                              icon: Icons.person_rounded),
-                                          validator: (v) {
-                                            if (v == null || v.trim().isEmpty) {
-                                              return 'Wajib diisi';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: TextFormField(
-                                          controller: _lastNameController,
-                                          textCapitalization:
-                                              TextCapitalization.words,
-                                          style: const TextStyle(
-                                              fontSize: 14,
-                                              color: AppConstants.textDark),
-                                          decoration: _fieldDeco(
-                                              label: 'Nama Belakang',
-                                              icon: Icons.person_outline_rounded),
-                                        ),
-                                      ),
-                                    ],
+                                  TextFormField(
+                                    controller: _firstNameController,
+                                    textCapitalization: TextCapitalization.words,
+                                    style: const TextStyle(fontSize: 14, color: AppConstants.textDark),
+                                    decoration: _fieldDeco(label: 'Nama Depan', icon: Icons.person_rounded),
+                                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  TextFormField(
+                                    controller: _lastNameController,
+                                    textCapitalization: TextCapitalization.words,
+                                    style: const TextStyle(fontSize: 14, color: AppConstants.textDark),
+                                    decoration: _fieldDeco(label: 'Nama Belakang', icon: Icons.person_outline_rounded),
                                   ),
                                   const SizedBox(height: 14),
                                   if (!_selectedRole.startsWith('ROMO')) ...[
@@ -1399,7 +1376,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                           ? 'Asal Alamat Tempat Tinggal'
                                           : 'Alamat Jalan / Rumah',
                                       icon: Icons.place_rounded,
-                                      hint: 'Jl. Sutera Utama No. 18',
+                                      hint: 'Masukkan alamat sesuai domisili atau alamat yang terdaftar',
                                     ),
                                   ),
                                   const SizedBox(height: 14),
