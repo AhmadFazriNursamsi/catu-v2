@@ -93,6 +93,9 @@ function renderActionConfirmModal() {
             <div class="text-xs text-slate-600 mt-1.5 leading-relaxed">${modal.subtitle || 'Apakah Anda yakin ingin melanjutkan tindakan ini?'}</div>
           </div>
         </div>
+        ${modal.reasonRequired ? `<div><label class="block text-[11px] font-black text-slate-700 mb-1.5" for="action-reason">Alasan penolakan <span class="text-rose-600">*</span></label>
+          <textarea id="action-reason" rows="3" maxlength="500" oninput="state.actionConfirmModal.reason = this.value" placeholder="Wajib diisi, akan dibaca oleh pendaftar. Contoh: Alamat belum lengkap."
+            class="w-full rounded-xl border border-slate-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 text-xs p-3 outline-none">${escapeHtml(modal.reason || '')}</textarea></div>` : ''}
         <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2.5">
           <button onclick="state.actionConfirmModal = null; renderApp();"
             class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs transition">${escapeHtml(modal.cancelText || 'Batal')}</button>

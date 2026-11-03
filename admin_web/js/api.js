@@ -262,15 +262,21 @@
         icon: isApprove ? 'shield-check' : 'shield-alert',
         iconBg: isApprove ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-600 border-rose-200',
         confirmText: isApprove ? 'Ya, Setujui Akun' : 'Ya, Tolak Permohonan',
+        reasonRequired: !isApprove,
         confirmBtnClass: isApprove ? 'bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/25' : 'bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/25',
         onConfirm: async () => {
+          const reason = (state.actionConfirmModal?.reason || '').trim();
+          if (!isApprove && !reason) {
+            showToast('Alasan penolakan wajib diisi agar pendaftar tahu apa yang perlu diperbaiki.', 'error', 'Alasan Wajib Diisi');
+            return;
+          }
           try {
             state.actionConfirmModal = null;
             renderApp();
             const res = await fetch(`${API_BASE}/auth/approve-registration`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ targetUserId: parseInt(userId), action }),
+              body: JSON.stringify({ targetUserId: parseInt(userId), action, ...(isApprove ? {} : { rejectionReason: reason }) }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Gagal memproses persetujuan akun.');

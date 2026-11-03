@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
+import 'rejection_reason_dialog.dart';
 import '../../core/services/api_service.dart';
 import 'approval_history_screen.dart';
 
@@ -124,63 +125,9 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
     }
   }
 
-  void _showRejectDialog(Map<String, dynamic> targetUser) {
-    final reasonController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 26),
-            SizedBox(width: 10),
-            Text('Tolak Pendaftaran', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Apakah Anda yakin ingin menolak pendaftaran dari ${targetUser['full_name']}?',
-              style: const TextStyle(fontSize: 13.5, color: Color(0xFF334155)),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: reasonController,
-              decoration: InputDecoration(
-                labelText: 'Alasan Penolakan (Opsional)',
-                hintText: 'Misal: Bukan warga lingkungan ini',
-                hintStyle: TextStyle(fontSize: 12.5, color: Colors.grey.shade400),
-                labelStyle: const TextStyle(fontSize: 13),
-                filled: true,
-                fillColor: const Color(0xFFF8FAFC),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B))),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _handleApproval(targetUser, 'REJECT', reason: reasonController.text.trim());
-            },
-            child: const Text('Tolak Pendaftaran'),
-          ),
-        ],
-      ),
-    );
+  Future<void> _showRejectDialog(Map<String, dynamic> targetUser) async {
+    final reason = await askRejectionReason(context, title: 'Tolak Pendaftaran', message: 'Tolak pendaftaran dari ${targetUser['full_name']}?');
+    if (reason != null) _handleApproval(targetUser, 'REJECT', reason: reason);
   }
 
   @override

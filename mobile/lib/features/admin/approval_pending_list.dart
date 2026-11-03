@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
+import 'rejection_reason_dialog.dart';
 
 /// Daftar pendaftaran yang menunggu keputusan penyetuju (Ketua Romo atau Pengurus Lingkungan),
 /// lengkap dengan aksi Setujui/Tolak. Dipakai sebagai tab "Menunggu" di Riwayat Persetujuan.
@@ -86,37 +87,8 @@ class _ApprovalPendingListState extends State<ApprovalPendingList> {
   }
 
   Future<void> _reject(Map<String, dynamic> t) async {
-    final ctrl = TextEditingController();
-    final go = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Tolak Pendaftaran', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Tolak pendaftaran dari ${t['full_name']}?', style: const TextStyle(fontSize: 13.5, color: Color(0xFF334155))),
-          const SizedBox(height: 14),
-          TextField(
-            controller: ctrl,
-            maxLines: 2,
-            decoration: InputDecoration(
-              labelText: 'Alasan Penolakan (Opsional)',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: _red, foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Tolak Pendaftaran'),
-          ),
-        ],
-      ),
-    );
-    final reason = ctrl.text.trim();
-    ctrl.dispose();
-    if (go == true) await _decide(t, 'REJECT', reason: reason);
+    final reason = await askRejectionReason(context, title: 'Tolak Pendaftaran', message: 'Tolak pendaftaran dari ${t['full_name']}?');
+    if (reason != null) await _decide(t, 'REJECT', reason: reason);
   }
 
   String _label(Map<String, dynamic> t) {

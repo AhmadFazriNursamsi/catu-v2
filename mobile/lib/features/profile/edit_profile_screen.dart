@@ -644,7 +644,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            LanguageService.tr('edit_profile'),
+            widget.resubmit ? 'Perbaiki Data Pendaftaran' : LanguageService.tr('edit_profile'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
@@ -789,10 +789,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.save_rounded, color: Colors.white, size: 20),
+                        Icon(widget.resubmit ? Icons.send_rounded : Icons.save_rounded, color: Colors.white, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          LanguageService.tr('save_changes'),
+                          widget.resubmit ? 'Ajukan Ulang Pendaftaran' : LanguageService.tr('save_changes'),
                           style: const TextStyle(
                             fontSize: 15.5,
                             fontWeight: FontWeight.w800,

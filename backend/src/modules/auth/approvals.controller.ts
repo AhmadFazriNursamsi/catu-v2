@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -27,6 +27,11 @@ export class ProcessApprovalDto {
   @IsString()
   @MaxLength(500)
   rejectionReason?: string;
+}
+
+/** Penolakan wajib beralasan: pendaftar membacanya untuk memperbaiki data. */
+function assertRejectionReason(action: string, reason?: string): void {
+  if (/^REJECT/.test(action) && !(reason ?? '').trim()) throw new BadRequestException('Alasan penolakan wajib diisi.');
 }
 
 /**
@@ -74,6 +79,7 @@ export class ApprovalsController {
   @Roles(...APPROVER_ROLES)
   @ApiOperation({ summary: 'Proses Persetujuan Umat / Pengurus oleh penyetuju yang berwenang' })
   async processPengurusApproval(@CurrentUser() user: AuthUser, @Body() body: ProcessApprovalDto) {
+    assertRejectionReason(body.action, body.rejectionReason);
     await this.policy.authorize(user.sub, body.targetUserId, body.action);
     const result = (await this.regionTransfer.resolve(body.targetUserId, user.sub, body.action, body.rejectionReason)) ?? (await this.authService.processPengurusApproval({ ...body, approverUserId: user.sub }));
     this.policy.afterProcessed(body.targetUserId);
@@ -123,6 +129,7 @@ export class ApprovalsController {
   @Roles(...APPROVER_ROLES)
   @ApiOperation({ summary: 'Proses Persetujuan Romo oleh Kepala Romo Paroki / Ketua Romo Ordo' })
   async processRomoApproval(@CurrentUser() user: AuthUser, @Body() body: ProcessApprovalDto) {
+    assertRejectionReason(body.action, body.rejectionReason);
     await this.policy.authorize(user.sub, body.targetUserId, body.action);
     const result = await this.authService.processRomoApproval({ ...body, approverUserId: user.sub });
     this.policy.afterProcessed(body.targetUserId);
@@ -137,6 +144,7 @@ export class ApprovalsController {
   })
   @ApiResponse({ status: 200, description: 'Status persetujuan akun berhasil diperbarui.', type: ApproveUserResponseDto })
   async approveRegistration(@CurrentUser() user: AuthUser, @Body() dto: ApproveUserDto) {
+    assertRejectionReason(dto.action === 'APPROVED' ? 'APPROVE' : 'REJECT', (dto as any).rejectionReason);
     await this.policy.authorize(user.sub, Number(dto.targetUserId), dto.action === 'APPROVED' ? 'APPROVE' : 'REJECT');
     const result = (await this.regionTransfer.resolve(Number(dto.targetUserId), user.sub, dto.action === 'APPROVED' ? 'APPROVE' : 'REJECT', (dto as any).rejectionReason)) ?? (await this.authService.approveRegistration(dto));
     this.policy.afterProcessed(Number(dto.targetUserId));
