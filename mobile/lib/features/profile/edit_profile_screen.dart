@@ -9,6 +9,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import '../auth/widgets/gender_form_field.dart';
 import '../home/widgets/home_greeting.dart' show homeRoleTitle;
+import 'profile_region_fields.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -34,15 +35,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   String? _avatarUrl;
   String _selectedRole = 'Umat';
-  String _selectedKeuskupan = 'Keuskupan Agung Jakarta';
-  String _selectedParoki = 'Paroki Alam Sutera - St. Laurensius';
-  String _selectedWilayah = 'Wilayah 01 - St. Laurensius';
-  String _selectedLingkungan = 'Lingkungan St. Angela Merici';
-
-  List<Map<String, dynamic>> _dynamicProvinsiList = [];
-  List<Map<String, dynamic>> _dynamicKotaList = [];
-  int? _selectedProvinsiId;
-  int? _selectedKabupatenKotaId;
+  int? _keuskupanId, _parokiId, _wilayahId, _lingkunganId, _selectedProvinsiId, _selectedKabupatenKotaId;
+  bool _regionDirty = false;
 
   List<Map<String, dynamic>> _ordoList = [];
   int? _selectedOrdoId;
@@ -51,36 +45,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final bool _notifyKetuaLingkungan = true;
   bool _isSaving = false;
   String? _emailError;
-
-  final List<String> _keuskupanList = [
-    'Keuskupan Agung Jakarta',
-    'Keuskupan Agung Bandung',
-    'Keuskupan Agung Surabaya',
-    'Keuskupan Agung Semarang',
-    'Keuskupan Agung Medan',
-  ];
-
-  final List<String> _parokiList = [
-    'Paroki Alam Sutera - St. Laurensius',
-    'Paroki Pademangan - St. Alfonsus Rodriguez',
-    'Paroki Serpong - St. Monika',
-    'Paroki Bintaro Jaya - St. Maria Regina',
-    'Paroki Curug - St. Helena',
-  ];
-
-  final List<String> _wilayahList = [
-    'Wilayah 01 - St. Laurensius',
-    'Wilayah St. Agustinus',
-    'Wilayah 02 - St. Agnes',
-    'Wilayah 03 - St. Gabriel',
-  ];
-
-  final List<String> _lingkunganList = [
-    'Lingkungan St. Angela Merici',
-    'Lingkungan St. Agnes 1',
-    'Lingkungan St. Anastasia 2',
-    'Lingkungan St. Franciscus',
-  ];
 
   @override
   void initState() {
@@ -92,7 +56,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _addressController = TextEditingController();
 
     _initDataFromUserMap(widget.user);
-    _loadDynamicProvinsiKota();
     _loadOrdoList();
     _fetchProfileFromBackend();
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
@@ -147,29 +110,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _loadDynamicProvinsiKota() async {
-    final provs = await ApiService.getProvinsiList();
-    if (mounted) {
-      setState(() {
-        _dynamicProvinsiList = provs;
-      });
-      final currentProvId = _selectedProvinsiId ??
-          (provs.isNotEmpty ? int.tryParse(provs.first['id'].toString()) : null);
-      if (currentProvId != null) {
-        _selectedProvinsiId = currentProvId;
-        final kotas = await ApiService.getKabupatenKotaList(provinsiId: currentProvId);
-        if (mounted) {
-          setState(() {
-            _dynamicKotaList = kotas;
-            if (_selectedKabupatenKotaId == null && kotas.isNotEmpty) {
-              _selectedKabupatenKotaId = int.tryParse(kotas.first['id'].toString());
-            }
-          });
-        }
-      }
-    }
-  }
-
   bool get _isRomo {
     final code = (widget.user['roleCode'] ?? widget.user['role_code'] ?? widget.user['role'] ?? '').toString().toUpperCase();
     return code.startsWith('ROMO') || _selectedRole.contains('Romo');
@@ -178,34 +118,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool get _isRomoOrdo {
     final code = (widget.user['roleCode'] ?? widget.user['role_code'] ?? widget.user['role'] ?? '').toString().toUpperCase();
     return code == 'ROMO_ORDO' || _selectedRole == 'Romo Ordo';
-  }
-
-  String get _selectedProvinsiName {
-    if (_selectedProvinsiId != null && _dynamicProvinsiList.isNotEmpty) {
-      final match = _dynamicProvinsiList.firstWhere(
-        (p) => int.tryParse(p['id'].toString()) == _selectedProvinsiId,
-        orElse: () => {'name': ''},
-      );
-      if (match['name'] != null && match['name'].toString().isNotEmpty) {
-        return match['name'].toString();
-      }
-    }
-    final raw = widget.user['provinsiName'] ?? widget.user['provinsi_name'];
-    return (raw != null && raw.toString().isNotEmpty) ? raw.toString() : 'Banten';
-  }
-
-  String get _selectedKotaName {
-    if (_selectedKabupatenKotaId != null && _dynamicKotaList.isNotEmpty) {
-      final match = _dynamicKotaList.firstWhere(
-        (k) => int.tryParse(k['id'].toString()) == _selectedKabupatenKotaId,
-        orElse: () => {'name': ''},
-      );
-      if (match['name'] != null && match['name'].toString().isNotEmpty) {
-        return match['name'].toString();
-      }
-    }
-    final raw = widget.user['kabupatenKotaName'] ?? widget.user['kabupaten_kota_name'] ?? widget.user['cityName'];
-    return (raw != null && raw.toString().isNotEmpty) ? raw.toString() : 'Kota Tangerang Selatan';
   }
 
   void _initDataFromUserMap(Map<String, dynamic> data) {
@@ -266,29 +178,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _selectedKabupatenKotaId = int.tryParse(rawKotaId.toString());
     }
 
-    final keuskupan = data['keuskupanName'] ?? data['keuskupan_name'];
-    if (keuskupan != null && keuskupan.toString().isNotEmpty) {
-      if (!_keuskupanList.contains(keuskupan)) _keuskupanList.add(keuskupan);
-      _selectedKeuskupan = keuskupan;
-    }
-
-    final paroki = data['parokiName'] ?? data['paroki_name'];
-    if (paroki != null && paroki.toString().isNotEmpty) {
-      if (!_parokiList.contains(paroki)) _parokiList.add(paroki);
-      _selectedParoki = paroki;
-    }
-
-    final wilayah = data['wilayahName'] ?? data['wilayah_name'];
-    if (wilayah != null && wilayah.toString().isNotEmpty) {
-      if (!_wilayahList.contains(wilayah)) _wilayahList.add(wilayah);
-      _selectedWilayah = wilayah;
-    }
-
-    final lingkungan = data['lingkunganName'] ?? data['lingkungan_name'];
-    if (lingkungan != null && lingkungan.toString().isNotEmpty) {
-      if (!_lingkunganList.contains(lingkungan)) _lingkunganList.add(lingkungan);
-      _selectedLingkungan = lingkungan;
-    }
+    int? idOf(String camel, String snake) => int.tryParse((data[camel] ?? data[snake] ?? '').toString());
+    _keuskupanId = idOf('keuskupanId', 'keuskupan_id') ?? _keuskupanId;
+    _parokiId = idOf('parokiId', 'paroki_id') ?? _parokiId;
+    _wilayahId = idOf('wilayahId', 'wilayah_id') ?? _wilayahId;
+    _lingkunganId = idOf('lingkunganId', 'lingkungan_id') ?? _lingkunganId;
   }
 
   Future<void> _fetchProfileFromBackend() async {
@@ -305,7 +199,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             setState(() {
               _initDataFromUserMap(u);
             });
-            _loadDynamicProvinsiKota();
           }
           return;
         }
@@ -649,6 +542,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'avatarUrl': _avatarUrl,
         'roleCode': roleCode,
         'kabupatenKotaId': _selectedKabupatenKotaId,
+        if (_regionDirty) ...{
+          'keuskupanId': _keuskupanId,
+          'parokiId': _parokiId,
+          if (!_isRomo) ...{'wilayahId': _wilayahId, 'lingkunganId': _lingkunganId},
+        },
         'notifyKetuaLingkungan': _notifyKetuaLingkungan,
       };
 
@@ -800,40 +698,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 14),
 
-              if (_isRomoOrdo) ...[
-                _buildReadOnlyField(
-                  label: 'Ordo / Tarekat',
-                  value: _selectedOrdoName,
-                  icon: Icons.auto_stories_rounded,
+              if (_isRomoOrdo)
+                _buildReadOnlyField(label: 'Ordo / Tarekat', value: _selectedOrdoName, icon: Icons.auto_stories_rounded)
+              else
+                ChurchRegionFields(
+                  keuskupanId: _keuskupanId,
+                  parokiId: _parokiId,
+                  wilayahId: _wilayahId,
+                  lingkunganId: _lingkunganId,
+                  showArea: !_isRomo,
+                  onChanged: (k, p, w, l) => setState(() {
+                    _keuskupanId = k;
+                    _parokiId = p;
+                    _wilayahId = w;
+                    _lingkunganId = l;
+                    _regionDirty = true;
+                  }),
                 ),
-              ] else ...[
-                _buildReadOnlyField(
-                  label: LanguageService.tr('keuskupan'),
-                  value: _selectedKeuskupan,
-                  icon: Icons.account_balance_rounded,
-                ),
-                const SizedBox(height: 14),
-                _buildReadOnlyField(
-                  label: LanguageService.tr('paroki'),
-                  value: _selectedParoki,
-                  icon: Icons.location_city_rounded,
-                ),
-              ],
-
-              if (!_isRomo) ...[
-                const SizedBox(height: 14),
-                _buildReadOnlyField(
-                  label: LanguageService.tr('wilayah'),
-                  value: _selectedWilayah,
-                  icon: Icons.map_rounded,
-                ),
-                const SizedBox(height: 14),
-                _buildReadOnlyField(
-                  label: LanguageService.tr('lingkungan'),
-                  value: _selectedLingkungan,
-                  icon: Icons.groups_rounded,
-                ),
-              ],
 
               const SizedBox(height: 24),
 
@@ -850,18 +731,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 14),
 
-              // Dynamic Backend Read-Only Display for Provinsi & Kota
-              _buildReadOnlyField(
-                label: 'Provinsi',
-                value: _selectedProvinsiName,
-                icon: Icons.apartment_rounded,
-              ),
-              const SizedBox(height: 14),
-
-              _buildReadOnlyField(
-                label: 'Kota / Kabupaten',
-                value: _selectedKotaName,
-                icon: Icons.location_on_rounded,
+              ProvinsiKotaFields(
+                provinsiId: _selectedProvinsiId,
+                kotaId: _selectedKabupatenKotaId,
+                onChanged: (p, k) => setState(() {
+                  _selectedProvinsiId = p;
+                  _selectedKabupatenKotaId = k;
+                }),
               ),
             ],
           ),
