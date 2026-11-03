@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Dialog tolak dengan alasan WAJIB (pendaftar membacanya untuk memperbaiki data).
 /// Mengembalikan alasan yang sudah dipangkas, atau null bila dibatalkan.
+/// Controller sengaja tidak di-dispose manual: dialog masih membangun TextField saat animasi tutup berjalan.
 Future<String?> askRejectionReason(BuildContext context, {required String title, required String message}) {
   final ctrl = TextEditingController();
   return showDialog<String>(
@@ -38,5 +39,5 @@ Future<String?> askRejectionReason(BuildContext context, {required String title,
         ),
       ],
     ),
-  ).whenComplete(ctrl.dispose);
+  );
 }
