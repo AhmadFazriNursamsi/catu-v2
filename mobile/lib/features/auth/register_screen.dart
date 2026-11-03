@@ -486,7 +486,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 
   InputDecoration _fieldDeco({
-    required String label,
+    String? label,
     required IconData icon,
     Widget? suffix,
     String? hint,
@@ -1372,9 +1372,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                                         fontSize: 14,
                                         color: AppConstants.textDark),
                                     decoration: _fieldDeco(
-                                      label: _isPendatang
-                                          ? 'Asal Alamat Tempat Tinggal'
-                                          : 'Alamat Jalan / Rumah',
                                       icon: Icons.place_rounded,
                                       hint: 'Masukkan alamat sesuai domisili atau alamat yang terdaftar',
                                     ),
