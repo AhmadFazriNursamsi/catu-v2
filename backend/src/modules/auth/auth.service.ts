@@ -232,6 +232,16 @@ export class AuthService {
       ORDER BY o.name ASC
     `);
   }
+  /** Alasan penolakan terakhir (bila akun berstatus REJECTED); null bila tidak ada. */
+  private async rejectionReasonOf(userId: number, status: string): Promise<string | null> {
+    if (status !== 'REJECTED') return null;
+    const r = await this.dataSource.query(
+      `SELECT rejection_reason FROM user_approvals WHERE target_user_id = $1 AND action IN ('REJECT', 'REJECTED') ORDER BY id DESC LIMIT 1`,
+      [userId],
+    );
+    return r[0]?.rejection_reason ?? null;
+  }
+
   async checkAccountStatus(phone: string) {
     if (!phone) return { statusCode: 400, message: 'Nomor HP wajib disertakan' };
     let cleanPhone = phone.trim();
@@ -276,6 +286,7 @@ export class AuthService {
         avatarUrl: user.avatar_url,
         roleCode: user.role_code,
         accountStatus: user.account_status,
+        rejectionReason: await this.rejectionReasonOf(user.id, user.account_status),
         keuskupanId: user.keuskupan_id,
         parokiId: user.paroki_id,
         wilayahId: user.wilayah_id,
@@ -1107,6 +1118,7 @@ export class AuthService {
         avatarUrl: user.avatar_url,
         roleCode: user.role_code,
         accountStatus: user.account_status,
+        rejectionReason: await this.rejectionReasonOf(user.id, user.account_status),
         mustChangePassword: user.must_change_password === true,
         keuskupanId: user.keuskupan_id,
         parokiId: user.paroki_id,
@@ -1196,6 +1208,7 @@ export class AuthService {
         email: user.email,
         roleCode: user.role_code,
         accountStatus: user.account_status,
+        rejectionReason: await this.rejectionReasonOf(user.id, user.account_status),
       },
     };
   }
@@ -1244,6 +1257,7 @@ export class AuthService {
         avatarUrl: user.avatar_url || '',
         roleCode: user.role_code,
         accountStatus: user.account_status,
+        rejectionReason: await this.rejectionReasonOf(user.id, user.account_status),
         ordoId: user.ordo_id,
         ordoName: user.ordo_name || '',
         keuskupanId: user.role_code === 'ROMO_ORDO' ? null : user.keuskupan_id,

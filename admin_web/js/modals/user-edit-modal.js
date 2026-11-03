@@ -4,6 +4,8 @@
       if (!u) return '';
       const rawRole = (u.role_code || u.roleCode || 'UMAT').toUpperCase();
       const posLower = (u.pengurus_position || '').toLowerCase();
+      // Jabatan dari aplikasi mobile berupa kode (KETUA/WAKIL/SEKRETARIS/BENDAHARA); samakan dengan opsi dropdown.
+      const curPos = posLower.includes('wakil') ? 'Wakil Ketua' : posLower.includes('ketua') ? 'Ketua Lingkungan' : posLower.includes('sekretaris') ? 'Sekretaris' : posLower.includes('bendahara') ? 'Bendahara' : '';
       const isKoordinatorUser = posLower.includes('koordinator') || rawRole === 'KOORDINATOR' || rawRole === 'KOORDINATOR_KEUSKUPAN';
       const roleCode = isKoordinatorUser ? 'KOORDINATOR' : rawRole;
       const status = (u.account_status || u.accountStatus || 'APPROVED').toUpperCase();
@@ -237,10 +239,10 @@
                           ${roleCode === 'KOORDINATOR' ? `
                             <option value="Koordinator" selected>Koordinator (Keuskupan)</option>
                           ` : `
-                            <option value="Ketua Lingkungan" ${u.pengurus_position === 'Ketua Lingkungan' ? 'selected' : ''}>Ketua Lingkungan (Pimpinan)</option>
-                            <option value="Wakil Ketua" ${u.pengurus_position === 'Wakil Ketua' ? 'selected' : ''}>Wakil Ketua</option>
-                            <option value="Sekretaris" ${u.pengurus_position === 'Sekretaris' ? 'selected' : ''}>Sekretaris</option>
-                            <option value="Bendahara" ${u.pengurus_position === 'Bendahara' ? 'selected' : ''}>Bendahara</option>
+                            <option value="Ketua Lingkungan" ${curPos === 'Ketua Lingkungan' ? 'selected' : ''}>Ketua Lingkungan (Pimpinan)</option>
+                            <option value="Wakil Ketua" ${curPos === 'Wakil Ketua' ? 'selected' : ''}>Wakil Ketua</option>
+                            <option value="Sekretaris" ${curPos === 'Sekretaris' ? 'selected' : ''}>Sekretaris</option>
+                            <option value="Bendahara" ${curPos === 'Bendahara' ? 'selected' : ''}>Bendahara</option>
                           `}
                         </select>
                       </div>

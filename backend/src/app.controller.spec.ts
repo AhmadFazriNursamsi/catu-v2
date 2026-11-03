@@ -23,6 +23,7 @@ import { LintasParokiService } from './modules/order-rules/lintas-paroki.service
 import { AssignmentWorkflowService } from './modules/assignments/assignment-workflow.service';
 import { ApprovalPolicyService } from './modules/auth/approval-policy.service';
 import { PasswordResetService } from './modules/otp/password-reset.service';
+import { RegionTransferService } from './modules/region-transfer/region-transfer.service';
 import { AccountStatusService } from './common/access/account-status.service';
 import { LoginLinkService } from './modules/login-link/login-link.service';
 import { RomoCancelService } from './modules/orders/romo-cancel.service';
@@ -102,6 +103,7 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
         { provide: AccountStatusService, useValue: { invalidate: jest.fn() } },
         { provide: LoginLinkService, useValue: { invalidateForUser: jest.fn() } },
         { provide: ApprovalPolicyService, useValue: { load: jest.fn().mockResolvedValue(null) } },
+        { provide: RegionTransferService, useValue: { extract: jest.fn().mockResolvedValue(null), request: jest.fn(), resolve: jest.fn().mockResolvedValue(null), annotate: jest.fn((r) => r) } },
         { provide: PasswordResetService, useValue: { requestOtp: jest.fn(), verifyOtp: jest.fn(), resetPassword: jest.fn() } },
         { provide: LintasParokiService, useValue: { afterCreate: jest.fn().mockResolvedValue(false) } },
         { provide: AssignmentWorkflowService, useFactory: (svc: AssignmentsService) => ({ respond: (id: number, dto: any, ctx: any) => svc.respondAssignment(String(id), { ...dto, romoId: ctx.romoId }) }), inject: [AssignmentsService] },

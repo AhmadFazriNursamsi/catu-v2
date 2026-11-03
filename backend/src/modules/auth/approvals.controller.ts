@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -8,6 +8,7 @@ import { APPROVER_ROLES } from '../../common/access/role-groups';
 import { ApproveUserDto, ApproveUserResponseDto } from '../../auth.dto';
 import { AuthService } from './auth.service';
 import { ApprovalPolicyService } from './approval-policy.service';
+import { RegionTransferService } from '../region-transfer/region-transfer.service';
 
 export class ProcessApprovalDto {
   @IsInt()
@@ -28,6 +29,11 @@ export class ProcessApprovalDto {
   rejectionReason?: string;
 }
 
+/** Penolakan wajib beralasan: pendaftar membacanya untuk memperbaiki data. */
+function assertRejectionReason(action: string, reason?: string): void {
+  if (/^REJECT/.test(action) && !(reason ?? '').trim()) throw new BadRequestException('Alasan penolakan wajib diisi.');
+}
+
 /**
  * Persetujuan pendaftaran akun. Setiap tindakan diperiksa terhadap kebijakan wewenang (approval-policy.ts):
  * penyetuju hanya dapat memproses akun di wilayah/jenjangnya dan tidak dapat memproses akunnya sendiri.
@@ -41,6 +47,7 @@ export class ApprovalsController {
     private readonly authService: AuthService,
     private readonly policy: ApprovalPolicyService,
     private readonly access: AccessService,
+    private readonly regionTransfer: RegionTransferService,
   ) {}
 
   @Get('pengurus/pending-umat')
@@ -52,19 +59,29 @@ export class ApprovalsController {
     @Query('keuskupanId') keuskupanId?: string,
     @Query('pengurusUserId') pengurusUserId?: string,
   ) {
-    if (this.access.isAdmin(user)) return await this.authService.getPengurusPendingUmat(lingkunganId, keuskupanId, pengurusUserId);
-    const scope = await this.policy.scopeFor(user.sub);
-    if (scope?.kind === 'LINGKUNGAN') return await this.authService.getPengurusPendingUmat(String(scope.lingkunganId));
-    if (scope?.kind === 'KEUSKUPAN') return await this.authService.getPengurusPendingUmat(undefined, String(scope.keuskupanId));
-    return [];
+    const scope = this.access.isAdmin(user) ? null : await this.policy.scopeFor(user.sub);
+    if (!this.access.isAdmin(user) && scope?.kind !== 'LINGKUNGAN' && scope?.kind !== 'KEUSKUPAN') return [];
+    const rows = this.access.isAdmin(user)
+      ? await this.authService.getPengurusPendingUmat(lingkunganId, keuskupanId, pengurusUserId)
+      : scope?.kind === 'LINGKUNGAN'
+        ? await this.authService.getPengurusPendingUmat(String(scope.lingkunganId))
+        : await this.authService.getPengurusPendingUmat(undefined, String((scope as any).keuskupanId));
+    const isAdmin = this.access.isAdmin(user);
+    const extra = await this.regionTransfer.pendingPengurus(isAdmin && lingkunganId ? Number(lingkunganId) : (scope as any)?.lingkunganId, isAdmin && keuskupanId ? Number(keuskupanId) : (scope as any)?.keuskupanId);
+    const visible: any[] = [];
+    for (const row of extra) {
+      if (isAdmin || (await this.policy.authorize(user.sub, Number(row.id), 'REJECT').then(() => true, () => false))) visible.push(row);
+    }
+    return await this.regionTransfer.annotate([...rows, ...visible]);
   }
 
   @Post('pengurus/process-approval')
   @Roles(...APPROVER_ROLES)
   @ApiOperation({ summary: 'Proses Persetujuan Umat / Pengurus oleh penyetuju yang berwenang' })
   async processPengurusApproval(@CurrentUser() user: AuthUser, @Body() body: ProcessApprovalDto) {
+    assertRejectionReason(body.action, body.rejectionReason);
     await this.policy.authorize(user.sub, body.targetUserId, body.action);
-    const result = await this.authService.processPengurusApproval({ ...body, approverUserId: user.sub });
+    const result = (await this.regionTransfer.resolve(body.targetUserId, user.sub, body.action, body.rejectionReason)) ?? (await this.authService.processPengurusApproval({ ...body, approverUserId: user.sub }));
     this.policy.afterProcessed(body.targetUserId);
     return result;
   }
@@ -112,6 +129,7 @@ export class ApprovalsController {
   @Roles(...APPROVER_ROLES)
   @ApiOperation({ summary: 'Proses Persetujuan Romo oleh Kepala Romo Paroki / Ketua Romo Ordo' })
   async processRomoApproval(@CurrentUser() user: AuthUser, @Body() body: ProcessApprovalDto) {
+    assertRejectionReason(body.action, body.rejectionReason);
     await this.policy.authorize(user.sub, body.targetUserId, body.action);
     const result = await this.authService.processRomoApproval({ ...body, approverUserId: user.sub });
     this.policy.afterProcessed(body.targetUserId);
@@ -126,8 +144,9 @@ export class ApprovalsController {
   })
   @ApiResponse({ status: 200, description: 'Status persetujuan akun berhasil diperbarui.', type: ApproveUserResponseDto })
   async approveRegistration(@CurrentUser() user: AuthUser, @Body() dto: ApproveUserDto) {
+    assertRejectionReason(dto.action === 'APPROVED' ? 'APPROVE' : 'REJECT', (dto as any).rejectionReason);
     await this.policy.authorize(user.sub, Number(dto.targetUserId), dto.action === 'APPROVED' ? 'APPROVE' : 'REJECT');
-    const result = await this.authService.approveRegistration(dto);
+    const result = (await this.regionTransfer.resolve(Number(dto.targetUserId), user.sub, dto.action === 'APPROVED' ? 'APPROVE' : 'REJECT', (dto as any).rejectionReason)) ?? (await this.authService.approveRegistration(dto));
     this.policy.afterProcessed(Number(dto.targetUserId));
     return result;
   }

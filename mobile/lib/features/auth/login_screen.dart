@@ -8,6 +8,7 @@ import '../home/home_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import 'pending_approval_screen.dart';
+import 'rejected_registration_screen.dart';
 import '../news/public_news_screen.dart';
 import '../../core/services/language_service.dart';
 import '../../core/services/auth_service.dart';
@@ -122,34 +123,9 @@ class _LoginScreenState extends State<LoginScreen>
             FadeSlideRoute(page: PendingApprovalScreen(user: user)),
           );
         } else if (status == 'REJECTED') {
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              title: const Row(
-                children: [
-                  Icon(Icons.cancel, color: Colors.red, size: 28),
-                  SizedBox(width: 10),
-                  Text('Pendaftaran Ditolak', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-                ],
-              ),
-              content: const Text(
-                'Mohon maaf, pendaftaran akun Anda tidak disetujui oleh Pengurus Lingkungan atau Administrator. Silakan hubungi pengurus lingkungan Anda untuk konfirmasi.',
-                style: TextStyle(fontSize: 13.5, height: 1.4),
-              ),
-              actions: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.primaryBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Tutup'),
-                ),
-              ],
-            ),
-          );
+          await AuthService.saveSession(user);
+          if (!mounted) return;
+          Navigator.pushReplacement(context, FadeSlideRoute(page: RejectedRegistrationScreen(user: user)));
         } else {
           await AuthService.saveSession(user);
           if (!mounted) return;

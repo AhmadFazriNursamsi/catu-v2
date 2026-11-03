@@ -43,6 +43,7 @@ import { UpdateProfileDto } from './update-profile.dto';
 import { effectiveRole, registrationError, roleChangeError } from './registration-rules';
 import { ApprovalPolicyService } from './approval-policy.service';
 import { PasswordResetService } from '../otp/password-reset.service';
+import { RegionTransferService } from '../region-transfer/region-transfer.service';
 import { AdminOrderStatusDto } from './admin-order-status.dto';
 import { OrderGuardsService } from '../order-rules/order-guards.service';
 import { AuthService } from './auth.service';
@@ -60,6 +61,7 @@ export class AuthController {
     private readonly orderGuards: OrderGuardsService,
     private readonly approvalPolicy: ApprovalPolicyService,
     private readonly passwordReset: PasswordResetService,
+    private readonly regionTransfer: RegionTransferService,
   ) {}
 
   /** Menolak ganti peran yang tidak diizinkan (lihat roleChangeError); tanpa roleCode tidak ada yang diperiksa. */
@@ -252,7 +254,25 @@ export class AuthController {
   ) {
     this.access.assertSelf(user, userIdParam);
     await this.assertRoleChange(userIdParam, (dto as any).roleCode ?? (dto as any).role_code);
-    return await this.authService.updateProfile(userIdParam, dto);
+    const move = await this.regionTransfer.extract(Number(userIdParam), dto as any);
+    const result = await this.authService.updateProfile(userIdParam, dto);
+    if (!move) return result;
+    await this.regionTransfer.request(Number(userIdParam), move);
+    return { ...result, accountStatus: 'PENDING_APPROVAL', regionTransfer: 'PENDING' };
+  }
+
+  @AllowInactiveAccount()
+  @Post('resubmit-registration')
+  @HttpCode(200)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Perbaiki data & ajukan ulang pendaftaran yang ditolak' })
+  async resubmitRegistration(@CurrentUser() user: AuthUser, @Body() dto: UpdateProfileDto) {
+    const userId = Number(user.sub);
+    await this.regionTransfer.assertRejected(userId);
+    await this.assertRoleChange(String(userId), (dto as any).roleCode ?? (dto as any).role_code);
+    await this.authService.updateProfile(String(userId), dto);
+    await this.regionTransfer.resubmit(userId);
+    return { statusCode: 200, message: 'Pendaftaran diajukan ulang.', accountStatus: 'PENDING_APPROVAL' };
   }
 
   @Roles(...ADMIN_ROLES)

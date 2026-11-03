@@ -10,6 +10,7 @@ import '../../core/utils/fade_slide_route.dart';
 import '../home/home_screen.dart';
 import '../news/public_news_screen.dart';
 import 'login_screen.dart';
+import 'rejected_registration_screen.dart';
 
 class PendingApprovalScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -128,9 +129,9 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
         } else if (status == 'REJECTED') {
           _autoCheckTimer?.cancel();
           if (!mounted) return;
-          setState(() {
-            _currentUser = updatedUser;
-          });
+          await AuthService.saveSession(updatedUser);
+          if (!mounted) return;
+          Navigator.pushReplacement(context, FadeSlideRoute(page: RejectedRegistrationScreen(user: updatedUser)));
         }
       }
     } catch (_) {}
@@ -225,13 +226,9 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
           return;
         } else if (status == 'REJECTED') {
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: Colors.red.shade700,
-              content: Text('Akun Anda ditolak oleh $approverTitle. Silakan hubungi admin.'),
-              duration: const Duration(seconds: 4),
-            ),
-          );
+          await AuthService.saveSession(updatedUser);
+          if (!mounted) return;
+          Navigator.pushReplacement(context, FadeSlideRoute(page: RejectedRegistrationScreen(user: updatedUser)));
         } else {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(

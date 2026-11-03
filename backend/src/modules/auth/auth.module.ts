@@ -7,9 +7,10 @@ import { PasswordService } from './password.service';
 import { FcmModule } from '../fcm/fcm.module';
 import { OtpModule } from '../otp/otp.module';
 import { LoginLinkModule } from '../login-link/login-link.module';
+import { RegionTransferModule } from '../region-transfer/region-transfer.module';
 
 @Module({
-  imports: [FcmModule, OtpModule, LoginLinkModule],
+  imports: [FcmModule, OtpModule, LoginLinkModule, RegionTransferModule],
   controllers: [AuthController, ApprovalsController],
   providers: [AuthService, PasswordService, ApprovalPolicyService],
   exports: [AuthService, PasswordService],

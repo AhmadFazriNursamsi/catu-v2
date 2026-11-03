@@ -663,10 +663,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 return;
               }
               // 0. Account Approval / Rejection Result Notification -> ONLY show Alert Dialog, DO NOT redirect!
-              final isAccountResult = item.type == 'ACCOUNT_APPROVED' || item.type == 'ACCOUNT_REJECTED';
+              final isAccountResult = const {'ACCOUNT_APPROVED', 'ACCOUNT_REJECTED', 'REGION_TRANSFER_APPROVED', 'REGION_TRANSFER_REJECTED'}.contains(item.type);
 
               if (isAccountResult) {
-                final isApproved = item.type == 'ACCOUNT_APPROVED';
+                final isApproved = item.type.endsWith('_APPROVED');
                 await showDialog(
                   context: context,
                   builder: (ctx) => AlertDialog(
@@ -688,7 +688,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            isApproved ? 'Akun Telah Disetujui' : 'Status Pendaftaran Akun',
+                            item.type.startsWith('REGION_TRANSFER') ? 'Pindah Lingkungan' : (isApproved ? 'Akun Telah Disetujui' : 'Status Pendaftaran Akun'),
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -721,7 +721,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
               }
 
               // 1. Incoming Registration waiting for approver review (Ketua Romo / Pengurus)
-              final isApprovalNotification = item.type == 'USER_APPROVAL' ||
+              final isApprovalNotification = const {'USER_APPROVAL', 'REGISTRATION_RESUBMITTED', 'REGION_TRANSFER_REQUEST'}.contains(item.type) ||
                   (item.orderId == null &&
                       item.title.toLowerCase().contains('pendaftaran') &&
                       item.title.toLowerCase().contains('baru'));

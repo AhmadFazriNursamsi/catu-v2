@@ -9,16 +9,15 @@ import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import '../auth/widgets/gender_form_field.dart';
 import '../home/widgets/home_greeting.dart' show homeRoleTitle;
+import 'profile_region_fields.dart';
+import 'region_transfer_flow.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> user;
   final VoidCallback onSaved;
+  final bool resubmit;
 
-  const EditProfileScreen({
-    super.key,
-    required this.user,
-    required this.onSaved,
-  });
+  const EditProfileScreen({super.key, required this.user, required this.onSaved, this.resubmit = false});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -34,15 +33,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   String? _avatarUrl;
   String _selectedRole = 'Umat';
-  String _selectedKeuskupan = 'Keuskupan Agung Jakarta';
-  String _selectedParoki = 'Paroki Alam Sutera - St. Laurensius';
-  String _selectedWilayah = 'Wilayah 01 - St. Laurensius';
-  String _selectedLingkungan = 'Lingkungan St. Angela Merici';
-
-  List<Map<String, dynamic>> _dynamicProvinsiList = [];
-  List<Map<String, dynamic>> _dynamicKotaList = [];
-  int? _selectedProvinsiId;
-  int? _selectedKabupatenKotaId;
+  int? _keuskupanId, _parokiId, _wilayahId, _lingkunganId, _selectedProvinsiId, _selectedKabupatenKotaId;
+  bool _regionDirty = false;
 
   List<Map<String, dynamic>> _ordoList = [];
   int? _selectedOrdoId;
@@ -50,36 +42,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   final bool _notifyKetuaLingkungan = true;
   bool _isSaving = false;
-
-  final List<String> _keuskupanList = [
-    'Keuskupan Agung Jakarta',
-    'Keuskupan Agung Bandung',
-    'Keuskupan Agung Surabaya',
-    'Keuskupan Agung Semarang',
-    'Keuskupan Agung Medan',
-  ];
-
-  final List<String> _parokiList = [
-    'Paroki Alam Sutera - St. Laurensius',
-    'Paroki Pademangan - St. Alfonsus Rodriguez',
-    'Paroki Serpong - St. Monika',
-    'Paroki Bintaro Jaya - St. Maria Regina',
-    'Paroki Curug - St. Helena',
-  ];
-
-  final List<String> _wilayahList = [
-    'Wilayah 01 - St. Laurensius',
-    'Wilayah St. Agustinus',
-    'Wilayah 02 - St. Agnes',
-    'Wilayah 03 - St. Gabriel',
-  ];
-
-  final List<String> _lingkunganList = [
-    'Lingkungan St. Angela Merici',
-    'Lingkungan St. Agnes 1',
-    'Lingkungan St. Anastasia 2',
-    'Lingkungan St. Franciscus',
-  ];
+  String? _emailError;
 
   @override
   void initState() {
@@ -91,7 +54,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _addressController = TextEditingController();
 
     _initDataFromUserMap(widget.user);
-    _loadDynamicProvinsiKota();
     _loadOrdoList();
     _fetchProfileFromBackend();
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
@@ -146,65 +108,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _loadDynamicProvinsiKota() async {
-    final provs = await ApiService.getProvinsiList();
-    if (mounted) {
-      setState(() {
-        _dynamicProvinsiList = provs;
-      });
-      final currentProvId = _selectedProvinsiId ??
-          (provs.isNotEmpty ? int.tryParse(provs.first['id'].toString()) : null);
-      if (currentProvId != null) {
-        _selectedProvinsiId = currentProvId;
-        final kotas = await ApiService.getKabupatenKotaList(provinsiId: currentProvId);
-        if (mounted) {
-          setState(() {
-            _dynamicKotaList = kotas;
-            if (_selectedKabupatenKotaId == null && kotas.isNotEmpty) {
-              _selectedKabupatenKotaId = int.tryParse(kotas.first['id'].toString());
-            }
-          });
-        }
-      }
-    }
-  }
-
   bool get _isRomo {
     final code = (widget.user['roleCode'] ?? widget.user['role_code'] ?? widget.user['role'] ?? '').toString().toUpperCase();
     return code.startsWith('ROMO') || _selectedRole.contains('Romo');
   }
 
+  bool get _isUmatRole => _selectedRole.startsWith('Umat') || _selectedRole == 'Pengurus Lingkungan';
+
   bool get _isRomoOrdo {
     final code = (widget.user['roleCode'] ?? widget.user['role_code'] ?? widget.user['role'] ?? '').toString().toUpperCase();
     return code == 'ROMO_ORDO' || _selectedRole == 'Romo Ordo';
-  }
-
-  String get _selectedProvinsiName {
-    if (_selectedProvinsiId != null && _dynamicProvinsiList.isNotEmpty) {
-      final match = _dynamicProvinsiList.firstWhere(
-        (p) => int.tryParse(p['id'].toString()) == _selectedProvinsiId,
-        orElse: () => {'name': ''},
-      );
-      if (match['name'] != null && match['name'].toString().isNotEmpty) {
-        return match['name'].toString();
-      }
-    }
-    final raw = widget.user['provinsiName'] ?? widget.user['provinsi_name'];
-    return (raw != null && raw.toString().isNotEmpty) ? raw.toString() : 'Banten';
-  }
-
-  String get _selectedKotaName {
-    if (_selectedKabupatenKotaId != null && _dynamicKotaList.isNotEmpty) {
-      final match = _dynamicKotaList.firstWhere(
-        (k) => int.tryParse(k['id'].toString()) == _selectedKabupatenKotaId,
-        orElse: () => {'name': ''},
-      );
-      if (match['name'] != null && match['name'].toString().isNotEmpty) {
-        return match['name'].toString();
-      }
-    }
-    final raw = widget.user['kabupatenKotaName'] ?? widget.user['kabupaten_kota_name'] ?? widget.user['cityName'];
-    return (raw != null && raw.toString().isNotEmpty) ? raw.toString() : 'Kota Tangerang Selatan';
   }
 
   void _initDataFromUserMap(Map<String, dynamic> data) {
@@ -265,29 +178,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _selectedKabupatenKotaId = int.tryParse(rawKotaId.toString());
     }
 
-    final keuskupan = data['keuskupanName'] ?? data['keuskupan_name'];
-    if (keuskupan != null && keuskupan.toString().isNotEmpty) {
-      if (!_keuskupanList.contains(keuskupan)) _keuskupanList.add(keuskupan);
-      _selectedKeuskupan = keuskupan;
-    }
-
-    final paroki = data['parokiName'] ?? data['paroki_name'];
-    if (paroki != null && paroki.toString().isNotEmpty) {
-      if (!_parokiList.contains(paroki)) _parokiList.add(paroki);
-      _selectedParoki = paroki;
-    }
-
-    final wilayah = data['wilayahName'] ?? data['wilayah_name'];
-    if (wilayah != null && wilayah.toString().isNotEmpty) {
-      if (!_wilayahList.contains(wilayah)) _wilayahList.add(wilayah);
-      _selectedWilayah = wilayah;
-    }
-
-    final lingkungan = data['lingkunganName'] ?? data['lingkungan_name'];
-    if (lingkungan != null && lingkungan.toString().isNotEmpty) {
-      if (!_lingkunganList.contains(lingkungan)) _lingkunganList.add(lingkungan);
-      _selectedLingkungan = lingkungan;
-    }
+    int? idOf(String camel, String snake) => int.tryParse((data[camel] ?? data[snake] ?? '').toString());
+    _keuskupanId = idOf('keuskupanId', 'keuskupan_id') ?? _keuskupanId;
+    _parokiId = idOf('parokiId', 'paroki_id') ?? _parokiId;
+    _wilayahId = idOf('wilayahId', 'wilayah_id') ?? _wilayahId;
+    _lingkunganId = idOf('lingkunganId', 'lingkungan_id') ?? _lingkunganId;
   }
 
   Future<void> _fetchProfileFromBackend() async {
@@ -304,7 +199,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             setState(() {
               _initDataFromUserMap(u);
             });
-            _loadDynamicProvinsiKota();
           }
           return;
         }
@@ -623,6 +517,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _handleSave() async {
     HapticFeedback.mediumImpact();
+    final email = _emailController.text.trim();
+    if (email.isNotEmpty && !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$').hasMatch(email)) {
+      setState(() => _emailError = 'Format email tidak valid. Contoh: nama@perusahaan.com');
+      return;
+    }
+    if (_regionDirty && _isUmatRole) {
+      if (_lingkunganId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih lingkungan tujuan terlebih dahulu.')));
+        return;
+      }
+      if (!widget.resubmit && !await confirmRegionTransfer(context)) return;
+    }
     setState(() => _isSaving = true);
 
     try {
@@ -630,7 +536,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final fullName =
           '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'
               .trim();
-      final url = Uri.parse('${ApiService.baseUrl}/auth/profile/$userId');
 
       _syncSelectedOrdo();
       final roleCode = _roleToCode(_selectedRole);
@@ -643,6 +548,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'avatarUrl': _avatarUrl,
         'roleCode': roleCode,
         'kabupatenKotaId': _selectedKabupatenKotaId,
+        if (_regionDirty) ...{
+          'keuskupanId': _keuskupanId,
+          'parokiId': _parokiId,
+          if (!_isRomo) ...{'wilayahId': _wilayahId, 'lingkunganId': _lingkunganId},
+        },
         'notifyKetuaLingkungan': _notifyKetuaLingkungan,
       };
 
@@ -650,14 +560,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         body['ordoId'] = _selectedOrdoId;
       }
 
-      final response = await http.put(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
+      final headers = {'Content-Type': 'application/json'};
+      final base = ApiService.baseUrl;
+      final response = widget.resubmit
+          ? await http.post(Uri.parse('$base/auth/resubmit-registration'), headers: headers, body: jsonEncode(body))
+          : await http.put(Uri.parse('$base/auth/profile/$userId'), headers: headers, body: jsonEncode(body));
 
+      if (response.statusCode >= 400) {
+        if (mounted) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(backendMessage(response.body, 'Gagal menyimpan profil.')), backgroundColor: const Color(0xFFDC2626), behavior: SnackBarBehavior.floating));
+        }
+        return;
+      }
       if (response.statusCode == 200) {
         final resData = jsonDecode(response.body);
+        if (widget.resubmit || resData['regionTransfer'] == 'PENDING') {
+          if (mounted) await openPendingAfterTransfer(context, widget.user..addAll({'fullName': fullName, ...Map<String, dynamic>.from(resData['user'] ?? {})}));
+          return;
+        }
         if (resData['user'] != null && resData['user'] is Map) {
           final Map<String, dynamic> updated = Map<String, dynamic>.from(resData['user']);
           widget.user.addAll(updated);
@@ -673,14 +594,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (!mounted) return;
     setState(() => _isSaving = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content:
-            Text('✅ Perubahan profil berhasil disimpan dan dikirim ke backend!'),
-        backgroundColor: Color(0xFF059669),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Perubahan profil berhasil disimpan!'), backgroundColor: Color(0xFF059669), behavior: SnackBarBehavior.floating));
 
     widget.onSaved();
     Navigator.pop(context);
@@ -730,7 +644,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            LanguageService.tr('edit_profile'),
+            widget.resubmit ? 'Perbaiki Data Pendaftaran' : LanguageService.tr('edit_profile'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
@@ -753,26 +667,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _buildSectionTitle(LanguageService.tr('personal_info'), Icons.person_outline_rounded),
               const SizedBox(height: 12),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _firstNameController,
-                      label: LanguageService.tr('first_name'),
-                      hint: 'Kevin',
-                      icon: Icons.person_rounded,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _lastNameController,
-                      label: LanguageService.tr('last_name'),
-                      hint: 'Antaratama',
-                    ),
-                  ),
-                ],
-              ),
+              _buildTextField(controller: _firstNameController, label: LanguageService.tr('first_name'), hint: 'Kevin', icon: Icons.person_rounded),
+              const SizedBox(height: 14),
+              _buildTextField(controller: _lastNameController, label: LanguageService.tr('last_name'), hint: 'Antaratama'),
               const SizedBox(height: 14),
               if (!_isRomo) ...[
                 GenderFormField(value: _gender, onChanged: (g) => setState(() => _gender = g)),
@@ -791,10 +688,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _buildTextField(
                 controller: _emailController,
                 label: LanguageService.tr('email'),
-                hint: 'kevin@catu.id',
+                hint: 'nama@perusahaan.com',
                 icon: Icons.email_rounded,
                 keyboardType: TextInputType.emailAddress,
-                readOnly: false,
+                errorText: _emailError,
+                onChanged: (_) {
+                  if (_emailError != null) setState(() => _emailError = null);
+                },
               ),
 
               const SizedBox(height: 24),
@@ -808,40 +708,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 14),
 
-              if (_isRomoOrdo) ...[
-                _buildReadOnlyField(
-                  label: 'Ordo / Tarekat',
-                  value: _selectedOrdoName,
-                  icon: Icons.auto_stories_rounded,
+              if (_isRomoOrdo)
+                _buildReadOnlyField(label: 'Ordo / Tarekat', value: _selectedOrdoName, icon: Icons.auto_stories_rounded)
+              else
+                ChurchRegionFields(
+                  keuskupanId: _keuskupanId,
+                  parokiId: _parokiId,
+                  wilayahId: _wilayahId,
+                  lingkunganId: _lingkunganId,
+                  showArea: !_isRomo,
+                  enabled: _isUmatRole,
+                  onChanged: (k, p, w, l) => setState(() {
+                    _keuskupanId = k;
+                    _parokiId = p;
+                    _wilayahId = w;
+                    _lingkunganId = l;
+                    _regionDirty = true;
+                  }),
                 ),
-              ] else ...[
-                _buildReadOnlyField(
-                  label: LanguageService.tr('keuskupan'),
-                  value: _selectedKeuskupan,
-                  icon: Icons.account_balance_rounded,
-                ),
-                const SizedBox(height: 14),
-                _buildReadOnlyField(
-                  label: LanguageService.tr('paroki'),
-                  value: _selectedParoki,
-                  icon: Icons.location_city_rounded,
-                ),
-              ],
-
-              if (!_isRomo) ...[
-                const SizedBox(height: 14),
-                _buildReadOnlyField(
-                  label: LanguageService.tr('wilayah'),
-                  value: _selectedWilayah,
-                  icon: Icons.map_rounded,
-                ),
-                const SizedBox(height: 14),
-                _buildReadOnlyField(
-                  label: LanguageService.tr('lingkungan'),
-                  value: _selectedLingkungan,
-                  icon: Icons.groups_rounded,
-                ),
-              ],
 
               const SizedBox(height: 24),
 
@@ -858,18 +742,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 14),
 
-              // Dynamic Backend Read-Only Display for Provinsi & Kota
-              _buildReadOnlyField(
-                label: 'Provinsi',
-                value: _selectedProvinsiName,
-                icon: Icons.apartment_rounded,
-              ),
-              const SizedBox(height: 14),
-
-              _buildReadOnlyField(
-                label: 'Kota / Kabupaten',
-                value: _selectedKotaName,
-                icon: Icons.location_on_rounded,
+              ProvinsiKotaFields(
+                provinsiId: _selectedProvinsiId,
+                kotaId: _selectedKabupatenKotaId,
+                onChanged: (p, k) => setState(() {
+                  _selectedProvinsiId = p;
+                  _selectedKabupatenKotaId = k;
+                }),
               ),
             ],
           ),
@@ -910,10 +789,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.save_rounded, color: Colors.white, size: 20),
+                        Icon(widget.resubmit ? Icons.send_rounded : Icons.save_rounded, color: Colors.white, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          LanguageService.tr('save_changes'),
+                          widget.resubmit ? 'Ajukan Ulang Pendaftaran' : LanguageService.tr('save_changes'),
                           style: const TextStyle(
                             fontSize: 15.5,
                             fontWeight: FontWeight.w800,
@@ -1005,15 +884,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       children: [
         Icon(icon, size: 16, color: const Color(0xFF1D4ED8)),
         const SizedBox(width: 6),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF64748B),
-            letterSpacing: 0.5,
-          ),
-        ),
+        Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.5)),
       ],
     );
   }
@@ -1027,6 +898,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
     bool readOnly = false,
+    String? errorText,
+    ValueChanged<String>? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1081,6 +954,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: TextField(
             controller: controller,
             readOnly: readOnly,
+            onChanged: onChanged,
             keyboardType: keyboardType,
             maxLines: maxLines,
             style: TextStyle(
@@ -1103,6 +977,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ),
         ),
+        if (errorText != null) Padding(padding: const EdgeInsets.only(top: 6, left: 4), child: Text(errorText, style: const TextStyle(fontSize: 12, color: Color(0xFFDC2626)))),
       ],
     );
   }
@@ -1118,17 +993,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       children: [
         Row(
           children: [
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF64748B),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            Expanded(child: Text(label, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), overflow: TextOverflow.ellipsis)),
             const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1141,14 +1006,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 children: [
                   Icon(Icons.lock_rounded, size: 10, color: Color(0xFF64748B)),
                   SizedBox(width: 3),
-                  Text(
-                    'Terkunci',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
+                  Text('Terkunci', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
                 ],
               ),
             ),

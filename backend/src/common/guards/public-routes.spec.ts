@@ -114,6 +114,7 @@ describe('akses publik API (kontrak keamanan)', () => {
       'GET /auth/check-status',
       'GET /auth/profile/:userId',
       'GET /notifications',
+      'POST /auth/resubmit-registration',
       'POST /notifications/:id/read',
       'POST /notifications/read-all',
       'POST /notifications/register-device',

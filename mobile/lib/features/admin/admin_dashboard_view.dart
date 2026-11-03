@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
+import 'rejection_reason_dialog.dart';
 import '../../core/services/api_service.dart';
 import '../orders/order_detail_screen.dart';
 
@@ -118,19 +119,15 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   Future<void> _handleApproveUser(int userId, String action, String userName) async {
     HapticFeedback.mediumImpact();
-    final res = await ApiService.approveRegistration(
-      targetUserId: userId,
-      action: action,
-    );
+    String? reason;
+    if (action == 'REJECTED') {
+      reason = await askRejectionReason(context, title: 'Tolak Pendaftaran', message: 'Tolak pendaftaran dari $userName?');
+      if (reason == null) return;
+    }
+    final res = await ApiService.approveRegistration(targetUserId: userId, action: action, rejectionReason: reason);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res['message'] ?? 'Status akun berhasil diperbarui!'),
-          backgroundColor: action == 'APPROVED' ? const Color(0xFF059669) : Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? 'Status akun berhasil diperbarui!'), backgroundColor: action == 'APPROVED' ? const Color(0xFF059669) : Colors.red.shade700, behavior: SnackBarBehavior.floating));
       _loadUsers();
       _loadAnalytics();
     }
