@@ -1,0 +1,28 @@
+import { isMove, takeRegionFields, usesTransferFlow } from './region-transfer-rules';
+
+describe('region-transfer-rules', () => {
+  it('hanya Umat yang memakai alur persetujuan', () => {
+    expect(usesTransferFlow('UMAT')).toBe(true);
+    expect(usesTransferFlow('UMAT_PENDATANG')).toBe(true);
+    expect(usesTransferFlow('PENGURUS_LINGKUNGAN')).toBe(false);
+    expect(usesTransferFlow('ROMO_PAROKI')).toBe(false);
+  });
+
+  it('mengambil isian wilayah (camel dan snake) lalu menghapusnya dari DTO', () => {
+    const dto: Record<string, any> = { fullName: 'A', keuskupanId: 1, paroki_id: '2', wilayahId: 3, lingkungan_id: 4 };
+    expect(takeRegionFields(dto)).toEqual({ keuskupanId: 1, parokiId: 2, wilayahId: 3, lingkunganId: 4 });
+    expect(dto).toEqual({ fullName: 'A' });
+  });
+
+  it('mengembalikan null bila tidak ada isian wilayah, dan nilai kosong menjadi null', () => {
+    expect(takeRegionFields({ fullName: 'A' })).toBeNull();
+    expect(takeRegionFields({ lingkunganId: '' })?.lingkunganId).toBeNull();
+  });
+
+  it('isMove membandingkan keempat tingkat', () => {
+    const cur = { keuskupanId: 1, parokiId: 2, wilayahId: 3, lingkunganId: 4 };
+    expect(isMove(cur, { ...cur })).toBe(false);
+    expect(isMove(cur, { ...cur, lingkunganId: 5 })).toBe(true);
+    expect(isMove(cur, { ...cur, lingkunganId: null })).toBe(true);
+  });
+});

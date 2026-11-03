@@ -10,6 +10,7 @@ import '../../core/services/language_service.dart';
 import '../auth/widgets/gender_form_field.dart';
 import '../home/widgets/home_greeting.dart' show homeRoleTitle;
 import 'profile_region_fields.dart';
+import 'region_transfer_flow.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -115,6 +116,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return code.startsWith('ROMO') || _selectedRole.contains('Romo');
   }
 
+  bool get _isUmatRole => _selectedRole == 'Umat' || _selectedRole.startsWith('Umat');
+
   bool get _isRomoOrdo {
     final code = (widget.user['roleCode'] ?? widget.user['role_code'] ?? widget.user['role'] ?? '').toString().toUpperCase();
     return code == 'ROMO_ORDO' || _selectedRole == 'Romo Ordo';
@@ -191,8 +194,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final response = await http.get(
         Uri.parse('${ApiService.baseUrl}/auth/profile/$userId'),
       );
+      if (response.statusCode >= 400) {
+        if (!mounted) return;
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(backendMessage(response.body, 'Gagal menyimpan profil.')), backgroundColor: const Color(0xFFDC2626), behavior: SnackBarBehavior.floating));
+        return;
+      }
       if (response.statusCode == 200) {
         final resData = jsonDecode(response.body);
+        if (resData['regionTransfer'] == 'PENDING') {
+          if (mounted) await openPendingAfterTransfer(context, widget.user..addAll(Map<String, dynamic>.from(resData['user'] ?? {})));
+          return;
+        }
         if (resData['user'] != null) {
           final u = resData['user'];
           if (mounted) {
@@ -522,6 +535,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() => _emailError = 'Format email tidak valid. Contoh: nama@perusahaan.com');
       return;
     }
+    if (_regionDirty && _isUmatRole) {
+      if (_lingkunganId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih lingkungan tujuan terlebih dahulu.')));
+        return;
+      }
+      if (!await confirmRegionTransfer(context)) return;
+    }
     setState(() => _isSaving = true);
 
     try {
@@ -577,14 +597,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (!mounted) return;
     setState(() => _isSaving = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content:
-            Text('✅ Perubahan profil berhasil disimpan dan dikirim ke backend!'),
-        backgroundColor: Color(0xFF059669),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Perubahan profil berhasil disimpan!'), backgroundColor: Color(0xFF059669), behavior: SnackBarBehavior.floating));
 
     widget.onSaved();
     Navigator.pop(context);
@@ -707,6 +720,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   wilayahId: _wilayahId,
                   lingkunganId: _lingkunganId,
                   showArea: !_isRomo,
+                  enabled: _isUmatRole,
                   onChanged: (k, p, w, l) => setState(() {
                     _keuskupanId = k;
                     _parokiId = p;
@@ -873,15 +887,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       children: [
         Icon(icon, size: 16, color: const Color(0xFF1D4ED8)),
         const SizedBox(width: 6),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF64748B),
-            letterSpacing: 0.5,
-          ),
-        ),
+        Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.5)),
       ],
     );
   }
@@ -990,17 +996,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       children: [
         Row(
           children: [
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF64748B),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            Expanded(child: Text(label, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), overflow: TextOverflow.ellipsis)),
             const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1013,14 +1009,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 children: [
                   Icon(Icons.lock_rounded, size: 10, color: Color(0xFF64748B)),
                   SizedBox(width: 3),
-                  Text(
-                    'Terkunci',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
+                  Text('Terkunci', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
                 ],
               ),
             ),

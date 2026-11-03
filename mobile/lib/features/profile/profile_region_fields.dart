@@ -8,8 +8,9 @@ int? _asId(dynamic v) => int.tryParse(v.toString());
 
 _Rows _sorted(_Rows rows) => [...rows]..sort((a, b) => (a['name'] ?? '').toString().toLowerCase().compareTo((b['name'] ?? '').toString().toLowerCase()));
 
-Widget _select({required String label, required IconData icon, required int? value, required _Rows rows, required ValueChanged<int> onPick, required String empty}) {
+Widget _select({required String label, required IconData icon, required int? value, required _Rows rows, required ValueChanged<int> onPick, required String empty, bool enabled = true}) {
   return SearchableSelectField<int>(
+    enabled: enabled,
     label: label,
     icon: icon,
     value: value,
@@ -25,9 +26,10 @@ Widget _select({required String label, required IconData icon, required int? val
 class ChurchRegionFields extends StatefulWidget {
   final int? keuskupanId, parokiId, wilayahId, lingkunganId;
   final bool showArea;
+  final bool enabled;
   final void Function(int? keuskupan, int? paroki, int? wilayah, int? lingkungan) onChanged;
 
-  const ChurchRegionFields({super.key, this.keuskupanId, this.parokiId, this.wilayahId, this.lingkunganId, this.showArea = true, required this.onChanged});
+  const ChurchRegionFields({super.key, this.keuskupanId, this.parokiId, this.wilayahId, this.lingkunganId, this.showArea = true, this.enabled = true, required this.onChanged});
 
   @override
   State<ChurchRegionFields> createState() => _ChurchRegionFieldsState();
@@ -71,14 +73,14 @@ class _ChurchRegionFieldsState extends State<ChurchRegionFields> {
     final c = widget;
     return Column(
       children: [
-        _select(label: 'Keuskupan', icon: Icons.account_balance_rounded, value: c.keuskupanId, rows: _keuskupan, empty: 'Keuskupan tidak ditemukan', onPick: (v) => c.onChanged(v, null, null, null)),
+        _select(enabled: c.enabled, label: 'Keuskupan', icon: Icons.account_balance_rounded, value: c.keuskupanId, rows: _keuskupan, empty: 'Keuskupan tidak ditemukan', onPick: (v) => c.onChanged(v, null, null, null)),
         const SizedBox(height: 14),
-        _select(label: 'Paroki', icon: Icons.location_city_rounded, value: c.parokiId, rows: _paroki, empty: 'Paroki tidak ditemukan pada keuskupan ini', onPick: (v) => c.onChanged(c.keuskupanId, v, null, null)),
+        _select(enabled: c.enabled, label: 'Paroki', icon: Icons.location_city_rounded, value: c.parokiId, rows: _paroki, empty: 'Paroki tidak ditemukan pada keuskupan ini', onPick: (v) => c.onChanged(c.keuskupanId, v, null, null)),
         if (c.showArea) ...[
           const SizedBox(height: 14),
-          _select(label: 'Wilayah', icon: Icons.map_rounded, value: c.wilayahId, rows: _wilayah, empty: 'Wilayah tidak ditemukan pada paroki ini', onPick: (v) => c.onChanged(c.keuskupanId, c.parokiId, v, null)),
+          _select(enabled: c.enabled, label: 'Wilayah', icon: Icons.map_rounded, value: c.wilayahId, rows: _wilayah, empty: 'Wilayah tidak ditemukan pada paroki ini', onPick: (v) => c.onChanged(c.keuskupanId, c.parokiId, v, null)),
           const SizedBox(height: 14),
-          _select(label: 'Lingkungan', icon: Icons.groups_rounded, value: c.lingkunganId, rows: _lingkungan, empty: 'Lingkungan tidak ditemukan pada wilayah ini', onPick: (v) => c.onChanged(c.keuskupanId, c.parokiId, c.wilayahId, v)),
+          _select(enabled: c.enabled, label: 'Lingkungan', icon: Icons.groups_rounded, value: c.lingkunganId, rows: _lingkungan, empty: 'Lingkungan tidak ditemukan pada wilayah ini', onPick: (v) => c.onChanged(c.keuskupanId, c.parokiId, c.wilayahId, v)),
         ],
       ],
     );

@@ -503,20 +503,10 @@ class _PengurusApprovalScreenState extends State<PengurusApprovalScreen> {
                         children: [
                           const Icon(Icons.phone_iphone_rounded, size: 14, color: Color(0xFF64748B)),
                           const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              '+$phone',
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF64748B),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
+                          Expanded(child: Text('+$phone', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF64748B)), maxLines: 1, overflow: TextOverflow.ellipsis)),
                         ],
                       ),
+                      if (item['transfer_from'] != null) Text('Pindah dari ${item['transfer_from']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFB45309))),
                     ],
                   ),
                 ),

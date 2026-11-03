@@ -131,7 +131,8 @@ class _ApprovalPendingListState extends State<ApprovalPendingList> {
     final parts = _isRomo
         ? [s('ordo_name') ?? s('paroki_name')]
         : [s('lingkungan_name'), s('paroki_name')];
-    return parts.whereType<String>().join(' · ');
+    final from = s('transfer_from');
+    return [...parts.whereType<String>(), if (from != null) 'pindah dari $from'].join(' · ');
   }
 
   @override
