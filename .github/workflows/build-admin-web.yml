@@ -2,7 +2,7 @@ name: Build and Push Admin Web to GHCR
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "staging" ]
     paths:
       - "admin_web/**"
       - ".github/workflows/build-admin-web.yml"
@@ -22,6 +22,12 @@ jobs:
       - name: Set lowercase repository owner
         run: |
           echo "REPO_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
+      - name: Pilih tag image (main -> latest, staging -> staging)
+        run: |
+          IMG="ghcr.io/${REPO_OWNER}/catu-v2-admin-web"
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then CH=latest; else CH=staging; fi
+          echo "IMAGE_TAGS=${IMG}:${CH},${IMG}:${GITHUB_SHA}" >> $GITHUB_ENV
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -43,6 +49,4 @@ jobs:
           file: ./admin_web/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ghcr.io/${{ env.REPO_OWNER }}/catu-v2-admin-web:latest
-            ghcr.io/${{ env.REPO_OWNER }}/catu-v2-admin-web:${{ github.sha }}
+          tags: ${{ env.IMAGE_TAGS }}

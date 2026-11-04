@@ -15,8 +15,8 @@
 
   function endSession() {
     if (!state.token) return;
-    localStorage.removeItem('catu_admin_user');
-    localStorage.removeItem('catu_admin_token');
+    localStorage.removeItem(lsKey('catu_admin_user'));
+    localStorage.removeItem(lsKey('catu_admin_token'));
     state.currentUser = null;
     state.token = '';
     if (typeof showToast === 'function') {

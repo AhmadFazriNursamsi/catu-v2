@@ -158,7 +158,7 @@
         resolved: false,
       });
 
-      localStorage.setItem('catu_agentation_annotations', JSON.stringify(state.agentation.annotations));
+      localStorage.setItem(lsKey('catu_agentation_annotations'), JSON.stringify(state.agentation.annotations));
       state.agentation.pendingPin = null;
       renderApp();
     }
@@ -178,7 +178,7 @@
 
       navigator.clipboard.writeText(prompt).then(() => {
         state.agentation.annotations = [];
-        localStorage.setItem('catu_agentation_annotations', JSON.stringify([]));
+        localStorage.setItem(lsKey('catu_agentation_annotations'), JSON.stringify([]));
         state.agentation.enabled = false;
         state.agentation.expanded = false;
         
@@ -189,7 +189,7 @@
         showToast('Seluruh catatan revisi Agentation berhasil disalin ke clipboard & pin dibersihkan! Silakan Paste prompt ke chat AI.', 'success', 'Tersalin ke Clipboard! 📋');
       }).catch(() => {
         state.agentation.annotations = [];
-        localStorage.setItem('catu_agentation_annotations', JSON.stringify([]));
+        localStorage.setItem(lsKey('catu_agentation_annotations'), JSON.stringify([]));
         renderApp();
         showToast('Pin revisi telah dibersihkan.', 'info', 'Pin Dibersihkan');
       });
