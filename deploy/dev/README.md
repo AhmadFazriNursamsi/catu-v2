@@ -1,9 +1,10 @@
 # Lingkungan DEV (uji coba tanpa mengganggu produksi)
 
-Alamat (jaringan lokal/VPN saja, tidak lewat domain produksi): admin web `http://10.10.3.41:3013`, API `http://10.10.3.41:4003` (aplikasi mobile dev memakai alamat API ini).
+Alamat: admin web `https://catu.devoutsys.com/dev/`, API `https://catu.devoutsys.com/dev/api` (aplikasi mobile dev memakai alamat API ini).
+Cadangan tanpa gerbang, dari jaringan lokal/VPN: `http://10.10.3.41:3013` dan `http://10.10.3.41:4003`.
 Stack ini terpisah dari produksi: container `catu_dev_*`, database `catu_dev` dengan user `catu_dev`, JWT sendiri,
 WhatsApp/FCM/penyimpanan APK dimatikan. Admin web dev menampilkan pita merah **LINGKUNGAN DEV** dan memakai kunci
-localStorage berawalan `dev_`, jadi login dev tidak menimpa sesi produksi (alamatnya satu origin).
+localStorage berawalan `dev_`, jadi login dev tidak menimpa sesi produksi (alamatnya satu origin dengan produksi).
 
 ## Alur kerja
 `fitur` -> PR ke **`staging`** (CI membangun image `:staging`) -> uji di DEV -> PR `staging` -> **`main`** (produksi, `:latest`).
@@ -24,8 +25,27 @@ localStorage berawalan `dev_`, jadi login dev tidak menimpa sesi produksi (alama
    ```
 3. Jalankan: `docker compose pull && docker compose up -d && docker compose logs backend --tail 50`
    (migrasi dan data master terisi otomatis; admin dev dibuat lewat cara yang sama seperti di lokal).
-4. Buka `http://<DEV_HOST>:3013` dari komputer di jaringan yang sama. Pita merah **LINGKUNGAN DEV** harus muncul.
-   (Domain publik `/dev/` lewat nginx tidak dipakai; bila kelak diperlukan, minta pengelola gerbang menambahkan `/dev/` -> port 3013 dan `/dev/api/` -> port 4003.)
+4. Gerbang web (nginx) yang melayani `catu.devoutsys.com` harus meneruskan dua jalur ke server dev. Backend menerima `/api/...`
+   maupun tanpa `/api`, jadi awalan boleh dibuang. Tambahkan di blok server `catu.devoutsys.com`, di atas lokasi umum
+   (ganti `10.10.3.41` bila gerbang berada di mesin lain; bila satu mesin dengan server dev, `127.0.0.1` juga boleh):
+   ```nginx
+   location = /dev { return 301 /dev/; }
+   location /dev/api/ {
+     proxy_pass http://10.10.3.41:4003/;
+     proxy_set_header Host $host;
+     proxy_set_header X-Real-IP $remote_addr;
+     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+     proxy_set_header X-Forwarded-Proto $scheme;
+     client_max_body_size 50m;
+   }
+   location /dev/ {
+     proxy_pass http://10.10.3.41:3013/;
+     proxy_set_header Host $host;
+     proxy_set_header X-Forwarded-Proto $scheme;
+   }
+   ```
+   Uji `nginx -t`, cadangkan berkas asli lebih dulu, lalu `nginx -s reload`. Buka `https://catu.devoutsys.com/dev/`:
+   pita merah **LINGKUNGAN DEV** harus muncul.
 
 ## Memperbarui DEV
 `cd ~/Documents/catu-v2-dev && docker compose pull && docker compose up -d`
