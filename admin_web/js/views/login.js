@@ -190,8 +190,8 @@
             if (isSuccess) {
               state.currentUser = data.user;
               state.token = data.accessToken || '';
-              localStorage.setItem('catu_admin_user', JSON.stringify(data.user));
-              localStorage.setItem('catu_admin_token', data.accessToken || '');
+              localStorage.setItem(lsKey('catu_admin_user'), JSON.stringify(data.user));
+              localStorage.setItem(lsKey('catu_admin_token'), data.accessToken || '');
               state.loginLoading = false;
               state.loginError = '';
               renderApp();

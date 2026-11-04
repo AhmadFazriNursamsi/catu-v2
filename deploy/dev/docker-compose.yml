@@ -1,0 +1,56 @@
+# Lingkungan DEV CATU di server yang sama dengan produksi, terpisah total dari produksi:
+# database sendiri (catu_dev, user sendiri), JWT sendiri, tanpa WhatsApp/FCM/penyimpanan APK produksi.
+# Image dari cabang `staging` (tag :staging). Panduan: deploy/dev/README.md
+name: catu-dev
+
+services:
+  backend:
+    image: ghcr.io/${CATU_GHCR_OWNER:-ahmadfazrinursamsi}/catu-v2-backend:${CATU_IMAGE_TAG:-staging}
+    pull_policy: always
+    container_name: catu_dev_backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${DEV_BACKEND_PORT:-4003}:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DB_HOST: ${DB_HOST:-shared-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USERNAME: ${DB_USERNAME:?DB_USERNAME dev wajib diisi}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD dev wajib diisi}
+      DB_NAME: ${DB_NAME:-catu_dev}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET dev wajib diisi dan harus BEDA dari produksi}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://catu.devoutsys.com}
+      # Sengaja dikosongkan: dev tidak boleh mengirim WhatsApp/push ke pengguna asli atau menyentuh APK produksi.
+      WAGATE_URL: ""
+      WAGATE_API_KEY: ""
+    networks:
+      - default
+
+  admin_web:
+    image: ghcr.io/${CATU_GHCR_OWNER:-ahmadfazrinursamsi}/catu-v2-admin-web:${CATU_IMAGE_TAG:-staging}
+    pull_policy: always
+    container_name: catu_dev_admin_web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${DEV_ADMIN_WEB_PORT:-3003}:80"
+    environment:
+      NODE_ENV: production
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-https://catu.devoutsys.com/dev/api}
+      PUBLIC_APK_URL: ${PUBLIC_APK_URL:-https://catu.devoutsys.com/dev/api/public/apk}
+      ADMIN_WEB_ALLOWED_HOSTS: ${ADMIN_WEB_ALLOWED_HOSTS:-catu.devoutsys.com}
+      INTERNAL_BACKEND_URL: http://backend:3000
+      PUBLIC_ENV_NAME: DEV
+      PUBLIC_STORAGE_PREFIX: dev_
+    depends_on:
+      - backend
+    networks:
+      - default
+
+networks:
+  default:
+    name: shared-network
+    external: true

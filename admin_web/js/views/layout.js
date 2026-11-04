@@ -1,7 +1,7 @@
 // ── Main Dashboard Layout & Navigation ──
     function toggleSidebar() {
       state.isSidebarOpen = !state.isSidebarOpen;
-      localStorage.setItem('catu_sidebar_open', state.isSidebarOpen);
+      localStorage.setItem(lsKey('catu_sidebar_open'), state.isSidebarOpen);
       renderApp();
     }
 
@@ -301,8 +301,8 @@
               });
             }
           } catch (_) {}
-          localStorage.removeItem('catu_admin_user');
-          localStorage.removeItem('catu_admin_token');
+          localStorage.removeItem(lsKey('catu_admin_user'));
+          localStorage.removeItem(lsKey('catu_admin_token'));
           state.currentUser = null;
           state.token = '';
           renderApp();

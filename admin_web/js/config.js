@@ -1,6 +1,8 @@
 // ── Global Config, State & Utility Badges ──
     const CATU_NODE_ENV = window.CATU_RUNTIME_CONFIG?.nodeEnv || 'production';
     const AGENTATION_ENABLED = CATU_NODE_ENV !== 'production';
+    // Lingkungan dev berbagi origin dengan produksi (jalur /dev): kunci localStorage diberi awalan agar sesi login tidak saling menimpa.
+    const lsKey = (k) => (window.CATU_RUNTIME_CONFIG?.storagePrefix || '') + k;
 
     // Config & State
     const configuredApiBase = window.CATU_RUNTIME_CONFIG?.apiBaseUrl?.trim();
@@ -15,14 +17,14 @@
     const APK_DOWNLOAD_URL = (configuredApkDownloadUrl || '').replace(/\/+$/, '');
     let rawStoredUser = null;
     try {
-      rawStoredUser = JSON.parse(localStorage.getItem('catu_admin_user') || 'null');
+      rawStoredUser = JSON.parse(localStorage.getItem(lsKey('catu_admin_user')) || 'null');
     } catch(e) { rawStoredUser = null; }
 
     // Load persisted Agentation annotations
     let rawStoredAnnotations = [];
     if (AGENTATION_ENABLED) {
       try {
-        rawStoredAnnotations = JSON.parse(localStorage.getItem('catu_agentation_annotations') || '[]');
+        rawStoredAnnotations = JSON.parse(localStorage.getItem(lsKey('catu_agentation_annotations')) || '[]');
       } catch(e) { rawStoredAnnotations = []; }
     }
 
@@ -38,9 +40,9 @@
 
     const state = {
       currentUser: (rawStoredUser && isAnyAdminUser(rawStoredUser)) ? rawStoredUser : null,
-      token: localStorage.getItem('catu_admin_token') || '',
+      token: localStorage.getItem(lsKey('catu_admin_token')) || '',
       currentTab: 'overview',
-      isSidebarOpen: localStorage.getItem('catu_sidebar_open') !== 'false',
+      isSidebarOpen: localStorage.getItem(lsKey('catu_sidebar_open')) !== 'false',
       isMobileMenuOpen: false,
       analytics: null,
       orders: [],
