@@ -29,6 +29,9 @@ services:
       # Sengaja dikosongkan: dev tidak boleh mengirim WhatsApp/push ke pengguna asli atau menyentuh APK produksi.
       WAGATE_URL: ""
       WAGATE_API_KEY: ""
+    volumes:
+      # APK uji (CATU Dev) dari scripts/mobile/deploy_dev_apk.sh; tahan terhadap pembuatan ulang container.
+      - ./apk:/app/public
     networks:
       - default
 
