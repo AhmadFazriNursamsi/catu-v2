@@ -146,7 +146,7 @@ export class ApprovalsController {
   async approveRegistration(@CurrentUser() user: AuthUser, @Body() dto: ApproveUserDto) {
     assertRejectionReason(dto.action === 'APPROVED' ? 'APPROVE' : 'REJECT', (dto as any).rejectionReason);
     await this.policy.authorize(user.sub, Number(dto.targetUserId), dto.action === 'APPROVED' ? 'APPROVE' : 'REJECT');
-    const result = (await this.regionTransfer.resolve(Number(dto.targetUserId), user.sub, dto.action === 'APPROVED' ? 'APPROVE' : 'REJECT', (dto as any).rejectionReason)) ?? (await this.authService.approveRegistration(dto));
+    const result = (await this.regionTransfer.resolve(Number(dto.targetUserId), user.sub, dto.action === 'APPROVED' ? 'APPROVE' : 'REJECT', (dto as any).rejectionReason)) ?? (await this.authService.approveRegistration(dto, user.sub));
     this.policy.afterProcessed(Number(dto.targetUserId));
     return result;
   }

@@ -189,6 +189,18 @@ describe('CATU v2 Controllers & Services (Unit Tests)', () => {
 
       expect(result.message).toContain('telah berhasil di-APPROVED');
     });
+
+    it('jejak audit mencatat penyetuju yang sebenarnya (bukan ID tetap)', async () => {
+      mockDataSource.query.mockReset();
+      mockDataSource.query.mockImplementation(async (sql: string) => (sql.includes('SELECT full_name') ? [{ full_name: 'Romo A' }] : []));
+
+      await authService.approveRegistration({ targetUserId: 10, action: 'APPROVED' }, 1);
+
+      const audit = mockDataSource.query.mock.calls.find(([sql]: [string]) => sql.includes('INSERT INTO user_approvals'));
+      expect(audit).toBeDefined();
+      expect(audit[0]).not.toMatch(/VALUES \(\$1, \d+,/);
+      expect(audit[1]).toEqual([10, 1, 'APPROVED', null]);
+    });
   });
 
   describe('OrdersController', () => {
