@@ -47,6 +47,16 @@ localStorage berawalan `dev_`, jadi login dev tidak menimpa sesi produksi (alama
    Uji `nginx -t`, cadangkan berkas asli lebih dulu, lalu `nginx -s reload`. Buka `https://catu.devoutsys.com/dev/`:
    pita merah **LINGKUNGAN DEV** harus muncul.
 
+## Jalur /dev di domain produksi (tanpa mengubah gerbang)
+Gerbang publik meneruskan seluruh `catu.devoutsys.com` ke container admin web produksi (Vite, port 3002). Vite itu bisa meneruskan
+`/dev/api/*` ke backend dev dan `/dev/*` ke web dev bila dua variabel ini diisi pada service **admin_web produksi** (bukan dev):
+
+    DEV_BACKEND_URL=http://10.10.3.41:4003
+    DEV_WEB_URL=http://10.10.3.41:3013
+
+Tanpa dua variabel itu perilaku produksi tidak berubah. Perlu rilis admin web produksi (image baru) lalu `docker compose up -d admin_web`.
+Cek: `https://catu.devoutsys.com/dev/api/health` menjawab JSON, dan `https://catu.devoutsys.com/dev/` menampilkan pita merah LINGKUNGAN DEV.
+
 ## APK uji (CATU Dev)
 Aplikasi uji (ID `.dev`, nama "CATU Dev") dibagikan seperti produksi lewat tautan: `http://10.10.3.41:4003/public/apk`
 (jaringan lokal/VPN). Sekali di server: `mkdir -p ~/Documents/catu-v2-dev/apk && chmod 777 ~/Documents/catu-v2-dev/apk`
