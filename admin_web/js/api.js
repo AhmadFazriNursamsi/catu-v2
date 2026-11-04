@@ -199,9 +199,8 @@
       const pos = (targetUser?.pengurus_position || targetUser?.pengurusPosition || '').toString().toLowerCase();
       const isKoordinator = pos.includes('koordinator') || r === 'KOORDINATOR';
 
-      // Umat di lingkungan tanpa pengurus tidak punya penyetuju lain, sehingga diproses Admin dari sini.
-      const isOrphan = !!targetUser && approvalApproverInfo(targetUser).orphan;
-      if (r === 'UMAT' && !isKoordinator && !isOrphan) {
+      // Umat tidak pernah disetujui Admin (backend juga menolak), termasuk di lingkungan tanpa pengurus.
+      if (r === 'UMAT' && !isKoordinator) {
         showToast('Pendaftaran akun Umat biasa diverifikasi oleh Pengurus Lingkungan via aplikasi mobile CATU.', 'warning', 'Persetujuan Khusus Pengurus');
         return;
       }
