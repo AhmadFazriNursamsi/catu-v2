@@ -47,6 +47,13 @@ localStorage berawalan `dev_`, jadi login dev tidak menimpa sesi produksi (alama
    Uji `nginx -t`, cadangkan berkas asli lebih dulu, lalu `nginx -s reload`. Buka `https://catu.devoutsys.com/dev/`:
    pita merah **LINGKUNGAN DEV** harus muncul.
 
+## APK uji (CATU Dev)
+Aplikasi uji (ID `.dev`, nama "CATU Dev") dibagikan seperti produksi lewat tautan: `http://10.10.3.41:4003/public/apk`
+(jaringan lokal/VPN). Sekali di server: `mkdir -p ~/Documents/catu-v2-dev/apk && chmod 777 ~/Documents/catu-v2-dev/apk`
+(container berjalan sebagai user non-root), lalu `docker compose up -d`. Unggah dari Mac dengan
+`scripts/mobile/deploy_dev_apk.sh` (kredensial admin DEV dari environment; menolak alamat produksi).
+Isi `PUBLIC_APK_URL=http://10.10.3.41:4003/public/apk` di `.env` dev agar unduhan di admin web dev menunjuk ke sana.
+
 ## Memperbarui DEV
 `cd ~/Documents/catu-v2-dev && docker compose pull && docker compose up -d`
 
