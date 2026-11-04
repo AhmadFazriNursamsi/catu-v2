@@ -37,6 +37,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
+        manifestPlaceholders["appLabel"] = "CATU"
     }
 
     signingConfigs {
@@ -54,6 +55,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Build debug = aplikasi uji (lingkungan DEV): ID dan nama berbeda agar terpasang berdampingan dengan aplikasi produksi.
+            applicationIdSuffix = ".dev"
+            manifestPlaceholders["appLabel"] = "CATU Dev"
+        }
         release {
             if (hasReleaseKeystore) signingConfig = signingConfigs.getByName("release")
             isShrinkResources = false
