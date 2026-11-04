@@ -7,7 +7,7 @@ import { AcceptanceClaimService } from '../order-rules/acceptance-claim.service'
 import { orderKeuskupanSql } from '../order-rules/lintas-paroki';
 import { EscalationSettingsService } from './escalation-settings.service';
 import { RegisterRomoInput, RomoRegistrationService } from './romo-registration.service';
-import { opensAt } from './escalation-rules';
+import { opensAt, ownOrderError } from './escalation-rules';
 
 /** Awalan gelar hanya bila nama belum memuatnya ("Romo Agus" tidak menjadi "Romo Romo Agus"). */
 const titled = (title: string, name: string) => (new RegExp(`^${title}\\b`, 'i').test(name.trim()) ? name.trim() : `${title} ${name.trim()}`);
@@ -127,7 +127,7 @@ export class KoordinatorAssignmentService {
   /** Eligibility: koordinator sesuai wilayah, pelayanan belum diterima, dan batas menit Koordinator sudah lewat. */
   private async evaluate(user: Actor, orderId: number): Promise<Evaluation> {
     const rows = await this.dataSource.query(
-      `SELECT o.id, o.order_number, o.status, o.created_at, o.accepted_romo_id, o.lintas_paroki, o.scheduled_date, o.scheduled_time, o.location_name,
+      `SELECT o.id, o.user_id, o.order_number, o.status, o.created_at, o.accepted_romo_id, o.lintas_paroki, o.scheduled_date, o.scheduled_time, o.location_name,
               sc.name AS category_name,
               COALESCE(o.paroki_id, up.paroki_id) AS paroki_id,
               COALESCE(o.kabupaten_kota_id, up.kabupaten_kota_id) AS kabupaten_kota_id,
@@ -139,6 +139,8 @@ export class KoordinatorAssignmentService {
     );
     if (rows.length === 0) throw new NotFoundException('Order tidak ditemukan');
     const order = rows[0];
+    const own = ownOrderError(order.user_id, user.sub);
+    if (own) throw new ForbiddenException(own);
     if (!['SUPERADMIN', 'ADMIN'].includes(user.roleCode)) {
       const k = (await this.dataSource.query('SELECT keuskupan_id FROM user_profiles WHERE user_id = $1', [user.sub]))[0];
       // Keuskupan pemohon, atau keuskupan tujuan bila pelayanan lintas paroki.

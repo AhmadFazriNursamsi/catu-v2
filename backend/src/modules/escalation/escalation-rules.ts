@@ -40,3 +40,8 @@ export function isOpenForOrdo(order: { createdAt: Date; hasParoki: boolean }, or
   if (!order.hasParoki) return true;
   return now.getTime() >= opensAt(order.createdAt, ordoAfterMinutes).getTime();
 }
+
+/** Koordinator tidak boleh mencarikan Romo untuk pelayanan yang ia ajukan sendiri (pemohon dan penunjuk Romo harus orang berbeda). */
+export function ownOrderError(orderUserId: unknown, actorId: unknown): string | null {
+  return orderUserId != null && Number(orderUserId) === Number(actorId) ? 'Anda tidak dapat mencarikan Romo untuk pelayanan yang Anda ajukan sendiri.' : null;
+}
