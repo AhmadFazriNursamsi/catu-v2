@@ -1,4 +1,4 @@
-import { isOpenForOrdo, opensAt, parseMinutes, validateSettings } from './escalation-rules';
+import { isOpenForOrdo, opensAt, ownOrderError, parseMinutes, validateSettings } from './escalation-rules';
 
 describe('escalation-rules', () => {
   const created = new Date('2026-10-05T03:00:00Z');
@@ -26,5 +26,12 @@ describe('escalation-rules', () => {
     expect(parseMinutes('15', 10)).toBe(15);
     expect(parseMinutes('abc', 10)).toBe(10);
     expect(parseMinutes('-3', 10)).toBe(10);
+  });
+
+  it('Koordinator tidak boleh mencarikan Romo untuk pelayanan yang ia ajukan sendiri', () => {
+    expect(ownOrderError(12, 12)).toMatch(/ajukan sendiri/);
+    expect(ownOrderError('12', 12)).toMatch(/ajukan sendiri/);
+    expect(ownOrderError(12, 13)).toBeNull();
+    expect(ownOrderError(null, 13)).toBeNull();
   });
 });
