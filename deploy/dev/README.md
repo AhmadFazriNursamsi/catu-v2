@@ -1,6 +1,6 @@
 # Lingkungan DEV (uji coba tanpa mengganggu produksi)
 
-Alamat: `https://catu.devoutsys.com/dev/` (admin web) dan `https://catu.devoutsys.com/dev/api` (API).
+Alamat (jaringan lokal/VPN saja, tidak lewat domain produksi): admin web `http://10.10.3.41:3013`, API `http://10.10.3.41:4003` (aplikasi mobile dev memakai alamat API ini).
 Stack ini terpisah dari produksi: container `catu_dev_*`, database `catu_dev` dengan user `catu_dev`, JWT sendiri,
 WhatsApp/FCM/penyimpanan APK dimatikan. Admin web dev menampilkan pita merah **LINGKUNGAN DEV** dan memakai kunci
 localStorage berawalan `dev_`, jadi login dev tidak menimpa sesi produksi (alamatnya satu origin).
@@ -24,23 +24,8 @@ localStorage berawalan `dev_`, jadi login dev tidak menimpa sesi produksi (alama
    ```
 3. Jalankan: `docker compose pull && docker compose up -d && docker compose logs backend --tail 50`
    (migrasi dan data master terisi otomatis; admin dev dibuat lewat cara yang sama seperti di lokal).
-4. Reverse proxy (nginx) di host `catu.devoutsys.com`, tambahkan di blok server yang sudah ada, **di atas** lokasi umum:
-   ```nginx
-   location = /dev { return 301 /dev/; }
-   location /dev/api/ {
-     proxy_pass http://127.0.0.1:4003/;
-     proxy_set_header Host $host;
-     proxy_set_header X-Forwarded-Proto $scheme;
-     proxy_set_header X-Real-IP $remote_addr;
-     client_max_body_size 50m;
-   }
-   location /dev/ {
-     proxy_pass http://127.0.0.1:3003/;
-     proxy_set_header Host $host;
-     proxy_set_header X-Forwarded-Proto $scheme;
-   }
-   ```
-   Cocokkan dengan cara blok `/api` produksi meneruskan ke backend (awalan `/api` dibuang atau tidak). Lalu `nginx -t && nginx -s reload`.
+4. Buka `http://<DEV_HOST>:3013` dari komputer di jaringan yang sama. Pita merah **LINGKUNGAN DEV** harus muncul.
+   (Domain publik `/dev/` lewat nginx tidak dipakai; bila kelak diperlukan, minta pengelola gerbang menambahkan `/dev/` -> port 3013 dan `/dev/api/` -> port 4003.)
 
 ## Memperbarui DEV
 `cd ~/Documents/catu-v2-dev && docker compose pull && docker compose up -d`
