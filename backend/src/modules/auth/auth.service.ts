@@ -1599,7 +1599,7 @@ export class AuthService {
       user: uObj,
     };
   }
-  async approveRegistration(dto: ApproveUserDto) {
+  async approveRegistration(dto: ApproveUserDto, approverUserId?: number) {
     if (dto.action === 'APPROVED') {
       const targetProf = await this.dataSource.query(
         `SELECT u.role_id, r.code as role_code, p.lingkungan_id, p.keuskupan_id, p.paroki_id, p.ordo_id, p.pengurus_position, p.romo_position, p.full_name
@@ -1677,10 +1677,12 @@ export class AuthService {
     const userProfile = await this.dataSource.query(`SELECT full_name FROM user_profiles WHERE user_id = $1`, [dto.targetUserId]);
 
     // Audit Log Approval
-    await this.dataSource.query(
-      `INSERT INTO user_approvals (target_user_id, approver_user_id, action, rejection_reason) VALUES ($1, 7, $2, $3)`,
-      [dto.targetUserId, dto.action, dto.rejectionReason || null],
-    );
+    if (approverUserId) {
+      await this.dataSource.query(
+        `INSERT INTO user_approvals (target_user_id, approver_user_id, action, rejection_reason) VALUES ($1, $2, $3, $4)`,
+        [dto.targetUserId, approverUserId, dto.action, dto.rejectionReason || null],
+      );
+    }
 
     // 🔔 Send in-app & FCM Push Notification for general / admin approval
     try {
