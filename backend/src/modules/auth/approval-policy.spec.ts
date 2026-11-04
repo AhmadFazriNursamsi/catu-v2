@@ -20,8 +20,18 @@ const koordinatorBaru = acct({ id: 75, roleCode: 'KOORDINATOR_KEUSKUPAN', status
 const allowed = (actor: ApprovalAccount, target: ApprovalAccount, action: 'APPROVE' | 'REJECT' = 'APPROVE') => decideApproval(actor, target, action).allowed;
 
 describe('decideApproval', () => {
-  it('Admin dapat memproses semua jenis akun pending', () => {
-    for (const t of [umat, pengurusBaru, romoParoki, romoOrdo, kepalaBaru, koordinatorBaru]) expect(allowed(admin, t)).toBe(true);
+  it('Admin dapat memproses semua jenis akun pending, kecuali Umat biasa', () => {
+    for (const t of [pengurusBaru, romoParoki, romoOrdo, kepalaBaru, koordinatorBaru]) expect(allowed(admin, t)).toBe(true);
+  });
+
+  it('Admin tidak boleh menyetujui/menolak Umat (juga Super Admin, dan akun Umat yang ditolak)', () => {
+    const superAdmin = acct({ id: 1, roleCode: 'SUPERADMIN' });
+    for (const actor of [admin, superAdmin]) for (const action of ['APPROVE', 'REJECT'] as const) {
+      expect(decideApproval(actor, umat, action)).toMatchObject({ allowed: false, status: 403 });
+    }
+    expect(decideApproval(admin, { ...umat, status: 'REJECTED' }, 'APPROVE')).toMatchObject({ allowed: false, status: 403 });
+    expect(allowed(sekretaris, umat)).toBe(true);
+    expect(allowed(koordinator, umat)).toBe(true);
   });
 
   it('umat: pengurus se-lingkungan dan koordinator se-keuskupan; pengurus lingkungan lain tidak', () => {
@@ -74,7 +84,7 @@ describe('decideApproval', () => {
 
   it('hanya akun PENDING yang dapat diproses; Admin boleh mengaktifkan kembali akun REJECTED', () => {
     const approved = { ...umat, status: 'APPROVED' };
-    const rejected = { ...umat, status: 'REJECTED' };
+    const rejected = { ...pengurusBaru, status: 'REJECTED' };
     expect(decideApproval(admin, approved, 'APPROVE')).toMatchObject({ allowed: false, status: 409 });
     expect(decideApproval(admin, approved, 'REJECT')).toMatchObject({ allowed: false, status: 409 });
     expect(allowed(admin, rejected, 'APPROVE')).toBe(true);

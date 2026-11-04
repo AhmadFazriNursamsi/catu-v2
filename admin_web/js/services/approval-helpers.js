@@ -85,14 +85,16 @@ function approvalApproverInfo(u) {
     return { text: u.approver_name || 'Admin Aplikasi', hint: kind === 'ROMO_PAROKI' ? 'Kepala Romo Paroki' : 'Ketua Romo Ordo', orphan: false };
   }
   if (u.approver_name) return { text: u.approver_name, hint: kind === 'UMAT' ? 'Pengurus Lingkungan' : 'Ketua Lingkungan', orphan: false };
-  return { text: 'Belum ada penyetuju', hint: 'Lingkungan tanpa pengurus — diproses Admin', orphan: true };
+  return { text: 'Belum ada penyetuju', hint: kind === 'UMAT' ? 'Lingkungan tanpa pengurus — tetapkan pengurus dulu' : 'Lingkungan tanpa pengurus — diproses Admin', orphan: true };
 }
 
 function renderApprovalActions(u) {
   const info = approvalApproverInfo(u);
-  if (approvalKind(u) === 'UMAT' && !info.orphan) {
-    return `<div class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80 font-bold text-[11px] shadow-2xs" title="Persetujuan umat dilakukan oleh Pengurus Lingkungan lewat aplikasi mobile CATU">
-        <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-600"></i><span>Verifikasi Pengurus Lingkungan</span></div>`;
+  if (approvalKind(u) === 'UMAT') {
+    const wait = info.orphan ? 'Menunggu pengurus lingkungan' : 'Verifikasi Pengurus Lingkungan';
+    const hint = info.orphan ? 'Lingkungan ini belum punya pengurus. Tetapkan pengurusnya dulu lewat Edit Akun; Umat tidak disetujui oleh Admin.' : 'Persetujuan umat dilakukan oleh Pengurus Lingkungan lewat aplikasi mobile CATU';
+    return `<div class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/80 font-bold text-[11px] shadow-2xs" title="${hint}">
+        <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-600"></i><span>${wait}</span></div>`;
   }
   const btn = (action, color, icon, label) => `<button onclick="event.stopPropagation(); approveUserAction('${Number(u.id)}', '${action}')"
         class="px-3.5 py-1.5 rounded-xl bg-${color}-600 hover:bg-${color}-700 text-white font-bold text-xs flex items-center space-x-1 transition shadow-md shadow-${color}-600/20 transform hover:-translate-y-0.5 cursor-pointer">

@@ -2,7 +2,7 @@
  * Kebijakan persetujuan pendaftaran akun (murni, tanpa akses database):
  * siapa yang berwenang menyetujui / menolak akun siapa.
  *
- *  - Admin / Super Admin: semua akun.
+ *  - Admin / Super Admin: semua akun KECUALI Umat biasa (Umat hanya disetujui Pengurus Lingkungan / Koordinator).
  *  - Umat biasa            -> Pengurus Lingkungan di lingkungan yang sama, atau Koordinator se-keuskupan.
  *  - Pengurus Lingkungan   -> Ketua Lingkungan (atau penyetuju yang ditunjuk) di lingkungan yang sama, atau Koordinator se-keuskupan.
  *  - Koordinator           -> hanya Admin.
@@ -39,6 +39,8 @@ export const isAdminRole = (code: string) => ADMIN_CODES.includes(code);
 export const isKoordinator = (a: ApprovalAccount) => a.roleCode.includes('KOORDINATOR') || lower(a.pengurusPosition).includes('koordinator');
 export const isLeaderRomo = (a: ApprovalAccount) => /ketua|kepala|superior/.test(lower(a.romoPosition));
 const isPengurus = (a: ApprovalAccount) => !isKoordinator(a) && (a.roleCode === 'PENGURUS_LINGKUNGAN' || lower(a.pengurusPosition).trim() !== '');
+/** Umat biasa: bukan pengurus, koordinator, maupun romo. */
+const isUmatBiasa = (a: ApprovalAccount) => a.roleCode === 'UMAT' && !isKoordinator(a) && !isPengurus(a);
 const isKetuaLingkungan = (a: ApprovalAccount) => /ketua/.test(lower(a.pengurusPosition)) && !/wakil/.test(lower(a.pengurusPosition));
 const active = (a: ApprovalAccount) => a.status === 'APPROVED' && a.isJabatanActive !== false;
 
@@ -53,6 +55,7 @@ export function decideApproval(actor: ApprovalAccount, target: ApprovalAccount, 
   if (target.status !== 'PENDING_APPROVAL' && !reopenable) {
     return deny(`Akun ini sudah berstatus ${target.status} dan tidak dapat diproses lagi.`, 409);
   }
+  if (admin && isUmatBiasa(target)) return deny('Persetujuan Umat dilakukan oleh Pengurus Lingkungan atau Koordinator lewat aplikasi mobile, bukan oleh Admin.');
   if (admin) return { allowed: true };
 
   const outOfScope = deny('Anda tidak berwenang memproses persetujuan akun ini.');

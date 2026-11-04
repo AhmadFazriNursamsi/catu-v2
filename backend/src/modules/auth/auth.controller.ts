@@ -72,6 +72,22 @@ export class AuthController {
     if (error) throw new BadRequestException(error);
   }
 
+  /**
+   * Status akun hanya boleh diubah Admin, dan keputusan persetujuan (PENDING/REJECTED -> APPROVED/REJECTED) tetap tunduk pada kebijakan wewenang,
+   * sehingga form edit akun tidak menjadi jalan pintas (mis. Admin menyetujui Umat). Non-admin: field status dibuang diam-diam.
+   */
+  private async guardStatusChange(user: AuthUser, targetId: number, dto: any): Promise<void> {
+    const status = dto?.accountStatus ?? dto?.account_status;
+    if (!this.access.isAdmin(user)) {
+      if (dto) { delete dto.accountStatus; delete dto.account_status; }
+      return;
+    }
+    if (status !== 'APPROVED' && status !== 'REJECTED') return;
+    const current = await this.approvalPolicy.load(targetId);
+    if (!current || current.status === status || current.status === 'APPROVED') return;
+    await this.approvalPolicy.authorize(user.sub, targetId, status === 'APPROVED' ? 'APPROVE' : 'REJECT');
+  }
+
   @Public()
   @Get('roles')
   @ApiOperation({
@@ -253,6 +269,7 @@ export class AuthController {
     @Body() dto: UpdateProfileDto,
   ) {
     this.access.assertSelf(user, userIdParam);
+    await this.guardStatusChange(user, Number(userIdParam), dto);
     await this.assertRoleChange(userIdParam, (dto as any).roleCode ?? (dto as any).role_code);
     const move = await this.regionTransfer.extract(Number(userIdParam), dto as any);
     const result = await this.authService.updateProfile(userIdParam, dto);
@@ -269,6 +286,7 @@ export class AuthController {
   async resubmitRegistration(@CurrentUser() user: AuthUser, @Body() dto: UpdateProfileDto) {
     const userId = Number(user.sub);
     await this.regionTransfer.assertRejected(userId);
+    await this.guardStatusChange(user, userId, dto);
     await this.assertRoleChange(String(userId), (dto as any).roleCode ?? (dto as any).role_code);
     await this.authService.updateProfile(String(userId), dto);
     await this.regionTransfer.resubmit(userId);
@@ -300,9 +318,11 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update Status Akun Pengguna oleh Admin' })
   async updateAdminUserStatus(
+    @CurrentUser() user: AuthUser,
     @Param('userId') userIdParam: string,
     @Body() body: { status: string; isJabatanActive?: boolean },
   ) {
+    await this.guardStatusChange(user, Number(userIdParam), { accountStatus: body.status });
     return await this.authService.updateAdminUserStatus(userIdParam, body);
   }
 
