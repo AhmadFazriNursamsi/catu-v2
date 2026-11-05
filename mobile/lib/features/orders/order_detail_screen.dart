@@ -484,8 +484,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                 children: [
                                   _buildInfoTile(icon: Icons.badge_rounded, label: LanguageService.tr('name_label'), value: order.penerimaName),
                                   _buildInfoTile(icon: Icons.wc_rounded, label: 'Jenis Kelamin', value: order.genderLabel.isNotEmpty ? order.genderLabel : '-'),
-                                  _buildInfoTile(icon: Icons.cake_rounded, label: 'Usia', value: order.usiaLabel.isNotEmpty ? order.usiaLabel : '-'),
-                                  _buildInfoTile(icon: Icons.priority_high_rounded, label: 'Tingkat Urgensi', value: urgencyLabelOf(order.urgencyName), valueColor: urgencyColor, isLast: true),
+                                  _buildInfoTile(icon: Icons.cake_rounded, label: 'Usia', value: order.usiaLabel.isNotEmpty ? order.usiaLabel : '-', isLast: true),
                                 ],
                               ),
                               const SizedBox(height: 12),

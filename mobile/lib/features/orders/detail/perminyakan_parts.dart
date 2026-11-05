@@ -6,11 +6,6 @@ import '../../../core/models/models.dart';
 
 const _teal = Color(0xFF0F766E);
 const _ink = Color(0xFF0F172A);
-const _muted = Color(0xFF64748B);
-
-/// Ringkasan penerima: "Laki-laki · 72 tahun" (bagian yang kosong tidak ditampilkan).
-String _recipientMeta(Order order) =>
-    [order.genderLabel, order.usiaLabel].where((s) => s.trim().isNotEmpty).join(' · ');
 
 class _Chip extends StatelessWidget {
   final String label;
@@ -39,7 +34,7 @@ class _Chip extends StatelessWidget {
   }
 }
 
-/// Latar header: foto gereja + nama penerima dan gender/usia (tanggal & jam ada di kartu ringkasan).
+/// Latar header: foto gereja + nama penerima (gender/usia di Data Penerima, jam di Waktu & Lokasi).
 class PerminyakanHero extends StatelessWidget {
   final Order order;
   final OrderItem item;
@@ -48,7 +43,6 @@ class PerminyakanHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = _recipientMeta(order);
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -79,10 +73,6 @@ class PerminyakanHero extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.5, height: 1.15)),
-              if (meta.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(meta, style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
-              ],
             ],
           ),
         ),
@@ -91,7 +81,7 @@ class PerminyakanHero extends StatelessWidget {
   }
 }
 
-/// Kartu ringkasan: status, judul pelayanan, dan fakta penting (tanggal, jam, urgensi) sekilas.
+/// Kartu ringkasan: status, judul pelayanan, tanggal, dan urgensi sekilas (nama di header, jam di Waktu & Lokasi).
 class PerminyakanSummaryCard extends StatelessWidget {
   final Order order;
   final OrderItem item;
@@ -139,11 +129,6 @@ class PerminyakanSummaryCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _ink, letterSpacing: -0.3)),
-                const SizedBox(height: 2),
-                Text('Untuk ${order.penerimaName}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13, color: _muted, fontWeight: FontWeight.w500)),
               ]),
             ),
           ]),
@@ -168,7 +153,6 @@ class PerminyakanSummaryCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _Fact(icon: Icons.calendar_month_rounded, label: 'Tanggal', value: formatServiceDate(date)),
-            _Fact(icon: Icons.access_time_rounded, label: 'Jam', value: '${item.scheduledTimeStart} WIB'),
             _Fact(
                 icon: Icons.priority_high_rounded,
                 label: 'Urgensi',
