@@ -13,7 +13,8 @@
 #   CATU_KEEP_BACKUPS jumlah cadangan deploy yang disimpan (bawaan: 10)
 #   CATU_DB_NAME / CATU_DB_USER  bila .env tidak memuat DB_NAME / DB_USERNAME (mis. produksi: catu / rootdba)
 #
-# Kredensial DB dibaca dari .env (DB_NAME, DB_USERNAME/DB_USER, DB_PASSWORD) tanpa dicetak dan tanpa masuk argumen
+# Kredensial DB dibaca dari .env, atau dari environment backend di docker-compose.yml (DB_NAME, DB_USERNAME/DB_USER,
+# DB_PASSWORD), tanpa dicetak dan tanpa masuk argumen
 # perintah. Hanya skema public yang dicadangkan (katalog TimescaleDB milik aplikasi lain tidak ikut).
 set -euo pipefail
 
@@ -44,8 +45,13 @@ command -v curl >/dev/null || fail "curl tidak terpasang."
 exec 9>"/tmp/catu-deploy-$(id -u)-$(basename "$PWD").lock"
 command -v flock >/dev/null && { flock -n 9 || fail "Deploy lain sedang berjalan di folder ini."; }
 
-envval() { # nilai dari .env tanpa mengeksekusi isinya; tanda kutip di ujung dibuang
-  { grep -E "^$1=" .env || true; } | tail -1 | cut -d= -f2- | sed -e "s/^[\"']//" -e "s/[\"']$//"
+envval() { # nilai dari .env tanpa mengeksekusi isinya; bila tidak ada, dari environment hasil `docker compose config`
+  local v
+  v=$({ grep -E "^$1=" .env || true; } | tail -1 | cut -d= -f2-)
+  if [ -z "$v" ]; then
+    v=$({ docker compose config 2>/dev/null || true; } | { grep -E "^[[:space:]]+$1:" || true; } | head -1 | sed -E "s/^[[:space:]]+$1:[[:space:]]*//")
+  fi
+  printf '%s' "$v" | sed -e "s/^[\"']//" -e "s/[\"']$//"
 }
 
 IMAGES=$(docker compose config --images 2>/dev/null | sort -u || true)
