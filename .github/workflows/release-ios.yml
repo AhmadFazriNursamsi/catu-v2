@@ -96,8 +96,10 @@ jobs:
           [ "$(plutil -extract CFBundleIdentifier raw "$PL")" = "$BUNDLE_ID" ] || { echo "::error::Bundle ID salah"; exit 1; }
           V=$(sed -n 's/^version: //p' mobile/pubspec.yaml | head -1)
           [ "$(plutil -extract CFBundleShortVersionString raw "$PL")+$(plutil -extract CFBundleVersion raw "$PL")" = "$V" ] || { echo "::error::Versi arsip tidak sama dengan pubspec $V"; exit 1; }
-          strings "$APP/Frameworks/App.framework/App" | grep -qF "$API_URL" || { echo "::error::Alamat server tidak tertanam"; exit 1; }
-          if strings "$APP/Frameworks/App.framework/App" | grep -qE "https?://(10\.|192\.168\.|localhost|127\.0\.0\.1)"; then echo "::error::Ada alamat jaringan lokal"; exit 1; fi
+          # Simpan ke berkas dulu: "strings | grep -q" gagal di bawah pipefail (grep menutup pipa lebih awal).
+          strings "$APP/Frameworks/App.framework/App" > "$RUNNER_TEMP/app-strings.txt"
+          grep -qF "$API_URL" "$RUNNER_TEMP/app-strings.txt" || { echo "::error::Alamat server tidak tertanam"; exit 1; }
+          if grep -qE "https?://(10\.|192\.168\.|localhost|127\.0\.0\.1)" "$RUNNER_TEMP/app-strings.txt"; then echo "::error::Ada alamat jaringan lokal"; exit 1; fi
           echo "Arsip: $BUNDLE_ID $V"
 
       - name: Ekspor dan unggah ke TestFlight
