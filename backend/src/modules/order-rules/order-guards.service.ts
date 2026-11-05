@@ -96,14 +96,35 @@ export class OrderGuardsService {
     if (t.handoverStatus === 'PENDING') throw new ConflictException('Masih ada pelimpahan yang menunggu respons.');
   }
 
-  /** Kategori dan tingkat urgensi harus ada (dan kategori aktif) agar tidak berujung galat server. */
-  async assertNewOrderRefs(dto: { serviceCategoryId: number; urgencyLevelId: number }): Promise<void> {
+  /** Kategori, tingkat urgensi, dan referensi wilayah yang dikirim harus ada agar tidak berujung galat server (500). */
+  async assertNewOrderRefs(dto: {
+    serviceCategoryId: number;
+    urgencyLevelId: number;
+    keuskupanId?: number;
+    parokiId?: number;
+    wilayahId?: number;
+    lingkunganId?: number;
+    kabupatenKotaId?: number;
+    items?: Array<{ kabupatenKotaId?: number }>;
+  }): Promise<void> {
     const [cat, urg] = await Promise.all([
       this.dataSource.query('SELECT 1 FROM service_categories WHERE id = $1 AND is_active IS NOT FALSE', [dto.serviceCategoryId]),
       this.dataSource.query('SELECT 1 FROM urgency_levels WHERE id = $1', [dto.urgencyLevelId]),
     ]);
     if (cat.length === 0) throw new BadRequestException('Kategori pelayanan tidak ditemukan atau tidak aktif.');
     if (urg.length === 0) throw new BadRequestException('Tingkat urgensi tidak ditemukan.');
+    const kabIds = [dto.kabupatenKotaId, ...(dto.items ?? []).map((i) => i.kabupatenKotaId)];
+    const refs: Array<[string, string, number | undefined]> = [
+      ['keuskupan', 'Keuskupan', dto.keuskupanId],
+      ['paroki', 'Paroki', dto.parokiId],
+      ['wilayah', 'Wilayah', dto.wilayahId],
+      ['lingkungan', 'Lingkungan', dto.lingkunganId],
+      ...[...new Set(kabIds.filter((v) => Number(v) > 0))].map((v): [string, string, number | undefined] => ['kabupaten_kota', 'Kabupaten/kota', v]),
+    ];
+    for (const [table, label, id] of refs) {
+      if (!(Number(id) > 0)) continue;
+      if ((await this.dataSource.query(`SELECT 1 FROM ${table} WHERE id = $1`, [id])).length === 0) throw new BadRequestException(`${label} tidak ditemukan.`);
+    }
   }
 
   /** Status yang boleh ditetapkan Admin lewat endpoint status. */

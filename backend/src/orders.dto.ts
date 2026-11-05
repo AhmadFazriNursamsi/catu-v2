@@ -61,7 +61,7 @@ export class CreateOrderDto {
   @IsNotEmpty()
   locationName: string;
 
-  @ApiPropertyOptional({ example: 'Jl. Ahmad Yani No. 45, Jakarta', description: 'Alamat detail' })
+  @ApiProperty({ example: 'Jl. Ahmad Yani No. 45, Jakarta', description: 'Alamat detail (wajib)' })
   @IsString()
   @IsNotEmpty()
   addressDetail: string;
