@@ -3,7 +3,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { ADMIN_ROLES, STAFF_ROLES } from './role-groups';
 import { orderKeuskupanSql } from '../../modules/order-rules/lintas-paroki';
-import { PENGURUS_ROLE, pengurusMayViewOrder } from './order-visibility';
+import { PENGURUS_ROLE, ROMO_ORDO_ROLE, ROMO_PAROKI_ROLE, pengurusMayViewOrder, romoMayViewOrder } from './order-visibility';
 
 /** Payload JWT yang di-attach oleh JwtAuthGuard pada request.user (class agar kompatibel dengan metadata decorator). */
 export class AuthUser {
@@ -37,14 +37,47 @@ export class AccessService {
   /** Umat hanya boleh melihat order miliknya; peran pelayanan/pengurus/admin dilayani sesuai scope. */
   async assertOrderAccess(user: AuthUser, orderIdParam: string | number): Promise<void> {
     const isPengurus = user.roleCode === PENGURUS_ROLE;
-    if (!this.isEndUser(user) && !isPengurus) return;
+    const isRomo = user.roleCode === ROMO_PAROKI_ROLE || user.roleCode === ROMO_ORDO_ROLE;
+    if (!this.isEndUser(user) && !isPengurus && !isRomo) return;
     const orderId = parseInt(String(orderIdParam), 10) || 0;
     if (isPengurus) return this.assertPengurusOrderAccess(user, orderId);
+    if (isRomo) return this.assertRomoOrderAccess(user, orderId);
     const rows = await this.dataSource.query('SELECT user_id FROM orders WHERE id = $1', [orderId]);
     if (rows.length === 0) throw new NotFoundException('Order tidak ditemukan');
     if (Number(rows[0].user_id) !== Number(user.sub)) {
       throw new ForbiddenException('Akses ditolak: order ini bukan milik Anda');
     }
+  }
+
+  /** Romo: hanya pelayanan di wilayahnya atau yang ia tangani (penerima, limpahan). */
+  private async assertRomoOrderAccess(user: AuthUser, orderId: number): Promise<void> {
+    const rows = await this.dataSource.query(
+      `SELECT COALESCE(o.paroki_id, p.paroki_id) AS order_paroki_id,
+              COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) AS order_kab_id,
+              rp.paroki_id AS romo_paroki_id, rp.kabupaten_kota_id AS romo_kab_id,
+              (o.accepted_romo_id = $2 OR o.handover_proposed_by = $2 OR o.handover_target_romo_id = $2
+               OR EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id
+                          AND (oi.accepted_romo_id = $2 OR oi.handover_proposed_by = $2 OR oi.handover_target_romo_id = $2))
+               OR EXISTS (SELECT 1 FROM order_romo_handovers h WHERE h.order_id = o.id
+                          AND (h.previous_romo_id = $2 OR h.new_romo_id = $2))) AS involved
+       FROM orders o
+       JOIN user_profiles p ON p.user_id = o.user_id
+       LEFT JOIN user_profiles rp ON rp.user_id = $2
+       WHERE o.id = $1`,
+      [orderId, user.sub],
+    );
+    if (rows.length === 0) throw new NotFoundException('Order tidak ditemukan');
+    const r = rows[0];
+    const num = (v: unknown) => (v == null ? null : Number(v));
+    const ok = romoMayViewOrder({
+      roleCode: user.roleCode,
+      romoParokiId: num(r.romo_paroki_id),
+      romoKabupatenKotaId: num(r.romo_kab_id),
+      orderParokiId: num(r.order_paroki_id),
+      orderKabupatenKotaId: num(r.order_kab_id),
+      involved: r.involved === true,
+    });
+    if (!ok) throw new ForbiddenException('Akses ditolak: pelayanan ini berada di luar wilayah Anda');
   }
 
   /** Pengurus Lingkungan: hanya pelayanan miliknya atau yang berasal dari lingkungannya. */

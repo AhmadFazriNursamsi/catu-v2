@@ -24,3 +24,37 @@ describe('pengurusMayViewOrder', () => {
     expect(pengurusMayViewOrder({ ...base, orderLingkunganId: '100' as unknown as number })).toBe(true);
   });
 });
+
+import { romoMayViewOrder } from './order-visibility';
+
+describe('romoMayViewOrder', () => {
+  const paroki = { roleCode: 'ROMO_PAROKI', romoParokiId: 207, romoKabupatenKotaId: 3175, orderParokiId: 207, orderKabupatenKotaId: 3175, involved: false };
+  const ordo = { ...paroki, roleCode: 'ROMO_ORDO' };
+
+  it('Romo Paroki membaca pelayanan di parokinya', () => {
+    expect(romoMayViewOrder(paroki)).toBe(true);
+  });
+
+  it('Romo Paroki ditolak untuk paroki lain walau satu kota', () => {
+    expect(romoMayViewOrder({ ...paroki, orderParokiId: 187 })).toBe(false);
+  });
+
+  it('Romo Paroki yang menangani/menerima limpahan boleh membaca di luar parokinya', () => {
+    expect(romoMayViewOrder({ ...paroki, orderParokiId: 187, involved: true })).toBe(true);
+  });
+
+  it('Romo Paroki tanpa paroki atau pesanan tanpa paroki ditolak', () => {
+    expect(romoMayViewOrder({ ...paroki, romoParokiId: null })).toBe(false);
+    expect(romoMayViewOrder({ ...paroki, orderParokiId: null })).toBe(false);
+  });
+
+  it('Romo Ordo dibatasi pada kabupaten/kotanya', () => {
+    expect(romoMayViewOrder(ordo)).toBe(true);
+    expect(romoMayViewOrder({ ...ordo, orderKabupatenKotaId: 3174 })).toBe(false);
+    expect(romoMayViewOrder({ ...ordo, romoKabupatenKotaId: null })).toBe(false);
+  });
+
+  it('peran lain tidak lolos lewat aturan Romo', () => {
+    expect(romoMayViewOrder({ ...paroki, roleCode: 'UMAT' })).toBe(false);
+  });
+});
