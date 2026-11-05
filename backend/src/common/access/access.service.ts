@@ -53,7 +53,7 @@ export class AccessService {
   private async assertRomoOrderAccess(user: AuthUser, orderId: number): Promise<void> {
     const rows = await this.dataSource.query(
       `SELECT COALESCE(o.paroki_id, p.paroki_id) AS order_paroki_id,
-              COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) AS order_kab_id,
+              COALESCE(o.kabupaten_kota_id, p.kabupaten_kota_id) AS order_kab_id, o.lintas_paroki AS lintas_paroki,
               rp.paroki_id AS romo_paroki_id, rp.kabupaten_kota_id AS romo_kab_id,
               (o.accepted_romo_id = $2 OR o.handover_proposed_by = $2 OR o.handover_target_romo_id = $2
                OR EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id
@@ -76,6 +76,7 @@ export class AccessService {
       orderParokiId: num(r.order_paroki_id),
       orderKabupatenKotaId: num(r.order_kab_id),
       involved: r.involved === true,
+      lintasParoki: r.lintas_paroki === true,
     });
     if (!ok) throw new ForbiddenException('Akses ditolak: pelayanan ini berada di luar wilayah Anda');
   }

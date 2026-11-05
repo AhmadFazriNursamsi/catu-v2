@@ -25,7 +25,7 @@ describe('AccessService.assertOrderAccess untuk Pengurus Lingkungan', () => {
 
   describe('Romo', () => {
     const romo = { sub: 6, roleCode: 'ROMO_PAROKI' };
-    const row = { order_paroki_id: 187, order_kab_id: 3175, romo_paroki_id: 207, romo_kab_id: 3175, involved: false };
+    const row = { order_paroki_id: 187, order_kab_id: 3175, romo_paroki_id: 207, romo_kab_id: 3175, involved: false, lintas_paroki: false };
 
     it('403 untuk pelayanan paroki lain yang tidak ia tangani', async () => {
       await expect(make([row]).assertOrderAccess(romo, 1)).rejects.toBeInstanceOf(ForbiddenException);
@@ -37,6 +37,10 @@ describe('AccessService.assertOrderAccess untuk Pengurus Lingkungan', () => {
 
     it('lolos untuk pelayanan yang ia tangani/limpahan walau paroki lain', async () => {
       await expect(make([{ ...row, involved: true }]).assertOrderAccess(romo, 1)).resolves.toBeUndefined();
+    });
+
+    it('403 untuk pelayanan Umat Pendatang walau paroki asal pemohon sama dengan parokinya', async () => {
+      await expect(make([{ ...row, order_paroki_id: 207, lintas_paroki: true }]).assertOrderAccess(romo, 1)).rejects.toBeInstanceOf(ForbiddenException);
     });
 
     it('404 bila pelayanan tidak ada', async () => {

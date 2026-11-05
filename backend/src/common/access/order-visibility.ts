@@ -32,11 +32,14 @@ export interface RomoOrderScope {
   orderKabupatenKotaId: number | null;
   /** Ia penerima, pengaju/tujuan limpah, atau tercatat di riwayat limpahan pelayanan/misa ini. */
   involved: boolean;
+  /** Lintas paroki atau Umat Pendatang: hanya Romo Ordo tujuan yang berwenang, Romo Paroki mana pun tidak. */
+  lintasParoki: boolean;
 }
 
 export function romoMayViewOrder(s: RomoOrderScope): boolean {
   if (s.involved) return true;
   if (s.roleCode === ROMO_PAROKI_ROLE) {
+    if (s.lintasParoki) return false;
     return s.romoParokiId != null && s.orderParokiId != null && Number(s.romoParokiId) === Number(s.orderParokiId);
   }
   if (s.roleCode === ROMO_ORDO_ROLE) {
