@@ -36,7 +36,9 @@ describeDb('Alur penerimaan dan status pelayanan (PostgreSQL sungguhan)', () => 
     const umat = await fx.user('UMAT', { parokiId: t.paroki1 });
     const romo = await fx.user('ROMO_PAROKI', { parokiId: t.paroki1 });
     const rekan = await fx.user('ROMO_PAROKI', { parokiId: t.paroki1 });
-    const orderId = await fx.order({ userId: umat.id, parokiId: t.paroki1 });
+    // Tanggal kemarin: Romo baru boleh menandai selesai pada/ setelah tanggal pelaksanaan.
+    const yesterday = new Date(Date.now() - 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const orderId = await fx.order({ userId: umat.id, parokiId: t.paroki1, scheduledDate: yesterday });
     return { umat, romo, rekan, orderId };
   }
 
@@ -51,6 +53,17 @@ describeDb('Alur penerimaan dan status pelayanan (PostgreSQL sungguhan)', () => 
     await respond(orderId, 'IN_PROGRESS', romo);
     expect(await statusOf(orderId)).toBe('IN_PROGRESS');
     await respond(orderId, 'DONE', romo);
+    expect(await statusOf(orderId)).toBe('DONE');
+  });
+
+  it('Romo tidak boleh menyelesaikan sebelum tanggal pelaksanaan (409); Admin boleh mengoreksi', async () => {
+    const umat = await fx.user('UMAT', { parokiId: t.paroki1 });
+    const romo = await fx.user('ROMO_PAROKI', { parokiId: t.paroki1 });
+    const orderId = await fx.order({ userId: umat.id, parokiId: t.paroki1 }); // jadwal default: 5 hari lagi
+    await respond(orderId, 'CONFIRMED', romo);
+    await expect(respond(orderId, 'DONE', romo)).rejects.toBeInstanceOf(ConflictException);
+    expect(await statusOf(orderId)).toBe('CONFIRMED');
+    await respond(orderId, 'DONE', romo, {}, true);
     expect(await statusOf(orderId)).toBe('DONE');
   });
 
