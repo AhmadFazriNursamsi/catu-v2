@@ -28,7 +28,7 @@ describe('pengurusMayViewOrder', () => {
 import { romoMayViewOrder } from './order-visibility';
 
 describe('romoMayViewOrder', () => {
-  const paroki = { roleCode: 'ROMO_PAROKI', romoParokiId: 207, romoKabupatenKotaId: 3175, orderParokiId: 207, orderKabupatenKotaId: 3175, involved: false };
+  const paroki = { roleCode: 'ROMO_PAROKI', romoParokiId: 207, romoKabupatenKotaId: 3175, orderParokiId: 207, orderKabupatenKotaId: 3175, involved: false, lintasParoki: false };
   const ordo = { ...paroki, roleCode: 'ROMO_ORDO' };
 
   it('Romo Paroki membaca pelayanan di parokinya', () => {
@@ -46,6 +46,12 @@ describe('romoMayViewOrder', () => {
   it('Romo Paroki tanpa paroki atau pesanan tanpa paroki ditolak', () => {
     expect(romoMayViewOrder({ ...paroki, romoParokiId: null })).toBe(false);
     expect(romoMayViewOrder({ ...paroki, orderParokiId: null })).toBe(false);
+  });
+
+  it('Romo Paroki mana pun ditolak untuk pelayanan lintas paroki/Umat Pendatang, kecuali ia terlibat', () => {
+    expect(romoMayViewOrder({ ...paroki, lintasParoki: true })).toBe(false);
+    expect(romoMayViewOrder({ ...paroki, lintasParoki: true, involved: true })).toBe(true);
+    expect(romoMayViewOrder({ ...ordo, lintasParoki: true })).toBe(true);
   });
 
   it('Romo Ordo dibatasi pada kabupaten/kotanya', () => {
