@@ -11,6 +11,7 @@
 #                     dev: https://catu.devoutsys.com/dev/api/health)
 #   CATU_PG_CONTAINER container Postgres (bawaan: shared-postgres-production)
 #   CATU_KEEP_BACKUPS jumlah cadangan deploy yang disimpan (bawaan: 10)
+#   CATU_DB_NAME / CATU_DB_USER  bila .env tidak memuat DB_NAME / DB_USERNAME (mis. produksi: catu / rootdba)
 #
 # Kredensial DB dibaca dari .env (DB_NAME, DB_USERNAME/DB_USER, DB_PASSWORD) tanpa dicetak dan tanpa masuk argumen
 # perintah. Hanya skema public yang dicadangkan (katalog TimescaleDB milik aplikasi lain tidak ikut).
@@ -44,7 +45,7 @@ exec 9>"/tmp/catu-deploy-$(id -u)-$(basename "$PWD").lock"
 command -v flock >/dev/null && { flock -n 9 || fail "Deploy lain sedang berjalan di folder ini."; }
 
 envval() { # nilai dari .env tanpa mengeksekusi isinya; tanda kutip di ujung dibuang
-  grep -E "^$1=" .env | tail -1 | cut -d= -f2- | sed -e "s/^[\"']//" -e "s/[\"']$//"
+  { grep -E "^$1=" .env || true; } | tail -1 | cut -d= -f2- | sed -e "s/^[\"']//" -e "s/[\"']$//"
 }
 
 IMAGES=$(docker compose config --images 2>/dev/null | sort -u || true)
@@ -91,8 +92,10 @@ if [ "$MODE" = "check" ]; then
   say "Folder      : $PWD"
   say "Health      : $HEALTH_URL"
   for ref in $IMAGES; do say "Image       : $ref ($(image_id "$ref" | cut -c8-19))"; done
-  DB_NAME=$(envval DB_NAME); DB_USER=$(envval DB_USERNAME); [ -n "$DB_USER" ] || DB_USER=$(envval DB_USER)
-  [ -n "$DB_NAME" ] && [ -n "$DB_USER" ] && [ -n "$(envval DB_PASSWORD)" ] || fail "DB_NAME / DB_USERNAME / DB_PASSWORD tidak lengkap di .env."
+  DB_NAME="${CATU_DB_NAME:-$(envval DB_NAME)}"; DB_USER="${CATU_DB_USER:-$(envval DB_USERNAME)}"; [ -n "$DB_USER" ] || DB_USER=$(envval DB_USER)
+  [ -n "$DB_NAME" ] || fail "DB_NAME tidak ada di .env."
+  [ -n "$DB_USER" ] || fail "DB_USERNAME (atau DB_USER) tidak ada di .env."
+  [ -n "$(envval DB_PASSWORD)" ] || fail "DB_PASSWORD tidak ada di .env."
   docker inspect "$PG_CONTAINER" >/dev/null 2>&1 || fail "Container Postgres '$PG_CONTAINER' tidak ditemukan (atur CATU_PG_CONTAINER)."
   say "Database    : $DB_NAME (user $DB_USER) di $PG_CONTAINER"
   health_ok "" && say "Health sekarang: ok" || say "Health sekarang: TIDAK ok"
@@ -135,7 +138,7 @@ if [ "$CHANGED" = 0 ]; then
 fi
 
 # 3. Cadangkan database (skema public) dan konfigurasi.
-DB_NAME=$(envval DB_NAME); DB_USER=$(envval DB_USERNAME); [ -n "$DB_USER" ] || DB_USER=$(envval DB_USER)
+DB_NAME="${CATU_DB_NAME:-$(envval DB_NAME)}"; DB_USER="${CATU_DB_USER:-$(envval DB_USERNAME)}"; [ -n "$DB_USER" ] || DB_USER=$(envval DB_USER)
 [ -n "$DB_NAME" ] && [ -n "$DB_USER" ] || fail "DB_NAME / DB_USERNAME tidak ada di .env. Tidak ada yang diubah (container lama masih berjalan)."
 PGPASSWORD=$(envval DB_PASSWORD); export PGPASSWORD
 docker exec -e PGPASSWORD "$PG_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" -n public -Fc > "$DIR/catu-db.dump" \
