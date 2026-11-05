@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 import { CreateOrderDto } from "../../orders.dto";
@@ -977,14 +977,14 @@ export class OrdersService {
     const effectiveReason = dto.reason?.trim() || 'Berhalangan hadir (telah dikonfirmasi ke keluarga & Romo pengganti)';
 
     if (!romoId || (!targetRomoId && !externalRomoName?.trim())) {
-      return { statusCode: 400, message: 'Romo asal dan Romo pengganti wajib diisi.' };
+      throw new BadRequestException('Romo asal dan Romo pengganti wajib diisi.');
     }
 
     const orderRes = await this.dataSource.query(
       `SELECT id, order_number, user_id, status, scheduled_date, scheduled_time, accepted_romo_id, paroki_id FROM orders WHERE id = $1`, [orderId],
     );
     if (orderRes.length === 0) {
-      return { statusCode: 404, message: 'Order tidak ditemukan.' };
+      throw new NotFoundException('Order tidak ditemukan.');
     }
     const order = orderRes[0];
 
@@ -1005,14 +1005,14 @@ export class OrdersService {
     }
 
     if (!isAuthorized) {
-      return { statusCode: 403, message: 'Hanya Romo yang bertugas yang dapat mengajukan pelimpahan pelayanan ini.' };
+      throw new ForbiddenException('Hanya Romo yang bertugas yang dapat mengajukan pelimpahan pelayanan ini.');
     }
 
     const wasReceivedViaHandover = itemId
       ? (await this.dataSource.query(`SELECT 1 FROM order_items WHERE id = $1 AND order_id = $2 AND (handover_status = 'ACCEPTED' OR EXISTS (SELECT 1 FROM order_romo_handovers WHERE item_id = $1 AND new_romo_id = $3 AND status = 'ACCEPTED'))`, [itemId, orderId, romoId])).length > 0
       : (await this.dataSource.query(`SELECT 1 FROM orders WHERE id = $1 AND (handover_status = 'ACCEPTED' OR EXISTS (SELECT 1 FROM order_romo_handovers WHERE order_id = $1 AND new_romo_id = $2 AND status = 'ACCEPTED'))`, [orderId, romoId])).length > 0;
     if (wasReceivedViaHandover) {
-      return { statusCode: 400, message: 'Pelayanan yang telah diterima dari pelimpahan tugas tidak dapat dilimpahkan kembali ke Romo lain.' };
+      throw new BadRequestException('Pelayanan yang telah diterima dari pelimpahan tugas tidak dapat dilimpahkan kembali ke Romo lain.');
     }
 
     const prevRomoProf = await this.dataSource.query(`SELECT full_name FROM user_profiles WHERE user_id = $1`, [romoId]);
