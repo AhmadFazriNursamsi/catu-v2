@@ -31,6 +31,12 @@ describe('LintasParokiService.afterCreate untuk Umat Pendatang', () => {
     expect(events.notifyPerItem.mock.calls[1][0]).toEqual([]);
   });
 
+  it('tidak memasukkan siapa pun ke grup chat: Romo Ordo baru masuk setelah menerima pelayanan', async () => {
+    const { svc, calls } = make(pendatang);
+    await svc.afterCreate(1);
+    expect(calls.some((s) => s.includes('INSERT INTO chat_group_members'))).toBe(false);
+  });
+
   it('umat biasa satu paroki tetap bukan lintas paroki', async () => {
     const { svc, calls } = make({ ...pendatang, is_pendatang: false, paroki_id: 187 });
     expect(await svc.afterCreate(1)).toBe(false);
