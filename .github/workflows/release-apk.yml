@@ -1,0 +1,88 @@
+name: Rilis APK Android
+
+# Membangun APK RILIS (ditandatangani kunci rilis resmi, diverifikasi oleh build_production.sh) lalu mengunggahnya ke
+# produksi dengan token unggah khusus. Berjalan saat tag versi (vX.Y.Z) di-push, atau manual dari cabang main.
+# Rahasia yang dibutuhkan (Settings -> Secrets and variables -> Actions, atau environment "production"):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD, APK_UPLOAD_TOKEN
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: release-apk
+  cancel-in-progress: false
+
+jobs:
+  release-apk:
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Versi tag sama dengan pubspec
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          V=$(sed -n 's/^version: //p' mobile/pubspec.yaml | head -1 | cut -d+ -f1)
+          [ "v$V" = "$GITHUB_REF_NAME" ] || { echo "::error::Tag $GITHUB_REF_NAME tidak sama dengan versi pubspec v$V"; exit 1; }
+
+      - name: Tag harus berasal dari main
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "::error::Commit tag belum ada di main"; exit 1; }
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Pasang kunci rilis (dari secrets)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          [ -n "$KEYSTORE_B64" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ] \
+            || { echo "::error::Secrets kunci rilis belum lengkap"; exit 1; }
+          umask 077
+          echo "$KEYSTORE_B64" | base64 -d > mobile/android/catu-release.jks
+          printf 'storeFile=catu-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > mobile/android/key.properties
+
+      - name: Bangun dan verifikasi APK rilis
+        run: ./scripts/mobile/build_production.sh apk
+
+      - name: Unggah ke produksi dan verifikasi
+        env:
+          APK_UPLOAD_TOKEN: ${{ secrets.APK_UPLOAD_TOKEN }}
+        run: ./scripts/mobile/upload_apk_ci.sh
+
+      - name: Simpan APK dan sidik jari
+        uses: actions/upload-artifact@v4
+        with:
+          name: catu-apk-${{ github.ref_name }}
+          path: mobile/build/release/
+          retention-days: 90
+
+      - name: Simpan simbol debug (membaca crash log build berobfuskasi)
+        uses: actions/upload-artifact@v4
+        with:
+          name: catu-symbols-${{ github.ref_name }}
+          path: mobile/build/symbols/
+          retention-days: 365
+
+      - name: Hapus kunci rilis dari runner
+        if: always()
+        run: rm -f mobile/android/catu-release.jks mobile/android/key.properties
