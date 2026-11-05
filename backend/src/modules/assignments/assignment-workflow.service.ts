@@ -5,6 +5,7 @@ import { RespondOrderAssignmentDto } from '../../orders.dto';
 import { AcceptanceClaimService } from '../order-rules/acceptance-claim.service';
 import { OrderGuardsService } from '../order-rules/order-guards.service';
 import { decideTransition } from '../order-rules/order-status-machine';
+import { doneTooEarlyError } from '../order-rules/service-date-rule';
 import { AssignmentsService } from './assignments.service';
 
 export interface RespondContext {
@@ -55,6 +56,9 @@ export class AssignmentWorkflowService {
     const decision = decideTransition(target.status, status, ctx.isAdmin);
     if (decision.kind === 'DENIED') throw new ConflictException(decision.message);
     if (decision.kind === 'NOOP') return { message: `Pelayanan sudah berstatus ${status}.`, status };
+    // Admin boleh mengoreksi data; Romo tidak boleh menyelesaikan pelayanan sebelum hari pelaksanaannya.
+    const tooEarly = status === 'DONE' && !ctx.isAdmin ? doneTooEarlyError(target.scheduledDate) : null;
+    if (tooEarly) throw new ConflictException(tooEarly);
     return call();
   }
 
