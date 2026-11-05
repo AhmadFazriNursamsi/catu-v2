@@ -97,6 +97,9 @@ describe('akses publik API (kontrak keamanan)', () => {
       'GET /news/search-live',
       'GET /news/sources',
       'GET /public/apk',
+      // Unggah APK oleh CI: tanpa login, dijaga ApkUploadTokenGuard (token APK_UPLOAD_TOKEN; nonaktif bila tidak diatur).
+      'GET /public/apk/ci/upload-url',
+      'PUT /public/apk/ci/local',
       'GET /public/m/login',
       'POST /auth/admin/login',
       'POST /auth/forgot-password/request-otp',

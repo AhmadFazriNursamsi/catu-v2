@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { ApkUploadTokenGuard } from './apk-upload-token.guard';
 
 @ApiTags('Public Downloads')
 @Controller('public')
@@ -59,6 +60,28 @@ export class ApkController {
   @ApiOperation({ summary: 'Upload file binary APK CATU langsung ke server disk' })
   @ApiResponse({ status: 200, description: 'APK berhasil disimpan di server' })
   async uploadLocalApk(@Req() req: Request): Promise<{ message: string; size: number }> {
+    return this.saveLocalApk(req);
+  }
+
+  // Unggah oleh CI (GitHub Actions) dengan token khusus APK_UPLOAD_TOKEN, bukan kata sandi Admin. Tanpa login JWT
+  // (karena itu @Public), tetapi ApkUploadTokenGuard menolak tanpa token yang benar dan nonaktif bila token tidak diatur.
+  @Public()
+  @UseGuards(ApkUploadTokenGuard)
+  @Get('apk/ci/upload-url')
+  @ApiOperation({ summary: 'CI: presigned S3 URL untuk upload APK (header X-Apk-Upload-Token)' })
+  async getUploadUrlForCi(): Promise<{ uploadUrl: string }> {
+    return { uploadUrl: await this.apkService.createUploadUrl() };
+  }
+
+  @Public()
+  @UseGuards(ApkUploadTokenGuard)
+  @Put('apk/ci/local')
+  @ApiOperation({ summary: 'CI: upload APK ke disk server (header X-Apk-Upload-Token)' })
+  async uploadLocalApkForCi(@Req() req: Request): Promise<{ message: string; size: number }> {
+    return this.saveLocalApk(req);
+  }
+
+  private async saveLocalApk(req: Request): Promise<{ message: string; size: number }> {
     const localApkPath = process.env.LOCAL_APK_PATH || '/app/public/CATU.apk';
     const dir = dirname(localApkPath);
     if (!existsSync(dir)) {
@@ -80,4 +103,3 @@ export class ApkController {
     };
   }
 }
-

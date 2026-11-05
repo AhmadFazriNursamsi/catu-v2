@@ -45,3 +45,34 @@ Pengguna perlu mengizinkan "pasang dari sumber tidak dikenal" untuk aplikasi yan
 ## Setelah rilis
 - Simpan `build/symbols/<versi>+<kode>` (diperlukan membaca jejak crash dari build berobfuskasi).
 - Catat SHA-256 dan versi yang dibagikan.
+
+## Rilis otomatis lewat GitHub Actions (disarankan)
+Workflow `.github/workflows/release-apk.yml` membangun APK rilis dengan `build_production.sh` (semua pemeriksaan di atas tetap berlaku,
+termasuk sidik jari kunci resmi), mengunggahnya ke produksi dengan **token unggah khusus**, lalu memastikan berkas yang diunduh publik
+sama persis (SHA-256). APK, `.sha256`, dan simbol debug disimpan sebagai artefak workflow.
+
+**Pemicu:** push tag `vX.Y.Z` yang sama dengan versi di `pubspec.yaml` dan berasal dari `main`, atau manual (Run workflow) dari `main`.
+```bash
+git checkout main && git pull
+git tag v2.9.57 && git push origin v2.9.57
+```
+
+**Penyiapan sekali** (dijalankan pemilik; nilai rahasia tidak pernah tampil di layar):
+```bash
+# 1. Token unggah: buat di server dan simpan di .env produksi (backend membacanya sebagai APK_UPLOAD_TOKEN)
+ssh perkasa@10.10.3.41 'cd ~/Documents/catu-v2 && grep -q "^APK_UPLOAD_TOKEN=" .env || echo "APK_UPLOAD_TOKEN=$(openssl rand -hex 32)" >> .env'
+# 2. Salin token yang sama ke GitHub (environment "production")
+ssh perkasa@10.10.3.41 'grep "^APK_UPLOAD_TOKEN=" ~/Documents/catu-v2/.env | cut -d= -f2-' | gh secret set APK_UPLOAD_TOKEN --env production
+# 3. Kunci rilis ke GitHub (dari folder mobile/android yang berisi catu-release.jks dan key.properties)
+base64 -i catu-release.jks | gh secret set ANDROID_KEYSTORE_BASE64 --env production
+grep '^storePassword=' key.properties | cut -d= -f2- | gh secret set ANDROID_KEYSTORE_PASSWORD --env production
+grep '^keyAlias='      key.properties | cut -d= -f2- | gh secret set ANDROID_KEY_ALIAS --env production
+grep '^keyPassword='   key.properties | cut -d= -f2- | gh secret set ANDROID_KEY_PASSWORD --env production
+# 4. Terapkan token di server (backend dibuat ulang dengan .env baru)
+ssh perkasa@10.10.3.41 'cd ~/Documents/catu-v2 && docker compose up -d'
+```
+Endpoint unggah CI (`/public/apk/ci/*`) **nonaktif** selama `APK_UPLOAD_TOKEN` tidak diatur di server. Mengganti token: hapus baris di
+`.env`, ulangi langkah 1, 2, dan 4. Disarankan menambahkan *required reviewer* pada environment `production` (Settings -> Environments)
+agar setiap rilis perlu persetujuan sekali klik.
+
+Menyimpan kunci di GitHub Secrets juga menjadi cadangan keempat; cadangan lain di atas tetap wajib.
