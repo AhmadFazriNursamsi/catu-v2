@@ -25,6 +25,7 @@ import { MAX_RESCHEDULE_REJECTIONS, OrderEventsService } from '../order-events/o
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { AccessService, AuthUser } from '../../common/access/access.service';
+import { PENGURUS_ROLE } from '../../common/access/order-visibility';
 import { ADMIN_ROLES, ROMO_ROLES } from '../../common/access/role-groups';
 
 @ApiTags('Orders & Pelayanan')
@@ -100,8 +101,8 @@ export class OrdersController {
     @Query('lingkunganId') lingkunganId?: string,
     @Query('isKoordinator') isKoordinator?: string,
   ) {
-    // Umat dan Koordinator hanya melihat order miliknya sendiri, filter scope dari klien diabaikan.
-    if (this.access.isEndUser(user) || user.roleCode.includes('KOORDINATOR')) {
+    // Umat, Koordinator, dan Pengurus Lingkungan hanya melihat order miliknya sendiri, filter scope dari klien diabaikan.
+    if (this.access.isEndUser(user) || user.roleCode.includes('KOORDINATOR') || user.roleCode === PENGURUS_ROLE) {
       return await this.ordersService.getOrders(String(user.sub));
     }
     return await this.ordersService.getOrders(

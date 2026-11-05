@@ -3,6 +3,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { ADMIN_ROLES, STAFF_ROLES } from './role-groups';
 import { orderKeuskupanSql } from '../../modules/order-rules/lintas-paroki';
+import { PENGURUS_ROLE, pengurusMayViewOrder } from './order-visibility';
 
 /** Payload JWT yang di-attach oleh JwtAuthGuard pada request.user (class agar kompatibel dengan metadata decorator). */
 export class AuthUser {
@@ -35,13 +36,34 @@ export class AccessService {
 
   /** Umat hanya boleh melihat order miliknya; peran pelayanan/pengurus/admin dilayani sesuai scope. */
   async assertOrderAccess(user: AuthUser, orderIdParam: string | number): Promise<void> {
-    if (!this.isEndUser(user)) return;
+    const isPengurus = user.roleCode === PENGURUS_ROLE;
+    if (!this.isEndUser(user) && !isPengurus) return;
     const orderId = parseInt(String(orderIdParam), 10) || 0;
+    if (isPengurus) return this.assertPengurusOrderAccess(user, orderId);
     const rows = await this.dataSource.query('SELECT user_id FROM orders WHERE id = $1', [orderId]);
     if (rows.length === 0) throw new NotFoundException('Order tidak ditemukan');
     if (Number(rows[0].user_id) !== Number(user.sub)) {
       throw new ForbiddenException('Akses ditolak: order ini bukan milik Anda');
     }
+  }
+
+  /** Pengurus Lingkungan: hanya pelayanan miliknya atau yang berasal dari lingkungannya. */
+  private async assertPengurusOrderAccess(user: AuthUser, orderId: number): Promise<void> {
+    const rows = await this.dataSource.query(
+      `SELECT o.user_id AS owner_id, COALESCE(o.lingkungan_id, p.lingkungan_id) AS order_lingkungan_id,
+              (SELECT lingkungan_id FROM user_profiles WHERE user_id = $2) AS pengurus_lingkungan_id
+       FROM orders o JOIN user_profiles p ON p.user_id = o.user_id WHERE o.id = $1`,
+      [orderId, user.sub],
+    );
+    if (rows.length === 0) throw new NotFoundException('Order tidak ditemukan');
+    const r = rows[0];
+    const ok = pengurusMayViewOrder({
+      pengurusId: Number(user.sub),
+      pengurusLingkunganId: r.pengurus_lingkungan_id == null ? null : Number(r.pengurus_lingkungan_id),
+      orderOwnerId: Number(r.owner_id),
+      orderLingkunganId: r.order_lingkungan_id == null ? null : Number(r.order_lingkungan_id),
+    });
+    if (!ok) throw new ForbiddenException('Akses ditolak: pelayanan ini berada di luar lingkungan Anda');
   }
 
   /**
