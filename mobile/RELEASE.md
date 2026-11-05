@@ -54,7 +54,7 @@ sama persis (SHA-256). APK, `.sha256`, dan simbol debug disimpan sebagai artefak
 **Pemicu:** push tag `vX.Y.Z` yang sama dengan versi di `pubspec.yaml` dan berasal dari `main`, atau manual (Run workflow) dari `main`.
 ```bash
 git checkout main && git pull
-git tag v2.9.57 && git push origin v2.9.57
+git tag v2.9.58 && git push origin v2.9.58
 ```
 
 **Penyiapan sekali** (dijalankan pemilik; nilai rahasia tidak pernah tampil di layar):

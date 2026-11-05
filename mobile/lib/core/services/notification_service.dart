@@ -258,7 +258,8 @@ class NotificationService {
       // Pendaftaran/permintaan pindah yang menunggu keputusan penyetuju -> daftar Menunggu
       if (type == 'USER_APPROVAL' || type == 'REGISTRATION_RESUBMITTED' || type == 'REGION_TRANSFER_REQUEST') {
         await navState.push(MaterialPageRoute(builder: (_) => ApprovalHistoryScreen(user: userMap ?? {}, startOnPending: true)));
-        return syncBadgeCount(userId: currentUserId, role: role);
+        await syncBadgeCount(userId: currentUserId, role: role);
+        return;
       }
       // 🔔 2. NOTIFIKASI PELAYANAN -> buka detail misa tujuan; bila tidak ada order, cukup daftar notifikasi
       if (await openOrderFromNotification(navState, data: data, userName: uName.toString(), userId: currentUserId, isRomo: isRomo)) {
