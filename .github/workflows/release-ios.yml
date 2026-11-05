@@ -1,0 +1,119 @@
+name: Rilis iOS (TestFlight)
+
+# Membangun iOS rilis dan mengunggahnya ke App Store Connect (TestFlight). Dipicu tag versi yang sama dengan APK
+# (vX.Y.Z, harus = pubspec dan berasal dari main), atau manual dari main. Penandatanganan otomatis oleh Xcode memakai
+# kunci API App Store Connect (tanpa sertifikat/profil yang disimpan manual).
+# Rahasia (environment "production"): ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8_BASE64
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: release-ios
+  cancel-in-progress: false
+
+jobs:
+  release-ios:
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-latest
+    timeout-minutes: 60
+    environment: production
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash # = bash -eo pipefail: kegagalan xcodebuild tidak tertutup oleh "| tail"
+    env:
+      BUNDLE_ID: com.devoutsys.catu
+      TEAM_ID: MBN54724KP
+      API_URL: https://catu.devoutsys.com/api
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Versi tag sama dengan pubspec dan berasal dari main
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          V=$(sed -n 's/^version: //p' mobile/pubspec.yaml | head -1 | cut -d+ -f1)
+          [ "v$V" = "$GITHUB_REF_NAME" ] || { echo "::error::Tag $GITHUB_REF_NAME tidak sama dengan versi pubspec v$V"; exit 1; }
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "::error::Commit tag belum ada di main"; exit 1; }
+
+      - name: Konfigurasi Firebase iOS cocok dengan bundle ID
+        run: |
+          GOT=$(plutil -extract BUNDLE_ID raw mobile/ios/Runner/GoogleService-Info.plist)
+          [ "$GOT" = "$BUNDLE_ID" ] || { echo "::error::GoogleService-Info.plist untuk $GOT, bukan $BUNDLE_ID (notifikasi push tidak akan sampai)"; exit 1; }
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.9 # samakan dengan Mac pengembang
+          cache: true
+
+      - name: Pasang kunci API App Store Connect (dari secrets)
+        env:
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          [ -n "$ASC_KEY_P8_BASE64" ] && [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] || { echo "::error::Secrets App Store Connect belum lengkap"; exit 1; }
+          umask 077
+          echo "$ASC_KEY_P8_BASE64" | base64 -d > "$RUNNER_TEMP/AuthKey.p8"
+          echo "ASC_AUTH=-authenticationKeyPath $RUNNER_TEMP/AuthKey.p8 -authenticationKeyID $ASC_KEY_ID -authenticationKeyIssuerID $ASC_ISSUER_ID" >> "$GITHUB_ENV"
+
+      - name: Analisis dan tes
+        working-directory: mobile
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos
+          flutter test
+
+      - name: Siapkan proyek iOS (alamat produksi, berobfuskasi)
+        working-directory: mobile
+        run: |
+          V=$(sed -n 's/^version: //p' pubspec.yaml | head -1)
+          flutter build ios --release --config-only --obfuscate --split-debug-info="build/symbols-ios/$V" \
+            --dart-define="CATU_API_URL=$API_URL"
+
+      - name: Arsipkan (tanda tangan otomatis)
+        working-directory: mobile/ios
+        run: |
+          xcodebuild archive -workspace Runner.xcworkspace -scheme Runner -configuration Release \
+            -archivePath "$RUNNER_TEMP/Runner.xcarchive" -destination 'generic/platform=iOS' \
+            -allowProvisioningUpdates $ASC_AUTH \
+            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" | tail -40
+          test -d "$RUNNER_TEMP/Runner.xcarchive" || { echo "::error::Arsip tidak terbentuk"; exit 1; }
+
+      - name: Periksa arsip (bundle ID, versi, alamat server)
+        run: |
+          APP="$RUNNER_TEMP/Runner.xcarchive/Products/Applications/Runner.app"
+          PL="$APP/Info.plist"
+          [ "$(plutil -extract CFBundleIdentifier raw "$PL")" = "$BUNDLE_ID" ] || { echo "::error::Bundle ID salah"; exit 1; }
+          V=$(sed -n 's/^version: //p' mobile/pubspec.yaml | head -1)
+          [ "$(plutil -extract CFBundleShortVersionString raw "$PL")+$(plutil -extract CFBundleVersion raw "$PL")" = "$V" ] || { echo "::error::Versi arsip tidak sama dengan pubspec $V"; exit 1; }
+          strings "$APP/Frameworks/App.framework/App" | grep -qF "$API_URL" || { echo "::error::Alamat server tidak tertanam"; exit 1; }
+          if strings "$APP/Frameworks/App.framework/App" | grep -qE "https?://(10\.|192\.168\.|localhost|127\.0\.0\.1)"; then echo "::error::Ada alamat jaringan lokal"; exit 1; fi
+          echo "Arsip: $BUNDLE_ID $V"
+
+      - name: Ekspor dan unggah ke TestFlight
+        working-directory: mobile/ios
+        run: |
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Runner.xcarchive" -exportOptionsPlist ExportOptions.plist \
+            -exportPath "$RUNNER_TEMP/export" -allowProvisioningUpdates $ASC_AUTH | tail -40
+
+      - name: Simpan simbol debug
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: catu-ios-symbols-${{ github.ref_name }}
+          path: mobile/build/symbols-ios/
+          retention-days: 365
+
+      - name: Hapus kunci API dari runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"

@@ -18,7 +18,7 @@ if [ -f "$ROOT_ENV_FILE" ]; then
   [ -z "$IOS_DEVICE_ID" ] && IOS_DEVICE_ID=$(sed -n 's/^IOS_DEVICE_ID=//p' "$ROOT_ENV_FILE" | head -1)
 fi
 
-BUNDLE_ID="${IOS_BUNDLE_ID:-com.example.catuMobile}"
+BUNDLE_ID="${IOS_BUNDLE_ID:-com.devoutsys.catu}"
 API_BASE_URL="${CATU_API_URL:-${PUBLIC_API_URL:-https://api-catu.farismunir.my.id}}"
 
 echo "🏷️ Step 0.5: Auto-updating app version & build timestamp..."

@@ -338,7 +338,7 @@ mobile/
 * **Notification Channel:** `catu_high_importance_channel` (Importance: Max, Sound: True, Vibration: True).
 
 ### iOS:
-* **Bundle ID:** `com.example.catuMobile`
+* **Bundle ID iOS:** `com.devoutsys.catu` (sejak Nov 2026; Android tetap `com.example.catu_mobile`)
 * **Delegate Notifikasi:** `UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate` pada `AppDelegate.swift`.
 * **Izin Runtime:** Darwin `requestPermissions(alert: true, badge: true, sound: true)` dan `DarwinNotificationDetails(presentBanner: true, presentList: true)`.
 
