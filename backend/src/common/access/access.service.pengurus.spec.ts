@@ -19,7 +19,28 @@ describe('AccessService.assertOrderAccess untuk Pengurus Lingkungan', () => {
     await expect(make([]).assertOrderAccess(pengurus, 1)).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('peran staf lain (Romo) tidak diperiksa lingkungan', async () => {
-    await expect(make([]).assertOrderAccess({ sub: 6, roleCode: 'ROMO_PAROKI' }, 1)).resolves.toBeUndefined();
+  it('peran staf lain (Admin) tidak diperiksa wilayah', async () => {
+    await expect(make([]).assertOrderAccess({ sub: 1, roleCode: 'ADMIN' }, 1)).resolves.toBeUndefined();
+  });
+
+  describe('Romo', () => {
+    const romo = { sub: 6, roleCode: 'ROMO_PAROKI' };
+    const row = { order_paroki_id: 187, order_kab_id: 3175, romo_paroki_id: 207, romo_kab_id: 3175, involved: false };
+
+    it('403 untuk pelayanan paroki lain yang tidak ia tangani', async () => {
+      await expect(make([row]).assertOrderAccess(romo, 1)).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('lolos untuk pelayanan di parokinya', async () => {
+      await expect(make([{ ...row, order_paroki_id: 207 }]).assertOrderAccess(romo, 1)).resolves.toBeUndefined();
+    });
+
+    it('lolos untuk pelayanan yang ia tangani/limpahan walau paroki lain', async () => {
+      await expect(make([{ ...row, involved: true }]).assertOrderAccess(romo, 1)).resolves.toBeUndefined();
+    });
+
+    it('404 bila pelayanan tidak ada', async () => {
+      await expect(make([]).assertOrderAccess(romo, 1)).rejects.toBeInstanceOf(NotFoundException);
+    });
   });
 });
