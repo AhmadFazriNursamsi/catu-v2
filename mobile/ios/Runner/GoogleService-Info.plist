@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.catuMobile</string>
+	<string>com.devoutsys.catu</string>
 	<key>PROJECT_ID</key>
 	<string>catu-fluter</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:349420956756:ios:cce51129ccc0bbbd4451c1</string>
+	<string>1:349420956756:ios:15a7a977bd9e58b94451c1</string>
 </dict>
 </plist>

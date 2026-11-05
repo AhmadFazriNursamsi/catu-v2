@@ -54,7 +54,7 @@ sama persis (SHA-256). APK, `.sha256`, dan simbol debug disimpan sebagai artefak
 **Pemicu:** push tag `vX.Y.Z` yang sama dengan versi di `pubspec.yaml` dan berasal dari `main`, atau manual (Run workflow) dari `main`.
 ```bash
 git checkout main && git pull
-git tag v2.9.58 && git push origin v2.9.58
+git tag v2.9.59 && git push origin v2.9.59
 ```
 
 **Penyiapan sekali** (dijalankan pemilik; nilai rahasia tidak pernah tampil di layar):
@@ -76,3 +76,10 @@ Endpoint unggah CI (`/public/apk/ci/*`) **nonaktif** selama `APK_UPLOAD_TOKEN` t
 agar setiap rilis perlu persetujuan sekali klik.
 
 Menyimpan kunci di GitHub Secrets juga menjadi cadangan keempat; cadangan lain di atas tetap wajib.
+
+## iOS lewat TestFlight (otomatis)
+Tag `vX.Y.Z` yang sama juga menjalankan `.github/workflows/release-ios.yml`: build iOS rilis (bundle `com.devoutsys.catu`, tim
+`MBN54724KP`, alamat produksi, berobfuskasi), periksa arsip, lalu unggah ke App Store Connect -> TestFlight. Tanda tangan otomatis oleh
+Xcode dengan kunci API App Store Connect (secrets `ASC_KEY_P8_BASE64`, `ASC_KEY_ID`, `ASC_ISSUER_ID` di environment `production`).
+Firebase: aplikasi iOS `com.devoutsys.catu` di proyek `catu-fluter`; kunci APNs `BM5C7QY464` (berkas `.p8` dicadangkan pemilik).
+Bundle ID iOS lama `com.example.catuMobile` tidak dipakai lagi; Android tetap `com.example.catu_mobile`.
