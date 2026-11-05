@@ -9,6 +9,9 @@ import { isLintasParoki, orderKeuskupanSql } from './lintas-paroki';
  * - hanya Romo Ordo tujuan (kota pelayanan) yang diberi tahu dan berwenang, tanpa parameter jeda;
  * - Romo Paroki tidak berwenang; pengurus lingkungan pemohon tetap memantau dan masuk grup chat (alur biasa);
  * - Koordinator keuskupan pemohon dan keuskupan tujuan masuk grup chat dan diberi tahu.
+ *
+ * Pelayanan Umat Pendatang diperlakukan sama tetapi tanpa Koordinator: tidak punya paroki, Romo Paroki sama sekali tidak
+ * terlibat (termasuk Romo Paroki asal), dan Romo Ordo kota tujuan langsung diberi tahu serta berwenang (realtime).
  */
 @Injectable()
 export class LintasParokiService {
@@ -20,13 +23,16 @@ export class LintasParokiService {
   /** Mengembalikan true bila pelayanan memang lintas paroki dan sudah diteruskan ke Romo Ordo tujuan. */
   async afterCreate(orderId: number): Promise<boolean> {
     const rows = await this.dataSource.query(
-      `SELECT o.order_number, o.user_id, o.paroki_id, o.kabupaten_kota_id, pem.paroki_id AS pemohon_paroki, sc.name AS category_name
+      `SELECT o.order_number, o.user_id, o.paroki_id, o.kabupaten_kota_id, pem.paroki_id AS pemohon_paroki, sc.name AS category_name,
+              (SELECT r.code FROM auth_users au JOIN roles r ON r.id = au.role_id WHERE au.id = o.user_id) = 'UMAT_PENDATANG' AS is_pendatang
        FROM orders o LEFT JOIN user_profiles pem ON pem.user_id = o.user_id JOIN service_categories sc ON sc.id = o.service_category_id
        WHERE o.id = $1`,
       [orderId],
     );
-    if (rows.length === 0 || !isLintasParoki(rows[0].paroki_id, rows[0].pemohon_paroki)) return false;
+    if (rows.length === 0) return false;
     const o = rows[0];
+    const pendatang = o.is_pendatang === true;
+    if (!pendatang && !isLintasParoki(o.paroki_id, o.pemohon_paroki)) return false;
     // Tanda lintas paroki sekaligus menandai Romo Ordo sudah dibuka (tidak menunggu jeda eskalasi).
     await this.dataSource.query('UPDATE orders SET lintas_paroki = TRUE, ordo_notified_at = NOW() WHERE id = $1', [orderId]);
 
@@ -39,7 +45,7 @@ export class LintasParokiService {
             [o.kabupaten_kota_id],
           )
         : [],
-      keuskupan.length === 0
+      pendatang || keuskupan.length === 0
         ? []
         : this.dataSource.query(
             `SELECT u.id FROM auth_users u JOIN user_profiles p ON p.user_id = u.id JOIN roles r ON r.id = u.role_id
@@ -57,7 +63,9 @@ export class LintasParokiService {
         [orderId, id],
       );
     }
-    const text = 'Pelayanan ini untuk paroki di luar paroki pemohon, sehingga diteruskan langsung ke Romo Ordo tujuan. Romo Paroki tidak berwenang atas pelayanan ini.';
+    const text = pendatang
+      ? 'Pelayanan ini diajukan Umat Pendatang, sehingga diteruskan langsung ke Romo Ordo kota tujuan. Romo Paroki tidak terlibat dalam pelayanan ini.'
+      : 'Pelayanan ini untuk paroki di luar paroki pemohon, sehingga diteruskan langsung ke Romo Ordo tujuan. Romo Paroki tidak berwenang atas pelayanan ini.';
     await this.dataSource.query(
       `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) SELECT id, NULL, 'SYSTEM_EVENT', $2 FROM chat_groups WHERE order_id = $1`,
       [orderId, text],
@@ -70,7 +78,7 @@ export class LintasParokiService {
     await this.events.notifyPerItem(ordoIds, orderId, (item) => ({
       type: 'NEW_ORDER_ROMO',
       title: `Permintaan Pelayanan ${item?.name || o.category_name}`,
-      body: `Pelayanan ${item ? `${o.category_name} - ${item.name}` : o.category_name} (${o.order_number}) untuk paroki di kota Anda dari umat lintas paroki. Romo Ordo tujuan dapat langsung menerimanya.`,
+      body: `Pelayanan ${item ? `${o.category_name} - ${item.name}` : o.category_name} (${o.order_number}) ${pendatang ? 'di kota Anda dari Umat Pendatang' : 'untuk paroki di kota Anda dari umat lintas paroki'}. Romo Ordo tujuan dapat langsung menerimanya.`,
     }));
     await this.events.notifyPerItem(koordinatorIds.filter((id) => id !== creator), orderId, (item) => ({
       type: 'NEW_ORDER_KOORDINATOR',
