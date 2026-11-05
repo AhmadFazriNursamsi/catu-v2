@@ -105,6 +105,10 @@ export class OrdersController {
     if (this.access.isEndUser(user) || user.roleCode.includes('KOORDINATOR') || user.roleCode === PENGURUS_ROLE) {
       return await this.ordersService.getOrders(String(user.sub));
     }
+    // Romo: identitas diambil dari token, bukan dari klien; aturan paroki/eskalasi di getOrders lalu berlaku.
+    if (ROMO_ROLES.includes(user.roleCode)) {
+      return await this.ordersService.getOrders(undefined, undefined, String(user.sub));
+    }
     return await this.ordersService.getOrders(
       userId,
       parokiId,
