@@ -41,7 +41,7 @@ class AboutCatuScreen extends StatelessWidget {
               _buildHeroSection(),
               const SizedBox(height: 18),
               _buildPillarCard(
-                badgeText: 'VERSI 1 • LAYANAN KEDUKAAN',
+                badgeText: 'LAYANAN SAKRAMEN & KEDUKAAN',
                 badgeColor: const Color(0xFF0284C7),
                 icon: Icons.favorite_rounded,
                 iconColor: const Color(0xFF0284C7),
@@ -53,22 +53,6 @@ class AboutCatuScreen extends StatelessWidget {
                   'Pendampingan doa arwah & misa requiem',
                   'Permohonan sakramen perminyakan orang sakit',
                   'Dukungan koordinasi lingkungan & paroki',
-                ],
-              ),
-              const SizedBox(height: 14),
-              _buildPillarCard(
-                badgeText: 'VERSI 2 • LAYANAN KESEHATAN',
-                badgeColor: const Color(0xFF4338CA),
-                icon: Icons.medical_services_rounded,
-                iconColor: const Color(0xFF4338CA),
-                iconBgColor: const Color(0xFFEEF2FF),
-                title: 'Pelayanan Medis',
-                description:
-                    'Para Romo membutuhkan layanan medis dari dokter untuk optimal dalam pelayanan.',
-                features: const [
-                  'Konsultasi medis & pemeriksaan berkala',
-                  'Jaringan dokter & tenaga medis Katolik',
-                  'Penjadwalan perawatan kesehatan terintegrasi',
                 ],
               ),
               const SizedBox(height: 14),
@@ -133,7 +117,7 @@ class AboutCatuScreen extends StatelessWidget {
           const Text('Misi & Pelayanan CATU', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF0F172A), letterSpacing: -0.4)),
           const SizedBox(height: 8),
           const Text(
-            'Kami berusaha membantu umat Katolik untuk mendapatkan layanan Romo untuk umat yang berduka (versi 1) dan memberikan layanan untuk Romo yang membutuhkan perawatan dan konsultasi medis (versi 2).',
+            'Kami berusaha membantu umat Katolik untuk mendapatkan pelayanan Romo, terutama bagi umat yang sakit dan yang berduka.',
             style: TextStyle(fontSize: 13.5, height: 1.5, color: Color(0xFF64748B)),
           ),
         ],
