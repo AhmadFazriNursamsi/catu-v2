@@ -85,8 +85,10 @@ jobs:
         run: |
           xcodebuild archive -workspace Runner.xcworkspace -scheme Runner -configuration Release \
             -archivePath "$RUNNER_TEMP/Runner.xcarchive" -destination 'generic/platform=iOS' \
-            -allowProvisioningUpdates $ASC_AUTH \
-            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" | tail -40
+            -allowProvisioningUpdates $ASC_AUTH | tail -40
+          # Tim, bundle ID dan gaya tanda tangan diambil dari project.pbxproj (target Runner saja). Jangan dioper lewat
+          # baris perintah: setelan di sana berlaku untuk SEMUA target, termasuk framework Pods, sehingga semuanya
+          # ber-bundle ID sama dan Apple menolak unggahan (90685 CFBundleIdentifier Collision).
           test -d "$RUNNER_TEMP/Runner.xcarchive" || { echo "::error::Arsip tidak terbentuk"; exit 1; }
 
       - name: Periksa arsip (bundle ID, versi, alamat server)
@@ -96,6 +98,9 @@ jobs:
           [ "$(plutil -extract CFBundleIdentifier raw "$PL")" = "$BUNDLE_ID" ] || { echo "::error::Bundle ID salah"; exit 1; }
           V=$(sed -n 's/^version: //p' mobile/pubspec.yaml | head -1)
           [ "$(plutil -extract CFBundleShortVersionString raw "$PL")+$(plutil -extract CFBundleVersion raw "$PL")" = "$V" ] || { echo "::error::Versi arsip tidak sama dengan pubspec $V"; exit 1; }
+          # Tidak boleh ada framework/ekstensi di dalam aplikasi yang memakai bundle ID aplikasi (ditolak Apple: 90685).
+          DUP=$(find "$APP" -mindepth 2 -name Info.plist -exec plutil -extract CFBundleIdentifier raw {} \; 2>/dev/null | grep -cxF "$BUNDLE_ID" || true)
+          [ "$DUP" = "0" ] || { echo "::error::$DUP bundle di dalam Runner.app memakai $BUNDLE_ID"; exit 1; }
           # Simpan ke berkas dulu: "strings | grep -q" gagal di bawah pipefail (grep menutup pipa lebih awal).
           strings "$APP/Frameworks/App.framework/App" > "$RUNNER_TEMP/app-strings.txt"
           grep -qF "$API_URL" "$RUNNER_TEMP/app-strings.txt" || { echo "::error::Alamat server tidak tertanam"; exit 1; }
