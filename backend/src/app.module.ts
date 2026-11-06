@@ -24,6 +24,7 @@ import { NewsModule } from './modules/news/news.module';
 import { TestRunnerModule } from './modules/test-runner/test-runner.module';
 import { ApkModule } from './modules/apk/apk.module';
 import { LoginLinkModule } from './modules/login-link/login-link.module';
+import { AccountModule } from './modules/account/account.module';
 import { ActivityLogsModule } from './modules/activity-logs/activity-logs.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 
@@ -82,6 +83,7 @@ import { HttpLoggerMiddleware } from './logger.middleware';
     ...(process.env.NODE_ENV === 'production' ? [] : [TestRunnerModule]),
     ApkModule,
     LoginLinkModule,
+    AccountModule,
     ActivityLogsModule,
   ],
   providers: [

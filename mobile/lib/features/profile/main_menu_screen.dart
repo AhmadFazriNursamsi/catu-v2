@@ -9,6 +9,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import 'about_catu_screen.dart';
 import 'change_password_screen.dart';
+import 'delete_account_flow.dart';
 import 'edit_profile_screen.dart';
 import 'help_center_screen.dart';
 import '../admin/approval_history_screen.dart';
@@ -357,6 +358,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
               subtitle: LanguageService.tr('change_password_sub'),
               onTap: _navigateToChangePassword,
             ),
+            _buildSubMenuItem(title: 'Hapus Akun', subtitle: 'Hapus akun dan data pribadi Anda', onTap: () => confirmDeleteAccount(context, onDeleted: widget.onLogout)),
             const SizedBox(height: 6),
           ],
 
@@ -627,8 +629,6 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       },
     );
   }
-
-
 
   Widget _buildFooterInfo() {
     return Padding(
