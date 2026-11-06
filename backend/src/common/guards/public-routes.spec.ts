@@ -23,6 +23,8 @@ import { NotificationsController } from '../../modules/notifications/notificatio
 import { AssignmentsController } from '../../modules/assignments/assignments.controller';
 import { ActivityLogsController } from '../../modules/activity-logs/activity-logs.controller';
 import { ApprovalsController } from '../../modules/auth/approvals.controller';
+import { AccountController } from '../../modules/account/account.controller';
+import { LegalController } from '../../modules/legal/legal.controller';
 import { ALLOW_INACTIVE_KEY } from '../decorators/allow-inactive.decorator';
 
 const CONTROLLERS = [
@@ -40,6 +42,8 @@ const CONTROLLERS = [
   AssignmentsController,
   ActivityLogsController,
   ApprovalsController,
+  AccountController,
+  LegalController,
 ];
 
 function routesWith(metadataKey: string): string[] {
@@ -101,6 +105,8 @@ describe('akses publik API (kontrak keamanan)', () => {
       'GET /public/apk/ci/upload-url',
       'PUT /public/apk/ci/local',
       'GET /public/m/login',
+      // Kebijakan privasi: wajib dapat dibuka tanpa login (App Store / Play Store).
+      'GET /public/privacy',
       'POST /auth/admin/login',
       'POST /auth/forgot-password/request-otp',
       'POST /auth/forgot-password/reset',
@@ -115,6 +121,8 @@ describe('akses publik API (kontrak keamanan)', () => {
     // Akun non-APPROVED ditolak di semua endpoint lain oleh JwtAuthGuard. Menambah daftar ini wajib disengaja.
     expect(inactiveAccountRoutes()).toEqual([
       'GET /auth/check-status',
+      // Akun menunggu persetujuan / ditolak juga berhak menghapus akunnya (App Store 5.1.1(v)).
+      'DELETE /auth/account',
       'GET /auth/profile/:userId',
       'GET /notifications',
       'POST /auth/resubmit-registration',

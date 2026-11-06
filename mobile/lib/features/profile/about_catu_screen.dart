@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/services/api_service.dart';
 
 class AboutCatuScreen extends StatelessWidget {
   const AboutCatuScreen({super.key});
@@ -213,13 +215,17 @@ class AboutCatuScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Text('CATU Platform Mobile', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF334155))),
-          SizedBox(height: 3),
-          Text('Versi Aplikasi ${AppConstants.appVersion}', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF0284C7))),
-          SizedBox(height: 3),
-          Text('© 2026 CATU. All Rights Reserved.', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+          const Text('CATU Platform Mobile', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF334155))),
+          const SizedBox(height: 3),
+          const Text('Versi Aplikasi ${AppConstants.appVersion}', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF0284C7))),
+          const SizedBox(height: 3),
+          const Text('© 2026 CATU. All Rights Reserved.', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+          TextButton(
+            onPressed: () => launchUrl(Uri.parse('${ApiService.baseUrl}/public/privacy'), mode: LaunchMode.externalApplication),
+            child: const Text('Kebijakan Privasi', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, decoration: TextDecoration.underline)),
+          ),
         ],
       ),
     );
