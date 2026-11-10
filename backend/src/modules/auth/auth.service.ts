@@ -1525,6 +1525,14 @@ export class AuthService {
       fields.push(`jabatan_end_year = $${idx++}`);
       values.push((dto as any).jabatanEndYear ?? (dto as any).jabatan_end_year);
     }
+    if ((dto as any).jabatanStartDate !== undefined) {
+      fields.push(`jabatan_start_date = $${idx++}`);
+      values.push((dto as any).jabatanStartDate || null);
+    }
+    if ((dto as any).jabatanEndDate !== undefined) {
+      fields.push(`jabatan_end_date = $${idx++}`);
+      values.push((dto as any).jabatanEndDate || null);
+    }
     if ((dto as any).isJabatanActive !== undefined || (dto as any).is_jabatan_active !== undefined) {
       fields.push(`is_jabatan_active = $${idx++}`);
       values.push((dto as any).isJabatanActive ?? (dto as any).is_jabatan_active);
