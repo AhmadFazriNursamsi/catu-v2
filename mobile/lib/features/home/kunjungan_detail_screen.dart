@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../orders/create_kedukaan_screen.dart';
+import '../orders/widgets/reschedule_widgets.dart';
 import '../orders/create_order_screen.dart';
 import '../orders/create_perminyakan_screen.dart';
 import '../orders/order_detail_screen.dart';
@@ -123,7 +124,8 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
     Color bg = Colors.amber.shade50, fg = Colors.amber.shade800;
     String label = 'MENUNGGU';
     final s = status.toUpperCase();
-    if (s == 'COMPLETED' || s == 'DONE') { bg = Colors.green.shade50; fg = Colors.green.shade700; label = 'SELESAI'; }
+    if (s == 'IN_PROGRESS') { bg = Colors.indigo.shade50; fg = Colors.indigo.shade700; label = 'BERLANGSUNG'; }
+    else if (s == 'COMPLETED' || s == 'DONE') { bg = Colors.green.shade50; fg = Colors.green.shade700; label = 'SELESAI'; }
     else if (s == 'APPROVED' || s == 'ASSIGNED' || s == 'ACCEPTED' || s == 'CONFIRMED') { bg = Colors.blue.shade50; fg = Colors.blue.shade700; label = 'DITERIMA'; }
     else if (s == 'REJECTED' || s == 'CANCELLED' || s == 'DECLINED' || s == 'FAIL') { bg = Colors.red.shade50; fg = Colors.red.shade700; label = 'DITOLAK'; }
     return Container(
@@ -207,9 +209,9 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
       for (final o in _orders)
         if (o.items.isNotEmpty)
           for (final item in o.items)
-            {'order': o, 'date': item.scheduledDate.isNotEmpty ? item.scheduledDate : o.scheduledDate, 'title': item.itemName, 'status': item.status, 'itemId': item.id}
+            {'order': o, 'date': item.scheduledDate.isNotEmpty ? item.scheduledDate : o.scheduledDate, 'title': item.itemName, 'status': item.status, 'itemId': item.id, 'resch': item.rescheduleStatus}
         else
-          {'order': o, 'date': o.scheduledDate, 'title': o.categoryName, 'status': o.status},
+          {'order': o, 'date': o.scheduledDate, 'title': o.categoryName, 'status': o.status, 'resch': o.rescheduleStatus},
     ];
 
     return Column(
@@ -260,7 +262,9 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
                           ],
                         ),
                       ),
-                      _buildStatusBadge(status),
+                      // Sama seperti kartu Umat: status utama + status ubah jam (diajukan/ditolak/diterima) di bawahnya.
+                      Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [_buildStatusBadge(status),
+                        RescheduleStatusChip(rescheduleStatus: row['resch'] as String, serviceStatus: status, topGap: 4)]),
                       const SizedBox(width: 6),
                       const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Color(0xFF94A3B8)),
                     ],
