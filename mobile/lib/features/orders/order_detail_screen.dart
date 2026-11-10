@@ -423,6 +423,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                     if (isAssignedToCurrentRomo &&
                                         effectiveStatus == 'CONFIRMED' &&
                                         !isReceivedFromHandover &&
+                                        rescheduleStatusOf(order, displayItem).toUpperCase() != 'PENDING_UMAT' && // ubah jam menunggu umat: belum boleh dialihkan
                                         (order.items.isNotEmpty
                                             ? (!displayItem.hasPendingHandover && !displayItem.isHandoverCompleted)
                                             : (!order.hasPendingHandover && !order.isHandoverCompleted))) ...[

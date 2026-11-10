@@ -63,6 +63,7 @@ export class OrderGuardsService {
     const t = await this.target(orderId, itemId);
     if (t.status !== 'CONFIRMED') throw new ConflictException(`Ubah jam hanya dapat diajukan untuk pelayanan yang sudah diterima Romo dan belum berlangsung (status saat ini ${t.status}).`);
     if (t.rescheduleStatus === 'PENDING_UMAT') throw new ConflictException('Masih ada ajuan ubah jam yang menunggu respons umat.');
+    if (t.handoverStatus === 'PENDING') throw new ConflictException('Masih ada pelimpahan ke Romo lain yang menunggu respons. Ubah jam belum dapat diajukan.');
   }
 
   async assertReschedulePending(orderId: number, itemId?: number | null): Promise<void> {
@@ -94,6 +95,7 @@ export class OrderGuardsService {
     const t = await this.target(orderId, itemId);
     if (!(ONGOING_STATUSES as string[]).includes(t.status)) throw new ConflictException(`Pelimpahan hanya dapat diajukan untuk pelayanan yang sedang berjalan (status saat ini ${t.status}).`);
     if (t.handoverStatus === 'PENDING') throw new ConflictException('Masih ada pelimpahan yang menunggu respons.');
+    if (t.rescheduleStatus === 'PENDING_UMAT') throw new ConflictException('Masih ada ajuan ubah jam yang menunggu respons umat. Pelayanan belum dapat dialihkan ke Romo lain.');
   }
 
   /** Kategori, tingkat urgensi, dan referensi wilayah yang dikirim harus ada agar tidak berujung galat server (500). */
