@@ -8,6 +8,7 @@ import '../../core/services/api_service.dart';
 import '../../widgets/searchable_select_field.dart';
 import '../../core/services/language_service.dart';
 import 'detail/deceased_photo_picker.dart';
+import '../../widgets/discard_guard.dart';
 import 'widgets/form_helpers.dart';
 
 class CreateKedukaanScreen extends StatefulWidget {
@@ -627,7 +628,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return DiscardGuard(active: _misaList.isNotEmpty, child: Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -643,7 +644,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
             child: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded,
                   color: Color(0xFF0F172A), size: 16),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.maybePop(context),
             ),
           ),
         ),
@@ -1135,7 +1136,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildHeroHeader() {
