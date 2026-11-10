@@ -44,7 +44,7 @@ exec 9>"/tmp/catu-deploy-$(id -u)-$(basename "$PWD").lock"
 command -v flock >/dev/null && { flock -n 9 || fail "Deploy lain sedang berjalan di folder ini."; }
 
 envval() { # nilai dari .env tanpa mengeksekusi isinya; tanda kutip di ujung dibuang
-  grep -E "^$1=" .env | tail -1 | cut -d= -f2- | sed -e "s/^[\"']//" -e "s/[\"']$//"
+  { grep -E "^$1=" .env || true; } | tail -1 | cut -d= -f2- | sed -e "s/^[\"']//" -e "s/[\"']$//"
 }
 
 IMAGES=$(docker compose config --images 2>/dev/null | sort -u || true)

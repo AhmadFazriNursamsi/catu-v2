@@ -24,12 +24,13 @@ ROOT="backups/daily"
 
 say()  { printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
 fail() { say "GAGAL: $*"; exit 1; }
+trap 'say "GAGAL: perintah di baris $LINENO keluar dengan kode $?."' ERR
 
 [ -f docker-compose.yml ] || fail "docker-compose.yml tidak ada. Jalankan dari folder compose (mis. ~/Documents/catu-v2)."
 [ -f .env ] || fail ".env tidak ada di folder ini."
 case "$KEEP" in ''|*[!0-9]*|0) fail "CATU_BACKUP_DAYS harus angka >= 1." ;; esac
 
-list_backups() { ls -1d "$ROOT"/*/.daily-backup 2>/dev/null | sed 's#/.daily-backup##' | sort -r; }
+list_backups() { { ls -1d "$ROOT"/*/.daily-backup 2>/dev/null || true; } | sed 's#/.daily-backup##' | sort -r; }
 
 if [ "${1:-}" = "--list" ]; then
   list_backups | while read -r d; do printf '%s  %s\n' "$(du -sh "$d" | cut -f1)" "$d"; done
@@ -45,11 +46,11 @@ FREE_MB=$(df -Pm "$ROOT" | awk 'NR==2{print $4}')
 [ "${FREE_MB:-0}" -ge "$MIN_FREE_MB" ] || fail "Sisa disk ${FREE_MB} MB < ${MIN_FREE_MB} MB. Cadangan tidak dibuat."
 
 envval() { # nilai dari .env tanpa mengeksekusi isinya; tanda kutip di ujung dibuang
-  grep -E "^$1=" .env | tail -1 | cut -d= -f2- | sed -e "s/^[\"']//" -e "s/[\"']$//"
+  { grep -E "^$1=" .env || true; } | tail -1 | cut -d= -f2- | sed -e "s/^[\"']//" -e "s/[\"']$//"
 }
 DB_NAME=$(envval DB_NAME); DB_USER=$(envval DB_USERNAME); [ -n "$DB_USER" ] || DB_USER=$(envval DB_USER)
 # Produksi menaruh DB_NAME di environment compose, bukan .env.
-[ -n "$DB_NAME" ] || DB_NAME=$(docker compose config 2>/dev/null | awk '/^[[:space:]]+DB_NAME:/{print $2; exit}' | tr -d "\"'")
+[ -n "$DB_NAME" ] || DB_NAME=$( { docker compose config 2>/dev/null || true; } | awk '/^[[:space:]]+DB_NAME:/ && !n {print $2; n=1}' | tr -d "\"'")
 [ -n "$DB_NAME" ] && [ -n "$DB_USER" ] && [ -n "$(envval DB_PASSWORD)" ] || fail "DB_NAME / DB_USERNAME / DB_PASSWORD tidak lengkap."
 
 STAMP=$(date +%Y%m%d-%H%M%S)
