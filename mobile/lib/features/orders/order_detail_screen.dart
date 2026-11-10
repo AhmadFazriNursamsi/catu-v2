@@ -6,7 +6,6 @@ import '../../core/constants/app_constants.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_result.dart';
 import '../../core/services/api_service.dart';
-import '../../core/services/auth_service.dart';
 import '../../core/services/language_service.dart';
 import '../chat/chat_screen.dart';
 import 'detail/address_actions.dart';
@@ -581,11 +580,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
       if (isAssignedToCurrentRomo && effectiveStatus == 'DONE') return true;
       return false;
     } else {
-      // Umat & Pengurus: chat grup sudah terbuka sejak PENDING untuk koordinasi sebelum ada Romo.
-      // Koordinator: baru setelah Romo menerima (saat PENDING ia memakai kartu "Carikan Romo").
-      final role = (AuthService.currentUser?['roleCode'] ?? AuthService.currentUser?['role_code'] ?? '').toString().toUpperCase();
-      if (effectiveStatus == 'PENDING') return !role.contains('KOORDINATOR');
-      return effectiveStatus == 'CONFIRMED' ||
+      // Umat, Pengurus, dan Koordinator: chat grup sudah terbuka sejak PENDING untuk koordinasi sebelum ada Romo.
+      return effectiveStatus == 'PENDING' ||
+          effectiveStatus == 'CONFIRMED' ||
           effectiveStatus == 'IN_PROGRESS' ||
           effectiveStatus == 'DONE';
     }
