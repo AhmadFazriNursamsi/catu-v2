@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# backup.sh - cadangan harian CATU di disk server: database (skema public) + konfigurasi. Simpan N hari terakhir.
+# backup.sh - cadangan harian CATU di disk server: database (skema public + drizzle) + konfigurasi. Pulihkan: restore.sh. Simpan N hari terakhir.
 #
 # Dijalankan DI SERVER, dari folder compose (produksi: ~/Documents/catu-v2):
 #   ./backup.sh            # buat cadangan sekarang, lalu hapus cadangan harian yang lebih lama dari N hari
@@ -60,7 +60,7 @@ rm -rf "$TMP"; mkdir -m 700 "$TMP"
 trap 'rm -rf "$TMP"' EXIT
 
 PGPASSWORD=$(envval DB_PASSWORD); export PGPASSWORD
-docker exec -e PGPASSWORD "$PG_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" -n public -Fc > "$TMP/catu-db.dump" \
+docker exec -e PGPASSWORD "$PG_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" -n public -n drizzle -Fc > "$TMP/catu-db.dump" \
   || { unset PGPASSWORD; fail "pg_dump gagal."; }
 unset PGPASSWORD
 TABLES=$(docker exec -i "$PG_CONTAINER" pg_restore -l < "$TMP/catu-db.dump" | grep -c "TABLE DATA public" || true)
