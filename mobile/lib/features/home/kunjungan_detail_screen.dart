@@ -38,6 +38,12 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
     _loadOrders();
   }
 
+  @override
+  void didUpdateWidget(KunjunganDetailScreen old) {
+    super.didUpdateWidget(old);
+    if (!identical(old.orders, widget.orders)) setState(() => _orders = widget.orders.where(_orderBelongsToThisKunjungan).toList());
+  }
+
   bool _orderBelongsToThisKunjungan(Order o) {
     final rawIds = widget.kunjungan['orderIds'];
     if (rawIds is List && rawIds.isNotEmpty) {

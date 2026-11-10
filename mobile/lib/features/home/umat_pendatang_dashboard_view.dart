@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../core/services/auth_http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +14,7 @@ import 'umat_dashboard_view.dart';
 class UmatPendatangDashboardView extends StatefulWidget {
   final Map<String, dynamic> user;
   final List<Order> orders;
+  final ValueListenable<List<Order>>? ordersLive;
   final VoidCallback onRefresh;
   final VoidCallback onLogout;
 
@@ -20,6 +22,7 @@ class UmatPendatangDashboardView extends StatefulWidget {
     super.key,
     required this.user,
     required this.orders,
+    this.ordersLive,
     required this.onRefresh,
     required this.onLogout,
   });
@@ -93,6 +96,10 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
     } catch (_) {}
   }
 
+  // Layar yang di-push dibangun ulang dengan daftar pesanan terbaru (bukan salinan saat dibuka).
+  Widget _live(Widget Function(List<Order> orders) build) => widget.ordersLive == null ? build(widget.orders)
+      : ValueListenableBuilder<List<Order>>(valueListenable: widget.ordersLive!, builder: (_, orders, __) => build(orders));
+
   List<Order> _ordersOfKunjungan(Map<String, dynamic> item) {
     final kunjId = item['id']?.toString() ?? '';
     final orderIds = (item['orderIds'] as List?)?.map((e) => e.toString()).toSet() ?? {};
@@ -125,14 +132,14 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
   }
 
   void _openKunjunganDetail(Map<String, dynamic> item) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => KunjunganDetailScreen(
-      kunjungan: item, user: _userData.isNotEmpty ? _userData : widget.user, orders: widget.orders, onRefresh: widget.onRefresh,
+    Navigator.push(context, MaterialPageRoute(builder: (_) => _live((orders) => KunjunganDetailScreen(
+      kunjungan: item, user: _userData.isNotEmpty ? _userData : widget.user, orders: orders, onRefresh: widget.onRefresh,
       onUpdateKunjungan: (up) {
         final idx = _history.indexWhere((h) => h['id'] == up['id'] || (h['tanggal'] == up['tanggal'] && h['alamat'] == up['alamat']));
         if (idx != -1) setState(() => _history[idx] = up);
         _persistData();
       },
-    ))).then((_) => widget.onRefresh());
+    )))).then((_) => widget.onRefresh());
   }
 
   Future<void> _deleteHistory(int idx) async {
@@ -233,7 +240,7 @@ class _UmatPendatangDashboardViewState extends State<UmatPendatangDashboardView>
                 tu['provinsi'] = tu['kota'] = tu['alamat'] = tu['alamat_kunjungan'] = _history.first['alamat'];
                 tu['provinsi'] = _history.first['provinsi']; tu['kota'] = _history.first['kota'];
               }
-              Navigator.push(context, MaterialPageRoute(builder: (_) => UmatDashboardView(user: tu, orders: widget.orders, onRefresh: widget.onRefresh, onLogout: widget.onLogout))).then((_) { widget.onRefresh(); _loadSavedData(); });
+              Navigator.push(context, MaterialPageRoute(builder: (_) => _live((orders) => UmatDashboardView(user: tu, orders: orders, onRefresh: widget.onRefresh, onLogout: widget.onLogout)))).then((_) { widget.onRefresh(); _loadSavedData(); });
             },
             icon: const Icon(Icons.assignment_turned_in_rounded, size: 20, color: Color(0xFF1E5399)),
             label: const Text('PELAYANAN & RIWAYAT PERMINTAAN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Color(0xFF1E5399))),
