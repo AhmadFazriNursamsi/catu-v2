@@ -69,7 +69,7 @@ class KedukaanSummaryCard extends StatelessWidget {
               style: const TextStyle(
                   fontSize: 21, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.4, height: 1.2)),
           const SizedBox(height: 4),
-          Text('Intensi: Alm. ${order.penerimaName}',
+          Text('Alm. ${order.penerimaName}',
               style: const TextStyle(fontSize: 13.5, color: Color(0xFFCBD5E1), fontWeight: FontWeight.w500)),
           const SizedBox(height: 12),
           Container(
