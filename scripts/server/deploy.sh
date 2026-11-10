@@ -138,7 +138,7 @@ fi
 DB_NAME=$(envval DB_NAME); DB_USER=$(envval DB_USERNAME); [ -n "$DB_USER" ] || DB_USER=$(envval DB_USER)
 [ -n "$DB_NAME" ] && [ -n "$DB_USER" ] || fail "DB_NAME / DB_USERNAME tidak ada di .env. Tidak ada yang diubah (container lama masih berjalan)."
 PGPASSWORD=$(envval DB_PASSWORD); export PGPASSWORD
-docker exec -e PGPASSWORD "$PG_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" -n public -Fc > "$DIR/catu-db.dump" \
+docker exec -e PGPASSWORD "$PG_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" -n public -n drizzle -Fc > "$DIR/catu-db.dump" \
   || { unset PGPASSWORD; fail "pg_dump gagal. Tidak ada yang diubah (container lama masih berjalan)."; }
 unset PGPASSWORD
 TABLES=$(docker exec -i "$PG_CONTAINER" pg_restore -l < "$DIR/catu-db.dump" | grep -c "TABLE DATA public" || true)
