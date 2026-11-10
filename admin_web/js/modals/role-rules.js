@@ -8,7 +8,7 @@ const EDIT_ROLE_LABELS = {
   PENGURUS_LINGKUNGAN: 'Pengurus Lingkungan',
   KOORDINATOR: 'Koordinator Keuskupan',
   ROMO_PAROKI: 'Romo Paroki (Diosesan)',
-  ROMO_ORDO: 'Romo Ordo (Religius)',
+  ROMO_ORDO: 'Romo Ordo',
 };
 
 // Peran tersimpan (bukan pilihan dropdown yang sedang diubah); Koordinator disatukan, umat berjabatan dianggap pengurus.

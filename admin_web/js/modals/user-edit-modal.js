@@ -272,8 +272,8 @@
                       <div class="${isK ? '' : 'col-span-full'}">
                         <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pastoral *</label>
                         <select id="editRomoPosition" onchange="syncEditFormToState(); state.activeEditUser.romo_position = this.value; renderApp();" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
-                          <option value="Kepala Romo Paroki" ${isK ? 'selected' : (existK ? 'disabled class="text-slate-400 bg-slate-100"' : '')}>Kepala Romo Paroki (Pimpinan Paroki)${existK && !isK ? ` — Sudah ada: ${escapeHtml(existK.full_name || existK.fullName)}` : ''}</option>
-                          <option value="Romo Paroki" ${!isK ? 'selected' : ''}>Romo Paroki (Pastor Rekan)</option>
+                          <option value="Kepala Romo Paroki" ${isK ? 'selected' : (existK ? 'disabled class="text-slate-400 bg-slate-100"' : '')}>Kepala Romo Paroki${existK && !isK ? ` — Sudah ada: ${escapeHtml(existK.full_name || existK.fullName)}` : ''}</option>
+                          <option value="Romo Paroki" ${!isK ? 'selected' : ''}>Romo Paroki</option>
                         </select>
                         ${existK && !isK ? `<p class="text-[11px] text-amber-700 font-semibold mt-1.5 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Paroki ini sudah memiliki Kepala Romo Paroki (${escapeHtml(existK.full_name || existK.fullName)}).</p>` : ''}
                       </div>
@@ -305,8 +305,8 @@
                       <div class="${isKetuaOrdo ? '' : 'col-span-full'}">
                         <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan di Ordo / Kongregasi *</label>
                         <select id="editRomoOrdoPosition" onchange="syncEditFormToState(); state.activeEditUser.romo_position = this.value; renderApp();" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
-                          <option value="Ketua Romo Ordo" ${isKetuaOrdo ? 'selected' : (existK ? 'disabled class="text-slate-400 bg-slate-100"' : '')}>Ketua Romo Ordo (Pimpinan / Provinsial)${existK && !isKetuaOrdo ? ` — Sudah ada: ${escapeHtml(existK.full_name || existK.fullName)}` : ''}</option>
-                          <option value="Romo Ordo" ${!isKetuaOrdo ? 'selected' : ''}>Romo Ordo (Imam Anggota)</option>
+                          <option value="Ketua Romo Ordo" ${isKetuaOrdo ? 'selected' : (existK ? 'disabled class="text-slate-400 bg-slate-100"' : '')}>Ketua Romo Ordo${existK && !isKetuaOrdo ? ` — Sudah ada: ${escapeHtml(existK.full_name || existK.fullName)}` : ''}</option>
+                          <option value="Romo Ordo" ${!isKetuaOrdo ? 'selected' : ''}>Romo Ordo</option>
                         </select>
                         ${existK && !isKetuaOrdo ? `<p class="text-[11px] text-amber-700 font-semibold mt-1.5 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Ordo ini sudah memiliki Ketua Romo Ordo (${escapeHtml(existK.full_name || existK.fullName)}). Hanya boleh 1 Ketua per ordo.</p>` : ''}
                       </div>
