@@ -40,7 +40,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
   // Selections
   String _selectedHubungan = 'Anak';
   String? _selectedUrgensi = 'Standar'; // Sama dengan Perminyakan
-  String _selectedJenisMisa = 'Misa Requiem / Misa Arwah';
+  String _selectedJenisMisa = 'Misa Requiem';
   String _waktuMeninggal = '14:00';
   String _jamMulaiMisa = '18:00';
   String _jamAkhirMisa = '19:30';
@@ -86,7 +86,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     'Misa Malam Kembang',
     'Misa Pelepasan / Misa Pemakaman',
     'Misa Penutupan Peti',
-    'Misa Requiem / Misa Arwah',
+    'Misa Requiem',
   ];
 
   @override
