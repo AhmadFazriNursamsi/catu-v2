@@ -139,7 +139,7 @@ void main() {
 
     testWidgets('default Jenis Misa = Misa Requiem dan urgensi = Standar (sama dengan Perminyakan)', (tester) async {
       await pumpScreen(tester, const CreateKedukaanScreen(userId: 1, user: _user));
-      expect(find.text('Misa Requiem / Misa Arwah'), findsOneWidget);
+      expect(find.text('Misa Requiem'), findsOneWidget);
       expect(find.text('Misa Malam Kembang'), findsNothing);
       expect(find.text('Standar'), findsOneWidget);
     });
