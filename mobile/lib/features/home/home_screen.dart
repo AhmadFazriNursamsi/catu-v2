@@ -10,6 +10,7 @@ import '../../core/services/notification_service.dart';
 import '../../core/services/auth_service.dart';
 import '../news/public_news_screen.dart';
 import '../profile/change_password_screen.dart';
+import '../profile/romo_domisili_screen.dart';
 import 'romo_dashboard_view.dart';
 import 'umat_dashboard_view.dart';
 import 'widgets/logout_back_guard.dart';
@@ -54,7 +55,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _enforcePasswordChange() async {
-    if (_currentUserMap['mustChangePassword'] != true || !mounted) return;
+    if (!mounted) return;
+    if (_currentUserMap['mustChangePassword'] != true) return _enforceRomoDomisili();
     final changed = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => ChangePasswordScreen(user: _currentUserMap, forced: true)),
@@ -63,6 +65,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _currentUserMap['mustChangePassword'] = false;
     _currentUserMap.remove('loginViaLink');
     AuthService.saveSession(_currentUserMap);
+    await _enforceRomoDomisili(afterFirstLogin: true);
+  }
+
+  /// Romo yang didaftarkan Koordinator memilih Provinsi & Kota sendiri setelah ganti kata sandi;
+  /// bila belum tersimpan (mis. aplikasi ditutup), diminta lagi saat aplikasi dibuka.
+  Future<void> _enforceRomoDomisili({bool afterFirstLogin = false}) async {
+    final role = (_currentUserMap['roleCode'] ?? _currentUserMap['role_code'] ?? '').toString().toUpperCase();
+    final isRomo = role == 'ROMO_PAROKI' || role == 'ROMO_ORDO';
+    if (!mounted || !isRomo || !(afterFirstLogin || romoNeedsDomisili(_currentUserMap))) return;
+    final saved = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => RomoDomisiliScreen(user: _currentUserMap)));
+    if (saved != true) return _enforceRomoDomisili(afterFirstLogin: afterFirstLogin);
+    AuthService.saveSession(_currentUserMap);
+    if (mounted) setState(() {});
   }
 
   @override
