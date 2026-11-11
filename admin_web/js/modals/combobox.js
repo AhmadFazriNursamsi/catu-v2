@@ -146,10 +146,7 @@
       if (rp) u.romo_position = rp.value;
       const rop = document.getElementById('editRomoOrdoPosition');
       if (rop) u.romo_position = rop.value;
-      const sy = document.getElementById('editJabatanStartYear');
-      if (sy) u.jabatan_start_year = sy.value ? parseInt(sy.value) : null;
-      const ey = document.getElementById('editJabatanEndYear');
-      if (ey) u.jabatan_end_year = ey.value ? parseInt(ey.value) : null;
+      syncJabatanDatesToState(u);
     }
 
     function toggleCustomCombobox(name) {

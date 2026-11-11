@@ -209,11 +209,8 @@ function renderEditUserHeader(u, uName, status, roleCode) {
       if (roleCode === 'KOORDINATOR' || isKoor) {
         payload.roleCode = 'KOORDINATOR';
         payload.pengurusPosition = 'Koordinator';
-        const sy = document.getElementById('editJabatanStartYear');
-        if (sy && sy.value) payload.jabatanStartYear = parseInt(sy.value);
-        const ey = document.getElementById('editJabatanEndYear');
-        if (ey && ey.value) payload.jabatanEndYear = parseInt(ey.value);
-        payload.isJabatanActive = payload.jabatanEndYear ? payload.jabatanEndYear >= curY : true;
+        const dateErr = readJabatanDates(payload);
+        if (dateErr) { state.editFormError = dateErr; renderApp(); return; }
 
         const checkKeuskupanId = payload.keuskupanId || u.keuskupan_id || u.keuskupanId;
         if (!checkKeuskupanId) {
@@ -224,11 +221,8 @@ function renderEditUserHeader(u, uName, status, roleCode) {
       } else if (roleCode === 'PENGURUS_LINGKUNGAN') {
         const pos = document.getElementById('editPengurusPosition');
         if (pos) payload.pengurusPosition = pos.value;
-        const sy = document.getElementById('editJabatanStartYear');
-        if (sy && sy.value) payload.jabatanStartYear = parseInt(sy.value);
-        const ey = document.getElementById('editJabatanEndYear');
-        if (ey && ey.value) payload.jabatanEndYear = parseInt(ey.value);
-        payload.isJabatanActive = payload.jabatanEndYear ? payload.jabatanEndYear >= curY : true;
+        const dateErr = readJabatanDates(payload);
+        if (dateErr) { state.editFormError = dateErr; renderApp(); return; }
 
         // Check duplicate pengurus in lingkungan
         const checkLingkunganId = payload.lingkunganId || u.lingkungan_id;
@@ -254,9 +248,7 @@ function renderEditUserHeader(u, uName, status, roleCode) {
       } else if (roleCode === 'UMAT' || roleCode === 'UMAT_PENDATANG') {
         payload.pengurusPosition = null;
         payload.romoPosition = null;
-        payload.jabatanStartYear = null;
-        payload.jabatanEndYear = null;
-        payload.isJabatanActive = false;
+        clearJabatan(payload);
       }
 
       if (roleCode === 'ROMO_PAROKI') {
@@ -264,15 +256,10 @@ function renderEditUserHeader(u, uName, status, roleCode) {
         if (rpos) payload.romoPosition = rpos.value;
         const isKepala = (payload.romoPosition || '').toLowerCase().includes('kepala') || (payload.romoPosition || '').toUpperCase() === 'KETUA_ROMO';
         if (isKepala) {
-          const sy = document.getElementById('editJabatanStartYear');
-          if (sy && sy.value) payload.jabatanStartYear = parseInt(sy.value);
-          const ey = document.getElementById('editJabatanEndYear');
-          if (ey && ey.value) payload.jabatanEndYear = parseInt(ey.value);
-          payload.isJabatanActive = payload.jabatanEndYear ? payload.jabatanEndYear >= curY : true;
+          const dateErr = readJabatanDates(payload);
+          if (dateErr) { state.editFormError = dateErr; renderApp(); return; }
         } else {
-          payload.jabatanStartYear = null;
-          payload.jabatanEndYear = null;
-          payload.isJabatanActive = false;
+          clearJabatan(payload);
         }
         const checkParokiId = payload.parokiId || u.paroki_id;
         if (checkParokiId && isKepala) {
@@ -296,15 +283,10 @@ function renderEditUserHeader(u, uName, status, roleCode) {
         if (ropos) payload.romoPosition = ropos.value;
         const isKetuaOrdo = (payload.romoPosition || '').toLowerCase().includes('ketua') || (payload.romoPosition || '').toUpperCase() === 'KETUA_ROMO';
         if (isKetuaOrdo) {
-          const sy = document.getElementById('editJabatanStartYear');
-          if (sy && sy.value) payload.jabatanStartYear = parseInt(sy.value);
-          const ey = document.getElementById('editJabatanEndYear');
-          if (ey && ey.value) payload.jabatanEndYear = parseInt(ey.value);
-          payload.isJabatanActive = payload.jabatanEndYear ? payload.jabatanEndYear >= curY : true;
+          const dateErr = readJabatanDates(payload);
+          if (dateErr) { state.editFormError = dateErr; renderApp(); return; }
         } else {
-          payload.jabatanStartYear = null;
-          payload.jabatanEndYear = null;
-          payload.isJabatanActive = false;
+          clearJabatan(payload);
         }
         const checkOrdoId = payload.ordoId || u.ordo_id || u.ordoId;
         if (checkOrdoId && isKetuaOrdo) {
