@@ -66,10 +66,12 @@ export class LoginLinkService {
 
     const rows = await this.dataSource.query(
       `SELECT u.id, u.uuid, u.phone_number, u.account_status, u.must_change_password, r.code AS role_code,
-              p.full_name, p.email, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.ordo_id
+              p.full_name, p.email, p.keuskupan_id, p.paroki_id, p.wilayah_id, p.lingkungan_id, p.ordo_id,
+              p.kabupaten_kota_id, kk.provinsi_id
        FROM auth_users u
        JOIN roles r ON r.id = u.role_id
        LEFT JOIN user_profiles p ON p.user_id = u.id
+       LEFT JOIN kabupaten_kota kk ON kk.id = p.kabupaten_kota_id
        WHERE u.id = $1`,
       [claimed[0].user_id],
     );
@@ -105,6 +107,8 @@ export class LoginLinkService {
         wilayahId: user.wilayah_id,
         lingkunganId: user.lingkungan_id,
         ordoId: user.ordo_id,
+        kabupatenKotaId: user.kabupaten_kota_id,
+        provinsiId: user.provinsi_id,
       },
     };
   }
