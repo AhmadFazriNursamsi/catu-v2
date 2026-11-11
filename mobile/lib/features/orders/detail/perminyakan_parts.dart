@@ -1,6 +1,13 @@
 import '../../../core/widgets/urgency_label.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/models.dart';
+import '../widgets/reschedule_widgets.dart';
+
+String _timeRange(OrderItem item) {
+  final end = item.scheduledTimeEnd.trim();
+  final hasEnd = end.isNotEmpty && end.toLowerCase() != 'selesai';
+  return hasEnd ? '${shortTime(item.scheduledTimeStart)} – ${shortTime(end)} WIB' : '${shortTime(item.scheduledTimeStart)} WIB';
+}
 
 /// Komponen tampilan detail pelayanan Sakramen Perminyakan.
 
@@ -81,7 +88,7 @@ class PerminyakanHero extends StatelessWidget {
   }
 }
 
-/// Kartu ringkasan: status, judul pelayanan, tanggal, dan urgensi sekilas (nama di header, jam di Waktu & Lokasi).
+/// Kartu ringkasan: status, judul pelayanan, tanggal & jam (nama dan urgensi di header, alamat di Lokasi Kunjungan).
 class PerminyakanSummaryCard extends StatelessWidget {
   final Order order;
   final OrderItem item;
@@ -153,11 +160,7 @@ class PerminyakanSummaryCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _Fact(icon: Icons.calendar_month_rounded, label: 'Tanggal', value: formatServiceDate(date)),
-            _Fact(
-                icon: Icons.priority_high_rounded,
-                label: 'Urgensi',
-                value: order.urgencyName.isNotEmpty ? urgencyLabelOf(order.urgencyName) : '-',
-                color: urgencyColor),
+            _Fact(icon: Icons.access_time_rounded, label: 'Jam', value: _timeRange(item)),
           ]),
         ],
       ),
@@ -169,8 +172,7 @@ class _Fact extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final Color? color;
-  const _Fact({required this.icon, required this.label, required this.value, this.color});
+  const _Fact({required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -185,7 +187,7 @@ class _Fact extends StatelessWidget {
         Text(value,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color ?? _ink, height: 1.25)),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _ink, height: 1.25)),
       ]),
     );
   }

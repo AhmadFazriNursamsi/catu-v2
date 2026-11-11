@@ -18,7 +18,7 @@ import 'widgets/accept_service_dialog.dart';
 import 'widgets/handover_romo_sheet.dart';
 import 'widgets/koordinator_assign_card.dart';
 import 'widgets/reschedule_sheet.dart';
-import 'widgets/reschedule_widgets.dart' show RescheduleStatusChip, rescheduleStatusOf;
+import 'widgets/reschedule_widgets.dart' show RescheduleStatusChip, rescheduleStatusOf, shortTime;
 import 'widgets/reschedule_validation.dart';
 import 'widgets/order_review_sheet.dart';
 import 'widgets/order_review_card.dart';
@@ -211,8 +211,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
           locationName: order.displayAddress,
         );
 
-    final itemReschedules = order.items.isNotEmpty && displayItem.id != null
-        ? order.rescheduleHistory.where((r) => r.itemId == displayItem.id).toList() : order.rescheduleHistory;
+    final bool showProposalCard = !widget.isRomo && (order.items.isNotEmpty ? displayItem.hasPendingReschedule : order.hasPendingReschedule);
+    final itemReschedules = (order.items.isNotEmpty && displayItem.id != null
+        ? order.rescheduleHistory.where((r) => r.itemId == displayItem.id) : order.rescheduleHistory)
+        .where((r) => !showProposalCard || r.status == 'ACCEPTED' || r.status == 'REJECTED').toList();
     final itemHandovers = order.items.isNotEmpty && displayItem.id != null
         ? order.handoverHistory.where((h) => h.itemId == displayItem.id).toList() : order.handoverHistory;
 
@@ -337,7 +339,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               const SizedBox(height: 12),
                             ],
                             // ── Reschedule Proposal Card for Umat ──
-                            if (!widget.isRomo && (order.items.isNotEmpty ? displayItem.hasPendingReschedule : order.hasPendingReschedule)) ...[
+                            if (showProposalCard) ...[
                               _buildRescheduleProposalCard(order, displayItem),
                               const SizedBox(height: 12),
                             ],
@@ -393,11 +395,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                   iconBg: const Color(0xFF059669),
                                   title: 'Romo yang Bertugas',
                                   children: [
-                                    _buildInfoTile(icon: Icons.verified_user_rounded, label: 'Romo / Pastor', value: assignedRomoName.isNotEmpty ? assignedRomoName : (isAssignedToCurrentRomo ? widget.userName : 'Romo yang Bertugas'), valueColor: const Color(0xFF059669)),
-                                    _buildInfoTile(icon: Icons.check_circle_outline_rounded, label: 'Status Konfirmasi', value: effectiveStatus == 'DONE' ? 'Telah Selesai Dilaksanakan' : 'Telah Mengonfirmasi Kehadiran', valueColor: const Color(0xFF059669), isLast: !isAssignedToCurrentRomo || (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE')),
-                                    if (order.items.isNotEmpty
+                                    _buildInfoTile(icon: Icons.verified_user_rounded, label: 'Romo / Pastor', value: assignedRomoName.isNotEmpty ? assignedRomoName : (isAssignedToCurrentRomo ? widget.userName : 'Romo yang Bertugas'), valueColor: const Color(0xFF059669), isLast: !isAssignedToCurrentRomo || (effectiveStatus == 'DONE' || effectiveStatus == 'CLOSE')),
+                                    if (itemHandovers.isEmpty && (order.items.isNotEmpty
                                         ? displayItem.isHandoverCompleted
-                                        : (displayItem.isHandoverCompleted || order.isHandoverCompleted)) ...[
+                                        : (displayItem.isHandoverCompleted || order.isHandoverCompleted))) ...[
                                       const SizedBox(height: 8),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
@@ -453,9 +454,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             _buildInfoCard(
                               icon: Icons.event_rounded,
                               iconBg: const Color(0xFF1D4ED8),
-                              title: isKedukaan ? 'Lokasi Misa' : LanguageService.tr('time_location'),
+                              title: isKedukaan ? 'Lokasi Misa' : 'Lokasi Kunjungan',
                               children: [
-                                if (!isKedukaan) _buildInfoTile(icon: Icons.access_time_rounded, label: 'Jam Pelaksanaan', value: '${displayItem.scheduledTimeStart} – ${displayItem.scheduledTimeEnd} WIB'),
                                 _buildInfoTile(icon: Icons.place_rounded, label: isKedukaan ? 'Lokasi' : 'Alamat Kunjungan', value: displayItem.locationName.isNotEmpty ? displayItem.locationName : order.displayAddress, isLast: true),
                                 AddressActions(address: displayItem.locationName.isNotEmpty ? displayItem.locationName : order.displayAddress, color: isKedukaan ? const Color(0xFF1E293B) : const Color(0xFF0F766E)),
                               ],
@@ -469,7 +469,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                 iconBg: const Color(0xFF7C3AED),
                                 title: LanguageService.tr('deceased_data'),
                                 children: [
-                                  _buildInfoTile(icon: Icons.badge_rounded, label: LanguageService.tr('name_label'), value: order.penerimaName),
                                   _buildInfoTile(icon: Icons.favorite_border_rounded, label: 'Hubungan Pemohon', value: order.hubunganLabel),
                                   _buildInfoTile(icon: Icons.event_busy_rounded, label: 'Tanggal Meninggal', value: order.tanggalMeninggalLabel),
                                   _buildInfoTile(icon: Icons.schedule_rounded, label: 'Waktu Meninggal', value: order.waktuMeninggalLabel.isNotEmpty ? '${order.waktuMeninggalLabel} WIB' : ''),
@@ -483,7 +482,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                                 iconBg: const Color(0xFF7C3AED),
                                 title: LanguageService.tr('recipient_data'),
                                 children: [
-                                  _buildInfoTile(icon: Icons.badge_rounded, label: LanguageService.tr('name_label'), value: order.penerimaName),
                                   _buildInfoTile(icon: Icons.wc_rounded, label: 'Jenis Kelamin', value: order.genderLabel.isNotEmpty ? order.genderLabel : '-'),
                                   _buildInfoTile(icon: Icons.cake_rounded, label: 'Usia', value: order.usiaLabel.isNotEmpty ? order.usiaLabel : '-', isLast: true),
                                 ],
@@ -705,8 +703,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     final String reason = displayItem.rescheduleReason.isNotEmpty ? displayItem.rescheduleReason : (order.rescheduleReason ?? '');
 
     final String timeDisplay = proposedTimeEnd != null && proposedTimeEnd.isNotEmpty
-        ? '$proposedTimeStart - $proposedTimeEnd WIB'
-        : '$proposedTimeStart WIB';
+        ? '${shortTime(proposedTimeStart)} – ${shortTime(proposedTimeEnd)} WIB'
+        : '${shortTime(proposedTimeStart)} WIB';
 
     return Container(
       width: double.infinity,
@@ -965,8 +963,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   : (isRejected ? Icons.cancel_rounded : Icons.pending_actions_rounded);
 
               final String timeProposed = log.proposedTimeEnd != null && log.proposedTimeEnd!.isNotEmpty
-                  ? '${log.proposedTimeStart} – ${log.proposedTimeEnd} WIB'
-                  : '${log.proposedTimeStart} WIB';
+                  ? '${shortTime(log.proposedTimeStart)} – ${shortTime(log.proposedTimeEnd!)} WIB'
+                  : '${shortTime(log.proposedTimeStart)} WIB';
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

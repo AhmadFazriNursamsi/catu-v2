@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/models.dart';
+import '../widgets/reschedule_widgets.dart';
 
 /// Komponen tampilan detail pelayanan Misa Kedukaan.
 
@@ -10,7 +11,7 @@ const _slate = Color(0xFF94A3B8);
 String _timeRange(OrderItem item) {
   final end = item.scheduledTimeEnd.trim();
   final hasEnd = end.isNotEmpty && end.toLowerCase() != 'selesai';
-  return hasEnd ? '${item.scheduledTimeStart} – $end WIB' : '${item.scheduledTimeStart} WIB';
+  return hasEnd ? '${shortTime(item.scheduledTimeStart)} – ${shortTime(end)} WIB' : '${shortTime(item.scheduledTimeStart)} WIB';
 }
 
 /// Kartu ringkasan misa yang sedang dilihat: urutan misa, status, intensi, serta tanggal & jam sekilas.
@@ -68,9 +69,6 @@ class KedukaanSummaryCard extends StatelessWidget {
           Text(item.itemName,
               style: const TextStyle(
                   fontSize: 21, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.4, height: 1.2)),
-          const SizedBox(height: 4),
-          Text('Alm. ${order.penerimaName}',
-              style: const TextStyle(fontSize: 13.5, color: Color(0xFFCBD5E1), fontWeight: FontWeight.w500)),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
