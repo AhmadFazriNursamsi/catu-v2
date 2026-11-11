@@ -119,6 +119,9 @@ class ReschedulePickerField extends StatelessWidget {
 /// Jam saja ("19:00 – 20:00 WIB"): ubah jam tidak mengubah tanggal.
 String rescheduleTimeText(TimeOfDay start, TimeOfDay? end) => '${formatHm(start)}${end != null ? ' – ${formatHm(end)}' : ''} WIB';
 
+/// Jam tampilan tanpa detik: '18:00:00' → '18:00'.
+String shortTime(String t) => RegExp(r'^\d{1,2}:\d{2}:\d{2}$').hasMatch(t.trim()) ? t.trim().substring(0, t.trim().length - 3) : t.trim();
+
 /// Status ubah jam sebuah misa (atau order tanpa misa). Pada order bermisa, hanya status misa itu yang berlaku.
 String rescheduleStatusOf(Order order, OrderItem? item) => (order.items.isNotEmpty && item != null) ? item.rescheduleStatus : order.rescheduleStatus;
 

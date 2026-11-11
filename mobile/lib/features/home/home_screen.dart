@@ -26,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<Order> _orders = [];
+  final ValueNotifier<List<Order>> _ordersLive = ValueNotifier<List<Order>>([]);
   bool _isLoading = true;
   late Map<String, dynamic> _currentUserMap;
   Timer? _pollTimer;
@@ -76,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _pollTimer?.cancel();
+    _ordersLive.dispose();
     LanguageService.currentLanguage.removeListener(_onLanguageChanged);
     super.dispose();
   }
@@ -104,11 +106,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       );
 
       if (mounted) {
-        final bool hasChanges = latestOrders.length != _orders.length ||
-            latestOrders.any((lo) => _orders.any((o) => o.id == lo.id && (o.status != lo.status || o.scheduledDate != lo.scheduledDate)));
+        final bool hasChanges = latestOrders.map((o) => '${o.id}#${o.statusSignature}').join('\n') != _orders.map((o) => '${o.id}#${o.statusSignature}').join('\n');
         if (hasChanges) {
           setState(() {
-            _orders = latestOrders;
+            _orders = _ordersLive.value = latestOrders;
           });
         }
       }
@@ -158,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       if (mounted) {
         setState(() {
-          _orders = orders;
+          _orders = _ordersLive.value = orders;
         });
       }
     } catch (e) {
@@ -219,6 +220,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return UmatPendatangDashboardView(
         user: _currentUserMap,
         orders: _orders,
+        ordersLive: _ordersLive,
         onRefresh: _loadOrders,
         onLogout: _executeLogout,
       );
@@ -231,4 +233,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       onLogout: _executeLogout,
     );
   }
+}
+
+/// Ringkasan status pesanan + tiap misa (status, Romo, ubah jam, pengalihan, jadwal) untuk mendeteksi perubahan saat polling.
+extension _OrderStatusSignature on Order {
+  String get statusSignature => [status, scheduledDate, scheduledTime, acceptedRomoId, rescheduleStatus, handoverStatus, handoverTargetRomoId,
+    for (final i in items) '${i.id}:${i.status}:${i.acceptedRomoId}:${i.rescheduleStatus}:${i.handoverStatus}:${i.handoverTargetRomoId}:${i.scheduledDate}:${i.scheduledTimeStart}'].join('|');
 }

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../orders/create_kedukaan_screen.dart';
+import '../orders/widgets/reschedule_widgets.dart';
 import '../orders/create_order_screen.dart';
 import '../orders/create_perminyakan_screen.dart';
+import '../orders/histori_screen.dart';
 import '../orders/order_detail_screen.dart';
 import '../orders/widgets/service_type_sheet.dart';
 
@@ -36,6 +38,12 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
     super.initState();
     _orders = widget.orders.where(_orderBelongsToThisKunjungan).toList();
     _loadOrders();
+  }
+
+  @override
+  void didUpdateWidget(KunjunganDetailScreen old) {
+    super.didUpdateWidget(old);
+    if (!identical(old.orders, widget.orders)) setState(() => _orders = widget.orders.where(_orderBelongsToThisKunjungan).toList());
   }
 
   bool _orderBelongsToThisKunjungan(Order o) {
@@ -113,18 +121,21 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
     });
   }
 
-  Widget _buildStatusBadge(String status) {
-    Color bg = Colors.amber.shade50, fg = Colors.amber.shade800;
-    String label = 'MENUNGGU';
-    final s = status.toUpperCase();
-    if (s == 'COMPLETED' || s == 'DONE') { bg = Colors.green.shade50; fg = Colors.green.shade700; label = 'SELESAI'; }
-    else if (s == 'APPROVED' || s == 'ASSIGNED' || s == 'ACCEPTED' || s == 'CONFIRMED') { bg = Colors.blue.shade50; fg = Colors.blue.shade700; label = 'DITERIMA'; }
-    else if (s == 'REJECTED' || s == 'CANCELLED' || s == 'DECLINED' || s == 'FAIL') { bg = Colors.red.shade50; fg = Colors.red.shade700; label = 'DITOLAK'; }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8), border: Border.all(color: fg.withValues(alpha: 0.3))),
-      child: Text(label, style: TextStyle(color: fg, fontSize: 10, fontWeight: FontWeight.bold)),
-    );
+  // Status sama dengan Pelayanan & Riwayat Umat biasa: dihitung dari Romo penerima + tanggal (Berlangsung, Ditutup, Gagal, Dibatalkan).
+  static const Map<String, (String, Color, IconData)> _statusStyle = {
+    'PENDING': ('Menunggu Konfirmasi', Color(0xFFD97706), Icons.hourglass_empty_rounded),
+    'CONFIRMED': ('Telah Dikonfirmasi', Color(0xFF059669), Icons.check_circle_rounded),
+    'IN_PROGRESS': ('Sedang Berlangsung', Color(0xFF1D4ED8), Icons.directions_run_rounded),
+    'DONE': ('Telah Selesai', Color(0xFF2563EB), Icons.task_alt_rounded),
+    'CLOSE': ('Ditutup Otomatis', Color(0xFF64748B), Icons.archive_outlined),
+    'FAIL': ('Gagal', Color(0xFFDC2626), Icons.cancel_rounded),
+    'CANCELLED': ('Dibatalkan', Color(0xFFDC2626), Icons.cancel_rounded),
+  };
+
+  Widget _buildStatusBadge(Order o, OrderItem? item) {
+    final st = HistoriEntryItem(parentOrder: o, subItem: item).effectiveStatus;
+    final (label, color, icon) = _statusStyle[st] ?? _statusStyle['PENDING']!;
+    return ServiceStatusPill(color: color, icon: icon, label: label, rescheduleStatus: rescheduleStatusOf(o, item), serviceStatus: st);
   }
 
   String _formatDate(String raw) {
@@ -201,9 +212,9 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
       for (final o in _orders)
         if (o.items.isNotEmpty)
           for (final item in o.items)
-            {'order': o, 'date': item.scheduledDate.isNotEmpty ? item.scheduledDate : o.scheduledDate, 'title': item.itemName, 'status': item.status, 'itemId': item.id}
+            {'order': o, 'date': item.scheduledDate.isNotEmpty ? item.scheduledDate : o.scheduledDate, 'title': item.itemName, 'item': item, 'itemId': item.id}
         else
-          {'order': o, 'date': o.scheduledDate, 'title': o.categoryName, 'status': o.status},
+          {'order': o, 'date': o.scheduledDate, 'title': o.categoryName},
     ];
 
     return Column(
@@ -226,7 +237,7 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
         else
           ...rows.map((row) {
             final Order o = row['order'] as Order;
-            final String date = row['date'] as String, title = row['title'] as String, status = row['status'] as String;
+            final String date = row['date'] as String, title = row['title'] as String;
             final isPerm = title.toLowerCase().contains('perminyakan');
             final isKedu = title.toLowerCase().contains('kedukaan') || title.toLowerCase().contains('misa');
             final icon = isPerm ? Icons.sanitizer_rounded : (isKedu ? Icons.personal_injury_rounded : Icons.church_rounded);
@@ -254,7 +265,8 @@ class _KunjunganDetailScreenState extends State<KunjunganDetailScreen> {
                           ],
                         ),
                       ),
-                      _buildStatusBadge(status),
+                      // Sama seperti kartu Umat: status utama + status ubah jam (diajukan/ditolak/diterima) di bawahnya.
+                      _buildStatusBadge(o, row['item'] as OrderItem?),
                       const SizedBox(width: 6),
                       const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Color(0xFF94A3B8)),
                     ],

@@ -8,6 +8,7 @@ import '../../core/services/api_service.dart';
 import '../../widgets/searchable_select_field.dart';
 import '../../core/services/language_service.dart';
 import 'detail/deceased_photo_picker.dart';
+import '../../widgets/discard_guard.dart';
 import 'widgets/form_helpers.dart';
 
 class CreateKedukaanScreen extends StatefulWidget {
@@ -40,7 +41,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
   // Selections
   String _selectedHubungan = 'Anak';
   String? _selectedUrgensi = 'Standar'; // Sama dengan Perminyakan
-  String _selectedJenisMisa = 'Misa Requiem / Misa Arwah';
+  String _selectedJenisMisa = 'Misa Requiem';
   String _waktuMeninggal = '14:00';
   String _jamMulaiMisa = '18:00';
   String _jamAkhirMisa = '19:30';
@@ -86,7 +87,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
     'Misa Malam Kembang',
     'Misa Pelepasan / Misa Pemakaman',
     'Misa Penutupan Peti',
-    'Misa Requiem / Misa Arwah',
+    'Misa Requiem',
   ];
 
   @override
@@ -627,7 +628,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return DiscardGuard(active: _misaList.isNotEmpty, child: Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -643,7 +644,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
             child: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded,
                   color: Color(0xFF0F172A), size: 16),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.maybePop(context),
             ),
           ),
         ),
@@ -1135,7 +1136,7 @@ class _CreateKedukaanScreenState extends State<CreateKedukaanScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildHeroHeader() {
