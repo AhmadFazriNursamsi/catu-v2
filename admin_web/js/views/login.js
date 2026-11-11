@@ -22,7 +22,7 @@
                   <div class="feature-icon"><i data-lucide="cross" class="w-5 h-5"></i></div>
                   <div class="feature-body">
                     <h3>Misa & Sakramen</h3>
-                    <p>Misa Kedukaan, Misa Requiem, Misa Arwah, dan Sakramen Perminyakan.</p>
+                    <p>Misa Kedukaan, Misa Requiem, dan Sakramen Perminyakan.</p>
                   </div>
                 </div>
                 <div class="feature">

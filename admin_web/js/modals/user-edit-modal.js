@@ -230,11 +230,11 @@
                   <div class="bg-blue-50/40 p-5 rounded-2xl border border-blue-100/80 space-y-4 shadow-xs">
                     <h4 class="font-extrabold text-blue-950 flex items-center text-xs pb-1 border-b border-blue-100/80">
                       <i data-lucide="briefcase" class="w-4 h-4 mr-1.5 text-blue-700"></i>
-                      4. Data Kepengurusan / Koordinator
+                      4. ${roleCode === 'KOORDINATOR' ? 'Data Koordinator' : 'Data Kepengurusan'}
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pengurus / Koordinator *</label>
+                        <label class="block font-extrabold text-slate-700 mb-1.5">${roleCode === 'KOORDINATOR' ? 'Jabatan Koordinator' : 'Jabatan Pengurus'} *</label>
                         <select id="editPengurusPosition" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
                           ${roleCode === 'KOORDINATOR' ? `
                             <option value="Koordinator" selected>Koordinator (Keuskupan)</option>
@@ -245,15 +245,7 @@
                             <option value="Bendahara" ${curPos === 'Bendahara' ? 'selected' : ''}>Bendahara</option>
                           `}
                         </select>
-                      </div>
-                      <div>
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Mulai</label>
-                        <input type="number" id="editJabatanStartYear" value="${escapeHtml(u.jabatan_start_year || 2024)}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
-                      </div>
-                      <div>
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Selesai</label>
-                        <input type="number" id="editJabatanEndYear" value="${escapeHtml(u.jabatan_end_year || 2027)}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
-                      </div>
+                      </div>${jabatanDateInputs(u)}
                     </div>
                   </div>
                 ` : ''}
@@ -272,20 +264,12 @@
                       <div class="${isK ? '' : 'col-span-full'}">
                         <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan Pastoral *</label>
                         <select id="editRomoPosition" onchange="syncEditFormToState(); state.activeEditUser.romo_position = this.value; renderApp();" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
-                          <option value="Kepala Romo Paroki" ${isK ? 'selected' : (existK ? 'disabled class="text-slate-400 bg-slate-100"' : '')}>Kepala Romo Paroki (Pimpinan Paroki)${existK && !isK ? ` — Sudah ada: ${escapeHtml(existK.full_name || existK.fullName)}` : ''}</option>
-                          <option value="Romo Paroki" ${!isK ? 'selected' : ''}>Romo Paroki (Pastor Rekan)</option>
+                          <option value="Kepala Romo Paroki" ${isK ? 'selected' : (existK ? 'disabled class="text-slate-400 bg-slate-100"' : '')}>Kepala Romo Paroki${existK && !isK ? ` — Sudah ada: ${escapeHtml(existK.full_name || existK.fullName)}` : ''}</option>
+                          <option value="Romo Paroki" ${!isK ? 'selected' : ''}>Romo Paroki</option>
                         </select>
                         ${existK && !isK ? `<p class="text-[11px] text-amber-700 font-semibold mt-1.5 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Paroki ini sudah memiliki Kepala Romo Paroki (${escapeHtml(existK.full_name || existK.fullName)}).</p>` : ''}
                       </div>
-                      ${isK ? `
-                      <div>
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Mulai</label>
-                        <input type="number" id="editJabatanStartYear" value="${escapeHtml(u.jabatan_start_year || 2024)}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
-                      </div>
-                      <div>
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Selesai</label>
-                        <input type="number" id="editJabatanEndYear" value="${escapeHtml(u.jabatan_end_year || 2027)}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
-                      </div>` : ''}
+                      ${isK ? `${jabatanDateInputs(u)}` : ''}
                     </div>
                   </div>`;
                 })() : ''}
@@ -305,20 +289,12 @@
                       <div class="${isKetuaOrdo ? '' : 'col-span-full'}">
                         <label class="block font-extrabold text-slate-700 mb-1.5">Jabatan di Ordo / Kongregasi *</label>
                         <select id="editRomoOrdoPosition" onchange="syncEditFormToState(); state.activeEditUser.romo_position = this.value; renderApp();" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs">
-                          <option value="Ketua Romo Ordo" ${isKetuaOrdo ? 'selected' : (existK ? 'disabled class="text-slate-400 bg-slate-100"' : '')}>Ketua Romo Ordo (Pimpinan / Provinsial)${existK && !isKetuaOrdo ? ` — Sudah ada: ${escapeHtml(existK.full_name || existK.fullName)}` : ''}</option>
-                          <option value="Romo Ordo" ${!isKetuaOrdo ? 'selected' : ''}>Romo Ordo (Imam Anggota)</option>
+                          <option value="Ketua Romo Ordo" ${isKetuaOrdo ? 'selected' : (existK ? 'disabled class="text-slate-400 bg-slate-100"' : '')}>Ketua Romo Ordo${existK && !isKetuaOrdo ? ` — Sudah ada: ${escapeHtml(existK.full_name || existK.fullName)}` : ''}</option>
+                          <option value="Romo Ordo" ${!isKetuaOrdo ? 'selected' : ''}>Romo Ordo</option>
                         </select>
                         ${existK && !isKetuaOrdo ? `<p class="text-[11px] text-amber-700 font-semibold mt-1.5 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Ordo ini sudah memiliki Ketua Romo Ordo (${escapeHtml(existK.full_name || existK.fullName)}). Hanya boleh 1 Ketua per ordo.</p>` : ''}
                       </div>
-                      ${isKetuaOrdo ? `
-                      <div>
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Mulai</label>
-                        <input type="number" id="editJabatanStartYear" value="${escapeHtml(u.jabatan_start_year || 2024)}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
-                      </div>
-                      <div>
-                        <label class="block font-extrabold text-slate-700 mb-1.5">Tahun Selesai</label>
-                        <input type="number" id="editJabatanEndYear" value="${escapeHtml(u.jabatan_end_year || 2027)}" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
-                      </div>` : ''}
+                      ${isKetuaOrdo ? `${jabatanDateInputs(u)}` : ''}
                     </div>
                   </div>`;
                 })() : ''}
