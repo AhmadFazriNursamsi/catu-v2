@@ -56,6 +56,14 @@ IMAGES=$(docker compose config --images 2>/dev/null | sort -u || true)
 [ -n "$IMAGES" ] || IMAGES=$(grep -E '^[[:space:]]*image:' docker-compose.yml | awk '{print $2}' | tr -d "\"'" | sort -u)
 [ -n "$IMAGES" ] || fail "Tidak bisa membaca daftar image dari docker-compose.yml."
 image_id() { docker image inspect -f '{{.Id}}' "$1" 2>/dev/null || echo "-"; }
+running_id() { # image yang benar-benar dipakai container berjalan untuk ref ini (bukan tag :latest, yang bisa sudah ditimpa pull)
+  local c id
+  for c in $(docker compose ps -q 2>/dev/null); do
+    [ "$(docker inspect -f '{{.Config.Image}}' "$c" 2>/dev/null)" = "$1" ] || continue
+    id=$(docker inspect -f '{{.Image}}' "$c" 2>/dev/null) && [ -n "$id" ] && { echo "$id"; return; }
+  done
+  image_id "$1"
+}
 retag()    { local ref="$1" tag="$2"; echo "${ref%:*}:$tag"; }
 
 health_ok() { # health menjawab ok DAN berasal dari proses baru (uptime < batas detik)
@@ -118,10 +126,11 @@ mkdir -p "$DIR"
 exec > >(tee -a "$DIR/deploy.log") 2>&1
 say "Deploy $STAMP di $PWD"
 
-# 1. Tandai image yang sedang dipakai, sebelum pull menimpa :latest.
+# 1. Tandai image yang sedang dipakai container (bukan :latest, yang mungkin sudah ditarik oleh deploy yang gagal).
 for ref in $IMAGES; do
-  echo "$ref $(image_id "$ref")" >> "$DIR/images-before.txt"
-  docker image inspect "$ref" >/dev/null 2>&1 && docker tag "$ref" "$(retag "$ref" "rollback-$STAMP")"
+  cur=$(running_id "$ref")
+  echo "$ref $cur" >> "$DIR/images-before.txt"
+  [ "$cur" != "-" ] && docker tag "$cur" "$(retag "$ref" "rollback-$STAMP")"
 done
 
 # 2. Ambil image baru; berhenti bila tidak ada yang berubah.
