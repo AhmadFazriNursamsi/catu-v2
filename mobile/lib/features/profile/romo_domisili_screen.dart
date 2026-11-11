@@ -27,6 +27,7 @@ class RomoDomisiliScreen extends StatefulWidget {
 class _RomoDomisiliScreenState extends State<RomoDomisiliScreen> {
   int? _provinsiId, _kotaId;
   bool _saving = false;
+  final _address = TextEditingController();
 
   bool get _isOrdo => (widget.user['roleCode'] ?? widget.user['role_code'] ?? '').toString().toUpperCase() == 'ROMO_ORDO';
 
@@ -35,6 +36,13 @@ class _RomoDomisiliScreenState extends State<RomoDomisiliScreen> {
     super.initState();
     _provinsiId = int.tryParse('${widget.user['provinsiId'] ?? widget.user['provinsi_id'] ?? ''}');
     _kotaId = int.tryParse('${widget.user['kabupatenKotaId'] ?? widget.user['kabupaten_kota_id'] ?? ''}');
+    _address.text = (widget.user['address'] ?? '').toString();
+  }
+
+  @override
+  void dispose() {
+    _address.dispose();
+    super.dispose();
   }
 
   Future<void> _save() async {
@@ -46,7 +54,7 @@ class _RomoDomisiliScreenState extends State<RomoDomisiliScreen> {
     try {
       final userId = widget.user['id'] ?? widget.user['user_id'] ?? widget.user['userId'];
       final res = await http
-          .put(Uri.parse('${ApiService.baseUrl}/auth/profile/$userId'), headers: {'Content-Type': 'application/json'}, body: jsonEncode({'kabupatenKotaId': _kotaId}))
+          .put(Uri.parse('${ApiService.baseUrl}/auth/profile/$userId'), headers: {'Content-Type': 'application/json'}, body: jsonEncode({'kabupatenKotaId': _kotaId, if (_address.text.trim().isNotEmpty) 'address': _address.text.trim()}))
           .timeout(const Duration(seconds: 15));
       if (res.statusCode >= 400) {
         _snack(backendMessage(res.body, 'Gagal menyimpan provinsi dan kota.'));
@@ -56,6 +64,7 @@ class _RomoDomisiliScreenState extends State<RomoDomisiliScreen> {
       if (data is Map && data['user'] is Map) widget.user.addAll(Map<String, dynamic>.from(data['user']));
       widget.user['kabupatenKotaId'] = _kotaId;
       widget.user['provinsiId'] = _provinsiId;
+      if (_address.text.trim().isNotEmpty) widget.user['address'] = _address.text.trim();
       if (mounted) Navigator.pop(context, true);
     } catch (_) {
       _snack('Gagal terhubung ke server. Periksa koneksi internet.');
@@ -86,7 +95,7 @@ class _RomoDomisiliScreenState extends State<RomoDomisiliScreen> {
             backgroundColor: Colors.white,
             elevation: 0,
             automaticallyImplyLeading: false,
-            title: const Text('Provinsi & Kota', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A), letterSpacing: -0.3)),
+            title: const Text('Domisili Romo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A), letterSpacing: -0.3)),
             centerTitle: true,
           ),
           body: SingleChildScrollView(
@@ -104,6 +113,25 @@ class _RomoDomisiliScreenState extends State<RomoDomisiliScreen> {
                     _provinsiId = p;
                     _kotaId = k;
                   }),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _address,
+                  maxLines: 2,
+                  textCapitalization: TextCapitalization.sentences,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                  decoration: InputDecoration(
+                    labelText: 'Alamat (opsional)',
+                    hintText: 'Contoh: Pastoran, Jl. Sutera Utama No. 18',
+                    hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                    prefixIcon: const Icon(Icons.place_rounded, color: Color(0xFF64748B), size: 20),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.2)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.2)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF0066FF), width: 1.6)),
+                  ),
                 ),
                 const SizedBox(height: 28),
                 SizedBox(
@@ -142,8 +170,8 @@ class _RomoDomisiliScreenState extends State<RomoDomisiliScreen> {
                 const SizedBox(height: 2),
                 Text(
                   _isOrdo
-                      ? 'Pilih provinsi dan kota tempat Romo bertugas. Pelayanan yang dapat Romo terima mengikuti kota ini.'
-                      : 'Pilih provinsi dan kota tempat tinggal Romo sebelum melanjutkan.',
+                      ? 'Pilih provinsi dan kota tempat Romo bertugas. Pelayanan yang dapat Romo terima mengikuti kota ini. Alamat boleh dikosongkan.'
+                      : 'Pilih provinsi dan kota tempat tinggal Romo sebelum melanjutkan. Alamat boleh dikosongkan.',
                   style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                 ),
               ],
