@@ -1,6 +1,7 @@
 import { LOGIN_LINK_TOKEN_PATTERN } from './login-link.service';
 
-const APP_PACKAGE = 'com.example.catu_mobile';
+// Paket aplikasi yang dibuka tombol cadangan; CATU Dev (lokal/DEV) memakai com.example.catu_mobile.dev.
+const appPackage = () => (process.env.ANDROID_APP_PACKAGE || '').trim() || 'com.example.catu_mobile';
 
 /**
  * Halaman cadangan bila Android tidak langsung membuka aplikasi dari tautan (aplikasi belum terpasang atau
@@ -10,7 +11,7 @@ const APP_PACKAGE = 'com.example.catu_mobile';
 export function renderLoginLinkPage(token: string | undefined): string {
   const valid = typeof token === 'string' && LOGIN_LINK_TOKEN_PATTERN.test(token);
   const open = valid
-    ? `<a class="btn" href="intent://m/login?t=${token}#Intent;scheme=catu;package=${APP_PACKAGE};end">Buka di aplikasi CATU</a>`
+    ? `<a class="btn" href="intent://m/login?t=${token}#Intent;scheme=catu;package=${appPackage()};end">Buka di aplikasi CATU</a>`
     : '<p class="warn">Tautan tidak lengkap. Minta Koordinator mengirim ulang, atau masuk dengan nomor HP dan kata sandi sementara dari WhatsApp.</p>';
   return `<!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
