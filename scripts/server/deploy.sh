@@ -12,7 +12,7 @@
 #   CATU_PG_CONTAINER container Postgres (bawaan: shared-postgres-production)
 #   CATU_KEEP_BACKUPS jumlah cadangan deploy yang disimpan (bawaan: 10)
 #
-# Kredensial DB dibaca dari .env (DB_NAME, DB_USERNAME/DB_USER, DB_PASSWORD) tanpa dicetak dan tanpa masuk argumen
+# Kredensial DB dibaca dari .env (DB_NAME, DB_USERNAME/DB_USER, DB_PASSWORD; DB_NAME juga dari environment compose) tanpa dicetak dan tanpa masuk argumen
 # perintah. Hanya skema public yang dicadangkan (katalog TimescaleDB milik aplikasi lain tidak ikut).
 set -euo pipefail
 
@@ -46,11 +46,24 @@ command -v flock >/dev/null && { flock -n 9 || fail "Deploy lain sedang berjalan
 envval() { # nilai dari .env tanpa mengeksekusi isinya; tanda kutip di ujung dibuang
   { grep -E "^$1=" .env || true; } | tail -1 | cut -d= -f2- | sed -e "s/^[\"']//" -e "s/[\"']$//"
 }
+dbname() { # produksi menaruh DB_NAME di environment compose, bukan .env (sama dengan backup.sh)
+  local v; v=$(envval DB_NAME)
+  [ -n "$v" ] || v=$( { docker compose config 2>/dev/null || true; } | awk '/^[[:space:]]+DB_NAME:/ && !n {print $2; n=1}' | tr -d "\"'")
+  printf '%s' "$v"
+}
 
 IMAGES=$(docker compose config --images 2>/dev/null | sort -u || true)
 [ -n "$IMAGES" ] || IMAGES=$(grep -E '^[[:space:]]*image:' docker-compose.yml | awk '{print $2}' | tr -d "\"'" | sort -u)
 [ -n "$IMAGES" ] || fail "Tidak bisa membaca daftar image dari docker-compose.yml."
 image_id() { docker image inspect -f '{{.Id}}' "$1" 2>/dev/null || echo "-"; }
+running_id() { # image yang benar-benar dipakai container berjalan untuk ref ini (bukan tag :latest, yang bisa sudah ditimpa pull)
+  local c id
+  for c in $(docker compose ps -q 2>/dev/null); do
+    [ "$(docker inspect -f '{{.Config.Image}}' "$c" 2>/dev/null)" = "$1" ] || continue
+    id=$(docker inspect -f '{{.Image}}' "$c" 2>/dev/null) && [ -n "$id" ] && { echo "$id"; return; }
+  done
+  image_id "$1"
+}
 retag()    { local ref="$1" tag="$2"; echo "${ref%:*}:$tag"; }
 
 health_ok() { # health menjawab ok DAN berasal dari proses baru (uptime < batas detik)
@@ -91,8 +104,8 @@ if [ "$MODE" = "check" ]; then
   say "Folder      : $PWD"
   say "Health      : $HEALTH_URL"
   for ref in $IMAGES; do say "Image       : $ref ($(image_id "$ref" | cut -c8-19))"; done
-  DB_NAME=$(envval DB_NAME); DB_USER=$(envval DB_USERNAME); [ -n "$DB_USER" ] || DB_USER=$(envval DB_USER)
-  [ -n "$DB_NAME" ] && [ -n "$DB_USER" ] && [ -n "$(envval DB_PASSWORD)" ] || fail "DB_NAME / DB_USERNAME / DB_PASSWORD tidak lengkap di .env."
+  DB_NAME=$(dbname); DB_USER=$(envval DB_USERNAME); [ -n "$DB_USER" ] || DB_USER=$(envval DB_USER)
+  [ -n "$DB_NAME" ] && [ -n "$DB_USER" ] && [ -n "$(envval DB_PASSWORD)" ] || fail "DB_NAME / DB_USERNAME / DB_PASSWORD tidak lengkap (.env / compose)."
   docker inspect "$PG_CONTAINER" >/dev/null 2>&1 || fail "Container Postgres '$PG_CONTAINER' tidak ditemukan (atur CATU_PG_CONTAINER)."
   say "Database    : $DB_NAME (user $DB_USER) di $PG_CONTAINER"
   health_ok "" && say "Health sekarang: ok" || say "Health sekarang: TIDAK ok"
@@ -113,10 +126,11 @@ mkdir -p "$DIR"
 exec > >(tee -a "$DIR/deploy.log") 2>&1
 say "Deploy $STAMP di $PWD"
 
-# 1. Tandai image yang sedang dipakai, sebelum pull menimpa :latest.
+# 1. Tandai image yang sedang dipakai container (bukan :latest, yang mungkin sudah ditarik oleh deploy yang gagal).
 for ref in $IMAGES; do
-  echo "$ref $(image_id "$ref")" >> "$DIR/images-before.txt"
-  docker image inspect "$ref" >/dev/null 2>&1 && docker tag "$ref" "$(retag "$ref" "rollback-$STAMP")"
+  cur=$(running_id "$ref")
+  echo "$ref $cur" >> "$DIR/images-before.txt"
+  [ "$cur" != "-" ] && docker tag "$cur" "$(retag "$ref" "rollback-$STAMP")"
 done
 
 # 2. Ambil image baru; berhenti bila tidak ada yang berubah.
@@ -135,8 +149,8 @@ if [ "$CHANGED" = 0 ]; then
 fi
 
 # 3. Cadangkan database (skema public) dan konfigurasi.
-DB_NAME=$(envval DB_NAME); DB_USER=$(envval DB_USERNAME); [ -n "$DB_USER" ] || DB_USER=$(envval DB_USER)
-[ -n "$DB_NAME" ] && [ -n "$DB_USER" ] || fail "DB_NAME / DB_USERNAME tidak ada di .env. Tidak ada yang diubah (container lama masih berjalan)."
+DB_NAME=$(dbname); DB_USER=$(envval DB_USERNAME); [ -n "$DB_USER" ] || DB_USER=$(envval DB_USER)
+[ -n "$DB_NAME" ] && [ -n "$DB_USER" ] || fail "DB_NAME / DB_USERNAME tidak ditemukan di .env maupun compose. Tidak ada yang diubah (container lama masih berjalan)."
 PGPASSWORD=$(envval DB_PASSWORD); export PGPASSWORD
 docker exec -e PGPASSWORD "$PG_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" -n public -n drizzle -Fc > "$DIR/catu-db.dump" \
   || { unset PGPASSWORD; fail "pg_dump gagal. Tidak ada yang diubah (container lama masih berjalan)."; }
