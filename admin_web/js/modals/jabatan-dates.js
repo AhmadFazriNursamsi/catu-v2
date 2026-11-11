@@ -15,6 +15,14 @@ function jabatanIsoToDmy(iso) {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : null;
 }
 
+// Teks periode jabatan dd/mm/yyyy (data lama yang hanya punya tahun tetap tampil tahun).
+function jabatanPeriodText(u) {
+  const fmt = (dmy, year) => (/^\d{2}\/\d{2}\/\d{4}$/.test(String(dmy || '')) ? dmy : (year ? String(year) : ''));
+  const start = fmt(u.jabatan_start_date || u.jabatanStartDate, u.jabatan_start_year || u.jabatanStartYear);
+  const end = fmt(u.jabatan_end_date || u.jabatanEndDate, u.jabatan_end_year || u.jabatanEndYear);
+  return start && end ? `${start} - ${end}` : (start ? `${start} - Sekarang` : 'Aktif');
+}
+
 function jabatanDateInputs(u) {
   const cls = 'w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs';
   const start = jabatanToIso(u.jabatan_start_date || u.jabatanStartDate, u.jabatan_start_year || u.jabatanStartYear, false);

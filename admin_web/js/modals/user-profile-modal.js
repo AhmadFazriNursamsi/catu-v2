@@ -14,9 +14,7 @@
       const uBirth = u.birth_date || u.birthDate || '-';
       const uAddr = u.address || '-';
       
-      const startY = u.jabatan_start_year || (u.jabatan_start_date ? new Date(u.jabatan_start_date).getFullYear() : null);
-      const endY = u.jabatan_end_year || (u.jabatan_end_date ? new Date(u.jabatan_end_date).getFullYear() : null);
-      const periode = (startY && endY) ? `${startY} - ${endY}` : (startY ? `${startY} - Sekarang` : 'Aktif');
+      const periode = jabatanPeriodText(u);
 
       const initial = uName.charAt(0).toUpperCase();
 
