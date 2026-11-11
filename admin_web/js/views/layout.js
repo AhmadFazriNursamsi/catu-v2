@@ -169,6 +169,7 @@
                 <div>
                   ${(isOpen || isMobileOpen) ? `<p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">Sistem & Aplikasi</p>` : `<div class="h-px bg-slate-800 my-1 mx-2"></div>`}
                   <div class="space-y-1">
+                    ${renderNavItem('all_users', 'user-check', 'Semua User Aktif', (state.users || []).filter(u => typeof isActiveAccount === 'function' && isActiveAccount(u)).length, 'bg-slate-600')}
                     ${renderNavItem('activity_logs', 'scroll-text', 'Log Aktivitas')}
                     ${renderNavItem('settings', 'download', 'Download Apps')}
                   </div>
@@ -258,13 +259,14 @@
       if (tab === 'approvals') return 'Persetujuan Pendaftaran Akun';
       if (tab === 'master') return 'Master Data';
       if (tab === 'activity_logs') return 'Log Aktivitas & Audit Trail';
+      if (tab === 'all_users') return 'Semua User Aktif';
       if (tab === 'chat') return 'Monitoring Komunikasi Chat';
       if (tab === 'settings') return 'Download Apps';
       return tab;
     }
 
     function setTab(tab) {
-      if (['activity_logs', 'settings'].includes(tab) && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser())) {
+      if (['activity_logs', 'settings', 'all_users'].includes(tab) && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser())) {
         if (typeof showToast === 'function') showToast('warning', 'Akses terbatas: Menu ini hanya dapat diakses oleh Super Admin.');
         state.currentTab = 'overview';
         state.isMobileMenuOpen = false;

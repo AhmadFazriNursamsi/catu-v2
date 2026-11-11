@@ -61,6 +61,9 @@
       if (state.currentTab === 'activity_logs') {
         return typeof isSuperAdminUser === 'function' && isSuperAdminUser() ? renderActivityLogsTab() : renderUnauthorizedTab('Log Aktivitas');
       }
+      if (state.currentTab === 'all_users') {
+        return typeof isSuperAdminUser === 'function' && isSuperAdminUser() ? renderAllUsersTab() : renderUnauthorizedTab('Semua User Aktif');
+      }
       if (state.currentTab === 'settings') {
         return typeof isSuperAdminUser === 'function' && isSuperAdminUser() ? renderSettingsTab() : renderUnauthorizedTab('Pengaturan Portal');
       }
