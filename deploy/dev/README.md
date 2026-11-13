@@ -1,7 +1,7 @@
 # Lingkungan DEV (uji coba tanpa mengganggu produksi)
 
 Alamat: admin web `https://catu.devoutsys.com/dev/`, API `https://catu.devoutsys.com/dev/api` (aplikasi mobile dev memakai alamat API ini).
-Cadangan tanpa gerbang, dari jaringan lokal/VPN: `http://10.10.3.41:3013` dan `http://10.10.3.41:4003`.
+Cadangan tanpa gerbang, dari jaringan lokal/VPN: `http://<IP_SERVER_DEV>:3013` dan `http://<IP_SERVER_DEV>:4003`.
 Stack ini terpisah dari produksi: container `catu_dev_*`, database `catu_dev` dengan user `catu_dev`, JWT sendiri,
 WhatsApp/FCM/penyimpanan APK dimatikan. Admin web dev menampilkan pita merah **LINGKUNGAN DEV** dan memakai kunci
 localStorage berawalan `dev_`, jadi login dev tidak menimpa sesi produksi (alamatnya satu origin dengan produksi).
@@ -27,11 +27,11 @@ localStorage berawalan `dev_`, jadi login dev tidak menimpa sesi produksi (alama
    (migrasi dan data master terisi otomatis; admin dev dibuat lewat cara yang sama seperti di lokal).
 4. Gerbang web (nginx) yang melayani `catu.devoutsys.com` harus meneruskan dua jalur ke server dev. Backend menerima `/api/...`
    maupun tanpa `/api`, jadi awalan boleh dibuang. Tambahkan di blok server `catu.devoutsys.com`, di atas lokasi umum
-   (ganti `10.10.3.41` bila gerbang berada di mesin lain; bila satu mesin dengan server dev, `127.0.0.1` juga boleh):
+   (ganti `<IP_SERVER_DEV>` bila gerbang berada di mesin lain; bila satu mesin dengan server dev, `127.0.0.1` juga boleh):
    ```nginx
    location = /dev { return 301 /dev/; }
    location /dev/api/ {
-     proxy_pass http://10.10.3.41:4003/;
+     proxy_pass http://<IP_SERVER_DEV>:4003/;
      proxy_set_header Host $host;
      proxy_set_header X-Real-IP $remote_addr;
      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -39,7 +39,7 @@ localStorage berawalan `dev_`, jadi login dev tidak menimpa sesi produksi (alama
      client_max_body_size 50m;
    }
    location /dev/ {
-     proxy_pass http://10.10.3.41:3013/;
+     proxy_pass http://<IP_SERVER_DEV>:3013/;
      proxy_set_header Host $host;
      proxy_set_header X-Forwarded-Proto $scheme;
    }
@@ -51,18 +51,18 @@ localStorage berawalan `dev_`, jadi login dev tidak menimpa sesi produksi (alama
 Gerbang publik meneruskan seluruh `catu.devoutsys.com` ke container admin web produksi (Vite, port 3002). Vite itu bisa meneruskan
 `/dev/api/*` ke backend dev dan `/dev/*` ke web dev bila dua variabel ini diisi pada service **admin_web produksi** (bukan dev):
 
-    DEV_BACKEND_URL=http://10.10.3.41:4003
-    DEV_WEB_URL=http://10.10.3.41:3013
+    DEV_BACKEND_URL=http://<IP_SERVER_DEV>:4003
+    DEV_WEB_URL=http://<IP_SERVER_DEV>:3013
 
 Tanpa dua variabel itu perilaku produksi tidak berubah. Perlu rilis admin web produksi (image baru) lalu `docker compose up -d admin_web`.
 Cek: `https://catu.devoutsys.com/dev/api/health` menjawab JSON, dan `https://catu.devoutsys.com/dev/` menampilkan pita merah LINGKUNGAN DEV.
 
 ## APK uji (CATU Dev)
-Aplikasi uji (ID `.dev`, nama "CATU Dev") dibagikan seperti produksi lewat tautan: `http://10.10.3.41:4003/public/apk`
+Aplikasi uji (ID `.dev`, nama "CATU Dev") dibagikan seperti produksi lewat tautan: `http://<IP_SERVER_DEV>:4003/public/apk`
 (jaringan lokal/VPN). Sekali di server: `mkdir -p ~/Documents/catu-v2-dev/apk && chmod 777 ~/Documents/catu-v2-dev/apk`
 (container berjalan sebagai user non-root), lalu `docker compose up -d`. Unggah dari Mac dengan
 `scripts/mobile/deploy_dev_apk.sh` (kredensial admin DEV dari environment; menolak alamat produksi).
-Isi `PUBLIC_APK_URL=http://10.10.3.41:4003/public/apk` di `.env` dev agar unduhan di admin web dev menunjuk ke sana.
+Isi `PUBLIC_APK_URL=http://<IP_SERVER_DEV>:4003/public/apk` di `.env` dev agar unduhan di admin web dev menunjuk ke sana.
 
 ## Memperbarui DEV
 `cd ~/Documents/catu-v2-dev && docker compose pull && docker compose up -d`

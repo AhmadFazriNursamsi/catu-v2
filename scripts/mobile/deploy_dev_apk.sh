@@ -2,7 +2,7 @@
 # deploy_dev_apk.sh - mengunggah APK debug "CATU Dev" ke server DEV (BUKAN produksi).
 # Hasilnya bisa diunduh dari http://<server-dev>:4003/public/apk (tautan/QR seperti produksi), tanpa kabel/adb.
 #
-#   flutter build apk --debug --dart-define=CATU_API_URL=http://10.10.3.41:4003     # di folder mobile/
+#   flutter build apk --debug --dart-define=CATU_API_URL=$CATU_DEV_API_URL     # di folder mobile/
 #   read -s ADMIN_PASSWORD; export ADMIN_PASSWORD                                  # sandi admin DEV, bukan produksi
 #   ADMIN_PHONE=62xxxxxxxxxx ./scripts/mobile/deploy_dev_apk.sh [apk] [alamat-api-dev]
 #
@@ -12,7 +12,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 APK_PATH="${1:-$ROOT_DIR/mobile/build/app/outputs/flutter-apk/app-debug.apk}"
-DEV_API="${2:-http://10.10.3.41:4003}"
+DEV_API="${2:-${CATU_DEV_API_URL:?Isi CATU_DEV_API_URL=http://<ip-server-dev>:4003 atau beri argumen kedua}}"
 DEV_API="${DEV_API%/}"
 
 case "$DEV_API" in

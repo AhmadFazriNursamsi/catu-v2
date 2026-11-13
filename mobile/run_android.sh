@@ -34,7 +34,7 @@ fi
 echo "   Build Version: $VERSION_STRING"
 echo "   API URL      : $API_BASE_URL"
 
-LOCAL_API_URL="http://10.0.10.92:3005"
+LOCAL_API_URL="${CATU_LOCAL_API_URL:-http://localhost:3005}"
 if [[ "$API_BASE_URL" =~ ^http://10\. || "$API_BASE_URL" =~ ^http://192\.168 || "$API_BASE_URL" =~ ^http://localhost ]]; then
   LOCAL_API_URL="$API_BASE_URL"
 fi
