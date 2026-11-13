@@ -1,11 +1,26 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.devoutsys.catu",
+      "sha256_cert_fingerprints": [
+        "B7:1F:B5:BF:80:00:D5:9B:0D:A6:A8:F3:9E:F7:B5:2C:27:5F:9D:0A:3E:5C:CD:B0:41:C7:78:B2:8B:AA:D2:E1"
+      ]
+    }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.example.catu_mobile",
       "sha256_cert_fingerprints": [
-        "2B:F0:1B:E2:3B:99:47:55:55:86:33:2E:11:03:91:55:69:30:A7:94:BB:95:6B:53:EE:60:65:A3:E1:83:2E:16"
+        "2B:F0:1B:E2:3B:99:47:55:55:86:33:2E:11:03:91:55:69:30:A7:94:BB:95:6B:53:EE:60:65:A3:E1:83:2E:16",
+        "B7:1F:B5:BF:80:00:D5:9B:0D:A6:A8:F3:9E:F7:B5:2C:27:5F:9D:0A:3E:5C:CD:B0:41:C7:78:B2:8B:AA:D2:E1"
       ]
     }
   }

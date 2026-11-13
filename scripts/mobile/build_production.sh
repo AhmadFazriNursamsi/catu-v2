@@ -91,6 +91,15 @@ build_apk() {
   cp "$APK" "$FINAL"
   ( cd build/release && shasum -a 256 "$(basename "$FINAL")" | tee "$(basename "$FINAL").sha256" )
   echo "✅ Android APK siap dikirim: $MOBILE_DIR/$FINAL ($(ls -lh "$FINAL" | awk '{print $5}'))"
+
+  # AAB untuk Google Play, ditandatangani kunci yang sama (kunci unggah Play = kunci rilis resmi).
+  flutter build appbundle --release --obfuscate --split-debug-info="$SYMBOLS" --dart-define="CATU_API_URL=$TARGET_API_URL"
+  local AAB="build/app/outputs/bundle/release/app-release.aab" AAB_FP
+  [ -f "$AAB" ] || { echo "❌ AAB tidak ditemukan di $AAB"; exit 1; }
+  AAB_FP=$(keytool -printcert -jarfile "$AAB" | grep -i "SHA256:" | head -1 | awk '{print $NF}' | tr -d ':' | tr 'A-F' 'a-f')
+  [ "$AAB_FP" = "$WANT" ] || { echo "❌ AAB tidak ditandatangani kunci rilis resmi ($AAB_FP)."; exit 1; }
+  cp "$AAB" "build/release/catu-v$VERSION_NAME-$VERSION_CODE.aab"
+  echo "✅ AAB Google Play: $MOBILE_DIR/build/release/catu-v$VERSION_NAME-$VERSION_CODE.aab"
   echo "ℹ️  Simpan juga $SYMBOLS (membaca crash log) dan cadangkan android/catu-release.jks + android/key.properties."
 }
 

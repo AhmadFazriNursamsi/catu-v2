@@ -1,7 +1,7 @@
 import { LOGIN_LINK_TOKEN_PATTERN } from './login-link.service';
 
-// Paket aplikasi yang dibuka tombol cadangan; CATU Dev (lokal/DEV) memakai com.example.catu_mobile.dev.
-const appPackage = () => (process.env.ANDROID_APP_PACKAGE || '').trim() || 'com.example.catu_mobile';
+// Paket aplikasi yang dibuka tombol cadangan; CATU Dev (lokal/DEV) memakai com.devoutsys.catu.dev.
+const appPackage = () => (process.env.ANDROID_APP_PACKAGE || '').trim() || 'com.devoutsys.catu';
 
 /**
  * Halaman cadangan bila Android tidak langsung membuka aplikasi dari tautan (aplikasi belum terpasang atau
