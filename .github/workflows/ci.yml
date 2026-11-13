@@ -52,8 +52,8 @@ jobs:
         run: npm run build
       # Informatif: temuan high saat ini berasal dari rantai transitif firebase-admin (perlu upgrade mayor).
       # Jadikan blocking (hapus continue-on-error) setelah firebase-admin di-upgrade.
+      # Celah tinggi/kritis pada dependensi produksi menggagalkan CI (sisa celah sedang menunggu firebase-admin mayor).
       - name: Dependency audit (production, high+)
-        continue-on-error: true
         run: npm audit --omit=dev --audit-level=high
 
   mobile:
@@ -72,6 +72,9 @@ jobs:
       - run: flutter pub get
       - name: Static analysis
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      # Tes yang sama dengan workflow rilis, agar kegagalan ketahuan sebelum tag (bukan saat rilis).
+      - name: Tes
+        run: flutter test
 
   admin-web:
     runs-on: ubuntu-latest
@@ -87,3 +90,5 @@ jobs:
       # Semua tampilan dirender dengan payload HTML; satu pun yang lolos mentah menggagalkan build (XSS tersimpan).
       - name: Render tampilan dengan payload XSS
         run: node test/xss-render.check.cjs
+      - name: Dependency audit (production, high+)
+        run: npm audit --omit=dev --audit-level=high
