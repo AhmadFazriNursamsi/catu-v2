@@ -42,10 +42,23 @@ if (devBackend && devWeb) {
   Object.assign(proxyConfig, devApiProxy);
 }
 
-export default defineConfig({
+// Mode produksi masih dilayani server Vite: matikan HMR/WebSocket dan jangan suntikkan /@vite/client,
+// supaya browser pengunjung tidak terus mencoba menyambung WebSocket (galat "failed to connect to websocket").
+const noDevClient = {
+  name: 'catu-no-dev-client',
+  apply: 'serve',
+  transformIndexHtml: {
+    order: 'post',
+    handler: (html) => html.replace(/<script type="module" src="[^"]*\/@vite\/client"><\/script>\s*/g, ''),
+  },
+};
+
+export default defineConfig(({ mode }) => ({
+  plugins: mode === 'production' ? [noDevClient] : [],
   server: {
     allowedHosts,
     strictPort: true,
     proxy: proxyConfig,
+    ...(mode === 'production' ? { hmr: false, ws: false } : {}),
   },
-});
+}));
