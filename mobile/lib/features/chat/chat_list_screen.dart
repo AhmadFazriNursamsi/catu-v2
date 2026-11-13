@@ -4,19 +4,8 @@ import 'package:flutter/services.dart';
 import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
+import 'chat_list_filters.dart';
 import 'chat_screen.dart';
-
-enum ChatTimeFilter {
-  sevenDays,
-  thirtyDays,
-  all,
-}
-
-enum ChatCategoryFilter {
-  all,
-  kedukaan,
-  perminyakan,
-}
 
 class ChatListScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -46,7 +35,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   // Filter state (Default: 7 Hari Terakhir)
   ChatTimeFilter _timeFilter = ChatTimeFilter.sevenDays;
   ChatCategoryFilter _categoryFilter = ChatCategoryFilter.all;
-  bool _onlyUnread = false;
+  ChatReadFilter _readFilter = ChatReadFilter.all;
   bool _sortAscending = false;
 
   int? get _userId {
@@ -141,30 +130,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
   List<ChatGroupItem> get _filteredGroups {
     final now = DateTime.now();
     var list = _chatGroups.where((g) {
-      // 1. Time range filter (Default: 7 Hari Terakhir)
-      if (_timeFilter == ChatTimeFilter.sevenDays) {
-        // Always include groups with unread messages so user doesn't miss incoming chat!
-        if (g.unreadCount <= 0) {
-          final dt = g.lastMessageDateTime;
-          if (dt != null) {
-            final diff = now.difference(dt);
-            if (diff.inDays > 7) return false;
-          }
-        }
-      } else if (_timeFilter == ChatTimeFilter.thirtyDays) {
-        if (g.unreadCount <= 0) {
-          final dt = g.lastMessageDateTime;
-          if (dt != null) {
-            final diff = now.difference(dt);
-            if (diff.inDays > 30) return false;
-          }
-        }
-      }
-
-      // 2. Only unread filter
-      if (_onlyUnread && g.unreadCount <= 0) {
-        return false;
-      }
+      // 1-2. Waktu & status baca
+      if (!chatPassesTimeAndRead(g, now, _timeFilter, _readFilter)) return false;
 
       // 3. Category filter
       if (_categoryFilter == ChatCategoryFilter.kedukaan) {
@@ -200,7 +167,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     HapticFeedback.mediumImpact();
     ChatTimeFilter tempTime = _timeFilter;
     ChatCategoryFilter tempCat = _categoryFilter;
-    bool tempUnread = _onlyUnread;
+    ChatReadFilter tempRead = _readFilter;
 
     showModalBottomSheet(
       context: context,
@@ -249,7 +216,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           setModalState(() {
                             tempTime = ChatTimeFilter.sevenDays;
                             tempCat = ChatCategoryFilter.all;
-                            tempUnread = false;
+                            tempRead = ChatReadFilter.all;
                           });
                         },
                         child: const Text('Reset', style: TextStyle(color: Color(0xFFDC2626))),
@@ -272,21 +239,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _buildModalFilterChip(
-                        label: '7 Hari Terakhir (Default)',
-                        selected: tempTime == ChatTimeFilter.sevenDays,
-                        onSelected: () => setModalState(() => tempTime = ChatTimeFilter.sevenDays),
-                      ),
-                      _buildModalFilterChip(
-                        label: '30 Hari Terakhir',
-                        selected: tempTime == ChatTimeFilter.thirtyDays,
-                        onSelected: () => setModalState(() => tempTime = ChatTimeFilter.thirtyDays),
-                      ),
-                      _buildModalFilterChip(
-                        label: 'Semua Waktu',
-                        selected: tempTime == ChatTimeFilter.all,
-                        onSelected: () => setModalState(() => tempTime = ChatTimeFilter.all),
-                      ),
+                      for (final t in ChatTimeFilter.values)
+                        _buildModalFilterChip(
+                          label: t.modalLabel,
+                          selected: tempTime == t,
+                          onSelected: () => setModalState(() => tempTime = t),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 18),
@@ -325,20 +283,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   const SizedBox(height: 18),
 
                   // ── Status Pesan ──
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text(
-                      'Hanya Tampilkan Pesan Belum Dibaca',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
-                    ),
-                    subtitle: Text(
-                      _totalUnreadCount > 0 ? '$_totalUnreadCount pesan baru' : 'Tidak ada pesan baru',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                    ),
-                    value: tempUnread,
-                    activeTrackColor: const Color(0xFF1E5399),
-                    onChanged: (val) => setModalState(() => tempUnread = val),
+                  Text(
+                    _totalUnreadCount > 0 ? 'Status Pesan · $_totalUnreadCount pesan baru' : 'Status Pesan',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
                   ),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    for (final r in ChatReadFilter.values)
+                      _buildModalFilterChip(label: r.label, selected: tempRead == r, onSelected: () => setModalState(() => tempRead = r)),
+                  ]),
                   const SizedBox(height: 20),
 
                   // Action Buttons
@@ -350,7 +303,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         setState(() {
                           _timeFilter = tempTime;
                           _categoryFilter = tempCat;
-                          _onlyUnread = tempUnread;
+                          _readFilter = tempRead;
                         });
                         Navigator.pop(ctx);
                       },
@@ -514,52 +467,27 @@ class _ChatListScreenState extends State<ChatListScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
               children: [
-                _buildQuickChip(
-                  label: '7 Hari',
-                  selected: _timeFilter == ChatTimeFilter.sevenDays && !_onlyUnread,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      _timeFilter = ChatTimeFilter.sevenDays;
-                      _onlyUnread = false;
-                    });
-                  },
-                ),
-                const SizedBox(width: 8),
-                _buildQuickChip(
-                  label: '30 Hari',
-                  selected: _timeFilter == ChatTimeFilter.thirtyDays && !_onlyUnread,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      _timeFilter = ChatTimeFilter.thirtyDays;
-                      _onlyUnread = false;
-                    });
-                  },
-                ),
-                const SizedBox(width: 8),
-                _buildQuickChip(
-                  label: 'Semua',
-                  selected: _timeFilter == ChatTimeFilter.all && !_onlyUnread,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      _timeFilter = ChatTimeFilter.all;
-                      _onlyUnread = false;
-                    });
-                  },
-                ),
-                const SizedBox(width: 8),
+                for (final t in ChatTimeFilter.values) ...[
+                  _buildQuickChip(
+                    label: t.chipLabel,
+                    selected: _timeFilter == t,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _timeFilter = t);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 _buildQuickChip(
                   label: _totalUnreadCount > 0 ? 'Belum Dibaca ($_totalUnreadCount)' : 'Belum Dibaca',
-                  selected: _onlyUnread,
-                  badgeCount: _onlyUnread ? null : (_totalUnreadCount > 0 ? _totalUnreadCount : null),
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      _onlyUnread = !_onlyUnread;
-                    });
-                  },
+                  selected: _readFilter == ChatReadFilter.unread,
+                  onTap: () => _toggleReadFilter(ChatReadFilter.unread),
+                ),
+                const SizedBox(width: 8),
+                _buildQuickChip(
+                  label: 'Sudah Dibaca',
+                  selected: _readFilter == ChatReadFilter.read,
+                  onTap: () => _toggleReadFilter(ChatReadFilter.read),
                 ),
                 if (_categoryFilter != ChatCategoryFilter.all) ...[
                   const SizedBox(width: 8),
@@ -610,7 +538,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
   bool get _hasActiveFilters {
     return _timeFilter != ChatTimeFilter.sevenDays ||
         _categoryFilter != ChatCategoryFilter.all ||
-        _onlyUnread;
+        _readFilter != ChatReadFilter.all;
+  }
+
+  void _toggleReadFilter(ChatReadFilter f) {
+    HapticFeedback.selectionClick();
+    setState(() => _readFilter = _readFilter == f ? ChatReadFilter.all : f);
   }
 
   Widget _buildQuickChip({
@@ -685,19 +618,21 @@ class _ChatListScreenState extends State<ChatListScreen> {
             Icon(Icons.chat_bubble_outline_rounded, size: 54, color: Colors.grey.shade300),
             const SizedBox(height: 12),
             Text(
-              _timeFilter == ChatTimeFilter.sevenDays
-                  ? 'Tidak ada pesan dalam 7 hari terakhir.'
-                  : 'Belum ada pesan chat pelayanan.',
+              _readFilter != ChatReadFilter.all
+                  ? 'Tidak ada pesan dengan status "${_readFilter.label}".'
+                  : _timeFilter.maxDays != null
+                      ? 'Tidak ada pesan dalam ${_timeFilter.maxDays} hari terakhir.'
+                      : 'Belum ada pesan chat pelayanan.',
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
               textAlign: TextAlign.center,
             ),
-            if (_timeFilter == ChatTimeFilter.sevenDays) ...[
+            if (_timeFilter != ChatTimeFilter.all || _readFilter != ChatReadFilter.all) ...[
               const SizedBox(height: 14),
               OutlinedButton.icon(
                 onPressed: () {
                   setState(() {
                     _timeFilter = ChatTimeFilter.all;
-                    _onlyUnread = false;
+                    _readFilter = ChatReadFilter.all;
                   });
                 },
                 icon: const Icon(Icons.history_rounded, size: 16, color: Color(0xFF1E5399)),
@@ -845,12 +780,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   // Line 3: Checkmark + Last Message Preview with Sender Name
                   Row(
                     children: [
-                      Icon(
-                        group.unreadCount > 0 ? Icons.done_rounded : Icons.done_all_rounded,
-                        size: 14,
-                        color: group.unreadCount > 0 ? const Color(0xFF94A3B8) : const Color(0xFF3B82F6),
-                      ),
-                      const SizedBox(width: 4),
+                      // Centang hanya untuk pesan terakhir milik saya: biru = sudah dibaca semua anggota lain.
+                      if (group.lastSenderId != null && group.lastSenderId == _userId) ...[
+                        Icon(Icons.done_all_rounded, size: 14, color: group.lastMessageRead ? const Color(0xFF3B82F6) : const Color(0xFF94A3B8)),
+                        const SizedBox(width: 4),
+                      ],
                       Expanded(
                         child: Text(
                           group.formatLastMessage(currentUserId: _userId),

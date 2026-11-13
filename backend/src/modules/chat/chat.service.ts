@@ -216,27 +216,32 @@ private async resolveGroupId(idParam: string): Promise<number> {
   ) {
     const groupId = await this.resolveGroupId(groupIdParam);
     const userId = body?.userId || parseInt(queryUserId || '', 10) || 1;
+    const maxId = await this.markReadUpTo(groupId, userId);
+    return { success: true, groupId, userId, lastReadMessageId: maxId };
+  }
 
+  /** Catat pesan terakhir yang sudah dibaca. Upsert, karena anggota yang berhak (pemohon, pengurus, romo,
+   *  koordinator) belum tentu punya baris di chat_group_members; UPDATE biasa membuat penanda belum dibaca tak pernah hilang. */
+  private async markReadUpTo(groupId: number, userId: number): Promise<number> {
     const maxMsg = await this.dataSource.query(
       `SELECT COALESCE(MAX(id), 0) as max_id FROM chat_messages WHERE chat_group_id = $1`,
       [groupId],
     );
-    const maxId = maxMsg[0]?.max_id || 0;
-
-    if (maxId > 0 && userId > 0) {
-      await this.dataSource.query(
-        `UPDATE chat_group_members SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), $3)
-         WHERE chat_group_id = $1 AND user_id = $2`,
-        [groupId, userId, maxId],
-      );
-      await this.dataSource.query(
-        `UPDATE notifications SET is_read = TRUE
-         WHERE user_id = $1 AND (chat_group_id = $2 OR (order_id = (SELECT order_id FROM chat_groups WHERE id = $2) AND type = 'CHAT_MESSAGE'))`,
-        [userId, groupId],
-      );
-    }
-
-    return { success: true, groupId, userId, lastReadMessageId: maxId };
+    const maxId = Number(maxMsg[0]?.max_id || 0);
+    if (maxId <= 0 || userId <= 0) return maxId;
+    await this.dataSource.query(
+      `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group, last_read_message_id)
+       VALUES ($1, $2, 'MEMBER', $3)
+       ON CONFLICT (chat_group_id, user_id)
+       DO UPDATE SET last_read_message_id = GREATEST(COALESCE(chat_group_members.last_read_message_id, 0), $3)`,
+      [groupId, userId, maxId],
+    );
+    await this.dataSource.query(
+      `UPDATE notifications SET is_read = TRUE
+       WHERE user_id = $1 AND (chat_group_id = $2 OR (order_id = (SELECT order_id FROM chat_groups WHERE id = $2) AND type = 'CHAT_MESSAGE'))`,
+      [userId, groupId],
+    );
+    return maxId;
   }
   async getMessages(
     groupIdParam: string,
@@ -244,31 +249,10 @@ private async resolveGroupId(idParam: string): Promise<number> {
   ) {
     const groupId = await this.resolveGroupId(groupIdParam);
 
-    if (userIdParam) {
-      const uId = parseInt(userIdParam, 10) || 0;
-      if (uId > 0) {
-        const maxMsg = await this.dataSource.query(
-          `SELECT COALESCE(MAX(id), 0) as max_id FROM chat_messages WHERE chat_group_id = $1`,
-          [groupId],
-        );
-        const maxId = maxMsg[0]?.max_id || 0;
-        if (maxId > 0) {
-          try {
-            await this.dataSource.query(
-              `UPDATE chat_group_members SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), $3)
-               WHERE chat_group_id = $1 AND user_id = $2`,
-              [groupId, uId, maxId],
-            );
-            await this.dataSource.query(
-              `UPDATE notifications SET is_read = TRUE
-               WHERE user_id = $1 AND (chat_group_id = $2 OR (order_id = (SELECT order_id FROM chat_groups WHERE id = $2) AND type = 'CHAT_MESSAGE'))`,
-              [uId, groupId],
-            );
-          } catch (readReceiptErr) {
-            // Non-blocking: background read receipt failure should never fail message retrieval
-          }
-        }
-      }
+    const uId = parseInt(userIdParam || '', 10) || 0;
+    if (uId > 0) {
+      // Non-blocking: kegagalan tanda baca tidak boleh menggagalkan pengambilan pesan
+      await this.markReadUpTo(groupId, uId).catch(() => undefined);
     }
 
     return await this.dataSource.query(
@@ -547,6 +531,11 @@ private async resolveGroupId(idParam: string): Promise<number> {
                 'Grup chat pelayanan aktif'
               ) as last_message_text,
               (SELECT m.sender_id FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_id,
+              -- Centang biru: semua anggota lain sudah membaca pesan terakhir (non-sistem).
+              NOT EXISTS (
+                SELECT 1 FROM chat_group_members r WHERE r.chat_group_id = g.id AND r.user_id != $1
+                  AND COALESCE(r.last_read_message_id, 0) < COALESCE((SELECT MAX(m.id) FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT'), 0)
+              ) as last_message_read,
               (SELECT COALESCE(p.full_name, 'Pengguna') FROM chat_messages m LEFT JOIN user_profiles p ON m.sender_id = p.user_id WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_name,
               COALESCE(
                 (SELECT created_at FROM chat_messages m WHERE m.chat_group_id = g.id ORDER BY m.id DESC LIMIT 1),
