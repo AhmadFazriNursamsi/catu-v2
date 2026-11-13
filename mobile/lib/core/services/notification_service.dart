@@ -39,11 +39,10 @@ class NotificationService {
   static final Map<String, int> _recentNotificationTimestamps = {};
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'catu_custom_sound_channel_v3',
+    'catu_custom_sound_channel_v4', // Android mengunci suara per kanal: ganti suara = ganti ID kanal
     'Pelayanan & Chat CATU',
     description: 'Notifikasi penting untuk permintaan pelayanan Romo, persetujuan jadwal, dan pesan chat umat',
-    importance: Importance.max,
-    playSound: true,
+    importance: Importance.max, playSound: true,
     sound: RawResourceAndroidNotificationSound('notif_catu'),
     enableVibration: true,
   );
@@ -340,6 +339,7 @@ class NotificationService {
         final androidImplementation = _localNotifications
             .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
         await androidImplementation?.requestNotificationsPermission();
+        await androidImplementation?.deleteNotificationChannel('catu_custom_sound_channel_v3'); // kanal lama bersuara lama
         await androidImplementation?.createNotificationChannel(_channel);
       } else if (Platform.isIOS) {
         final iosImplementation = _localNotifications
@@ -528,8 +528,7 @@ class NotificationService {
     );
 
     const darwinDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
+      presentAlert: true, presentBadge: true,
       presentSound: true,
       sound: 'notif_catu.caf',
       presentBanner: true,
