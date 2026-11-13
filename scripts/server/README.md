@@ -1,12 +1,14 @@
 # Deploy satu perintah (`deploy.sh`)
 
+> Alamat server tidak ditulis di repo (repo publik). Sekali di Mac: `export CATU_SSH=<user>@<ip-server>` (simpan di `~/.zshrc`/`~/.bash_profile`).
+
 Menggantikan langkah manual (cadangan, tag rollback, pull, up, cek health). Dijalankan **di server**, dari folder compose.
 
 ## Pasang (sekali, dari Mac)
 ```
-scp scripts/server/deploy.sh perkasa@10.10.3.41:~/Documents/catu-v2/deploy.sh
-scp scripts/server/deploy.sh perkasa@10.10.3.41:~/Documents/catu-v2-dev/deploy.sh
-ssh perkasa@10.10.3.41 'chmod +x ~/Documents/catu-v2/deploy.sh ~/Documents/catu-v2-dev/deploy.sh'
+scp scripts/server/deploy.sh "$CATU_SSH":~/Documents/catu-v2/deploy.sh
+scp scripts/server/deploy.sh "$CATU_SSH":~/Documents/catu-v2-dev/deploy.sh
+ssh "$CATU_SSH" 'chmod +x ~/Documents/catu-v2/deploy.sh ~/Documents/catu-v2-dev/deploy.sh'
 ```
 
 ## Pakai
@@ -17,7 +19,7 @@ ssh perkasa@10.10.3.41 'chmod +x ~/Documents/catu-v2/deploy.sh ~/Documents/catu-
 | `CATU_HEALTH_URL=https://catu.devoutsys.com/dev/api/health ./deploy.sh` | Deploy dev (dari `~/Documents/catu-v2-dev`) |
 | `./deploy.sh --rollback <STAMP>` | Kembali ke image deploy tertentu |
 
-Dari Mac langsung: `ssh perkasa@10.10.3.41 'cd ~/Documents/catu-v2 && ./deploy.sh'`.
+Dari Mac langsung: `ssh "$CATU_SSH" 'cd ~/Documents/catu-v2 && ./deploy.sh'`.
 
 ## Urutan kerja
 1. Tandai image yang berjalan (`:rollback-<STAMP>`), lalu `pull`. Bila tidak ada image baru, berhenti tanpa mengubah apa pun.
@@ -41,8 +43,8 @@ APK tidak ikut karena disimpan di penyimpanan objek, bukan di disk server.
 
 ## Pasang (sekali)
 ```
-scp scripts/server/backup.sh scripts/server/restore.sh scripts/server/deploy.sh perkasa@10.10.3.41:~/Documents/catu-v2/
-ssh perkasa@10.10.3.41 'cd ~/Documents/catu-v2 && chmod +x backup.sh restore.sh deploy.sh && ./backup.sh'
+scp scripts/server/backup.sh scripts/server/restore.sh scripts/server/deploy.sh "$CATU_SSH":~/Documents/catu-v2/
+ssh "$CATU_SSH" 'cd ~/Documents/catu-v2 && chmod +x backup.sh restore.sh deploy.sh && ./backup.sh'
 ```
 Lalu di server `crontab -e`, tambahkan:
 ```
@@ -58,7 +60,7 @@ Lalu di server `crontab -e`, tambahkan:
 
 Cadangan ini ada di disk yang sama dengan server: melindungi dari data terhapus/rusak dan rilis gagal, **tidak** dari
 disk rusak atau server hilang. Sesekali salin satu cadangan ke luar server, mis. dari Mac:
-`scp -r perkasa@10.10.3.41:~/Documents/catu-v2/backups/daily/<STAMP> ~/Backups/catu-server/`.
+`scp -r "$CATU_SSH":~/Documents/catu-v2/backups/daily/<STAMP> ~/Backups/catu-server/`.
 
 # Pemulihan (`restore.sh`)
 

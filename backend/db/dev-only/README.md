@@ -1,6 +1,6 @@
 # Berkas khusus development — JANGAN dipakai untuk produksi
 
-- `init-dev-snapshot.sql`: dump lama database **development** (berisi akun uji beserta hash password, order, notifikasi, token perangkat).
+- `init-dev-snapshot.sql`: **dihapus** (13 Nov 2026) karena repo publik; berisi nomor HP akun uji, hash password, token perangkat, dan chat.
 - `seed_user_data.sql`: data awal development.
 
 Skema produksi dan database baru dibangun **hanya** oleh migrasi di `backend/drizzle` (lihat `backend/drizzle/README.md`).

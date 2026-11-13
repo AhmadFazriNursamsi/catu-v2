@@ -60,16 +60,16 @@ git tag v2.9.59 && git push origin v2.9.59
 **Penyiapan sekali** (dijalankan pemilik; nilai rahasia tidak pernah tampil di layar):
 ```bash
 # 1. Token unggah: buat di server dan simpan di .env produksi (backend membacanya sebagai APK_UPLOAD_TOKEN)
-ssh perkasa@10.10.3.41 'cd ~/Documents/catu-v2 && grep -q "^APK_UPLOAD_TOKEN=" .env || echo "APK_UPLOAD_TOKEN=$(openssl rand -hex 32)" >> .env'
+ssh "$CATU_SSH" 'cd ~/Documents/catu-v2 && grep -q "^APK_UPLOAD_TOKEN=" .env || echo "APK_UPLOAD_TOKEN=$(openssl rand -hex 32)" >> .env'
 # 2. Salin token yang sama ke GitHub (environment "production")
-ssh perkasa@10.10.3.41 'grep "^APK_UPLOAD_TOKEN=" ~/Documents/catu-v2/.env | cut -d= -f2-' | gh secret set APK_UPLOAD_TOKEN --env production
+ssh "$CATU_SSH" 'grep "^APK_UPLOAD_TOKEN=" ~/Documents/catu-v2/.env | cut -d= -f2-' | gh secret set APK_UPLOAD_TOKEN --env production
 # 3. Kunci rilis ke GitHub (dari folder mobile/android yang berisi catu-release.jks dan key.properties)
 base64 -i catu-release.jks | gh secret set ANDROID_KEYSTORE_BASE64 --env production
 grep '^storePassword=' key.properties | cut -d= -f2- | gh secret set ANDROID_KEYSTORE_PASSWORD --env production
 grep '^keyAlias='      key.properties | cut -d= -f2- | gh secret set ANDROID_KEY_ALIAS --env production
 grep '^keyPassword='   key.properties | cut -d= -f2- | gh secret set ANDROID_KEY_PASSWORD --env production
 # 4. Terapkan token di server (backend dibuat ulang dengan .env baru)
-ssh perkasa@10.10.3.41 'cd ~/Documents/catu-v2 && docker compose up -d'
+ssh "$CATU_SSH" 'cd ~/Documents/catu-v2 && docker compose up -d'
 ```
 Endpoint unggah CI (`/public/apk/ci/*`) **nonaktif** selama `APK_UPLOAD_TOKEN` tidak diatur di server. Mengganti token: hapus baris di
 `.env`, ulangi langkah 1, 2, dan 4. Disarankan menambahkan *required reviewer* pada environment `production` (Settings -> Environments)

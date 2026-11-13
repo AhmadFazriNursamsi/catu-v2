@@ -185,8 +185,8 @@ flutter run -d 8178DDE6-D46E-4088-A2AC-76DB4D226DD2
 
 # 2. Hubungkan & Jalankan di Android (Wireless ADB)
 adb mdns services
-adb connect 10.0.10.35:<port_terbaru>
-flutter run -d 10.0.10.35:<port_terbaru>
+adb connect <IP_HP>:<port_terbaru>
+flutter run -d <IP_HP>:<port_terbaru>
 ```
 
 ### C. Menghentikan Semua Service
