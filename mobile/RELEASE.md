@@ -28,11 +28,13 @@ Hasil: `build/release/catu-v<versi>-<kode>.apk` beserta berkas `.sha256`.
   `keytool -list -v -keystore ~/Backups/catu-release-key/catu-release.jks | grep SHA256` harus sama dengan sidik jari di atas.
 - Mengganti kunci memerlukan sidik jari baru di `mobile/release-cert.sha256` dan cadangan baru di tiga tempat itu SEBELUM APK dibangun.
 - APK memakai tanda tangan v2 dan v3, sehingga penggantian kunci di masa depan (rotasi) dimungkinkan tanpa pasang ulang.
-- Jangan pernah mengubah `applicationId` (`com.example.catu_mobile`): aplikasi dianggap berbeda dan pengguna tidak bisa memperbarui.
+- `applicationId` sejak 2.9.79 adalah `com.devoutsys.catu` (sama dengan iOS; Google Play menolak `com.example.*`). Paket lama
+  `com.example.catu_mobile` (s.d. 2.9.78) adalah aplikasi lain: pengguna lama memasang aplikasi baru sekali lalu menghapus yang lama.
+  Jangan mengubah `applicationId` lagi.
 
 ## Build debug vs rilis di satu HP
 Build debug (uji lokal ke backend LAN, HTTP diizinkan) ditandatangani kunci debug; build rilis memakai kunci rilis. Android menolak
-menimpa salah satunya dengan yang lain: pindah di antara keduanya perlu `adb uninstall com.example.catu_mobile` (data masuk hilang).
+menimpa salah satunya dengan yang lain: pindah di antara keduanya perlu `adb uninstall com.devoutsys.catu` (data masuk hilang).
 
 ## Distribusi
 Unggah APK lewat menu **Pengaturan Aplikasi** di Admin Web (QR dan tautan unduh), atau kirim berkasnya langsung.

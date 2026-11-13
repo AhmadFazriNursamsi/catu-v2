@@ -331,14 +331,14 @@ mobile/
 ## 8. Konfigurasi Platform Native (Android & iOS)
 
 ### Android:
-* **Package Name:** `com.example.catu_mobile` (atau `com.example.catuMobile`)
+* **Package Name:** `com.devoutsys.catu` sejak 2.9.79 (sebelumnya `com.example.catu_mobile`, ditolak Google Play)
 * **Ikon Notifikasi Native:**
   * Status Bar Icon: `@drawable/ic_stat_catu` (Siluet putih transparan RGBA).
   * Banner LargeIcon: `@drawable/ic_catu_logo` (Logo CATU berwarna 192x192).
 * **Notification Channel:** `catu_high_importance_channel` (Importance: Max, Sound: True, Vibration: True).
 
 ### iOS:
-* **Bundle ID iOS:** `com.devoutsys.catu` (sejak Nov 2026; Android tetap `com.example.catu_mobile`)
+* **Bundle ID iOS:** `com.devoutsys.catu` (sejak Nov 2026; Android sama sejak 2.9.79)
 * **Delegate Notifikasi:** `UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate` pada `AppDelegate.swift`.
 * **Izin Runtime:** Darwin `requestPermissions(alert: true, badge: true, sound: true)` dan `DarwinNotificationDetails(presentBanner: true, presentList: true)`.
 
