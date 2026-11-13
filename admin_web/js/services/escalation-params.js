@@ -4,14 +4,14 @@ function renderEscalationParamsCard() {
   const s = state.escalationSettings || { ordoAfterMinutes: 10, koordinatorAfterMinutes: 20 };
   const draft = state.escalationDraft || s;
   const canEdit = typeof isSuperAdminUser === 'function' && isSuperAdminUser();
-  const field = (id, label, hint, value) => `
+  const field = (id, label, hint, value, unit, min) => `
     <label class="block">
       <span class="text-xs font-extrabold text-slate-700">${label}</span>
       <div class="mt-2 flex items-center gap-2">
-        <input type="number" id="${id}" min="0" max="1440" step="1" value="${Number(value)}" ${canEdit ? '' : 'disabled'}
+        <input type="number" id="${id}" min="${min}" max="1440" step="1" value="${Number(value)}" ${canEdit ? '' : 'disabled'}
           oninput="updateEscalationDraft()"
           class="w-28 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 disabled:bg-slate-50 disabled:text-slate-400" />
-        <span class="text-xs font-bold text-slate-500">menit sejak pelayanan dibuat</span>
+        <span class="text-xs font-bold text-slate-500">${unit}</span>
       </div>
       <span class="mt-1.5 block text-[11px] font-medium leading-relaxed text-slate-500">${hint}</span>
     </label>`;
@@ -25,8 +25,8 @@ function renderEscalationParamsCard() {
         </p>
       </div>
       <div class="grid gap-6 p-4 sm:p-6 md:grid-cols-2">
-        ${field('escalationOrdoMinutes', 'Terbuka untuk Romo Ordo setelah', 'Sebelum batas ini Romo Ordo tidak melihat dan tidak dapat menerima pelayanan. Pelayanan tanpa paroki (umat pendatang) langsung terbuka.', draft.ordoAfterMinutes)}
-        ${field('escalationKoordinatorMinutes', 'Koordinator diberi tahu setelah', 'Koordinator hanya menerima notifikasi pelayanan baru yang belum diterima setelah batas ini. Tidak boleh lebih kecil dari batas Romo Ordo.', draft.koordinatorAfterMinutes)}
+        ${field('escalationOrdoMinutes', 'Terbuka untuk Romo Ordo setelah', 'Sebelum batas ini Romo Ordo tidak melihat dan tidak dapat menerima pelayanan. Pelayanan tanpa paroki (umat pendatang) langsung terbuka.', draft.ordoAfterMinutes, 'menit sejak pelayanan dibuat', 0)}
+        ${field('escalationKoordinatorMinutes', 'Koordinator diberi tahu setelah', 'Dihitung setelah pelayanan terbuka untuk Romo Ordo, jadi Romo Ordo selalu diberi tahu lebih dulu (contoh: 3 + 3 = menit ke-6). Lintas paroki & umat pendatang: sejak pelayanan dibuat. Minimal 1.', draft.koordinatorAfterMinutes, 'menit setelah terbuka untuk Romo Ordo', 1)}
       </div>
       <div class="flex items-center justify-between gap-3 border-t border-slate-200/80 bg-slate-50/50 px-4 py-4 sm:px-6">
         <span class="text-[11px] font-semibold text-slate-500">${canEdit ? 'Perubahan berlaku untuk pelayanan yang belum diterima.' : 'Hanya Super Admin yang dapat mengubah parameter ini.'}</span>
