@@ -4,7 +4,7 @@ export const DEFAULT_ORDO_AFTER_MINUTES = 10;
 export const DEFAULT_KOORDINATOR_AFTER_MINUTES = 20;
 export const MAX_ESCALATION_MINUTES = 1440;
 
-/** Menit sejak pelayanan dibuat sampai terbuka untuk Romo Ordo dan sampai Koordinator diberi tahu. */
+/** Romo Ordo: menit sejak pelayanan dibuat. Koordinator: menit SETELAH pelayanan terbuka untuk Romo Ordo (lihat koordinatorOpensAt). */
 export interface EscalationSettings {
   ordoAfterMinutes: number;
   koordinatorAfterMinutes: number;
@@ -22,9 +22,7 @@ export function validateSettings(s: EscalationSettings): string | null {
       return `Menit untuk ${label} harus bilangan bulat 0 sampai ${MAX_ESCALATION_MINUTES}.`;
     }
   }
-  if (s.koordinatorAfterMinutes < s.ordoAfterMinutes) {
-    return 'Menit untuk Koordinator tidak boleh lebih kecil dari menit untuk Romo Ordo.';
-  }
+  if (s.koordinatorAfterMinutes < 1) return 'Menit untuk Koordinator minimal 1 agar Romo Ordo selalu diberi tahu lebih dulu.';
   return null;
 }
 
@@ -39,6 +37,15 @@ export function opensAt(createdAt: Date, minutes: number): Date {
 export function isOpenForOrdo(order: { createdAt: Date; hasParoki: boolean }, ordoAfterMinutes: number, now: Date): boolean {
   if (!order.hasParoki) return true;
   return now.getTime() >= opensAt(order.createdAt, ordoAfterMinutes).getTime();
+}
+
+/**
+ * Kapan Koordinator dilibatkan. Pelayanan biasa: M menit SETELAH terbuka untuk Romo Ordo (Romo Ordo selalu lebih dulu).
+ * Lintas paroki / umat pendatang / tanpa paroki: Romo Ordo sudah terbuka sejak dibuat, jadi tetap M menit sejak dibuat.
+ */
+export function koordinatorOpensAt(order: { createdAt: Date; hasParoki: boolean }, s: EscalationSettings): Date {
+  const ordoOpen = order.hasParoki ? opensAt(order.createdAt, s.ordoAfterMinutes) : order.createdAt;
+  return opensAt(ordoOpen, s.koordinatorAfterMinutes);
 }
 
 /** Koordinator tidak boleh mencarikan Romo untuk pelayanan yang ia ajukan sendiri (pemohon dan penunjuk Romo harus orang berbeda). */

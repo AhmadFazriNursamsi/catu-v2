@@ -17,7 +17,8 @@ describe('escalation-rules', () => {
   it('memvalidasi pengaturan', () => {
     expect(validateSettings({ ordoAfterMinutes: 10, koordinatorAfterMinutes: 20 })).toBeNull();
     expect(validateSettings({ ordoAfterMinutes: 10, koordinatorAfterMinutes: 10 })).toBeNull();
-    expect(validateSettings({ ordoAfterMinutes: 30, koordinatorAfterMinutes: 20 })).toMatch(/Koordinator/);
+    expect(validateSettings({ ordoAfterMinutes: 30, koordinatorAfterMinutes: 20 })).toBeNull();
+    expect(validateSettings({ ordoAfterMinutes: 3, koordinatorAfterMinutes: 0 })).toMatch(/Koordinator/);
     expect(validateSettings({ ordoAfterMinutes: -1, koordinatorAfterMinutes: 20 })).toMatch(/bilangan bulat/);
     expect(validateSettings({ ordoAfterMinutes: 1.5, koordinatorAfterMinutes: 20 })).toMatch(/bilangan bulat/);
   });

@@ -7,7 +7,7 @@ import { AcceptanceClaimService } from '../order-rules/acceptance-claim.service'
 import { orderKeuskupanSql } from '../order-rules/lintas-paroki';
 import { EscalationSettingsService } from './escalation-settings.service';
 import { RegisterRomoInput, RomoRegistrationService } from './romo-registration.service';
-import { opensAt, ownOrderError } from './escalation-rules';
+import { koordinatorOpensAt, ownOrderError } from './escalation-rules';
 
 /** Awalan gelar hanya bila nama belum memuatnya ("Romo Agus" tidak menjadi "Romo Romo Agus"). */
 const titled = (title: string, name: string) => (new RegExp(`^${title}\\b`, 'i').test(name.trim()) ? name.trim() : `${title} ${name.trim()}`);
@@ -152,8 +152,7 @@ export class KoordinatorAssignmentService {
     const pendingItems = items.filter((i: any) => i.status === 'PENDING' && !i.accepted_romo_id);
     const open = items.length === 0 ? order.status === 'PENDING' && !order.accepted_romo_id : pendingItems.length > 0;
     if (!open) return { order, pendingItems, state: 'CLOSED', reason: 'Pelayanan ini sudah diterima Romo atau sudah ditutup.' };
-    const { koordinatorAfterMinutes } = await this.settings.get();
-    const at = opensAt(new Date(order.created_at), koordinatorAfterMinutes);
+    const at = koordinatorOpensAt({ createdAt: new Date(order.created_at), hasParoki: !!order.paroki_id && !order.lintas_paroki }, await this.settings.get());
     if (Date.now() < at.getTime()) {
       const time = at.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }).replace('.', ':');
       return { order, pendingItems, state: 'WAITING', reason: `Baru dapat dicarikan Romo mulai pukul ${time} WIB (${order.lintas_paroki ? 'menunggu Romo Ordo tujuan' : 'menunggu Romo Paroki dan Romo Ordo'}).` };

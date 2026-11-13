@@ -27,8 +27,8 @@ interface DueOrder {
 }
 
 /**
- * Eskalasi pelayanan berjenjang: Romo Paroki langsung; Romo Ordo setelah N menit; Koordinator setelah M menit
- * (untuk mencarikan Romo). Koordinator tidak lagi diberi tahu soal pelayanan sebelum eskalasi.
+ * Eskalasi pelayanan berjenjang: Romo Paroki langsung; Romo Ordo setelah N menit; Koordinator M menit setelah
+ * itu (untuk mencarikan Romo). Koordinator tidak lagi diberi tahu soal pelayanan sebelum eskalasi.
  */
 @Injectable()
 export class EscalationService implements OnModuleInit, OnModuleDestroy {
@@ -76,8 +76,8 @@ export class EscalationService implements OnModuleInit, OnModuleDestroy {
     this.running = true;
     try {
       const { ordoAfterMinutes, koordinatorAfterMinutes } = await this.settings.get();
-      for (const o of await this.claimDue('ordo_notified_at', ordoAfterMinutes, true)) await this.escalateToOrdo(o);
-      for (const o of await this.claimDue('koordinator_notified_at', koordinatorAfterMinutes, false)) await this.escalateToKoordinator(o);
+      for (const o of await this.claimDue('ordo_notified_at', ordoAfterMinutes, 0)) await this.escalateToOrdo(o);
+      for (const o of await this.claimDue('koordinator_notified_at', koordinatorAfterMinutes, ordoAfterMinutes)) await this.escalateToKoordinator(o);
     } catch (err) {
       this.logger.error(`Eskalasi gagal: ${(err as Error).message}`);
     } finally {
@@ -85,15 +85,23 @@ export class EscalationService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /** Menandai (atomik) pelayanan yang sudah jatuh tempo agar setiap eskalasi hanya diproses sekali. */
-  private async claimDue(column: 'ordo_notified_at' | 'koordinator_notified_at', minutes: number, openWithoutParoki: boolean): Promise<DueOrder[]> {
-    const noParoki = `COALESCE(o.paroki_id, (SELECT paroki_id FROM user_profiles WHERE user_id = o.user_id)) IS NULL`;
+  /**
+   * Menandai (atomik) pelayanan yang sudah jatuh tempo agar setiap eskalasi hanya diproses sekali.
+   * Romo Ordo: $1 menit sejak dibuat (langsung bila tanpa paroki / lintas paroki).
+   * Koordinator: $1 menit setelah terbuka untuk Romo Ordo ($2 menit sejak dibuat; 0 bila tanpa paroki / lintas paroki)
+   * dan hanya setelah Romo Ordo benar-benar diberi tahu — sama dengan koordinatorOpensAt().
+   */
+  private async claimDue(column: 'ordo_notified_at' | 'koordinator_notified_at', minutes: number, ordoMinutes: number): Promise<DueOrder[]> {
+    const direct = `(COALESCE(o.paroki_id, (SELECT paroki_id FROM user_profiles WHERE user_id = o.user_id)) IS NULL OR COALESCE(o.lintas_paroki, FALSE))`;
+    const due = column === 'ordo_notified_at'
+      ? `(o.created_at <= NOW() - ($1 * INTERVAL '1 minute') OR ${direct})`
+      : `(o.ordo_notified_at IS NOT NULL AND o.created_at <= NOW() - (($1 + CASE WHEN ${direct} THEN 0 ELSE $2 END) * INTERVAL '1 minute'))`;
     const result = await this.dataSource.query(
       `WITH due AS (
          SELECT o.id FROM orders o
          WHERE o.${column} IS NULL
            AND o.created_at > NOW() - ${ESCALATION_WINDOW}
-           AND (o.created_at <= NOW() - ($1 * INTERVAL '1 minute') ${openWithoutParoki ? `OR ${noParoki} OR o.lintas_paroki` : ''})
+           AND ${due}
            AND ${UNACCEPTED}
          FOR UPDATE SKIP LOCKED
        )
@@ -103,7 +111,7 @@ export class EscalationService implements OnModuleInit, OnModuleDestroy {
          COALESCE(o.kabupaten_kota_id, (SELECT kabupaten_kota_id FROM user_profiles WHERE user_id = o.user_id)) AS kabupaten_kota_id,
          COALESCE(o.keuskupan_id, (SELECT keuskupan_id FROM user_profiles WHERE user_id = o.user_id)) AS keuskupan_id,
          COALESCE(o.lingkungan_id, (SELECT lingkungan_id FROM user_profiles WHERE user_id = o.user_id)) AS lingkungan_id`,
-      [minutes],
+      column === 'ordo_notified_at' ? [minutes] : [minutes, ordoMinutes],
     );
     // TypeORM (pg) mengembalikan [baris, jumlah] untuk UPDATE ... RETURNING
     return Array.isArray(result[0]) ? result[0] : result;
