@@ -40,7 +40,7 @@ body {
   color: #ffffff;
   background:
     linear-gradient(rgba(4, 28, 59, 0.62), rgba(4, 28, 59, 0.62)),
-    url('../assets/katedral-jakarta.png');
+    url('../assets/katedral-jakarta.webp');
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
