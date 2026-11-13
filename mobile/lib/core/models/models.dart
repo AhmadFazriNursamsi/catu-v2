@@ -718,6 +718,7 @@ class ChatGroupItem {
   final String notes;
   final int unreadCount;
   final bool canChat;
+  final bool lastMessageRead; // pesan terakhir sudah dibaca semua anggota lain (centang biru)
 
   ChatGroupItem({
     required this.groupId,
@@ -737,10 +738,8 @@ class ChatGroupItem {
     required this.scheduledTimeEnd,
     required this.penerimaName,
     required this.requesterName,
-    this.requesterAvatar,
-    this.notes = '',
-    this.unreadCount = 0,
-    this.canChat = true,
+    this.requesterAvatar, this.notes = '',
+    this.unreadCount = 0, this.canChat = true, this.lastMessageRead = false,
   });
 
   /// Urgency Level Icon Data
@@ -946,6 +945,7 @@ class ChatGroupItem {
       notes: json['notes'] ?? '',
       unreadCount: parsedUnread,
       canChat: canChat,
+      lastMessageRead: '${json['last_message_read'] ?? json['lastMessageRead']}' == 'true',
     );
   }
 }
