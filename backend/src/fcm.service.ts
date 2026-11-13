@@ -1,7 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import * as admin from 'firebase-admin';
+import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import { getMessaging, type Message } from 'firebase-admin/messaging';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -25,7 +26,7 @@ export class FcmService implements OnModuleInit {
 
   private initFirebase() {
     try {
-      if (admin.apps.length > 0) {
+      if (getApps().length > 0) {
         this.isFirebaseInitialized = true;
         this.logger.log('Firebase Admin SDK already initialized.');
         return;
@@ -65,8 +66,8 @@ export class FcmService implements OnModuleInit {
       }
 
       if (serviceAccount) {
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
+        initializeApp({
+          credential: cert(serviceAccount),
         });
         this.isFirebaseInitialized = true;
         this.logger.log('🔥 Firebase Cloud Messaging (FCM) Admin SDK successfully initialized!');
@@ -179,7 +180,7 @@ export class FcmService implements OnModuleInit {
       }
 
       // 3. Send using Firebase Admin SDK with per-user dynamic badge count
-      const messages: admin.messaging.Message[] = uniqueDevices.map((dev: any) => {
+      const messages: Message[] = uniqueDevices.map((dev: any) => {
         const unreadCount = payload.badge !== undefined
           ? payload.badge
           : Math.max(1, parseInt(dev.unread_count || '1', 10));
@@ -224,7 +225,7 @@ export class FcmService implements OnModuleInit {
         };
       });
 
-      const response = await admin.messaging().sendEach(messages);
+      const response = await getMessaging().sendEach(messages);
       let sentCount = response.successCount;
       let failCount = response.failureCount;
 
