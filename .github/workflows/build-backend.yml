@@ -8,10 +8,20 @@ on:
       - ".github/workflows/build-backend.yml"
   workflow_dispatch:
 
+# Tiap arsitektur dibangun di runner aslinya (arm64 di runner ARM, bukan emulasi QEMU yang membuat
+# `npm ci` arm64 macet sampai batas waktu), lalu digabung menjadi satu image multi-arsitektur.
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+  build:
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write
@@ -20,18 +30,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set lowercase repository owner
+      - name: Siapkan nama image dan arsitektur
         run: |
-          echo "REPO_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
-
-      - name: Pilih tag image (main -> latest, staging -> staging)
-        run: |
-          IMG="ghcr.io/${REPO_OWNER}/catu-v2-backend"
-          if [ "${GITHUB_REF_NAME}" = "main" ]; then CH=latest; else CH=staging; fi
-          echo "IMAGE_TAGS=${IMG}:${CH},${IMG}:${GITHUB_SHA}" >> $GITHUB_ENV
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+          echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/catu-v2-backend" >> $GITHUB_ENV
+          P='${{ matrix.platform }}'
+          echo "PLATFORM_PAIR=${P//\//-}" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -43,13 +46,73 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Backend Docker image
+      - name: Build and push (per arsitektur, berdasarkan digest)
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           file: ./backend/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: ${{ env.IMAGE_TAGS }}
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=backend-${{ env.PLATFORM_PAIR }}
+          cache-to: type=gha,mode=max,scope=backend-${{ env.PLATFORM_PAIR }}
+
+      - name: Simpan digest
+        run: |
+          mkdir -p /tmp/digests
+          digest='${{ steps.build.outputs.digest }}'
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Unggah digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Unduh digest
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      # main -> latest, staging -> staging; cabang lain (uji manual) hanya tag SHA agar tidak menimpa image server.
+      - name: Pilih tag image
+        run: |
+          IMG="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/catu-v2-backend"
+          TAGS="-t ${IMG}:${GITHUB_SHA}"
+          case "${GITHUB_REF_NAME}" in
+            main) TAGS="$TAGS -t ${IMG}:latest" ;;
+            staging) TAGS="$TAGS -t ${IMG}:staging" ;;
+          esac
+          echo "IMAGE=${IMG}" >> $GITHUB_ENV
+          echo "TAGS=${TAGS}" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Gabungkan menjadi image multi-arsitektur
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create $TAGS $(printf "${IMAGE}@sha256:%s " *)
+
+      - name: Periksa hasil
+        run: docker buildx imagetools inspect "${IMAGE}:${GITHUB_SHA}"
