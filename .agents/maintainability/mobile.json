@@ -13,7 +13,7 @@
     "mobile/lib/features/home/umat_dashboard_view.dart": 1184,
     "mobile/lib/features/home/romo_dashboard_view.dart": 1384,
     "mobile/lib/features/chat/chat_screen.dart": 1215,
-    "mobile/lib/features/chat/chat_list_screen.dart": 923,
+    "mobile/lib/features/chat/chat_list_screen.dart": 857,
     "mobile/lib/features/auth/pending_approval_screen.dart": 678,
     "mobile/lib/features/auth/register_screen.dart": 1492,
     "mobile/lib/features/auth/login_screen.dart": 1274,
