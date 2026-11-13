@@ -156,6 +156,8 @@ class _HandoverRomoSheetState extends State<HandoverRomoSheet> {
     );
   }
 
+  bool get _phoneOk => _phoneCtrl.text.replaceAll(RegExp(r'\D'), '').length >= 9;
+
   Future<void> _onSubmit() async {
     setState(() => _showErrors = true);
     if (!_contactedUmat || !_contactedRomo) {
@@ -168,6 +170,10 @@ class _HandoverRomoSheetState extends State<HandoverRomoSheet> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nama Romo wajib diisi.'), backgroundColor: Colors.red));
       return;
     }
+    if (_selectedTargetRomoId == null && !_phoneOk) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nomor WhatsApp Romo eksternal wajib diisi: detail pelayanan dikirim ke nomor ini.'), backgroundColor: Colors.red));
+      return;
+    }
     final label = _selectedTargetRomoId != null ? (_selectedRomoLabel ?? name) : 'Romo Eksternal: $name';
     final confirm = await showDialog<bool>(
       context: context,
@@ -178,9 +184,9 @@ class _HandoverRomoSheetState extends State<HandoverRomoSheet> {
             ? Text('Apakah Anda yakin ingin mengajukan pergantian Romo kepada $label?')
             : Text(
                 'Pelayanan akan dialihkan ke Romo Eksternal (belum terdaftar di CATU):\n\n'
-                'Nama: Romo $name\nNo. ponsel: ${phone.isEmpty ? '-' : phone}\n\n'
+                'Nama: Romo $name\nNo. WhatsApp: $phone\n\n'
                 'Pengalihan langsung berlaku tanpa menunggu persetujuan, dan Anda tidak lagi bertugas untuk pelayanan ini. '
-                'Umat dan pengurus akan diberi tahu; Romo eksternal tidak menerima notifikasi CATU.',
+                'Umat dan pengurus akan diberi tahu, dan detail pelayanan dikirim ke WhatsApp Romo eksternal.',
                 style: const TextStyle(height: 1.4),
               ),
         actions: [
@@ -318,9 +324,9 @@ class _HandoverRomoSheetState extends State<HandoverRomoSheet> {
               decoration: _inputDec(hint: 'Nama Romo', error: _showErrors && _nameCtrl.text.trim().isEmpty),
             ),
             const SizedBox(height: 12),
-            const Text('Nomor ponsel', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.black)),
+            const Text('Nomor WhatsApp', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.black)),
             const SizedBox(height: 6),
-            TextField(controller: _phoneCtrl, keyboardType: TextInputType.phone, decoration: _inputDec(hint: 'Phone Number : 08***')),
+            TextField(controller: _phoneCtrl, keyboardType: TextInputType.phone, onChanged: (_) => setState(() {}), decoration: _inputDec(hint: 'Contoh: 0812 3456 7890', error: _showErrors && _selectedTargetRomoId == null && !_phoneOk)),
             const SizedBox(height: 18),
             SizedBox(
               width: double.infinity,

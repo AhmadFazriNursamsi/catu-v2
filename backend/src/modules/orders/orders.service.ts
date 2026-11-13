@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from "@nestjs/common";
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException, Optional } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 import { CreateOrderDto } from "../../orders.dto";
@@ -6,11 +6,12 @@ import { FcmService } from "../../fcm.service";
 import { generateOrderNumber } from './order-number';
 import { EscalationSettingsService } from '../escalation/escalation-settings.service';
 import { orderStatusFromItemsSql } from '../order-rules/order-status-derive';
+import { ExternalRomoWaService } from './external-romo-wa.service';
 import { OrderEventsService } from '../order-events/order-events.service';
 import { isLintasParoki } from '../order-rules/lintas-paroki';
 @Injectable()
 export class OrdersService {
-  constructor(@InjectDataSource() private readonly dataSource: DataSource, private readonly fcmService: FcmService, private readonly escalation: EscalationSettingsService, private readonly events: OrderEventsService) {}
+  constructor(@InjectDataSource() private readonly dataSource: DataSource, private readonly fcmService: FcmService, private readonly escalation: EscalationSettingsService, private readonly events: OrderEventsService, @Optional() private readonly externalWa?: ExternalRomoWaService) {}
 
   private lastStatusSyncDate = '';
   private async autoSyncOrderStatuses() {
@@ -1104,7 +1105,8 @@ export class OrdersService {
 
     await this.events.notify([order.user_id, ...pengurus.map((p: any) => p.id)], { orderId, itemId, type: 'ROMO_HANDOVER', title: `Pengalihan Romo: ${serviceTitle}`, body: `Pelayanan ${serviceTitle} (${order.order_number}) telah dialihkan oleh Romo ${prevRomoName} kepada Romo ${extName} (Romo Eksternal). Alasan: "${reason}".` });
 
-    return { statusCode: 200, success: true, message: `Pelayanan berhasil dialihkan kepada Romo ${extName}.` };
+    const wa = (await this.externalWa?.notify(orderId, itemId ?? null, extName, prevRomoName).catch(() => null)) ?? { sent: false, note: '' };
+    return { statusCode: 200, success: true, whatsappSent: wa.sent, message: `Pelayanan berhasil dialihkan kepada Romo ${extName}. ${wa.note}`.trim() };
   }
 
   async respondHandover(

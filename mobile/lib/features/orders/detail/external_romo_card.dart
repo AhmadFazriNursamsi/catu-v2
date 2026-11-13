@@ -132,8 +132,8 @@ class ExternalRomoCard extends StatelessWidget {
             SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Romo eksternal tidak menerima notifikasi maupun pesan grup chat CATU. '
-                'Koordinasikan jadwal, lokasi, dan kebutuhan pelayanan langsung lewat telepon atau WhatsApp.',
+                'Romo eksternal tidak memakai aplikasi CATU; detail pelayanan dikirim ke WhatsApp beliau saat dialihkan. '
+                'Koordinasikan kebutuhan pelayanan lainnya langsung lewat telepon atau WhatsApp.',
                 style: TextStyle(fontSize: 12, color: Color(0xFF92400E), height: 1.4),
               ),
             ),
