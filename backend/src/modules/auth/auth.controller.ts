@@ -271,7 +271,7 @@ export class AuthController {
     this.access.assertSelf(user, userIdParam);
     await this.guardStatusChange(user, Number(userIdParam), dto);
     await this.assertRoleChange(userIdParam, (dto as any).roleCode ?? (dto as any).role_code);
-    const move = await this.regionTransfer.extract(Number(userIdParam), dto as any);
+    const move = this.access.isAdmin(user) ? null : await this.regionTransfer.extract(Number(userIdParam), dto as any); // Admin: wilayah langsung berlaku
     const result = await this.authService.updateProfile(userIdParam, dto);
     if (!move) return result;
     await this.regionTransfer.request(Number(userIdParam), move);
