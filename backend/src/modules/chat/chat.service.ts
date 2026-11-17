@@ -8,7 +8,7 @@ import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 import { SendChatMessageDto } from "../../orders.dto";
 import { FcmService } from "../../fcm.service";
-import { orderKeuskupanSql } from '../order-rules/lintas-paroki';
+import { orderKeuskupanSql } from '../order-rules/lintas-paroki'; import { SENDER_NAME_SQL } from './chat-sender-name';
 
 @Injectable()
 export class ChatService {
@@ -256,7 +256,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
     }
 
     return await this.dataSource.query(
-      `SELECT m.id, m.chat_group_id, m.sender_id, p.full_name as sender_name, m.message_type, m.message, m.attachment_url, m.created_at
+      `SELECT m.id, m.chat_group_id, m.sender_id, ${SENDER_NAME_SQL} as sender_name, m.message_type, m.message, m.attachment_url, m.created_at
        FROM chat_messages m
        LEFT JOIN user_profiles p ON m.sender_id = p.user_id
        WHERE m.chat_group_id = $1
@@ -279,7 +279,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
                 'Grup chat pelayanan aktif'
               ) as last_message_text,
               (SELECT m.sender_id FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_id,
-              (SELECT COALESCE(p.full_name, 'Pengguna') FROM chat_messages m LEFT JOIN user_profiles p ON m.sender_id = p.user_id WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_name,
+              (SELECT COALESCE(${SENDER_NAME_SQL}, 'Pengguna') FROM chat_messages m LEFT JOIN user_profiles p ON m.sender_id = p.user_id WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_name,
               COALESCE(
                 (SELECT created_at FROM chat_messages m WHERE m.chat_group_id = g.id ORDER BY m.id DESC LIMIT 1),
                 g.last_message_at,
@@ -536,7 +536,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
                 SELECT 1 FROM chat_group_members r WHERE r.chat_group_id = g.id AND r.user_id != $1
                   AND COALESCE(r.last_read_message_id, 0) < COALESCE((SELECT MAX(m.id) FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT'), 0)
               ) as last_message_read,
-              (SELECT COALESCE(p.full_name, 'Pengguna') FROM chat_messages m LEFT JOIN user_profiles p ON m.sender_id = p.user_id WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_name,
+              (SELECT COALESCE(${SENDER_NAME_SQL}, 'Pengguna') FROM chat_messages m LEFT JOIN user_profiles p ON m.sender_id = p.user_id WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_name,
               COALESCE(
                 (SELECT created_at FROM chat_messages m WHERE m.chat_group_id = g.id ORDER BY m.id DESC LIMIT 1),
                 g.last_message_at,
