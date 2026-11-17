@@ -369,7 +369,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
       role_in_group: 'PEMOHON',
       full_name: order.pemohon_name || 'Umat Pemohon',
       phone_number: order.pemohon_phone || '-',
-      lingkungan_name: order.lingkungan_name ? `Lingkungan ${order.lingkungan_name}` : (order.paroki_name || 'Umat Paroki'),
+      lingkungan_name: order.lingkungan_name ? `Lingkungan ${String(order.lingkungan_name).replace(/^lingkungan\s+/i, '')}` : (order.paroki_name || 'Umat Paroki'),
     });
 
     // 2. Pengurus Lingkungan (from same lingkungan or paroki)
@@ -418,7 +418,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
           role_in_group: 'PENGURUS_LINGKUNGAN',
           full_name: p.full_name || 'Pengurus Lingkungan',
           phone_number: p.phone_number || '-',
-          lingkungan_name: p.lingkungan_name ? `Pengurus Lingkungan ${p.lingkungan_name}` : 'Pengurus Lingkungan',
+          lingkungan_name: p.lingkungan_name ? `Pengurus Lingkungan ${String(p.lingkungan_name).replace(/^lingkungan\s+/i, '')}` : 'Pengurus Lingkungan',
         });
       }
     }

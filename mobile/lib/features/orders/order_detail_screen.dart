@@ -509,7 +509,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               children: [
                                 _buildInfoTile(icon: Icons.account_circle_outlined, label: 'Nama Pemohon', value: order.pemohonName, isLast: order.isPendatang && order.catatanLabel.isEmpty),
                                 if (!order.isPendatang && order.wilayahName.isNotEmpty) _buildInfoTile(icon: Icons.map_rounded, label: 'Wilayah', value: order.wilayahName),
-                                if (!order.isPendatang) _buildInfoTile(icon: Icons.groups_rounded, label: 'Lingkungan', value: 'Lingkungan ${order.lingkunganName}', isLast: order.catatanLabel.isEmpty),
+                                if (!order.isPendatang) _buildInfoTile(icon: Icons.groups_rounded, label: 'Lingkungan', value: 'Lingkungan ${order.lingkunganName.replaceFirst(RegExp(r'^lingkungan\s+', caseSensitive: false), '')}', isLast: order.catatanLabel.isEmpty),
                                 if (order.catatanLabel.isNotEmpty) _buildNotesTile(order.catatanLabel),
                               ],
                             ),
