@@ -180,13 +180,13 @@
                         label: 'Wilayah',
                         icon: 'map-pin',
                         badgeText: `${(state.editWilayahList || []).length} Wilayah`,
-                        placeholder: (state.editWilayahList || []).length === 0 ? '-- Pilih Paroki terlebih dahulu --' : '-- Pilih Wilayah --',
+                        placeholder: roleCode === 'ROMO_PAROKI' ? 'Tidak berlaku untuk Romo Paroki' : (state.editWilayahList || []).length === 0 ? '-- Pilih Paroki terlebih dahulu --' : '-- Pilih Wilayah --',
                         searchPlaceholder: 'Cari nama Wilayah...',
                         options: (state.editWilayahList || []).map(w => ({ id: w.id, name: w.name })),
                         selectedValue: u.wilayah_id,
                         onSelectCallback: 'onEditWilayahSelected',
                         onClearCallback: 'onEditWilayahCleared',
-                        disabled: !u.paroki_id
+                        disabled: roleCode === 'ROMO_PAROKI' || !u.paroki_id // Romo Paroki bertugas di paroki, bukan di wilayah/lingkungan
                       })}
 
                       <!-- Lingkungan Combobox -->
@@ -196,13 +196,13 @@
                         label: 'Lingkungan',
                         icon: 'home',
                         badgeText: `${(state.editLingkunganList || []).length} Lingkungan`,
-                        placeholder: (state.editLingkunganList || []).length === 0 ? '-- Pilih Wilayah terlebih dahulu --' : '-- Pilih Lingkungan --',
+                        placeholder: roleCode === 'ROMO_PAROKI' ? 'Tidak berlaku untuk Romo Paroki' : (state.editLingkunganList || []).length === 0 ? '-- Pilih Wilayah terlebih dahulu --' : '-- Pilih Lingkungan --',
                         searchPlaceholder: 'Cari nama Lingkungan...',
                         options: (state.editLingkunganList || []).map(l => ({ id: l.id, name: l.name })),
                         selectedValue: u.lingkungan_id,
                         onSelectCallback: 'onEditLingkunganSelected',
                         onClearCallback: 'onEditLingkunganCleared',
-                        disabled: !u.wilayah_id
+                        disabled: roleCode === 'ROMO_PAROKI' || !u.wilayah_id
                       })}
                     ` : `
                       <!-- Ordo Combobox -->
