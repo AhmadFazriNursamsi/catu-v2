@@ -62,10 +62,8 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   void initState() {
     super.initState();
     LanguageService.currentLanguage.addListener(_onLanguageChanged);
-    final now = TimeOfDay.now();
-    final hh = now.hour.toString().padLeft(2, '0');
-    final mm = (now.minute < 30 ? 0 : 30).toString().padLeft(2, '0');
-    _jamMulai = '$hh:$mm';
+    final start = DateTime.now().add(const Duration(hours: 1)); // 1 jam dari sekarang agar lolos validasi jam hari ini
+    _jamMulai = '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}';
     _jamSelesai = plusMinutes(_jamMulai!, 120); // dibatasi 23:59 agar tidak melewati tengah malam
 
     _loadMasterData();
@@ -610,7 +608,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
                         _buildInputField(
                           controller: _usiaController,
                           label: 'Usia Penerima Sakramen Perminyakan',
-                          hint: 'e.g. 65',
+                          hint: 'Contoh: 65',
                           prefixIcon: Icons.cake_outlined,
                           keyboardType: TextInputType.number,
                           inputFormatters: [
