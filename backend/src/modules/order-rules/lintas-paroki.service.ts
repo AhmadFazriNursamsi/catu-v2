@@ -64,7 +64,7 @@ export class LintasParokiService {
       );
     }
     const text = pendatang
-      ? 'Pelayanan ini diajukan Umat Pendatang, sehingga diteruskan langsung ke Romo Ordo kota tujuan. Romo Paroki tidak terlibat dalam pelayanan ini.'
+      ? 'Pelayanan ini diajukan Umat Pendatang sehingga diteruskan ke Romo Ordo kota tujuan.'
       : 'Pelayanan ini di luar paroki pemohon sehingga diteruskan ke Romo Ordo terdekat.';
     await this.dataSource.query(
       `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) SELECT id, NULL, 'SYSTEM_EVENT', $2 FROM chat_groups WHERE order_id = $1`,
