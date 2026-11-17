@@ -999,14 +999,6 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
     return const {'ROMO': 'Romo', 'KOORDINATOR': 'Koordinator Keuskupan', 'PEMOHON': 'Pemohon', 'SEKRETARIAT': 'Sekretariat', 'PENGURUS': 'Pengurus Lingkungan'}[_roleKey(role)]!;
   }
 
-  IconData _getRoleIcon(String role) => const {
-        'ROMO': Icons.star_rounded,
-        'KOORDINATOR': Icons.shield_rounded,
-        'PEMOHON': Icons.person_rounded,
-        'SEKRETARIAT': Icons.admin_panel_settings_rounded,
-        'PENGURUS': Icons.house_rounded,
-      }[_roleKey(role)]!;
-
   /// Romo yang bertugas diberi awalan "Romo" bila namanya belum memakainya.
   String _displayName(String name, String role) =>
       _roleKey(role) == 'ROMO' && !RegExp(r'^(romo|rm\.?)\s', caseSensitive: false).hasMatch(name) ? 'Romo $name' : name;
@@ -1142,7 +1134,7 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
                           child: CircleAvatar(
                             radius: 22,
                             backgroundColor: roleBg,
-                            child: Icon(_getRoleIcon(role), color: roleFg, size: 20),
+                            child: Icon(Icons.person_rounded, color: roleFg, size: 22), // ikon sama, jabatan dibedakan warna
                           ),
                         ),
                         title: Text(
