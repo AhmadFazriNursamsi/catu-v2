@@ -6,6 +6,12 @@ import 'package:catu_mobile/features/orders/widgets/reschedule_validation.dart';
 void main() {
   final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
   final currentDate = today.add(const Duration(days: 5));
+  // Jam default lembar Ubah Jam: mulai = sekarang + 1 jam, selesai = mulai + durasi (fallback 90 menit), maks 23:59.
+  TimeOfDay defaultStart() => TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 1)));
+  String defaultEnd(int duration) {
+    final m = minutesOf(defaultStart()) + duration;
+    return m >= 24 * 60 ? '23:59' : formatHm(TimeOfDay(hour: m ~/ 60, minute: m % 60));
+  }
 
   Future<List<RescheduleRequest>> openSheet(
     WidgetTester tester, {
@@ -80,24 +86,26 @@ void main() {
     expect(sent, isEmpty);
   });
 
-  testWidgets('jam sama dengan yang berlaku ditolak dengan pesan umum', (tester) async {
+  testWidgets('jam mulai default 1 jam dari sekarang (bukan jam yang berlaku), durasi lama dipertahankan', (tester) async {
     final sent = await openSheet(tester);
+    expect(find.text('Jam baru yang diajukan ke Umat'), findsOneWidget);
     await tapText(tester, 'Kendala perjalanan / transportasi');
     await tapText(tester, 'Kirim Pengajuan ke Umat');
-    expect(find.textContaining('sama dengan jam saat ini'), findsOneWidget);
-    expect(sent, isEmpty);
+    expect(find.textContaining('sama dengan jam saat ini'), findsNothing);
+    expect(sent.single.newTimeStart, formatHm(defaultStart()));
+    expect(sent.single.newTimeEnd, defaultEnd(90)); // 18:00–19:30
   });
 
   testWidgets('pengajuan valid dikirim lalu form tertutup', (tester) async {
     final sent = await openSheet(tester, withCurrentStart: false);
     await tapText(tester, 'Ada keperluan pastoral mendadak');
     expect(find.text('Jam baru yang diajukan ke Umat'), findsOneWidget);
-    expect(find.text('18:00 – 19:30 WIB'), findsOneWidget);
+    expect(find.text('${formatHm(defaultStart())} – ${defaultEnd(90)} WIB'), findsOneWidget);
     await tapText(tester, 'Kirim Pengajuan ke Umat');
 
     expect(sent, hasLength(1));
-    expect(sent.single.newTimeStart, '18:00');
-    expect(sent.single.newTimeEnd, '19:30');
+    expect(sent.single.newTimeStart, formatHm(defaultStart()));
+    expect(sent.single.newTimeEnd, defaultEnd(90));
     expect(sent.single.reason, 'Ada keperluan pastoral mendadak');
     expect(find.text('Ajukan Ubah Jam'), findsNothing);
   });
