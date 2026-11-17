@@ -776,7 +776,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       ),
                     ],
                   ),
-                  ChatRomoLine(group: group), // Romo yang bertugas / menunggu Romo
+                  if (!_isRomo) ChatRomoLine(group: group), // Romo bertugas: hanya untuk Umat, Pengurus & Koordinator
                   const SizedBox(height: 3),
 
                   // Line 3: Checkmark + Last Message Preview with Sender Name
