@@ -442,7 +442,7 @@ class _ChatScreenState extends State<ChatScreen> {
         groupTitle: title,
         penerimaName: group?.penerimaOrDeceasedName ?? widget.userName,
         requesterName: group?.requesterName ?? widget.userName,
-        orderStatus: group?.orderStatus ?? 'PENDING',
+        orderStatus: group?.orderStatus ?? 'PENDING', userId: widget.userId,
       ),
     );
   }
@@ -901,14 +901,14 @@ class _GroupMembersBottomSheet extends StatefulWidget {
   final String groupTitle;
   final String penerimaName;
   final String requesterName;
-  final String orderStatus;
+  final String orderStatus; final int? userId; // pengguna yang login, ditampilkan sebagai "Anda"
 
   const _GroupMembersBottomSheet({
     required this.groupId,
     required this.groupTitle,
     required this.penerimaName,
     required this.requesterName,
-    required this.orderStatus,
+    required this.orderStatus, this.userId,
   });
 
   @override
@@ -1119,7 +1119,7 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
                     itemBuilder: (context, index) {
                       final m = _members[index];
                       final name = m['full_name']?.toString() ?? 'Anggota';
-                      final role = m['role_in_group']?.toString() ?? 'UMAT';
+                      final role = m['role_in_group']?.toString() ?? 'UMAT'; final isSelf = widget.userId != null && '${m['user_id']}' == '${widget.userId}';
                       final phone = m['phone_number']?.toString() ?? '';
                       final subText = m['lingkungan_name']?.toString() ?? 'Paroki St. Laurensius';
 
@@ -1138,7 +1138,7 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
                           ),
                         ),
                         title: Text(
-                          _displayName(name, role),
+                          isSelf ? 'Anda' : _displayName(name, role),
                           style: const TextStyle(
                             fontSize: 14.5,
                             fontWeight: FontWeight.w600,
@@ -1159,7 +1159,7 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        trailing: IconButton(
+                        trailing: isSelf ? null : IconButton(
                           icon: const Icon(Icons.chat_bubble_outline_rounded,
                               size: 20, color: Color(0xFF1E5399)),
                           onPressed: () {
