@@ -5,6 +5,7 @@ import '../../core/models/models.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/language_service.dart';
 import 'chat_list_filters.dart';
+import 'chat_romo_line.dart';
 import 'chat_screen.dart';
 
 class ChatListScreen extends StatefulWidget {
@@ -775,6 +776,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       ),
                     ],
                   ),
+                  if (!_isRomo) ChatRomoLine(group: group), // Romo bertugas: hanya untuk Umat, Pengurus & Koordinator
                   const SizedBox(height: 3),
 
                   // Line 3: Checkmark + Last Message Preview with Sender Name
@@ -840,9 +842,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       '${group.unreadCount}',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        height: 1.1,
+                        fontSize: 11, fontWeight: FontWeight.w800, height: 1.1,
                       ),
                       textAlign: TextAlign.center,
                     ),

@@ -8,7 +8,7 @@ import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 import { SendChatMessageDto } from "../../orders.dto";
 import { FcmService } from "../../fcm.service";
-import { orderKeuskupanSql } from '../order-rules/lintas-paroki';
+import { orderKeuskupanSql } from '../order-rules/lintas-paroki'; import { SENDER_NAME_SQL } from './chat-sender-name';
 
 @Injectable()
 export class ChatService {
@@ -256,7 +256,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
     }
 
     return await this.dataSource.query(
-      `SELECT m.id, m.chat_group_id, m.sender_id, p.full_name as sender_name, m.message_type, m.message, m.attachment_url, m.created_at
+      `SELECT m.id, m.chat_group_id, m.sender_id, ${SENDER_NAME_SQL} as sender_name, m.message_type, m.message, m.attachment_url, m.created_at
        FROM chat_messages m
        LEFT JOIN user_profiles p ON m.sender_id = p.user_id
        WHERE m.chat_group_id = $1
@@ -273,18 +273,11 @@ private async resolveGroupId(idParam: string): Promise<number> {
 
     const result = await this.dataSource.query(
       `SELECT g.id as group_id, g.order_id, g.order_item_id as order_item_id, o.order_number, g.title as group_title,
-              COALESCE(
-                (SELECT message FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1),
-                g.last_message_text,
-                'Grup chat pelayanan aktif'
-              ) as last_message_text,
-              (SELECT m.sender_id FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_id,
-              (SELECT COALESCE(p.full_name, 'Pengguna') FROM chat_messages m LEFT JOIN user_profiles p ON m.sender_id = p.user_id WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_name,
-              COALESCE(
-                (SELECT created_at FROM chat_messages m WHERE m.chat_group_id = g.id ORDER BY m.id DESC LIMIT 1),
-                g.last_message_at,
-                o.created_at
-              ) as last_message_at,
+              -- Pesan terakhir apa pun (termasuk pesan sistem, mis. Romo mengkonfirmasi); pesan sistem tanpa nama pengirim.
+              COALESCE(lm.message, g.last_message_text, 'Grup chat pelayanan aktif') as last_message_text,
+              CASE WHEN lm.message_type != 'SYSTEM_EVENT' THEN lm.sender_id END as last_sender_id,
+              (SELECT COALESCE(${SENDER_NAME_SQL}, 'Pengguna') FROM chat_messages m LEFT JOIN user_profiles p ON m.sender_id = p.user_id WHERE m.id = lm.id AND m.message_type != 'SYSTEM_EVENT') as last_sender_name,
+              COALESCE(lm.created_at, g.last_message_at, o.created_at) as last_message_at,
               COALESCE(
                 oi.item_name,
                 (SELECT sub_oi.item_name FROM order_items sub_oi WHERE sub_oi.order_id = o.id ORDER BY sub_oi.id ASC LIMIT 1),
@@ -315,6 +308,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
        JOIN orders o ON g.order_id = o.id
        JOIN service_categories sc ON o.service_category_id = sc.id
        LEFT JOIN order_items oi ON g.order_item_id = oi.id
+       LEFT JOIN LATERAL (SELECT lm.id, lm.message, lm.message_type, lm.sender_id, lm.created_at FROM chat_messages lm WHERE lm.chat_group_id = g.id ORDER BY lm.id DESC LIMIT 1) lm ON TRUE
        LEFT JOIN urgency_levels ul ON o.urgency_level_id = ul.id
        LEFT JOIN user_profiles p ON o.user_id = p.user_id
        WHERE g.id = $1
@@ -375,7 +369,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
       role_in_group: 'PEMOHON',
       full_name: order.pemohon_name || 'Umat Pemohon',
       phone_number: order.pemohon_phone || '-',
-      lingkungan_name: order.lingkungan_name ? `Lingkungan ${order.lingkungan_name}` : (order.paroki_name || 'Umat Paroki'),
+      lingkungan_name: order.lingkungan_name ? `Lingkungan ${String(order.lingkungan_name).replace(/^lingkungan\s+/i, '')}` : (order.paroki_name || 'Umat Paroki'),
     });
 
     // 2. Pengurus Lingkungan (from same lingkungan or paroki)
@@ -424,7 +418,7 @@ private async resolveGroupId(idParam: string): Promise<number> {
           role_in_group: 'PENGURUS_LINGKUNGAN',
           full_name: p.full_name || 'Pengurus Lingkungan',
           phone_number: p.phone_number || '-',
-          lingkungan_name: p.lingkungan_name ? `Pengurus Lingkungan ${p.lingkungan_name}` : 'Pengurus Lingkungan',
+          lingkungan_name: p.lingkungan_name ? `Pengurus Lingkungan ${String(p.lingkungan_name).replace(/^lingkungan\s+/i, '')}` : 'Pengurus Lingkungan',
         });
       }
     }
@@ -525,23 +519,16 @@ private async resolveGroupId(idParam: string): Promise<number> {
 
     const result = await this.dataSource.query(
       `SELECT g.id as group_id, g.order_id, g.order_item_id as order_item_id, o.order_number, g.title as group_title,
-              COALESCE(
-                (SELECT message FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1),
-                g.last_message_text,
-                'Grup chat pelayanan aktif'
-              ) as last_message_text,
-              (SELECT m.sender_id FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_id,
+              -- Pesan terakhir apa pun (termasuk pesan sistem, mis. Romo mengkonfirmasi); pesan sistem tanpa nama pengirim.
+              COALESCE(lm.message, g.last_message_text, 'Grup chat pelayanan aktif') as last_message_text,
+              CASE WHEN lm.message_type != 'SYSTEM_EVENT' THEN lm.sender_id END as last_sender_id,
               -- Centang biru: semua anggota lain sudah membaca pesan terakhir (non-sistem).
               NOT EXISTS (
                 SELECT 1 FROM chat_group_members r WHERE r.chat_group_id = g.id AND r.user_id != $1
                   AND COALESCE(r.last_read_message_id, 0) < COALESCE((SELECT MAX(m.id) FROM chat_messages m WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT'), 0)
               ) as last_message_read,
-              (SELECT COALESCE(p.full_name, 'Pengguna') FROM chat_messages m LEFT JOIN user_profiles p ON m.sender_id = p.user_id WHERE m.chat_group_id = g.id AND m.message_type != 'SYSTEM_EVENT' ORDER BY m.id DESC LIMIT 1) as last_sender_name,
-              COALESCE(
-                (SELECT created_at FROM chat_messages m WHERE m.chat_group_id = g.id ORDER BY m.id DESC LIMIT 1),
-                g.last_message_at,
-                o.created_at
-              ) as last_message_at,
+              (SELECT COALESCE(${SENDER_NAME_SQL}, 'Pengguna') FROM chat_messages m LEFT JOIN user_profiles p ON m.sender_id = p.user_id WHERE m.id = lm.id AND m.message_type != 'SYSTEM_EVENT') as last_sender_name,
+              COALESCE(lm.created_at, g.last_message_at, o.created_at) as last_message_at,
               COALESCE(
                 oi.item_name,
                 (SELECT sub_oi.item_name FROM order_items sub_oi WHERE sub_oi.order_id = o.id ORDER BY sub_oi.id ASC LIMIT 1),
@@ -553,8 +540,8 @@ private async resolveGroupId(idParam: string): Promise<number> {
               COALESCE(oi.scheduled_time_start::text, o.scheduled_time::text) as scheduled_time_start,
               COALESCE(oi.scheduled_time_end::text, '') as scheduled_time_end,
               o.notes, ul.name as urgency_name, p.full_name as penerima_name,
-              p.full_name as requester_name,
-              CASE WHEN LENGTH(p.avatar_url) > 500 THEN NULL ELSE p.avatar_url END as requester_avatar,
+              p.full_name as requester_name, CASE WHEN LENGTH(p.avatar_url) > 500 THEN NULL ELSE p.avatar_url END as requester_avatar,
+              COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(oi.accepted_romo_id, o.accepted_romo_id)), NULLIF(regexp_replace(COALESCE(oi.external_romo_name, o.external_romo_name, ''), '\\s*\\([^()]*\\)\\s*$', ''), '')) as romo_name, -- Romo yang bertugas (eksternal: tanpa nomor)
               COALESCE(
                 (
                   SELECT COUNT(*)::int
@@ -573,10 +560,11 @@ private async resolveGroupId(idParam: string): Promise<number> {
        JOIN orders o ON g.order_id = o.id
        JOIN service_categories sc ON o.service_category_id = sc.id
        LEFT JOIN order_items oi ON g.order_item_id = oi.id
+       LEFT JOIN LATERAL (SELECT lm.id, lm.message, lm.message_type, lm.sender_id, lm.created_at FROM chat_messages lm WHERE lm.chat_group_id = g.id ORDER BY lm.id DESC LIMIT 1) lm ON TRUE
        LEFT JOIN urgency_levels ul ON o.urgency_level_id = ul.id
        LEFT JOIN user_profiles p ON o.user_id = p.user_id
        ${whereClause}
-       ORDER BY COALESCE(g.last_message_at, o.created_at) DESC, g.id DESC`,
+       ORDER BY COALESCE(lm.created_at, g.last_message_at, o.created_at) DESC, g.id DESC`,
       queryParams,
     );
     return result;

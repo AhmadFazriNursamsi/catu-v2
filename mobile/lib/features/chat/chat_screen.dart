@@ -442,7 +442,7 @@ class _ChatScreenState extends State<ChatScreen> {
         groupTitle: title,
         penerimaName: group?.penerimaOrDeceasedName ?? widget.userName,
         requesterName: group?.requesterName ?? widget.userName,
-        orderStatus: group?.orderStatus ?? 'PENDING',
+        orderStatus: group?.orderStatus ?? 'PENDING', userId: widget.userId,
       ),
     );
   }
@@ -901,14 +901,14 @@ class _GroupMembersBottomSheet extends StatefulWidget {
   final String groupTitle;
   final String penerimaName;
   final String requesterName;
-  final String orderStatus;
+  final String orderStatus; final int? userId; // pengguna yang login, ditampilkan sebagai "Anda"
 
   const _GroupMembersBottomSheet({
     required this.groupId,
     required this.groupTitle,
     required this.penerimaName,
     required this.requesterName,
-    required this.orderStatus,
+    required this.orderStatus, this.userId,
   });
 
   @override
@@ -976,43 +976,32 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
     return members;
   }
 
-  Color _getRoleBadgeBg(String role) {
-    final r = role.toUpperCase();
-    if (r.contains('ROMO')) return const Color(0xFFF3E8FF);
-    if (r.contains('KOORDINATOR')) return const Color(0xFFEDE9FE);
-    if (r.contains('PEMOHON') || r.contains('UMAT')) return const Color(0xFFDCFCE7);
-    if (r.contains('SEKRETARIAT') || r.contains('ADMIN')) return const Color(0xFFDBEAFE);
-    return const Color(0xFFFEF3C7);
-  }
+  // Jabatan ditandai warna ikon: Pemohon hijau muda, Pengurus Lingkungan hijau tua, Koordinator biru, Romo ungu.
+  static const _roleColors = <String, (Color, Color)>{
+    'ROMO': (Color(0xFFF3E8FF), Color(0xFF7C3AED)),
+    'KOORDINATOR': (Color(0xFFDBEAFE), Color(0xFF1D4ED8)),
+    'PEMOHON': (Color(0xFFDCFCE7), Color(0xFF4ADE80)),
+    'SEKRETARIAT': (Color(0xFFF1F5F9), Color(0xFF475569)),
+    'PENGURUS': (Color(0xFFD1FAE5), Color(0xFF166534)),
+  };
 
-  Color _getRoleBadgeText(String role) {
+  String _roleKey(String role) {
     final r = role.toUpperCase();
-    if (r.contains('ROMO')) return const Color(0xFF7C3AED);
-    if (r.contains('KOORDINATOR')) return const Color(0xFF6D28D9);
-    if (r.contains('PEMOHON') || r.contains('UMAT')) return const Color(0xFF15803D);
-    if (r.contains('SEKRETARIAT') || r.contains('ADMIN')) return const Color(0xFF1D4ED8);
-    return const Color(0xFFB45309);
+    if (r.contains('ROMO')) return 'ROMO';
+    if (r.contains('KOORDINATOR')) return 'KOORDINATOR';
+    if (r.contains('PEMOHON') || r.contains('UMAT')) return 'PEMOHON';
+    if (r.contains('SEKRETARIAT') || r.contains('ADMIN')) return 'SEKRETARIAT';
+    return 'PENGURUS';
   }
 
   String _getRoleLabel(String role) {
-    final r = role.toUpperCase();
-    if (r.contains('ROMO_ORDO')) return 'ROMO ORDO';
-    if (r.contains('ROMO')) return 'ROMO';
-    if (r.contains('KOORDINATOR')) return 'KOORDINATOR KEUSKUPAN';
-    if (r.contains('PEMOHON') || r.contains('UMAT')) return 'PEMOHON';
-    if (r.contains('SEKRETARIAT') || r.contains('ADMIN')) return 'SEKRETARIAT';
-    if (r.contains('PENGURUS')) return 'PENGURUS LINGKUNGAN';
-    return r;
+    if (role.toUpperCase().contains('ROMO_ORDO')) return 'Romo Ordo';
+    return const {'ROMO': 'Romo', 'KOORDINATOR': 'Koordinator Keuskupan', 'PEMOHON': 'Pemohon', 'SEKRETARIAT': 'Sekretariat', 'PENGURUS': 'Pengurus Lingkungan'}[_roleKey(role)]!;
   }
 
-  IconData _getRoleIcon(String role) {
-    final r = role.toUpperCase();
-    if (r.contains('ROMO')) return Icons.star_rounded;
-    if (r.contains('KOORDINATOR')) return Icons.shield_rounded;
-    if (r.contains('PEMOHON') || r.contains('UMAT')) return Icons.person_rounded;
-    if (r.contains('SEKRETARIAT')) return Icons.admin_panel_settings_rounded;
-    return Icons.house_rounded;
-  }
+  /// Romo yang bertugas diberi awalan "Romo" bila namanya belum memakainya.
+  String _displayName(String name, String role) =>
+      _roleKey(role) == 'ROMO' && !RegExp(r'^(romo|rm\.?)\s', caseSensitive: false).hasMatch(name) ? 'Romo $name' : name;
 
   @override
   Widget build(BuildContext context) {
@@ -1130,54 +1119,33 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
                     itemBuilder: (context, index) {
                       final m = _members[index];
                       final name = m['full_name']?.toString() ?? 'Anggota';
-                      final role = m['role_in_group']?.toString() ?? 'UMAT';
+                      final role = m['role_in_group']?.toString() ?? 'UMAT'; final isSelf = widget.userId != null && '${m['user_id']}' == '${widget.userId}';
                       final phone = m['phone_number']?.toString() ?? '';
                       final subText = m['lingkungan_name']?.toString() ?? 'Paroki St. Laurensius';
+
+                      final (roleBg, roleFg) = _roleColors[_roleKey(role)]!;
 
                       return ListTile(
                         contentPadding:
                             const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                        leading: CircleAvatar(
-                          radius: 22,
-                          backgroundColor: _getRoleBadgeBg(role),
-                          child: Icon(
-                            _getRoleIcon(role),
-                            color: _getRoleBadgeText(role),
-                            size: 20,
+                        leading: Tooltip(
+                          message: _getRoleLabel(role),
+                          triggerMode: TooltipTriggerMode.tap,
+                          child: CircleAvatar(
+                            radius: 22,
+                            backgroundColor: roleBg,
+                            child: Icon(Icons.person_rounded, color: roleFg, size: 22), // ikon sama, jabatan dibedakan warna
                           ),
                         ),
-                        title: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                name,
-                                style: const TextStyle(
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF0F172A),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: _getRoleBadgeBg(role),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                _getRoleLabel(role),
-                                style: TextStyle(
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: _getRoleBadgeText(role),
-                                ),
-                              ),
-                            ),
-                          ],
+                        title: Text(
+                          isSelf ? 'Anda' : _displayName(name, role),
+                          style: const TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F172A),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         subtitle: Padding(
                           padding: const EdgeInsets.only(top: 2),
@@ -1191,7 +1159,7 @@ class _GroupMembersBottomSheetState extends State<_GroupMembersBottomSheet> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        trailing: IconButton(
+                        trailing: isSelf ? null : IconButton(
                           icon: const Icon(Icons.chat_bubble_outline_rounded,
                               size: 20, color: Color(0xFF1E5399)),
                           onPressed: () {

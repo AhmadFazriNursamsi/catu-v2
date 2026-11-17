@@ -509,7 +509,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                               children: [
                                 _buildInfoTile(icon: Icons.account_circle_outlined, label: 'Nama Pemohon', value: order.pemohonName, isLast: order.isPendatang && order.catatanLabel.isEmpty),
                                 if (!order.isPendatang && order.wilayahName.isNotEmpty) _buildInfoTile(icon: Icons.map_rounded, label: 'Wilayah', value: order.wilayahName),
-                                if (!order.isPendatang) _buildInfoTile(icon: Icons.groups_rounded, label: 'Lingkungan', value: 'Lingkungan ${order.lingkunganName}', isLast: order.catatanLabel.isEmpty),
+                                if (!order.isPendatang) _buildInfoTile(icon: Icons.groups_rounded, label: 'Lingkungan', value: 'Lingkungan ${order.lingkunganName.replaceFirst(RegExp(r'^lingkungan\s+', caseSensitive: false), '')}', isLast: order.catatanLabel.isEmpty),
                                 if (order.catatanLabel.isNotEmpty) _buildNotesTile(order.catatanLabel),
                               ],
                             ),
@@ -1654,7 +1654,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
             ],
           )
         else
-          // 3. Normal / Reschedule Accepted: Chat (flex 3), Ubah Jam (icon), Selesaikan (flex 4)
+          // 3. Normal / Reschedule Accepted: Chat (flex 3), Ubah (ikon + label), Selesaikan (flex 4)
           Row(
             children: [
               // Chat Button (Left)
@@ -1719,8 +1719,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                     borderRadius: BorderRadius.circular(16),
                     onTap: () => _showRescheduleBottomSheet(order, targetItem: displayItem),
                     child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                      child: Icon(Icons.edit_calendar_rounded, color: Colors.white, size: 20),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.edit_calendar_rounded, color: Colors.white, size: 18),
+                        SizedBox(width: 6),
+                        Text('Ubah', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                      ]),
                     ),
                   ),
                 ),

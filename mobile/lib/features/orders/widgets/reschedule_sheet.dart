@@ -70,8 +70,12 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
   @override
   void initState() {
     super.initState();
-    _start = widget.currentStart ?? const TimeOfDay(hour: 18, minute: 0);
-    _end = widget.currentEnd;
+    // Default jam mulai = 1 jam dari sekarang agar tidak langsung kena validasi "jam sudah lewat"; durasi lama dipertahankan.
+    _start = TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 1)));
+    final cs = widget.currentStart, ce = widget.currentEnd;
+    final dur = cs != null && ce != null && minutesOf(ce) > minutesOf(cs) ? minutesOf(ce) - minutesOf(cs) : 90;
+    final endMin = minutesOf(_start) + dur;
+    _end = ce == null ? null : (endMin >= 24 * 60 ? const TimeOfDay(hour: 23, minute: 59) : TimeOfDay(hour: endMin ~/ 60, minute: endMin % 60));
   }
 
   @override

@@ -223,7 +223,7 @@ export class OrdersService {
         // 3. Welcome message
         await this.dataSource.query(
           `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
-          [gId, `Grup Pelayanan untuk ${item.itemName} (${order.order_number}) telah dibuat. Menunggu konfirmasi kehadiran Romo.`],
+          [gId, `Grup pelayanan ${item.itemName} sudah dibuat. Kami sedang mencarikan Romo yang dapat melayani; semua anggota akan diberi tahu begitu Romo mengonfirmasi kehadiran.`],
         );
 
         // 🔔 4. Notify Pengurus Lingkungan per-misa (exclude creator)
@@ -271,7 +271,7 @@ export class OrdersService {
 
       await this.dataSource.query(
         `INSERT INTO chat_messages (chat_group_id, sender_id, message_type, message) VALUES ($1, NULL, 'SYSTEM_EVENT', $2)`,
-        [firstGroupId, `Grup Pelayanan ${order.order_number} telah dibuat. Menunggu konfirmasi kehadiran Romo.`],
+        [firstGroupId, `Grup pelayanan ini sudah dibuat. Kami sedang mencarikan Romo yang dapat melayani; semua anggota akan diberi tahu begitu Romo mengonfirmasi kehadiran.`],
       );
 
       // 🔔 Notify Pengurus Lingkungan (exclude creator)

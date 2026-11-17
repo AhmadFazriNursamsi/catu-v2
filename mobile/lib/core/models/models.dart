@@ -717,7 +717,7 @@ class ChatGroupItem {
   final String? requesterAvatar;
   final String notes;
   final int unreadCount;
-  final bool canChat;
+  final bool canChat; final String? romoName; // Romo yang bertugas (null bila belum diambil)
   final bool lastMessageRead; // pesan terakhir sudah dibaca semua anggota lain (centang biru)
 
   ChatGroupItem({
@@ -739,7 +739,7 @@ class ChatGroupItem {
     required this.penerimaName,
     required this.requesterName,
     this.requesterAvatar, this.notes = '',
-    this.unreadCount = 0, this.canChat = true, this.lastMessageRead = false,
+    this.unreadCount = 0, this.canChat = true, this.lastMessageRead = false, this.romoName,
   });
 
   /// Urgency Level Icon Data
@@ -831,9 +831,7 @@ class ChatGroupItem {
   }
 
   /// Formatted Day & Date (e.g. Kamis, 13/08/26) matching Detail Chat
-  String get formattedScheduledDayAndDate {
-    return formatServiceDate(scheduledDate);
-  }
+  String get formattedScheduledDayAndDate => formatServiceDate(scheduledDate);
 
   /// Formatted Time HH:mm
   String get formattedScheduledTimeOnly {
@@ -852,11 +850,13 @@ class ChatGroupItem {
 
     if (catLower.contains('perminyakan')) {
       return 'Sakramen Perminyakan • $dateFormatted - $timeFormatted';
-    } else if (catLower.contains('kedukaan')) {
-      return '$detailMisaLabel • $dateFormatted - $timeFormatted';
     }
-    return '$orderCategory • $dateFormatted - $timeFormatted';
+    return '$orderCategory • $dateFormatted - $timeFormatted'; // Kedukaan: jenis misa sudah ada di judul
   }
+
+  /// Nama Romo yang bertugas dengan awalan "Romo"; null bila pelayanan belum diambil Romo.
+  String? get romoDisplayName => (romoName ?? '').trim().isEmpty || orderStatus.toUpperCase() == 'PENDING' ? null
+      : RegExp(r'^(romo|rm\.?)\s', caseSensitive: false).hasMatch(romoName!.trim()) ? romoName!.trim() : 'Romo ${romoName!.trim()}';
 
   /// DateTime of the last message in local timezone
   DateTime? get lastMessageDateTime {
@@ -944,7 +944,7 @@ class ChatGroupItem {
       requesterAvatar: json['requester_avatar'] ?? json['requesterAvatar'],
       notes: json['notes'] ?? '',
       unreadCount: parsedUnread,
-      canChat: canChat,
+      canChat: canChat, romoName: json['romo_name']?.toString(),
       lastMessageRead: '${json['last_message_read'] ?? json['lastMessageRead']}' == 'true',
     );
   }

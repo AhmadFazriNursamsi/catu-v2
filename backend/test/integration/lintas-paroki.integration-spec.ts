@@ -92,7 +92,7 @@ describeDb('Pelayanan lintas paroki (PostgreSQL sungguhan)', () => {
     expect(notif).toEqual(expect.arrayContaining([koorPemohon.id, koorTujuan.id]));
     expect(notif).not.toContain(koorLain.id);
     const msg = await ds.query(`SELECT message FROM chat_messages WHERE chat_group_id = $1 AND message_type = 'SYSTEM_EVENT'`, [group]);
-    expect(msg.some((m: { message: string }) => /Romo Ordo tujuan/.test(m.message))).toBe(true);
+    expect(msg.some((m: { message: string }) => /Romo Ordo terdekat/.test(m.message))).toBe(true);
   });
 
   async function otherKeuskupan(): Promise<number> {
