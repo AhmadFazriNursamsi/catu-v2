@@ -553,8 +553,8 @@ private async resolveGroupId(idParam: string): Promise<number> {
               COALESCE(oi.scheduled_time_start::text, o.scheduled_time::text) as scheduled_time_start,
               COALESCE(oi.scheduled_time_end::text, '') as scheduled_time_end,
               o.notes, ul.name as urgency_name, p.full_name as penerima_name,
-              p.full_name as requester_name,
-              CASE WHEN LENGTH(p.avatar_url) > 500 THEN NULL ELSE p.avatar_url END as requester_avatar,
+              p.full_name as requester_name, CASE WHEN LENGTH(p.avatar_url) > 500 THEN NULL ELSE p.avatar_url END as requester_avatar,
+              COALESCE((SELECT rp.full_name FROM user_profiles rp WHERE rp.user_id = COALESCE(oi.accepted_romo_id, o.accepted_romo_id)), NULLIF(regexp_replace(COALESCE(oi.external_romo_name, o.external_romo_name, ''), '\\s*\\([^()]*\\)\\s*$', ''), '')) as romo_name, -- Romo yang bertugas (eksternal: tanpa nomor)
               COALESCE(
                 (
                   SELECT COUNT(*)::int
