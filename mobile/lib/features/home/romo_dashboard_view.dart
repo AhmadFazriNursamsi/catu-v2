@@ -10,6 +10,7 @@ import '../chat/chat_list_screen.dart';
 import '../orders/histori_screen.dart';
 import '../orders/order_detail_screen.dart';
 import '../orders/schedule_screen.dart';
+import '../news/public_news_screen.dart';
 import '../profile/main_menu_screen.dart';
 import '../notifications/notification_screen.dart';
 import '../admin/romo_approval_screen.dart';
@@ -243,6 +244,11 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         label: 'Histori',
       ),
       LiquidNavItem(
+        icon: Icons.newspaper_outlined,
+        activeIcon: Icons.newspaper_rounded,
+        label: 'Berita',
+      ),
+      LiquidNavItem(
         icon: Icons.calendar_today_outlined,
         activeIcon: Icons.calendar_today_rounded,
         label: 'Jadwal',
@@ -287,8 +293,8 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         ));
     }
 
-    // ── Schedule / Jadwal Tab (Nav Index 2) ──
-    if (_currentNavIndex == 2) {
+    // ── Schedule / Jadwal Tab (Nav Index 3) ──
+    if (_currentNavIndex == 3) {
       return _tabScaffold(
         ScheduleScreen(
           orders: widget.orders,
@@ -300,8 +306,11 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         ));
     }
 
-    // ── Menu Utama Tab (Nav Index 3) ──
-    if (_currentNavIndex == 3) {
+    // ── Berita Tab (Nav Index 2, tengah) ──
+    if (_currentNavIndex == 2) return _tabScaffold(const PublicNewsScreen(signedIn: true));
+
+    // ── Menu Utama Tab (Nav Index 4) ──
+    if (_currentNavIndex == 4) {
       return _tabScaffold(
         MainMenuScreen(
           user: widget.user,
@@ -665,7 +674,7 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
                           child: Text('Jadwal\nPelayanan\nHari Ini', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A), height: 1.2)),
                         ),
                         ElevatedButton(
-                          onPressed: () => setState(() => _currentNavIndex = 2),
+                          onPressed: () => setState(() => _currentNavIndex = 3), // tab Jadwal
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1E5399),
                             foregroundColor: Colors.white,
