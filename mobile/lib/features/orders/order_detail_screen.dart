@@ -517,7 +517,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             // ── Riwayat Perubahan Jadwal (Reschedule History) ──
                             if (itemReschedules.isNotEmpty) ...[
                               const SizedBox(height: 12),
-                              _buildRescheduleHistoryCard(order, itemReschedules),
+                              _buildRescheduleHistoryCard(order, itemReschedules, (log) => _rescheduleExpired(currentStatus, displayItem.scheduledDate.isNotEmpty ? displayItem.scheduledDate : order.scheduledDate, log.proposedTimeStart)),
                             ],
 
                             // ── Riwayat Pengalihan Romo (Handover History) ──
@@ -873,7 +873,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     }
   }
 
-  Widget _buildRescheduleHistoryCard(Order order, [List<OrderRescheduleLog>? logs]) {
+  Widget _buildRescheduleHistoryCard(Order order, [List<OrderRescheduleLog>? logs, bool Function(OrderRescheduleLog)? isExpired]) {
     final list = logs ?? order.rescheduleHistory;
     return Container(
       width: double.infinity,
@@ -943,15 +943,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               final log = list[idx];
               final bool isAccepted = log.status == 'ACCEPTED';
               final bool isRejected = log.status == 'REJECTED';
-              final Color badgeColor = isAccepted
-                  ? const Color(0xFF059669)
-                  : (isRejected ? const Color(0xFFDC2626) : const Color(0xFFD97706));
-              final String badgeText = isAccepted
-                  ? 'Disetujui Umat'
-                  : (isRejected ? 'Ditolak Umat' : 'Menunggu Umat');
-              final IconData badgeIcon = isAccepted
-                  ? Icons.check_circle_rounded
-                  : (isRejected ? Icons.cancel_rounded : Icons.pending_actions_rounded);
+              final bool lapsed = !isAccepted && !isRejected && (isExpired?.call(log) ?? false); // tidak ditanggapi hingga jadwal berlalu
+              final Color badgeColor = isAccepted ? const Color(0xFF059669) : isRejected ? const Color(0xFFDC2626) : lapsed ? const Color(0xFF64748B) : const Color(0xFFD97706);
+              final String badgeText = isAccepted ? 'Disetujui Umat' : isRejected ? 'Ditolak Umat' : lapsed ? 'Tidak Ditanggapi' : 'Menunggu Umat';
+              final IconData badgeIcon = isAccepted ? Icons.check_circle_rounded : isRejected ? Icons.cancel_rounded : lapsed ? Icons.history_toggle_off_rounded : Icons.pending_actions_rounded;
 
               final String timeProposed = log.proposedTimeEnd != null && log.proposedTimeEnd!.isNotEmpty
                   ? '${shortTime(log.proposedTimeStart)} – ${shortTime(log.proposedTimeEnd!)} WIB'
@@ -1467,7 +1462,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     final ownLogs = perItem ? order.rescheduleHistory.where((r) => r.itemId == displayItem.id) : order.rescheduleHistory;
     final String historyLatestResch = ownLogs.isNotEmpty ? ownLogs.first.status.toUpperCase() : 'NONE';
 
-    final bool hasPendingProposal = ownResch == 'PENDING_UMAT' || historyLatestResch == 'PENDING_UMAT';
+    final bool proposalWaiting = ownResch == 'PENDING_UMAT' || historyLatestResch == 'PENDING_UMAT';
+    // Usulan yang tidak sempat ditanggapi Umat hingga jadwal berlalu tidak lagi menahan tombol Romo (mis. Selesaikan).
+    final pendingLog = ownLogs.where((r) => r.status.toUpperCase() == 'PENDING_UMAT').firstOrNull;
+    final String svcDate = perItem && displayItem.scheduledDate.isNotEmpty ? displayItem.scheduledDate : order.scheduledDate;
+    final bool proposalExpired = proposalWaiting && _rescheduleExpired(inProgress ? 'IN_PROGRESS' : (perItem ? displayItem.status : order.status).toUpperCase(), svcDate,
+        pendingLog?.proposedTimeStart ?? displayItem?.rescheduleNewTimeStart ?? order.rescheduleNewTime ?? '');
+    final bool hasPendingProposal = proposalWaiting && !proposalExpired;
 
     final bool isRescheduleRejected = !hasPendingProposal &&
         (ownResch == 'REJECTED' || historyLatestResch == 'REJECTED');
@@ -1475,49 +1476,38 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (hasPendingProposal)
+        if (proposalExpired)
           Container(
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF3C7),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFF59E0B)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.pending_actions_rounded, color: Color(0xFFB45309), size: 20),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Pengajuan ubah jam sedang menunggu persetujuan Umat.',
-                    style: TextStyle(color: Color(0xFF92400E), fontSize: 12.5, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
+            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFCBD5E1))),
+            child: const Row(children: [
+              Icon(Icons.info_outline_rounded, color: Color(0xFF64748B), size: 20),
+              SizedBox(width: 8),
+              Expanded(child: Text('Usulan ubah jam tidak sempat ditanggapi Umat hingga jadwal pelayanan berlalu, sehingga pelayanan mengikuti jadwal semula.', style: TextStyle(color: Color(0xFF475569), fontSize: 12.5, fontWeight: FontWeight.w600))),
+            ]),
+          )
+        else if (hasPendingProposal)
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFF59E0B))),
+            child: const Row(children: [
+              Icon(Icons.pending_actions_rounded, color: Color(0xFFB45309), size: 20),
+              SizedBox(width: 8),
+              Expanded(child: Text('Pengajuan ubah jam sedang menunggu persetujuan Umat.', style: TextStyle(color: Color(0xFF92400E), fontSize: 12.5, fontWeight: FontWeight.w600))),
+            ]),
           )
         else if (isRescheduleRejected)
           Container(
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF2F2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFEF4444)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline_rounded, color: Color(0xFFDC2626), size: 20),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Pengajuan ubah jam ditolak Umat. Silakan ajukan jadwal baru atau diskusikan via chat.',
-                    style: TextStyle(color: Color(0xFF991B1B), fontSize: 12, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
+            decoration: BoxDecoration(color: const Color(0xFFFEF2F2), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFEF4444))),
+            child: const Row(children: [
+              Icon(Icons.info_outline_rounded, color: Color(0xFFDC2626), size: 20),
+              SizedBox(width: 8),
+              Expanded(child: Text('Pengajuan ubah jam ditolak Umat. Silakan ajukan jadwal baru atau diskusikan via chat.', style: TextStyle(color: Color(0xFF991B1B), fontSize: 12, fontWeight: FontWeight.w600))),
+            ]),
           ),
 
         if (hasPendingProposal)
