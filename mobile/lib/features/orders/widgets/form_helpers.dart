@@ -132,23 +132,3 @@ class FormFocus {
 
 /// Urutan daftar misa: tanggal lalu jam mulai (format yyyy-MM-dd dan HH:mm, sehingga cukup dibandingkan sebagai teks).
 int compareMisaSchedule(OrderItem a, OrderItem b) => '${a.scheduledDate} ${a.scheduledTimeStart}'.compareTo('${b.scheduledDate} ${b.scheduledTimeStart}');
-
-/// Konfirmasi sebelum meninggalkan formulir yang sudah diisi; true = keluar dan buang isian.
-Future<bool> confirmLeaveForm(BuildContext context) async =>
-    await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Batalkan pengisian?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-        content: const Text('Data yang sudah Anda isi belum dikirim dan akan hilang bila keluar dari halaman ini.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Lanjut Mengisi')),
-          TextButton(
-            onPressed: () => Navigator.pop(c, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
-            child: const Text('Keluar'),
-          ),
-        ],
-      ),
-    ) ??
-    false;

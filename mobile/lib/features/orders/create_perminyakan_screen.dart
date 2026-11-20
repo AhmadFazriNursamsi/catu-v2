@@ -6,6 +6,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../widgets/searchable_select_field.dart';
 import '../../core/services/language_service.dart';
+import '../../widgets/discard_guard.dart';
 import 'widgets/form_helpers.dart';
 
 class CreatePerminyakanScreen extends StatefulWidget {
@@ -528,15 +529,10 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   /// Isian dari pengguna (alamat bawaan profil & pilihan bawaan tidak dihitung).
   bool get _hasInput => [_namaController, _usiaController, _catatanController, _tanggalController].any((c) => c.text.trim().isNotEmpty) || _alamatController.text.trim() != _prefilledAlamat.trim();
 
-  /// Kembali (tombol atau gestur): bila sudah ada isian, tanya dulu agar data tidak hilang tanpa sengaja.
-  Future<void> _onPopForm(bool didPop, Object? _) async {
-    if (didPop) return;
-    if (!_hasInput || await confirmLeaveForm(context)) { if (mounted) Navigator.pop(context); }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return PopScope(canPop: false, onPopInvokedWithResult: _onPopForm, child: Scaffold(
+    // Kembali (tombol atau gestur) dengan isian: konfirmasi "Batal Kirim?" seperti form Kedukaan.
+    return DiscardGuard(activeWhen: () => _hasInput, message: 'Apakah yakin mau Batal Kirim? Data yang sudah diisi tidak akan disimpan.', child: Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
