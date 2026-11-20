@@ -5,9 +5,9 @@ import '../../core/constants/app_constants.dart';
 /// Bilah atas layar berita: merek di kiri, tombol Masuk di kanan, bersih tanpa gradasi tebal.
 class NewsHeader extends StatelessWidget implements PreferredSizeWidget {
   final String dateLabel;
-  final VoidCallback onLogin;
+  final VoidCallback? onLogin; // null = pengguna sudah login: tombol Masuk disembunyikan
 
-  const NewsHeader({super.key, required this.dateLabel, required this.onLogin});
+  const NewsHeader({super.key, required this.dateLabel, this.onLogin});
 
   @override
   Size get preferredSize => const Size.fromHeight(64);
@@ -44,7 +44,7 @@ class NewsHeader extends StatelessWidget implements PreferredSizeWidget {
                     ],
                   ),
                 ),
-                FilledButton(
+                if (onLogin != null) FilledButton(
                   onPressed: onLogin,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppConstants.primaryBlue,

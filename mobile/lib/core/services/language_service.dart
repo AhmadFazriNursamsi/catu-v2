@@ -49,7 +49,7 @@ class LanguageService {
       // Bottom Nav / Tabs
       'nav_home': 'Beranda',
       'nav_history': 'Riwayat',
-      'nav_schedule': 'Jadwal',
+      'nav_schedule': 'Jadwal', 'nav_news': 'Berita',
       'nav_profile': 'Akun Saya',
 
       // Home Screen
@@ -216,7 +216,7 @@ class LanguageService {
       // Bottom Nav / Tabs
       'nav_home': 'Home',
       'nav_history': 'History',
-      'nav_schedule': 'Schedule',
+      'nav_schedule': 'Schedule', 'nav_news': 'News',
       'nav_profile': 'My Account',
 
       // Home Screen
@@ -383,7 +383,7 @@ class LanguageService {
       // Bottom Nav / Tabs
       'nav_home': 'Domus',
       'nav_history': 'Historia',
-      'nav_schedule': 'Horarium',
+      'nav_schedule': 'Horarium', 'nav_news': 'Nuntii',
       'nav_profile': 'Ratio Mea',
 
       // Home Screen

@@ -16,6 +16,7 @@ import '../orders/widgets/reschedule_widgets.dart' show ServiceStatusPill;
 import '../../core/widgets/urgency_label.dart';
 import '../orders/histori_screen.dart';
 import '../orders/schedule_screen.dart';
+import '../news/public_news_screen.dart';
 import '../profile/main_menu_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../notifications/notification_screen.dart';
@@ -33,6 +34,11 @@ List<LiquidNavItem> _buildNavItems() => [
         icon: Icons.history_outlined,
         activeIcon: Icons.history_rounded,
         label: LanguageService.tr('nav_history'),
+      ),
+      LiquidNavItem(
+        icon: Icons.newspaper_outlined,
+        activeIcon: Icons.newspaper_rounded,
+        label: LanguageService.tr('nav_news'),
       ),
       LiquidNavItem(
         icon: Icons.calendar_today_outlined,
@@ -254,7 +260,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     }
 
     // ── Jadwal / Schedule Tab ──
-    if (_currentNavIndex == 2) {
+    if (_currentNavIndex == 3) {
       return _tabScaffold(
         ScheduleScreen(
           orders: widget.orders,
@@ -265,8 +271,11 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
         ));
     }
 
+    // ── Berita Tab ──
+    if (_currentNavIndex == 2) return _tabScaffold(const PublicNewsScreen(signedIn: true));
+
     // ── Menu Utama Tab ──
-    if (_currentNavIndex == 3) {
+    if (_currentNavIndex == 4) {
       return _tabScaffold(
         MainMenuScreen(
           user: widget.user,

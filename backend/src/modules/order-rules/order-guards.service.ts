@@ -70,6 +70,8 @@ export class OrderGuardsService {
     const t = await this.target(orderId, itemId);
     if (t.rescheduleStatus !== 'PENDING_UMAT') throw new ConflictException('Tidak ada ajuan ubah jam yang menunggu respons.');
     if (['DONE', 'CLOSE', 'FAIL'].includes(t.status)) throw new ConflictException('Pelayanan sudah selesai atau ditutup, sehingga ajuan ubah jam tidak berlaku lagi.');
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }); // yyyy-MM-dd WIB
+    if (t.status === 'IN_PROGRESS' || (t.scheduledDate && t.scheduledDate.slice(0, 10) < today)) throw new ConflictException('Mohon maaf, usulan ubah jam ini sudah tidak dapat ditanggapi karena jadwal pelayanan telah berlalu.');
   }
 
   async assertHandoverPending(orderId: number, itemId?: number | null): Promise<void> {

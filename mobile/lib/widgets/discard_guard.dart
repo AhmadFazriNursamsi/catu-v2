@@ -5,16 +5,21 @@ import 'package:flutter/material.dart';
 /// Navigator.pop langsung (mis. setelah berhasil kirim) tidak ditahan.
 class DiscardGuard extends StatelessWidget {
   final bool active;
+  /// Dinilai saat kembali (untuk isian teks yang tidak memicu rebuild); bila diisi, [active] diabaikan.
+  final bool Function()? activeWhen;
+  final String message;
   final Widget child;
-  const DiscardGuard({super.key, required this.active, required this.child});
+  const DiscardGuard({super.key, this.active = false, this.activeWhen, this.message = _misaMessage, required this.child});
 
-  static Future<bool> confirm(BuildContext context) async {
+  static const _misaMessage = 'Apakah yakin mau Batal Kirim? Misa yang sudah ditambahkan tidak akan disimpan.';
+
+  static Future<bool> confirm(BuildContext context, {String message = _misaMessage}) async {
     final yes = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Batal Kirim?', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text('Apakah yakin mau Batal Kirim? Misa yang sudah ditambahkan tidak akan disimpan.'),
+        content: Text(message),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Tidak')),
           FilledButton(
@@ -30,10 +35,12 @@ class DiscardGuard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => PopScope(
-        canPop: !active,
+        canPop: activeWhen == null && !active,
         onPopInvokedWithResult: (didPop, _) async {
           if (didPop) return;
-          if (await confirm(context) && context.mounted) Navigator.of(context).pop();
+          if ((activeWhen != null && !activeWhen!()) || await confirm(context, message: message)) {
+            if (context.mounted) Navigator.of(context).pop();
+          }
         },
         child: child,
       );
