@@ -8,6 +8,7 @@ import { APPROVER_ROLES } from '../../common/access/role-groups';
 import { ApproveUserDto, ApproveUserResponseDto } from '../../auth.dto';
 import { AuthService } from './auth.service';
 import { ApprovalPolicyService } from './approval-policy.service';
+import { isKoordinator } from './approval-policy';
 import { RegionTransferService } from '../region-transfer/region-transfer.service';
 
 export class ProcessApprovalDto {
@@ -52,7 +53,7 @@ export class ApprovalsController {
 
   @Get('pengurus/pending-umat')
   @Roles(...APPROVER_ROLES)
-  @ApiOperation({ summary: 'Daftar Umat Baru yang Menunggu Persetujuan Pengurus Lingkungan / Koordinator Keuskupan' })
+  @ApiOperation({ summary: 'Daftar Umat Baru yang Menunggu Persetujuan Pengurus Lingkungan' })
   async getPengurusPendingUmat(
     @CurrentUser() user: AuthUser,
     @Query('lingkunganId') lingkunganId?: string,
@@ -60,14 +61,12 @@ export class ApprovalsController {
     @Query('pengurusUserId') pengurusUserId?: string,
   ) {
     const scope = this.access.isAdmin(user) ? null : await this.policy.scopeFor(user.sub);
-    if (!this.access.isAdmin(user) && scope?.kind !== 'LINGKUNGAN' && scope?.kind !== 'KEUSKUPAN') return [];
+    if (!this.access.isAdmin(user) && scope?.kind !== 'LINGKUNGAN') return []; // Koordinator tidak menyetujui akun
     const rows = this.access.isAdmin(user)
       ? await this.authService.getPengurusPendingUmat(lingkunganId, keuskupanId, pengurusUserId)
-      : scope?.kind === 'LINGKUNGAN'
-        ? await this.authService.getPengurusPendingUmat(String(scope.lingkunganId))
-        : await this.authService.getPengurusPendingUmat(undefined, String((scope as any).keuskupanId));
+      : await this.authService.getPengurusPendingUmat(String((scope as any).lingkunganId));
     const isAdmin = this.access.isAdmin(user);
-    const extra = await this.regionTransfer.pendingPengurus(isAdmin && lingkunganId ? Number(lingkunganId) : (scope as any)?.lingkunganId, isAdmin && keuskupanId ? Number(keuskupanId) : (scope as any)?.keuskupanId);
+    const extra = await this.regionTransfer.pendingPengurus(isAdmin && lingkunganId ? Number(lingkunganId) : (scope as any)?.lingkunganId, isAdmin && keuskupanId ? Number(keuskupanId) : undefined);
     const visible: any[] = [];
     for (const row of extra) {
       if (isAdmin || (await this.policy.authorize(user.sub, Number(row.id), 'REJECT').then(() => true, () => false))) visible.push(row);
@@ -104,7 +103,8 @@ export class ApprovalsController {
 
   /** Riwayat persetujuan tidak tersedia bagi Koordinator Keuskupan. */
   private async assertHistoryAllowed(user: AuthUser): Promise<void> {
-    if ((await this.policy.scopeFor(user.sub))?.kind === 'KEUSKUPAN') {
+    const actor = await this.policy.load(user.sub);
+    if (actor && isKoordinator(actor)) {
       throw new ForbiddenException('Riwayat persetujuan tidak tersedia bagi Koordinator.');
     }
   }

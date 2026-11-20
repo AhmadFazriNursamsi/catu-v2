@@ -31,20 +31,21 @@ describe('decideApproval', () => {
     }
     expect(decideApproval(admin, { ...umat, status: 'REJECTED' }, 'APPROVE')).toMatchObject({ allowed: false, status: 403 });
     expect(allowed(sekretaris, umat)).toBe(true);
-    expect(allowed(koordinator, umat)).toBe(true);
+    expect(allowed(koordinator, umat)).toBe(false);
   });
 
-  it('umat: pengurus se-lingkungan dan koordinator se-keuskupan; pengurus lingkungan lain tidak', () => {
+  it('umat: hanya pengurus se-lingkungan; koordinator dan pengurus lingkungan lain tidak', () => {
     expect(allowed(sekretaris, umat)).toBe(true);
     expect(allowed(ketuaLing, umat, 'REJECT')).toBe(true);
-    expect(allowed(koordinator, umat)).toBe(true);
+    expect(allowed(koordinator, umat)).toBe(false);
+    expect(allowed(koordinator, umat, 'REJECT')).toBe(false);
     expect(allowed({ ...sekretaris, id: 20, lingkunganId: 200 }, umat)).toBe(false);
     expect(allowed({ ...koordinator, id: 54, keuskupanId: 3 }, umat)).toBe(false);
   });
 
-  it('calon pengurus: hanya Ketua Lingkungan / penyetuju ditunjuk / koordinator, bukan pengurus biasa', () => {
+  it('calon pengurus: hanya Ketua Lingkungan / penyetuju ditunjuk, bukan pengurus biasa maupun koordinator', () => {
     expect(allowed(ketuaLing, pengurusBaru)).toBe(true);
-    expect(allowed(koordinator, pengurusBaru)).toBe(true);
+    expect(allowed(koordinator, pengurusBaru)).toBe(false);
     expect(allowed(sekretaris, pengurusBaru)).toBe(false);
     expect(allowed(sekretaris, { ...pengurusBaru, assignedApproverId: 11 })).toBe(true);
   });
@@ -97,7 +98,7 @@ describe('approvalScope', () => {
   it('menentukan ruang lingkup daftar persetujuan', () => {
     expect(approvalScope(admin)).toEqual({ kind: 'ADMIN' });
     expect(approvalScope(ketuaLing)).toEqual({ kind: 'LINGKUNGAN', lingkunganId: 100 });
-    expect(approvalScope(koordinator)).toEqual({ kind: 'KEUSKUPAN', keuskupanId: 30 });
+    expect(approvalScope(koordinator)).toBeNull();
     expect(approvalScope(kepalaParoki)).toEqual({ kind: 'PAROKI', parokiId: 256 });
     expect(approvalScope(ketuaOrdo)).toEqual({ kind: 'ORDO', ordoId: 2 });
   });
