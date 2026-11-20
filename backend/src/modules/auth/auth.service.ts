@@ -919,7 +919,8 @@ export class AuthService {
            JOIN user_profiles p ON u.id = p.user_id
            JOIN roles r ON u.role_id = r.id
            WHERE p.lingkungan_id = $1
-             AND (r.code = 'PENGURUS_LINGKUNGAN' OR p.pengurus_position IS NOT NULL)
+             AND (r.code = 'PENGURUS_LINGKUNGAN' OR COALESCE(TRIM(p.pengurus_position), '') <> '')
+             AND r.code NOT LIKE '%KOORDINATOR%' AND LOWER(COALESCE(p.pengurus_position, '')) NOT LIKE '%koordinator%' -- Koordinator tidak menyetujui Umat
              AND u.account_status = 'APPROVED'`,
           [dto.lingkunganId],
         );

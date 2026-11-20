@@ -2,10 +2,10 @@
  * Kebijakan persetujuan pendaftaran akun (murni, tanpa akses database):
  * siapa yang berwenang menyetujui / menolak akun siapa.
  *
- *  - Admin / Super Admin: semua akun KECUALI Umat biasa (Umat hanya disetujui Pengurus Lingkungan / Koordinator).
- *  - Umat biasa            -> Pengurus Lingkungan di lingkungan yang sama, atau Koordinator se-keuskupan.
- *  - Pengurus Lingkungan   -> Ketua Lingkungan (atau penyetuju yang ditunjuk) di lingkungan yang sama, atau Koordinator se-keuskupan.
- *  - Koordinator           -> hanya Admin.
+ *  - Admin / Super Admin: semua akun KECUALI Umat biasa (Umat hanya disetujui Pengurus Lingkungan).
+ *  - Umat biasa            -> hanya Pengurus Lingkungan di lingkungan yang sama.
+ *  - Pengurus Lingkungan   -> hanya Ketua Lingkungan (atau penyetuju yang ditunjuk) di lingkungan yang sama.
+ *  - Koordinator           -> hanya Admin. Koordinator sendiri tidak menyetujui akun apa pun.
  *  - Romo Paroki biasa     -> Kepala Romo Paroki yang sama.
  *  - Romo Ordo biasa       -> Ketua Romo Ordo yang sama.
  *  - Kepala / Ketua Romo   -> hanya Admin.
@@ -55,7 +55,7 @@ export function decideApproval(actor: ApprovalAccount, target: ApprovalAccount, 
   if (target.status !== 'PENDING_APPROVAL' && !reopenable) {
     return deny(`Akun ini sudah berstatus ${target.status} dan tidak dapat diproses lagi.`, 409);
   }
-  if (admin && isUmatBiasa(target)) return deny('Persetujuan Umat dilakukan oleh Pengurus Lingkungan atau Koordinator lewat aplikasi mobile, bukan oleh Admin.');
+  if (admin && isUmatBiasa(target)) return deny('Persetujuan Umat dilakukan oleh Pengurus Lingkungan lewat aplikasi mobile, bukan oleh Admin.');
   if (admin) return { allowed: true };
 
   const outOfScope = deny('Anda tidak berwenang memproses persetujuan akun ini.');
@@ -71,7 +71,6 @@ export function decideApproval(actor: ApprovalAccount, target: ApprovalAccount, 
   }
 
   if (target.roleCode === 'UMAT' || target.roleCode === 'PENGURUS_LINGKUNGAN') {
-    if (isKoordinator(actor) && active(actor) && same(actor.keuskupanId, target.keuskupanId)) return { allowed: true };
     if (!isPengurus(actor) || !active(actor) || !same(actor.lingkunganId, target.lingkunganId)) return outOfScope;
     if (isPengurus(target)) return isKetuaLingkungan(actor) || same(target.assignedApproverId, actor.id) ? { allowed: true } : outOfScope;
     return { allowed: true };
@@ -83,7 +82,6 @@ export function decideApproval(actor: ApprovalAccount, target: ApprovalAccount, 
 export type ApprovalScope =
   | { kind: 'ADMIN' }
   | { kind: 'LINGKUNGAN'; lingkunganId: number }
-  | { kind: 'KEUSKUPAN'; keuskupanId: number }
   | { kind: 'PAROKI'; parokiId: number }
   | { kind: 'ORDO'; ordoId: number };
 
@@ -92,7 +90,7 @@ export function approvalScope(actor: ApprovalAccount): ApprovalScope | null {
   if (isAdminRole(actor.roleCode)) return { kind: 'ADMIN' };
   if (actor.roleCode === 'ROMO_PAROKI') return isLeaderRomo(actor) && active(actor) && actor.parokiId ? { kind: 'PAROKI', parokiId: Number(actor.parokiId) } : null;
   if (actor.roleCode === 'ROMO_ORDO') return isLeaderRomo(actor) && active(actor) && actor.ordoId ? { kind: 'ORDO', ordoId: Number(actor.ordoId) } : null;
-  if (isKoordinator(actor)) return active(actor) && actor.keuskupanId ? { kind: 'KEUSKUPAN', keuskupanId: Number(actor.keuskupanId) } : null;
+  if (isKoordinator(actor)) return null; // Koordinator tidak menyetujui akun (Umat & Pengurus oleh Pengurus Lingkungan)
   if (isPengurus(actor)) return active(actor) && actor.lingkunganId ? { kind: 'LINGKUNGAN', lingkunganId: Number(actor.lingkunganId) } : null;
   return null;
 }
