@@ -36,7 +36,7 @@ export class OrdersService {
 
   async getPengurusForOrder(orderId: number, excludeUserId?: number): Promise<any[]> {
     const orderHierarchy = await this.dataSource.query(
-      `SELECT o.lingkungan_id, o.paroki_id, o.lintas_paroki, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id
+      `SELECT o.user_id AS creator_id, o.lingkungan_id, o.paroki_id, o.lintas_paroki, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id
        FROM orders o
        JOIN user_profiles p ON o.user_id = p.user_id
        WHERE o.id = $1`,
@@ -66,9 +66,9 @@ export class OrdersService {
       );
     }
 
-    if (excludeUserId) {
-      pengurus = pengurus.filter((p: any) => p.id !== excludeUserId);
-    }
+    // Pembuat pelayanan (mis. Pengurus yang memohon untuk dirinya/keluarganya) sudah diberi tahu sebagai pemohon.
+    // id bigint terbaca sebagai teks: bandingkan sebagai angka.
+    pengurus = pengurus.filter((p: any) => Number(p.id) !== Number(oh.creator_id) && Number(p.id) !== Number(excludeUserId ?? 0));
 
     return pengurus;
   }
@@ -228,7 +228,7 @@ export class OrdersService {
 
         // 🔔 4. Notify Pengurus Lingkungan per-misa (exclude creator)
         for (const p of pengurus) {
-          if (p.id && p.id !== userId) {
+          if (p.id && Number(p.id) !== Number(userId)) {
             await this.dataSource.query(
               `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read) VALUES ($1, $2, $5, $3, $4, 'NEW_ORDER_MONITOR', false)`,
               [ p.id, order.id, `Pemantauan ${item.itemName}`, `Ada permintaan ${item.itemName} (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.`, gId ],
@@ -238,7 +238,7 @@ export class OrdersService {
 
         // 🔔 5. Notify Romo Paroki per-misa (exclude creator)
         for (const rp of romoParoki) {
-          if (rp.id && rp.id !== userId) {
+          if (rp.id && Number(rp.id) !== Number(userId)) {
             await this.dataSource.query(
               `INSERT INTO notifications (user_id, order_id, chat_group_id, title, body, type, is_read) VALUES ($1, $2, $5, $3, $4, 'NEW_ORDER_ROMO', false)`,
               [ rp.id, order.id, `Permintaan Pelayanan ${item.itemName}`, `Umat yang berada di paroki anda telah membuat permintaan pelayanan ${item.itemName} (${order.order_number}).`, gId ],
@@ -261,7 +261,7 @@ export class OrdersService {
       }
 
       for (const p of pengurus) {
-        if (p.id !== userId) {
+        if (Number(p.id) !== Number(userId)) {
           await this.dataSource.query(
             `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group) VALUES ($1, $2, 'PENGURUS_LINGKUNGAN') ON CONFLICT DO NOTHING`,
             [firstGroupId, p.id],
@@ -276,7 +276,7 @@ export class OrdersService {
 
       // 🔔 Notify Pengurus Lingkungan (exclude creator)
       for (const p of pengurus) {
-        if (p.id !== userId) {
+        if (Number(p.id) !== Number(userId)) {
           await this.dataSource.query(
             `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, 'Pemantauan Pelayanan Sakramen Perminyakan', $3, 'NEW_ORDER_MONITOR', false)`,
             [p.id, order.id, `Ada permintaan pelayanan Sakramen Perminyakan (${order.order_number}) dari warga lingkungan Anda. Ketuk untuk memantau status dan koordinasi via chat.`],
@@ -286,7 +286,7 @@ export class OrdersService {
 
       // 🔔 Notify Romo Paroki (exclude creator)
       for (const rp of romoParoki) {
-        if (rp.id !== userId) {
+        if (Number(rp.id) !== Number(userId)) {
           await this.dataSource.query(
             `INSERT INTO notifications (user_id, order_id, title, body, type, is_read) VALUES ($1, $2, 'Permintaan Pelayanan Sakramen Perminyakan', $3, 'NEW_ORDER_ROMO', false)`,
             [rp.id, order.id, `Umat yang berada di paroki anda telah membuat permintaan pelayanan Sakramen Perminyakan (${order.order_number}).`],
@@ -303,10 +303,10 @@ export class OrdersService {
       const isKedukaan = catName.toLowerCase().includes('kedukaan');
 
       // Hanya Romo Paroki yang diberi tahu saat dibuat; Romo Ordo lewat eskalasi (EscalationService)
-      const allRomoIds = Array.from(new Set(romoParoki.map((r: any) => r.id))).filter((id: number) => id && id !== userId);
+      const allRomoIds = Array.from(new Set(romoParoki.map((r: any) => r.id))).filter((id: number) => id && Number(id) !== Number(userId));
 
       // Pelayanan bermisa: satu push per misa (sama seperti notifikasi dalam aplikasi), membawa itemId misa itu.
-      const allPengurusIds = Array.from(new Set(pengurus.map((p: any) => p.id))).filter((id: number) => id && id !== userId);
+      const allPengurusIds = Array.from(new Set(pengurus.map((p: any) => p.id))).filter((id: number) => id && Number(id) !== Number(userId));
       for (const it of createdItems.length > 0 ? createdItems : [{ id: 0, name: '' }]) {
         const data = { orderId: order.id.toString(), orderNumber: order.order_number, categoryName: catName, itemId: it.id ? String(it.id) : '' };
         const what = it.name ? `${catName} - ${it.name}` : catName;
@@ -860,7 +860,7 @@ export class OrdersService {
         const targetReschedRespUsers = Array.from(new Set([
           romoId,
           ...pengurusRespond.map((p: any) => p.id),
-        ])).filter((id: number) => id && id !== userId);
+        ])).filter((id: number) => id && Number(id) !== Number(userId));
 
         if (targetReschedRespUsers.length > 0) {
           await this.fcmService.sendPushToUsers(targetReschedRespUsers, {
@@ -942,7 +942,7 @@ export class OrdersService {
         const targetReschedRespUsers = Array.from(new Set([
           romoId,
           ...pengurusRespond.map((p: any) => p.id),
-        ])).filter((id: number) => id && id !== userId);
+        ])).filter((id: number) => id && Number(id) !== Number(userId));
 
         if (targetReschedRespUsers.length > 0) {
           await this.fcmService.sendPushToUsers(targetReschedRespUsers, {

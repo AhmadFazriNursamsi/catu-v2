@@ -54,7 +54,8 @@ export class LintasParokiService {
             [keuskupan],
           ),
     ]);
-    const koordinatorIds: number[] = koordinator.map((k: any) => Number(k.id));
+    // Koordinator pembuat pelayanan tetap berperan pemohon di grup (perannya tidak ditimpa menjadi KOORDINATOR).
+    const koordinatorIds: number[] = koordinator.map((k: any) => Number(k.id)).filter((id: number) => id !== Number(o.user_id));
     for (const id of koordinatorIds) {
       await this.dataSource.query(
         `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group)

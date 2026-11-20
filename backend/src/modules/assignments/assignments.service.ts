@@ -17,7 +17,7 @@ export class AssignmentsService {
   ) {}
 private async getPengurusForOrder(orderId: number, excludeUserId?: number): Promise<any[]> {
     const orderHierarchy = await this.dataSource.query(
-      `SELECT o.lingkungan_id, o.paroki_id, o.lintas_paroki, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id
+      `SELECT o.user_id AS creator_id, o.lingkungan_id, o.paroki_id, o.lintas_paroki, COALESCE(o.keuskupan_id, p.keuskupan_id) as keuskupan_id
        FROM orders o
        JOIN user_profiles p ON o.user_id = p.user_id
        WHERE o.id = $1`,
@@ -47,9 +47,9 @@ private async getPengurusForOrder(orderId: number, excludeUserId?: number): Prom
       );
     }
 
-    if (excludeUserId) {
-      pengurus = pengurus.filter((p: any) => p.id !== excludeUserId);
-    }
+    // Pembuat pelayanan (mis. Pengurus yang memohon untuk dirinya/keluarganya) sudah diberi tahu sebagai pemohon.
+    // id bigint terbaca sebagai teks: bandingkan sebagai angka.
+    pengurus = pengurus.filter((p: any) => Number(p.id) !== Number(oh.creator_id) && Number(p.id) !== Number(excludeUserId ?? 0));
 
     return pengurus;
   }
