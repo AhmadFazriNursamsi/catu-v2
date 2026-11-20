@@ -18,7 +18,8 @@ const _kCachedArticles = 'catu_cached_news_v1';
 const _kCachedFeatured = 'catu_cached_news_featured_v1';
 
 class PublicNewsScreen extends StatefulWidget {
-  const PublicNewsScreen({super.key});
+  final bool signedIn; // tab Berita di dashboard setelah login: tanpa tombol Masuk
+  const PublicNewsScreen({super.key, this.signedIn = false});
 
   @override
   State<PublicNewsScreen> createState() => _PublicNewsScreenState();
@@ -177,7 +178,7 @@ class _PublicNewsScreenState extends State<PublicNewsScreen> {
     final loadingFirst = _isLoading && _articles.isEmpty;
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: NewsHeader(dateLabel: formatServiceDate(DateTime.now().toIso8601String()), onLogin: _navigateToLogin),
+      appBar: NewsHeader(dateLabel: formatServiceDate(DateTime.now().toIso8601String()), onLogin: widget.signedIn ? null : _navigateToLogin),
       body: RefreshIndicator(
         onRefresh: _handleRefresh,
         color: AppConstants.primaryBlue,

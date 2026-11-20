@@ -10,6 +10,7 @@ import '../chat/chat_list_screen.dart';
 import '../orders/histori_screen.dart';
 import '../orders/order_detail_screen.dart';
 import '../orders/schedule_screen.dart';
+import '../news/public_news_screen.dart';
 import '../profile/main_menu_screen.dart';
 import '../notifications/notification_screen.dart';
 import '../admin/romo_approval_screen.dart';
@@ -248,6 +249,11 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         label: 'Jadwal',
       ),
       LiquidNavItem(
+        icon: Icons.newspaper_outlined,
+        activeIcon: Icons.newspaper_rounded,
+        label: 'Berita',
+      ),
+      LiquidNavItem(
         icon: Icons.menu_outlined,
         activeIcon: Icons.menu_rounded,
         label: 'Menu',
@@ -300,8 +306,11 @@ class _RomoDashboardViewState extends State<RomoDashboardView> {
         ));
     }
 
-    // ── Menu Utama Tab (Nav Index 3) ──
-    if (_currentNavIndex == 3) {
+    // ── Berita Tab (Nav Index 3) ──
+    if (_currentNavIndex == 3) return _tabScaffold(const PublicNewsScreen(signedIn: true));
+
+    // ── Menu Utama Tab (Nav Index 4) ──
+    if (_currentNavIndex == 4) {
       return _tabScaffold(
         MainMenuScreen(
           user: widget.user,

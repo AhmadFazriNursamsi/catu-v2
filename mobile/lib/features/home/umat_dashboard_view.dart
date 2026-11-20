@@ -16,6 +16,7 @@ import '../orders/widgets/reschedule_widgets.dart' show ServiceStatusPill;
 import '../../core/widgets/urgency_label.dart';
 import '../orders/histori_screen.dart';
 import '../orders/schedule_screen.dart';
+import '../news/public_news_screen.dart';
 import '../profile/main_menu_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../notifications/notification_screen.dart';
@@ -38,6 +39,11 @@ List<LiquidNavItem> _buildNavItems() => [
         icon: Icons.calendar_today_outlined,
         activeIcon: Icons.calendar_today_rounded,
         label: LanguageService.tr('nav_schedule'),
+      ),
+      LiquidNavItem(
+        icon: Icons.newspaper_outlined,
+        activeIcon: Icons.newspaper_rounded,
+        label: LanguageService.tr('nav_news'),
       ),
       LiquidNavItem(
         icon: Icons.menu_outlined,
@@ -265,8 +271,11 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
         ));
     }
 
+    // ── Berita Tab ──
+    if (_currentNavIndex == 3) return _tabScaffold(const PublicNewsScreen(signedIn: true));
+
     // ── Menu Utama Tab ──
-    if (_currentNavIndex == 3) {
+    if (_currentNavIndex == 4) {
       return _tabScaffold(
         MainMenuScreen(
           user: widget.user,
