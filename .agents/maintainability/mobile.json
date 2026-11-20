@@ -25,7 +25,7 @@
     "mobile/lib/features/profile/main_menu_screen.dart": 659,
     "mobile/lib/features/news/news_detail_screen.dart": 526,
     "mobile/lib/features/orders/schedule_screen.dart": 1748,
-    "mobile/lib/features/orders/create_perminyakan_screen.dart": 1217,
+    "mobile/lib/features/orders/create_perminyakan_screen.dart": 1212,
     "mobile/lib/features/orders/histori_screen.dart": 1009,
     "mobile/lib/features/orders/create_kedukaan_screen.dart": 1425,
     "mobile/lib/features/orders/order_detail_screen.dart": 2478,

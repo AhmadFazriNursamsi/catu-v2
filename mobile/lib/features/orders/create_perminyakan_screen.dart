@@ -48,6 +48,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
   List<Map<String, dynamic>> _kabupatenKotaList = [];
 
   bool _isLoading = false;
+  String _prefilledAlamat = ''; // alamat bawaan dari profil
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   static const _urgensiOptions = [
@@ -149,7 +150,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
       } catch (_) {}
     }
     if (alamatKunjungan.isNotEmpty && _alamatController.text.trim().isEmpty) {
-      _alamatController.text = alamatKunjungan;
+      _alamatController.text = _prefilledAlamat = alamatKunjungan;
     }
     int? matchedProvId;
     if (provName.isNotEmpty && provList.isNotEmpty) {
@@ -518,21 +519,24 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
 
   void _showError(String msg) {
     ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: Colors.red.shade700,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg), backgroundColor: Colors.red.shade700, behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), margin: const EdgeInsets.all(16), duration: const Duration(seconds: 3),
+    ));
+  }
+
+  /// Isian dari pengguna (alamat bawaan profil & pilihan bawaan tidak dihitung).
+  bool get _hasInput => [_namaController, _usiaController, _catatanController, _tanggalController].any((c) => c.text.trim().isNotEmpty) || _alamatController.text.trim() != _prefilledAlamat.trim();
+
+  /// Kembali (tombol atau gestur): bila sudah ada isian, tanya dulu agar data tidak hilang tanpa sengaja.
+  Future<void> _onPopForm(bool didPop, Object? _) async {
+    if (didPop) return;
+    if (!_hasInput || await confirmLeaveForm(context)) { if (mounted) Navigator.pop(context); }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(canPop: false, onPopInvokedWithResult: _onPopForm, child: Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -541,25 +545,16 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(12),
-            ),
+            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(12)),
             child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                  color: Color(0xFF0F172A), size: 16),
-              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF0F172A), size: 16),
+              onPressed: () => Navigator.maybePop(context), // lewat PopScope → konfirmasi bila ada isian
             ),
           ),
         ),
         title: Text(
           LanguageService.tr('create_service'),
-          style: const TextStyle(
-            color: Color(0xFF0F172A),
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.3,
-          ),
+          style: const TextStyle(color: Color(0xFF0F172A), fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: -0.3),
         ),
       ),
       body: Form(
@@ -926,7 +921,7 @@ class _CreatePerminyakanScreenState extends State<CreatePerminyakanScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   // ── Helper UI Components ──
