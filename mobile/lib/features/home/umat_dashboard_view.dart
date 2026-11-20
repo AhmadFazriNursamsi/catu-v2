@@ -36,14 +36,14 @@ List<LiquidNavItem> _buildNavItems() => [
         label: LanguageService.tr('nav_history'),
       ),
       LiquidNavItem(
-        icon: Icons.calendar_today_outlined,
-        activeIcon: Icons.calendar_today_rounded,
-        label: LanguageService.tr('nav_schedule'),
-      ),
-      LiquidNavItem(
         icon: Icons.newspaper_outlined,
         activeIcon: Icons.newspaper_rounded,
         label: LanguageService.tr('nav_news'),
+      ),
+      LiquidNavItem(
+        icon: Icons.calendar_today_outlined,
+        activeIcon: Icons.calendar_today_rounded,
+        label: LanguageService.tr('nav_schedule'),
       ),
       LiquidNavItem(
         icon: Icons.menu_outlined,
@@ -260,7 +260,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     }
 
     // ── Jadwal / Schedule Tab ──
-    if (_currentNavIndex == 2) {
+    if (_currentNavIndex == 3) {
       return _tabScaffold(
         ScheduleScreen(
           orders: widget.orders,
@@ -272,7 +272,7 @@ class _UmatDashboardViewState extends State<UmatDashboardView> {
     }
 
     // ── Berita Tab ──
-    if (_currentNavIndex == 3) return _tabScaffold(const PublicNewsScreen(signedIn: true));
+    if (_currentNavIndex == 2) return _tabScaffold(const PublicNewsScreen(signedIn: true));
 
     // ── Menu Utama Tab ──
     if (_currentNavIndex == 4) {
