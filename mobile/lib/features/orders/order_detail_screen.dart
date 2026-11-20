@@ -340,7 +340,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                             ],
                             // ── Reschedule Proposal Card for Umat ──
                             if (showProposalCard) ...[
-                              _buildRescheduleProposalCard(order, displayItem),
+                              _buildRescheduleProposalCard(order, displayItem, currentStatus),
                               const SizedBox(height: 12),
                             ],
                             // ── Handover Proposal Card for Target Romo (Romo Baru) ──
@@ -697,11 +697,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
     }
   }
 
-  Widget _buildRescheduleProposalCard(Order order, OrderItem displayItem) {
+  /// Usulan ubah jam tidak dapat ditanggapi lagi bila pelayanan sudah berlangsung/masuk histori atau jam usulan sudah lewat.
+  static bool _rescheduleExpired(String status, String date, String proposedStart) {
+    if (const ['IN_PROGRESS', 'DONE', 'CLOSE', 'FAIL'].contains(status)) return true;
+    final d = DateTime.tryParse(date.split('T').first), now = DateTime.now(), today = DateTime(now.year, now.month, now.day);
+    if (d == null) return false;
+    if (d.isBefore(today)) return true;
+    final p = proposedStart.split(':'), h = int.tryParse(p.first), m = p.length > 1 ? int.tryParse(p[1]) ?? 0 : 0;
+    return d == today && h != null && h * 60 + m <= now.hour * 60 + now.minute;
+  }
+
+  Widget _buildRescheduleProposalCard(Order order, OrderItem displayItem, String currentStatus) {
     final String proposedTimeStart = displayItem.rescheduleNewTimeStart ?? order.rescheduleNewTime ?? order.scheduledTime;
     final String? proposedTimeEnd = displayItem.rescheduleNewTimeEnd ?? order.rescheduleNewTimeEnd;
     final String reason = displayItem.rescheduleReason.isNotEmpty ? displayItem.rescheduleReason : (order.rescheduleReason ?? '');
 
+    final expired = _rescheduleExpired(currentStatus, displayItem.scheduledDate.isNotEmpty ? displayItem.scheduledDate : order.scheduledDate, proposedTimeStart);
     final String timeDisplay = proposedTimeEnd != null && proposedTimeEnd.isNotEmpty
         ? '${shortTime(proposedTimeStart)} – ${shortTime(proposedTimeEnd)} WIB'
         : '${shortTime(proposedTimeStart)} WIB';
@@ -713,13 +724,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
         color: const Color(0xFFFFFBEB),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: const Color(0xFFF59E0B).withValues(alpha: 0.12), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -728,30 +733,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: const Color(0xFFF59E0B).withValues(alpha: 0.15), shape: BoxShape.circle),
                 child: const Icon(Icons.alarm_on_rounded, color: Color(0xFFB45309), size: 20),
               ),
               const SizedBox(width: 10),
               const Expanded(
-                child: Text(
-                  'Pengajuan Perubahan Jam Pelayanan',
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF92400E),
-                  ),
-                ),
+                child: Text('Pengajuan Perubahan Jam Pelayanan', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: Color(0xFF92400E))),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          const Text(
-            'Romo yang bertugas mengajukan penyesuaian waktu pelayanan:',
-            style: TextStyle(fontSize: 12.5, color: Color(0xFF78350F)),
-          ),
+          const Text('Romo yang bertugas mengajukan penyesuaian waktu pelayanan:', style: TextStyle(fontSize: 12.5, color: Color(0xFF78350F))),
           const SizedBox(height: 10),
           Container(
             width: double.infinity,
@@ -760,39 +752,43 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.access_time_rounded, size: 16, color: Color(0xFFD97706)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        timeDisplay,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
+                Row(children: [
+                  const Icon(Icons.access_time_rounded, size: 16, color: Color(0xFFD97706)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(timeDisplay, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)), overflow: TextOverflow.ellipsis)),
+                ]),
               ],
             ),
           ),
           if (reason.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text(
-              'Alasan: "$reason"',
-              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Color(0xFF92400E)),
-            ),
+            Text('Alasan: "$reason"', style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Color(0xFF92400E))),
           ],
           const SizedBox(height: 14),
+          if (expired)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(12)),
+              child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFF64748B)),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Mohon maaf, usulan perubahan jam ini sudah tidak dapat ditanggapi karena jadwal pelayanan telah berlalu. Terima kasih atas pengertian Bapak/Ibu.',
+                    style: TextStyle(fontSize: 12.5, height: 1.4, color: Color(0xFF475569)),
+                  ),
+                ),
+              ]),
+            )
+          else
           Row(
             children: [
               // Tolak Button
               Expanded(
                 flex: 4,
                 child: OutlinedButton(
-                  onPressed: _isSubmitting
-                      ? null
-                      : () => _respondReschedule(order, displayItem: displayItem, accept: false),
+                  onPressed: _isSubmitting ? null : () => _respondReschedule(order, displayItem: displayItem, accept: false),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFDC2626),
                     side: const BorderSide(color: Color(0xFFDC2626), width: 1.2),
@@ -809,9 +805,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
               Expanded(
                 flex: 6,
                 child: ElevatedButton(
-                  onPressed: _isSubmitting
-                      ? null
-                      : () => _respondReschedule(order, displayItem: displayItem, accept: true),
+                  onPressed: _isSubmitting ? null : () => _respondReschedule(order, displayItem: displayItem, accept: true),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF059669),
                     foregroundColor: Colors.white,
@@ -821,10 +815,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen>
                   ),
                   child: _isSubmitting
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text('Terima Jadwal', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
-                        ),
+                      : const FittedBox(fit: BoxFit.scaleDown, child: Text('Terima Jadwal', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13))),
                 ),
               ),
             ],
