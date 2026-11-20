@@ -148,7 +148,8 @@ export class EscalationService implements OnModuleInit, OnModuleDestroy {
            AND p.keuskupan_id = ANY($1::int[])`,
         [keuskupan],
       );
-      const ids: number[] = koordinator.map((k: any) => Number(k.id));
+      // Koordinator yang membuat pelayanan ini sendiri adalah pemohon: tidak diberi tahu & tidak diubah perannya di grup.
+      const ids: number[] = koordinator.map((k: any) => Number(k.id)).filter((id: number) => id !== Number(o.user_id));
       for (const id of ids) {
         await this.dataSource.query(
           `INSERT INTO chat_group_members (chat_group_id, user_id, role_in_group)
