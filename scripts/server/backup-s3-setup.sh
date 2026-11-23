@@ -5,6 +5,9 @@
 #   AWS_PROFILE=<profil-admin> scripts/server/backup-s3-setup.sh <nama-bucket> [region]
 #   contoh: AWS_PROFILE=catu-backup scripts/server/backup-s3-setup.sh catu-backup-xxxx ap-southeast-1
 #
+# Bila profil itu tidak punya hak IAM: admin akun AWS membuat user catu-backup-writer + kebijakan + access key di Console
+# (lihat README), unduh CSV kuncinya, lalu jalankan ulang dengan CATU_S3_KEY_CSV=<berkas.csv> agar langkah IAM dilewati.
+#
 # Yang dibuat:
 #   - Bucket privat (blokir akses publik, enkripsi SSE-S3, versioning) + aturan simpan: daily/ dihapus setelah
 #     CATU_S3_KEEP_DAYS hari (bawaan 90), versi lama 7 hari.
@@ -43,13 +46,20 @@ aws s3api put-bucket-lifecycle-configuration --bucket "$BUCKET" --lifecycle-conf
   \"NoncurrentVersionExpiration\":{\"NoncurrentDays\":7},\"AbortIncompleteMultipartUpload\":{\"DaysAfterInitiation\":1}}]}"
 say "Bucket: privat, terenkripsi, versioning, daily/ disimpan $KEEP_DAYS hari."
 
-aws iam get-user --user-name "$IAM_USER" >/dev/null 2>&1 || { aws iam create-user --user-name "$IAM_USER" >/dev/null; say "User IAM $IAM_USER dibuat."; }
-aws iam put-user-policy --user-name "$IAM_USER" --policy-name catu-backup-put-only --policy-document "{\"Version\":\"2012-10-17\",
-  \"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"s3:PutObject\",\"Resource\":\"arn:aws:s3:::$BUCKET/daily/*\"}]}"
-say "Izin $IAM_USER: hanya s3:PutObject ke s3://$BUCKET/daily/*."
-
 umask 077; mkdir -p "$OUT"; chmod 700 "$OUT"
-KEYS=$(aws iam create-access-key --user-name "$IAM_USER" --query 'AccessKey.[AccessKeyId,SecretAccessKey]' --output text)
+if [ -n "${CATU_S3_KEY_CSV:-}" ]; then
+  # CSV dari Console IAM: baris 2 = "Access key ID,Secret access key". Kunci tidak dicetak.
+  [ -s "$CATU_S3_KEY_CSV" ] || { echo "CATU_S3_KEY_CSV tidak ditemukan: $CATU_S3_KEY_CSV"; exit 1; }
+  KEYS=$(sed -n 2p "$CATU_S3_KEY_CSV" | tr -d '\r' | awk -F, '{print $1"\t"$2}')
+  [ -n "$(cut -f2 <<<"$KEYS")" ] || { echo "Format CSV tidak dikenali (harus berisi Access key ID,Secret access key)."; exit 1; }
+  say "Kunci diambil dari $CATU_S3_KEY_CSV (langkah IAM dilewati)."
+else
+  aws iam get-user --user-name "$IAM_USER" >/dev/null 2>&1 || { aws iam create-user --user-name "$IAM_USER" >/dev/null; say "User IAM $IAM_USER dibuat."; }
+  aws iam put-user-policy --user-name "$IAM_USER" --policy-name catu-backup-put-only --policy-document "{\"Version\":\"2012-10-17\",
+    \"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"s3:PutObject\",\"Resource\":\"arn:aws:s3:::$BUCKET/daily/*\"}]}"
+  say "Izin $IAM_USER: hanya s3:PutObject ke s3://$BUCKET/daily/*."
+  KEYS=$(aws iam create-access-key --user-name "$IAM_USER" --query 'AccessKey.[AccessKeyId,SecretAccessKey]' --output text)
+fi
 printf '[default]\naws_access_key_id = %s\naws_secret_access_key = %s\n' "$(cut -f1 <<<"$KEYS")" "$(cut -f2 <<<"$KEYS")" > "$OUT/aws-credentials"
 unset KEYS
 [ -s "$OUT/passphrase" ] || openssl rand -base64 48 | tr -d '\n' > "$OUT/passphrase"
