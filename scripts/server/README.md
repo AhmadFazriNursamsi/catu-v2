@@ -58,9 +58,44 @@ Lalu di server `crontab -e`, tambahkan:
 | `./backup.sh --list` | Lihat cadangan harian yang ada |
 | `tail backups/daily/cron.log` | Cek hasil cron |
 
-Cadangan ini ada di disk yang sama dengan server: melindungi dari data terhapus/rusak dan rilis gagal, **tidak** dari
-disk rusak atau server hilang. Sesekali salin satu cadangan ke luar server, mis. dari Mac:
-`scp -r "$CATU_SSH":~/Documents/catu-v2/backups/daily/<STAMP> ~/Backups/catu-server/`.
+Cadangan di disk server melindungi dari data terhapus/rusak dan rilis gagal, **tidak** dari disk rusak atau server hilang.
+Karena itu tiap cadangan harian juga dikirim ke AWS S3 (bagian berikut).
+
+## Salinan ke cloud (AWS S3)
+
+Setelah cadangan lokal jadi, `backup.sh` mengemas folder cadangan, **mengenkripsinya** (AES-256, `openssl -pbkdf2`) lalu
+mengunggahnya ke `s3://<bucket>/daily/<STAMP>.tar.gz.enc` lewat container `amazon/aws-cli` (tanpa memasang aws CLI di server).
+Aktif bila `~/.catu-backup/s3.conf` ada. Gagal unggah tidak membatalkan cadangan lokal (log: `Cloud: GAGAL`).
+
+Kunci di server **hanya** boleh `s3:PutObject` ke `daily/*`: tidak bisa membaca, menghapus, atau menimpa versi lama
+(bucket ber-versioning). Cadangan cloud disimpan 90 hari (aturan lifecycle bucket).
+
+### Pasang (sekali)
+1. Di Mac, oleh pemilik akun AWS (membuat bucket privat + user IAM tulis-saja + kunci enkripsi):
+   ```
+   AWS_PROFILE=<profil-admin> AWS_SHARED_CREDENTIALS_FILE=<berkas-kredensial> scripts/server/backup-s3-setup.sh <nama-bucket> ap-southeast-1
+   ```
+   Hasil: `~/Backups/catu-s3/server-config/` (`s3.conf`, `aws-credentials`, `passphrase`). **Simpan isi `passphrase` di pengelola
+   sandi**: tanpa itu cadangan cloud tidak bisa dibuka.
+2. Salin ke server dan pasang `backup.sh` versi baru:
+   ```
+   scp -r ~/Backups/catu-s3/server-config "$CATU_SSH":~/.catu-backup
+   ssh "$CATU_SSH" 'chmod 700 ~/.catu-backup && chmod 600 ~/.catu-backup/*'
+   scp scripts/server/backup.sh "$CATU_SSH":~/Documents/catu-v2/backup.sh
+   ssh "$CATU_SSH" 'cd ~/Documents/catu-v2 && ./backup.sh && tail -3 backups/daily/cron.log'
+   ```
+
+### Pulihkan dari cloud (server hilang / disk rusak)
+Di mesin pengganti (atau Mac), dengan kredensial AWS admin (bukan kunci tulis-saja server):
+```
+aws s3 ls s3://<bucket>/daily/ | tail                                   # pilih STAMP
+aws s3 cp s3://<bucket>/daily/<STAMP>.tar.gz.enc .
+openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass file:passphrase -in <STAMP>.tar.gz.enc | tar -xzf -
+mkdir -p ~/Documents/catu-v2/backups/daily && mv <STAMP> ~/Documents/catu-v2/backups/daily/
+```
+Folder hasil berisi `docker-compose.yml`, `env.bak` (→ `.env`), `firebase-service-account.json` (→ `backend/`) untuk
+menyalakan ulang CATU di server baru (`docker compose pull && docker compose up -d`, Postgres dengan TimescaleDB pg17),
+lalu `./restore.sh backups/daily/<STAMP>`.
 
 # Pemulihan (`restore.sh`)
 
