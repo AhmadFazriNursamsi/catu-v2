@@ -4,6 +4,11 @@
 # Dijalankan DI SERVER, dari folder compose (produksi: ~/Documents/catu-v2):
 #   ./backup.sh            # buat cadangan sekarang, lalu hapus cadangan harian yang lebih lama dari N hari
 #   ./backup.sh --list     # tampilkan cadangan harian yang ada (tanpa mengubah apa pun)
+#   ./backup.sh --status   # perbarui ringkasan backup-status/status.json saja (dipanggil juga oleh deploy.sh)
+#
+# Ringkasan backup-status/status.json (TANPA rahasia: hanya tanggal, ukuran, jumlah tabel, status cloud) dibaca backend
+# untuk halaman admin /catubackup lewat mount read-only ./backup-status:/app/backup-status:ro. Folder cadangan sendiri
+# tidak pernah di-mount ke container.
 #
 # Cron (sekali pasang, `crontab -e`), tiap hari 02.15 waktu server:
 #   15 2 * * * cd ~/Documents/catu-v2 && ./backup.sh >> backups/daily/cron.log 2>&1
@@ -41,11 +46,39 @@ case "$KEEP" in ''|*[!0-9]*|0) fail "CATU_BACKUP_DAYS harus angka >= 1." ;; esac
 
 list_backups() { { ls -1d "$ROOT"/*/.daily-backup 2>/dev/null || true; } | sed 's#/.daily-backup##' | sort -r; }
 
-if [ "${1:-}" = "--list" ]; then
-  list_backups | while read -r d; do printf '%s  %s\n' "$(du -sh "$d" | cut -f1)" "$d"; done
-  exit 0
-fi
-[ -z "${1:-}" ] || { echo "Argumen tidak dikenal: $1 (pakai --list atau tanpa argumen)"; exit 2; }
+info() { { grep -E "^$2=" "$1/info" 2>/dev/null || true; } | tail -1 | cut -d= -f2-; }
+jstr() { printf '"%s"' "$(printf '%s' "$1" | tr -d '"\\' | tr -d '\000-\037')"; }
+jnum() { case "$1" in ''|*[!0-9]*) printf 'null' ;; *) printf '%s' "$1" ;; esac; }
+# Ringkasan JSON tanpa rahasia, ditulis atomik ke backup-status/status.json (folder 755, berkas 644: terbaca container backend).
+write_status() {
+  local st="backup-status" d sep=""
+  mkdir -p "$st"; chmod 755 "$st"
+  {
+    printf '{"generatedAt":%s,"keepDaily":%s,"cloudEnabled":%s,' "$(jstr "$(date -Iseconds)")" "$KEEP" "$([ -f "$CLOUD_DIR/s3.conf" ] && echo true || echo false)"
+    printf '"disk":{"freeMb":%s,"usedPct":%s},"daily":[' "$(jnum "$(df -Pm . | awk 'NR==2{print $4}')")" "$(jnum "$(df -P . | awk 'NR==2{sub("%","",$5);print $5}')")"
+    while read -r d; do
+      [ -n "$d" ] || continue
+      printf '%s{"stamp":%s,"bytes":%s,"tables":%s,"db":%s,"cloud":%s,"cloudAt":%s}' "$sep" "$(jstr "$(basename "$d")")" \
+        "$(jnum "$(du -sb "$d" | cut -f1)")" "$(jnum "$(info "$d" tables)")" "$(jstr "$(info "$d" db)")" \
+        "$(jstr "$(info "$d" cloud)")" "$(jstr "$(info "$d" cloud_at)")"
+      sep=","
+    done < <(list_backups); sep=""
+    printf '],"deploy":['
+    while read -r d; do
+      [ -n "$d" ] || continue
+      printf '%s{"stamp":%s,"bytes":%s}' "$sep" "$(jstr "$(basename "$d")")" "$(jnum "$(du -sb "$d" | cut -f1)")"; sep=","
+    done < <({ ls -1d backups/*/.deploy-backup 2>/dev/null || true; } | sed 's#/.deploy-backup##' | sort -r | head -10)
+    printf ']}\n'
+  } > "$st/status.json.tmp"
+  chmod 644 "$st/status.json.tmp"; mv "$st/status.json.tmp" "$st/status.json"
+}
+
+case "${1:-}" in
+  --list) list_backups | while read -r d; do printf '%s  %s\n' "$(du -sh "$d" | cut -f1)" "$d"; done; exit 0 ;;
+  --status) write_status; exit 0 ;;
+  '') ;;
+  *) echo "Argumen tidak dikenal: $1 (pakai --list, --status, atau tanpa argumen)"; exit 2 ;;
+esac
 
 mkdir -p "$ROOT"; chmod 700 backups "$ROOT"
 exec 9>"/tmp/catu-backup-$(id -u)-$(basename "$PWD").lock"
@@ -83,12 +116,13 @@ chmod 600 "$TMP"/*
 touch "$TMP/.daily-backup"
 mv "$TMP" "$DIR"
 trap - EXIT
+printf 'tables=%s\ndb=%s\n' "$TABLES" "$DB_NAME" > "$DIR/info"; chmod 600 "$DIR/info"
 say "Cadangan: $DIR ($(du -sh "$DIR" | cut -f1), $TABLES tabel, DB $DB_NAME)"
 
 conf() { { grep -E "^$1=" "$CLOUD_DIR/s3.conf" || true; } | tail -1 | cut -d= -f2- | tr -d "\"' "; }
 # Enkripsi lalu unggah ke s3://<bucket>/daily/<STAMP>.tar.gz.enc. Kunci & passphrase tidak pernah masuk argumen perintah.
 cloud_upload() {
-  [ -f "$CLOUD_DIR/s3.conf" ] || { say "Cloud: belum dikonfigurasi ($CLOUD_DIR/s3.conf tidak ada), dilewati."; return 0; }
+  [ -f "$CLOUD_DIR/s3.conf" ] || { echo "cloud=skipped" >> "$DIR/info"; say "Cloud: belum dikonfigurasi ($CLOUD_DIR/s3.conf tidak ada), dilewati."; return 0; }
   local bucket region out sum
   bucket=$(conf CATU_S3_BUCKET); region=$(conf CATU_S3_REGION)
   [ -n "$bucket" ] && [ -n "$region" ] && [ -s "$CLOUD_DIR/aws-credentials" ] && [ -s "$CLOUD_DIR/passphrase" ] \
@@ -101,12 +135,14 @@ cloud_upload() {
     -e AWS_SHARED_CREDENTIALS_FILE=/aws/credentials -e AWS_DEFAULT_REGION="$region" "$AWS_IMAGE" \
     s3 cp /data/backup "s3://$bucket/daily/$STAMP.tar.gz.enc" --only-show-errors --metadata "sha256=$sum" \
     || { rm -f "$out"; say "Cloud: unggah ke s3://$bucket gagal."; return 1; }
+  printf 'cloud=ok\ncloud_at=%s\n' "$(date -Iseconds)" >> "$DIR/info"
   say "Cloud: s3://$bucket/daily/$STAMP.tar.gz.enc ($(du -h "$out" | cut -f1), sha256 ${sum:0:12}…)"
   rm -f "$out"
 }
-cloud_upload || say "Cloud: GAGAL. Cadangan lokal tetap tersimpan di $DIR."
+cloud_upload || { echo "cloud=failed" >> "$DIR/info"; say "Cloud: GAGAL. Cadangan lokal tetap tersimpan di $DIR."; }
 
 list_backups | tail -n +$((KEEP + 1)) | while read -r old; do
   rm -rf "$old"; say "Cadangan lama dihapus: $old"
 done
+write_status || say "Peringatan: ringkasan backup-status/status.json gagal ditulis."
 say "Selesai. Tersimpan $(list_backups | wc -l | tr -d ' ') cadangan harian (maks $KEEP)."

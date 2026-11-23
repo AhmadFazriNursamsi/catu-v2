@@ -67,6 +67,9 @@
       if (state.currentTab === 'settings') {
         return typeof isSuperAdminUser === 'function' && isSuperAdminUser() ? renderSettingsTab() : renderUnauthorizedTab('Pengaturan Portal');
       }
+      if (state.currentTab === 'backups') {
+        return typeof isSuperAdminUser === 'function' && isSuperAdminUser() ? renderBackupsTab() : renderUnauthorizedTab('Cadangan Data');
+      }
       return '';
     }
 
@@ -100,8 +103,10 @@ function renderModals() {
   `;
 }
 
-// Initial bootstrap
+// Initial bootstrap (alamat /catubackup langsung membuka tab Cadangan Data)
+if (typeof isBackupPath === 'function' && isBackupPath()) state.currentTab = 'backups';
 renderApp();
 if (state.currentUser) {
   loadDashboardData();
+  if (state.currentTab === 'backups' && typeof isSuperAdminUser === 'function' && isSuperAdminUser()) loadBackupStatus();
 }

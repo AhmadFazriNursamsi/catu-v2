@@ -27,6 +27,7 @@ import { LoginLinkModule } from './modules/login-link/login-link.module';
 import { AccountModule } from './modules/account/account.module';
 import { LegalModule } from './modules/legal/legal.module';
 import { ActivityLogsModule } from './modules/activity-logs/activity-logs.module';
+import { BackupsModule } from './modules/backups/backups.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 
 import { AppService } from './app.service';
@@ -87,6 +88,7 @@ import { HttpLoggerMiddleware } from './logger.middleware';
     AccountModule,
     LegalModule,
     ActivityLogsModule,
+    BackupsModule,
   ],
   providers: [
     AppService,

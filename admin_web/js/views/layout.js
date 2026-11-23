@@ -172,6 +172,7 @@
                     ${renderNavItem('all_users', 'user-check', 'Semua User Aktif', (state.users || []).filter(u => typeof isActiveAccount === 'function' && isActiveAccount(u)).length, 'bg-slate-600')}
                     ${renderNavItem('activity_logs', 'scroll-text', 'Log Aktivitas')}
                     ${renderNavItem('settings', 'download', 'Download Apps')}
+                    ${renderNavItem('backups', 'database-backup', 'Cadangan Data')}
                   </div>
                 </div>
                 ` : ''}
@@ -262,11 +263,12 @@
       if (tab === 'all_users') return 'Semua User Aktif';
       if (tab === 'chat') return 'Monitoring Komunikasi Chat';
       if (tab === 'settings') return 'Download Apps';
+      if (tab === 'backups') return 'Cadangan Data';
       return tab;
     }
 
     function setTab(tab) {
-      if (['activity_logs', 'settings', 'all_users'].includes(tab) && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser())) {
+      if (['activity_logs', 'settings', 'all_users', 'backups'].includes(tab) && (typeof isSuperAdminUser === 'function' && !isSuperAdminUser())) {
         if (typeof showToast === 'function') showToast('warning', 'Akses terbatas: Menu ini hanya dapat diakses oleh Super Admin.');
         state.currentTab = 'overview';
         state.isMobileMenuOpen = false;
@@ -281,6 +283,8 @@
       if (tab === 'activity_logs') {
         loadActivityLogs(1);
       }
+      if (typeof syncBackupPath === 'function') syncBackupPath(tab);
+      if (tab === 'backups') return loadBackupStatus();
       renderApp();
     }
 
