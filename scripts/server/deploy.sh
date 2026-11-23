@@ -180,4 +180,5 @@ ls -1d backups/*/.deploy-backup 2>/dev/null | sed 's#/.deploy-backup##' | sort -
   for ref in $IMAGES; do docker rmi "$(retag "$ref" "rollback-$(basename "$old")")" >/dev/null 2>&1 || true; done
 done
 
+[ -x ./backup.sh ] && { ./backup.sh --status >/dev/null 2>&1 || say "Peringatan: ringkasan cadangan (backup-status) gagal diperbarui."; }
 say "Selesai. Mundur bila perlu: ./deploy.sh --rollback $STAMP"
