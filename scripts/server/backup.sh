@@ -48,6 +48,7 @@ case "$KEEP" in ''|*[!0-9]*|0) fail "CATU_BACKUP_DAYS harus angka >= 1." ;; esac
 list_backups() { { ls -1d "$ROOT"/*/.daily-backup 2>/dev/null || true; } | sed 's#/.daily-backup##' | sort -r; }
 
 info() { { grep -E "^$2=" "$1/info" 2>/dev/null || true; } | tail -1 | cut -d= -f2-; }
+conf() { { grep -E "^$1=" "$CLOUD_DIR/s3.conf" 2>/dev/null || true; } | tail -1 | cut -d= -f2- | tr -d "\"' "; }
 jstr() { printf '"%s"' "$(printf '%s' "$1" | tr -d '"\\' | tr -d '\000-\037')"; }
 jnum() { case "$1" in ''|*[!0-9]*) printf 'null' ;; *) printf '%s' "$1" ;; esac; }
 # Ringkasan JSON tanpa rahasia, ditulis atomik ke backup-status/status.json (folder 755, berkas 644: terbaca container backend).
@@ -56,6 +57,7 @@ write_status() {
   mkdir -p "$st"; chmod 755 "$st"
   {
     printf '{"generatedAt":%s,"keepDaily":%s,"cloudEnabled":%s,' "$(jstr "$(date -Iseconds)")" "$KEEP" "$([ -f "$CLOUD_DIR/s3.conf" ] && echo true || echo false)"
+    printf '"cloudTarget":%s,' "$(jstr "$([ -f "$CLOUD_DIR/s3.conf" ] && echo "s3://$(conf CATU_S3_BUCKET)/$(conf CATU_S3_PREFIX)")")"
     printf '"disk":{"freeMb":%s,"usedPct":%s},"daily":[' "$(jnum "$(df -Pm . | awk 'NR==2{print $4}')")" "$(jnum "$(df -P . | awk 'NR==2{sub("%","",$5);print $5}')")"
     while read -r d; do
       [ -n "$d" ] || continue
@@ -69,6 +71,19 @@ write_status() {
       [ -n "$d" ] || continue
       printf '%s{"stamp":%s,"bytes":%s}' "$sep" "$(jstr "$(basename "$d")")" "$(jnum "$(du -sb "$d" | cut -f1)")"; sep=","
     done < <({ ls -1d backups/*/.deploy-backup 2>/dev/null || true; } | sed 's#/.deploy-backup##' | sort -r | head -10)
+    printf '],"cloudUploads":['; sep=""
+    # Riwayat unggahan S3 (berkas S3 tidak ikut dihapus saat rotasi lokal): catatan dari unggahan berhasil, ditambah
+    # cadangan lokal yang ditandai cloud=ok tetapi belum tercatat (mis. sebelum catatan ini ada). 120 terbaru.
+    while IFS='|' read -r stamp key bytes sha at; do
+      [ -n "$stamp" ] || continue
+      printf '%s{"stamp":%s,"key":%s,"bytes":%s,"sha256":%s,"at":%s}' "$sep" "$(jstr "$stamp")" "$(jstr "$key")" "$(jnum "$bytes")" "$(jstr "$sha")" "$(jstr "$at")"; sep=","
+    done < <({ cat "$st/cloud-uploads.log" 2>/dev/null || true
+               list_backups | while read -r d; do
+                 [ "$(info "$d" cloud)" = ok ] || continue
+                 grep -q "^$(basename "$d")|" "$st/cloud-uploads.log" 2>/dev/null && continue
+                 p=$(conf CATU_S3_PREFIX); p="${p:-daily/}"; [ "${p%/}" = "$p" ] && p="$p/"
+                 printf '%s|%s|||%s\n' "$(basename "$d")" "$p$(basename "$d").tar.gz.enc" "$(info "$d" cloud_at)"
+               done; } | sort -r -u -t'|' -k1,1 | head -120)
     printf ']}\n'
   } > "$st/status.json.tmp"
   chmod 644 "$st/status.json.tmp"; mv "$st/status.json.tmp" "$st/status.json"
@@ -120,7 +135,6 @@ trap - EXIT
 printf 'tables=%s\ndb=%s\n' "$TABLES" "$DB_NAME" > "$DIR/info"; chmod 600 "$DIR/info"
 say "Cadangan: $DIR ($(du -sh "$DIR" | cut -f1), $TABLES tabel, DB $DB_NAME)"
 
-conf() { { grep -E "^$1=" "$CLOUD_DIR/s3.conf" || true; } | tail -1 | cut -d= -f2- | tr -d "\"' "; }
 # Enkripsi lalu unggah ke s3://<bucket>/<prefix><STAMP>.tar.gz.enc. Hanya PutObject (tidak pernah list/hapus/ubah bucket).
 # Kunci & passphrase tidak pernah masuk argumen perintah.
 cloud_upload() {
@@ -138,7 +152,11 @@ cloud_upload() {
     -e AWS_SHARED_CREDENTIALS_FILE=/aws/credentials -e AWS_DEFAULT_REGION="$region" "$AWS_IMAGE" \
     s3 cp /data/backup "s3://$bucket/$prefix$STAMP.tar.gz.enc" --only-show-errors --metadata "sha256=$sum" \
     || { rm -f "$out"; say "Cloud: unggah ke s3://$bucket gagal."; return 1; }
-  printf 'cloud=ok\ncloud_at=%s\n' "$(date -Iseconds)" >> "$DIR/info"
+  local at; at=$(date -Iseconds)
+  printf 'cloud=ok\ncloud_at=%s\n' "$at" >> "$DIR/info"
+  mkdir -p backup-status; chmod 755 backup-status
+  printf '%s|%s|%s|%s|%s\n' "$STAMP" "$prefix$STAMP.tar.gz.enc" "$(stat -c %s "$out")" "$sum" "$at" >> backup-status/cloud-uploads.log
+  chmod 644 backup-status/cloud-uploads.log
   say "Cloud: s3://$bucket/$prefix$STAMP.tar.gz.enc ($(du -h "$out" | cut -f1), sha256 ${sum:0:12}…)"
   rm -f "$out"
 }

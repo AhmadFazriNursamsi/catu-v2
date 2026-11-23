@@ -10,6 +10,9 @@ interface BackupStatusFile {
   disk: { freeMb: number | null; usedPct: number | null };
   daily: DailyBackup[];
   deploy: { stamp: string; bytes: number | null }[];
+  cloudTarget?: string;
+  /** Unggahan S3 yang berhasil (tetap ada di S3 walau cadangan lokalnya sudah dirotasi). */
+  cloudUploads?: { stamp: string; key: string; bytes: number | null; sha256: string; at: string }[];
 }
 
 const MAX_DAILY_AGE_HOURS = 26; // cron 02.15 tiap hari + kelonggaran
@@ -53,6 +56,7 @@ export class BackupsService {
       ...data,
       daily: (data.daily ?? []).map((d) => ({ ...d, createdAt: stampToDate(d.stamp, data.generatedAt)?.toISOString() ?? null })),
       deploy: (data.deploy ?? []).map((d) => ({ ...d, createdAt: stampToDate(d.stamp, data.generatedAt)?.toISOString() ?? null })),
+      cloudUploads: (data.cloudUploads ?? []).map((u) => ({ ...u, createdAt: stampToDate(u.stamp, data.generatedAt)?.toISOString() ?? null })),
     };
   }
 }

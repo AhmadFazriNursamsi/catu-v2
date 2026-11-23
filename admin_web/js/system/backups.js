@@ -100,10 +100,35 @@ function renderBackupsTab() {
           <th class="py-2 px-4">Waktu</th><th class="py-2 px-4">Ukuran</th><th class="py-2 px-4">Tabel</th><th class="py-2 px-4">Cloud</th>
         </tr></thead><tbody>${rows || '<tr><td colspan="4" class="p-4 text-xs text-slate-500">Belum ada.</td></tr>'}</tbody></table>
       </div>
+      ${renderCloudUploads(s)}
       <div class="bg-white rounded-2xl border border-slate-200 p-4">
         <p class="text-sm font-extrabold text-slate-900">Cadangan sebelum deploy</p>
         <ul class="mt-2">${deployRows || '<li class="text-xs text-slate-500">Belum ada.</li>'}</ul>
       </div>
       <p class="text-[11px] text-slate-400">Ringkasan diperbarui ${escapeHtml(fmtWib(s.generatedAt))}. Halaman ini hanya menampilkan status; isi cadangan tidak pernah dikirim ke browser.</p>
     </div>`;
+}
+
+/** Riwayat berkas yang berhasil diunggah ke S3 (tetap ada di cloud walau cadangan lokal 7 hari sudah dirotasi). */
+function renderCloudUploads(s) {
+  if (!s.cloudEnabled) return '';
+  const list = s.cloudUploads || [];
+  const rows = list.map((u) => `
+    <tr class="border-t border-slate-100">
+      <td class="py-3 px-4 text-xs font-semibold text-slate-800 whitespace-nowrap">${escapeHtml(fmtWib(u.createdAt))}</td>
+      <td class="py-3 px-4 text-[11px] font-mono text-slate-600 break-all">${escapeHtml(u.key)}</td>
+      <td class="py-3 px-4 text-xs text-slate-600 whitespace-nowrap">${fmtBytes(u.bytes)}</td>
+      <td class="py-3 px-4 text-[11px] font-mono text-slate-500" title="${escapeHtml(u.sha256 || '')}">${u.sha256 ? escapeHtml(u.sha256.slice(0, 12)) + '…' : '-'}</td>
+    </tr>`).join('');
+  return `
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+        <div class="px-4 pt-4 flex flex-wrap items-baseline justify-between gap-2">
+          <p class="text-sm font-extrabold text-slate-900">Riwayat di Cloud (S3) <span class="text-xs font-medium text-slate-500">· ${list.length} berkas</span></p>
+          <p class="text-[11px] font-mono text-slate-500 break-all">${escapeHtml(s.cloudTarget || '')}</p>
+        </div>
+        <p class="px-4 text-[11px] text-slate-500">Berkas terenkripsi yang sudah berhasil diunggah. Tidak ikut terhapus saat cadangan lokal dirotasi.</p>
+        <table class="w-full mt-2"><thead><tr class="text-left text-[11px] text-slate-500">
+          <th class="py-2 px-4">Waktu</th><th class="py-2 px-4">Berkas di S3</th><th class="py-2 px-4">Ukuran</th><th class="py-2 px-4">SHA-256</th>
+        </tr></thead><tbody>${rows || '<tr><td colspan="4" class="p-4 text-xs text-slate-500">Belum ada unggahan.</td></tr>'}</tbody></table>
+      </div>`;
 }
