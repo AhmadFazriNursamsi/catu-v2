@@ -20,7 +20,8 @@
 #   CATU_CLOUD_DIR      folder konfigurasi salinan cloud (bawaan: ~/.catu-backup, lihat di bawah)
 #
 # Salinan ke AWS S3 (aktif bila ~/.catu-backup/s3.conf ada; dibuat oleh backup-s3-setup.sh dari Mac):
-#   s3.conf          CATU_S3_BUCKET=... dan CATU_S3_REGION=...
+#   s3.conf          CATU_S3_BUCKET=..., CATU_S3_REGION=..., opsional CATU_S3_PREFIX=... (bawaan daily/; bucket bersama:
+#                    mis. catu-backups/daily/ agar hanya menulis ke folder CATU)
 #   aws-credentials  kunci IAM yang HANYA boleh menulis ke s3://<bucket>/daily/ (tidak bisa membaca/menghapus)
 #   passphrase       kunci enkripsi; cadangan dienkripsi (AES-256, openssl) SEBELUM diunggah
 # Gagal unggah tidak membatalkan cadangan lokal; tercatat "Cloud: GAGAL" di log.
@@ -120,11 +121,13 @@ printf 'tables=%s\ndb=%s\n' "$TABLES" "$DB_NAME" > "$DIR/info"; chmod 600 "$DIR/
 say "Cadangan: $DIR ($(du -sh "$DIR" | cut -f1), $TABLES tabel, DB $DB_NAME)"
 
 conf() { { grep -E "^$1=" "$CLOUD_DIR/s3.conf" || true; } | tail -1 | cut -d= -f2- | tr -d "\"' "; }
-# Enkripsi lalu unggah ke s3://<bucket>/daily/<STAMP>.tar.gz.enc. Kunci & passphrase tidak pernah masuk argumen perintah.
+# Enkripsi lalu unggah ke s3://<bucket>/<prefix><STAMP>.tar.gz.enc. Hanya PutObject (tidak pernah list/hapus/ubah bucket).
+# Kunci & passphrase tidak pernah masuk argumen perintah.
 cloud_upload() {
   [ -f "$CLOUD_DIR/s3.conf" ] || { echo "cloud=skipped" >> "$DIR/info"; say "Cloud: belum dikonfigurasi ($CLOUD_DIR/s3.conf tidak ada), dilewati."; return 0; }
-  local bucket region out sum
-  bucket=$(conf CATU_S3_BUCKET); region=$(conf CATU_S3_REGION)
+  local bucket region prefix out sum
+  bucket=$(conf CATU_S3_BUCKET); region=$(conf CATU_S3_REGION); prefix=$(conf CATU_S3_PREFIX); prefix="${prefix:-daily/}"
+  case "$prefix" in */) ;; *) prefix="$prefix/" ;; esac
   [ -n "$bucket" ] && [ -n "$region" ] && [ -s "$CLOUD_DIR/aws-credentials" ] && [ -s "$CLOUD_DIR/passphrase" ] \
     || { say "Cloud: s3.conf / aws-credentials / passphrase tidak lengkap."; return 1; }
   out=$(umask 077 && mktemp "/tmp/catu-cloud-$STAMP.XXXXXX")
@@ -133,10 +136,10 @@ cloud_upload() {
   sum=$(sha256sum "$out" | cut -d' ' -f1)
   docker run --rm -v "$CLOUD_DIR/aws-credentials:/aws/credentials:ro" -v "$out:/data/backup:ro" \
     -e AWS_SHARED_CREDENTIALS_FILE=/aws/credentials -e AWS_DEFAULT_REGION="$region" "$AWS_IMAGE" \
-    s3 cp /data/backup "s3://$bucket/daily/$STAMP.tar.gz.enc" --only-show-errors --metadata "sha256=$sum" \
+    s3 cp /data/backup "s3://$bucket/$prefix$STAMP.tar.gz.enc" --only-show-errors --metadata "sha256=$sum" \
     || { rm -f "$out"; say "Cloud: unggah ke s3://$bucket gagal."; return 1; }
   printf 'cloud=ok\ncloud_at=%s\n' "$(date -Iseconds)" >> "$DIR/info"
-  say "Cloud: s3://$bucket/daily/$STAMP.tar.gz.enc ($(du -h "$out" | cut -f1), sha256 ${sum:0:12}…)"
+  say "Cloud: s3://$bucket/$prefix$STAMP.tar.gz.enc ($(du -h "$out" | cut -f1), sha256 ${sum:0:12}…)"
   rm -f "$out"
 }
 cloud_upload || { echo "cloud=failed" >> "$DIR/info"; say "Cloud: GAGAL. Cadangan lokal tetap tersimpan di $DIR."; }

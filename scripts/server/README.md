@@ -85,6 +85,10 @@ Kunci di server **hanya** boleh `s3:PutObject` ke `daily/*`: tidak bisa membaca,
    ssh "$CATU_SSH" 'cd ~/Documents/catu-v2 && ./backup.sh && tail -3 backups/daily/cron.log'
    ```
 
+**Bucket bersama (sementara)**: bila memakai bucket/kunci milik aplikasi lain, isi `CATU_S3_PREFIX=catu-backups/daily/` di
+`s3.conf`. `backup.sh` hanya `PutObject` ke prefix itu: tidak pernah list, hapus, atau mengubah pengaturan bucket, sehingga
+data aplikasi lain tidak tersentuh. Aturan simpan 90 hari tidak dipasang (pengaturan bucket bukan milik CATU).
+
 ### Pulihkan dari cloud (server hilang / disk rusak)
 Di mesin pengganti (atau Mac), dengan kredensial AWS admin (bukan kunci tulis-saja server):
 ```
